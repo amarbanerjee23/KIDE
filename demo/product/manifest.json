@@ -1,0 +1,106 @@
+{
+  "name": "KIDE Demonstrator",
+  "description": "Packaged demonstrator metadata for the DSL toolchain in this repository.",
+  "projects": [
+    {
+      "project": "com.capability",
+      "bundle": "com.capability"
+    },
+    {
+      "project": "com.capability.dsl",
+      "bundle": "com.capability.dsl"
+    },
+    {
+      "project": "com.capability.dsl.ide",
+      "bundle": "com.capability.dsl.ide"
+    },
+    {
+      "project": "com.capability.dsl.ui",
+      "bundle": "com.capability.dsl.ui"
+    },
+    {
+      "project": "com.dml",
+      "bundle": "com.dml"
+    },
+    {
+      "project": "com.dml.dsl",
+      "bundle": "com.dml.dsl"
+    },
+    {
+      "project": "com.dml.dsl.ide",
+      "bundle": "com.dml.dsl.ide"
+    },
+    {
+      "project": "com.dml.dsl.ui",
+      "bundle": "com.dml.dsl.ui"
+    },
+    {
+      "project": "com.dsep.dsl.generator",
+      "bundle": "com.dsep.dsl.generator"
+    },
+    {
+      "project": "com.mncml",
+      "bundle": "com.mncml"
+    },
+    {
+      "project": "com.mncml.dsl",
+      "bundle": "com.mncml.dsl"
+    },
+    {
+      "project": "com.mncml.dsl.ide",
+      "bundle": "com.mncml.dsl.ide"
+    },
+    {
+      "project": "com.mncml.dsl.ui",
+      "bundle": "com.mncml.dsl.ui"
+    },
+    {
+      "project": "com.model.domain.activity.design",
+      "bundle": "com.model.domain.activity.design"
+    },
+    {
+      "project": "com.model.domain.mnc.design",
+      "bundle": "com.model.domain.mnc.design"
+    },
+    {
+      "project": "com.operation",
+      "bundle": "com.operation"
+    },
+    {
+      "project": "com.operation.dsl",
+      "bundle": "com.operation.dsl"
+    },
+    {
+      "project": "com.operation.dsl.ide",
+      "bundle": "com.operation.dsl.ide"
+    },
+    {
+      "project": "com.operation.dsl.ui",
+      "bundle": "com.operation.dsl.ui"
+    },
+    {
+      "project": "com.smr.activity",
+      "bundle": "com.smr.activity"
+    },
+    {
+      "project": "com.smr.activity.activity2mnc",
+      "bundle": "com.smr.activity.activity2mnc"
+    },
+    {
+      "project": "com.smr.activity.dsl",
+      "bundle": "com.smr.activity.dsl"
+    },
+    {
+      "project": "com.smr.activity.dsl.ide",
+      "bundle": "com.smr.activity.dsl.ide"
+    },
+    {
+      "project": "com.smr.activity.dsl.ui",
+      "bundle": "com.smr.activity.dsl.ui"
+    },
+    {
+      "project": "com.system.knowledge.plugin",
+      "bundle": "com.system.knowledge.plugin"
+    }
+  ]
+}
