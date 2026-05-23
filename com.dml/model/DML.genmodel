@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<genmodel:GenModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    xmlns:genmodel="http://www.eclipse.org/emf/2002/GenModel" modelDirectory="/com.dml/src" modelPluginID="com.dml" modelName="DML"
+    rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container" importerID="org.eclipse.emf.importer.ecore"
+    complianceLevel="8.0" copyrightFields="false" operationReflection="true" importOrganizing="true">
+  <foreignModel>DML.ecore</foreignModel>
+  <genPackages prefix="DataModel" disposableProviderFactory="true" ecorePackage="DML.ecore#/">
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="DML.ecore#//PrimitiveValueType">
+      <genEnumLiterals ecoreEnumLiteral="DML.ecore#//PrimitiveValueType/object"/>
+      <genEnumLiterals ecoreEnumLiteral="DML.ecore#//PrimitiveValueType/int"/>
+      <genEnumLiterals ecoreEnumLiteral="DML.ecore#//PrimitiveValueType/boolean"/>
+      <genEnumLiterals ecoreEnumLiteral="DML.ecore#//PrimitiveValueType/float"/>
+      <genEnumLiterals ecoreEnumLiteral="DML.ecore#//PrimitiveValueType/string"/>
+      <genEnumLiterals ecoreEnumLiteral="DML.ecore#//PrimitiveValueType/date"/>
+    </genEnums>
+    <genClasses ecoreClass="DML.ecore#//DataPackage">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//DataPackage/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference DML.ecore#//DataPackage/dataModelCollections"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//DataModel">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference DML.ecore#//DataModel/primitives"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference DML.ecore#//DataModel/composites"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//DataModel/name"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//Parameter"/>
+    <genClasses ecoreClass="DML.ecore#//AbstractType">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//AbstractType/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EReference DML.ecore#//AbstractType/type"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference DML.ecore#//AbstractType/value"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//ArrayType">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//ArrayType/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference DML.ecore#//ArrayType/values"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//ArrayType/primitiveType"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference DML.ecore#//ArrayType/dataModelType"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//SimpleType">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//SimpleType/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//SimpleType/type"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference DML.ecore#//SimpleType/value"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//PrimitiveValue"/>
+    <genClasses ecoreClass="DML.ecore#//IntValue">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//IntValue/intValue"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//BoolValue">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//BoolValue/boolValue"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//FloatValue">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//FloatValue/floatValue"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//StringValue">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//StringValue/stringValue"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//AbstractObjectValue">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//AbstractObjectValue/abstractValue"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//ArrayValues">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference DML.ecore#//ArrayValues/values"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//DateValue">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute DML.ecore#//DateValue/dateValue"/>
+    </genClasses>
+    <genClasses ecoreClass="DML.ecore#//DataValue"/>
+  </genPackages>
+</genmodel:GenModel>

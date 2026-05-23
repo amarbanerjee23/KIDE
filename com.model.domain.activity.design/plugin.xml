@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin>
+  <extension point="org.eclipse.sirius.componentization">
+    <component class="com.model.domain.activity.design.Activator"
+               id="com.model.domain.activity.design"
+	       name="Activity">
+    </component>
+  </extension>  
+ 
+
+
+	
+
+  <extension
+        point="org.eclipse.sirius.externalJavaAction">
+     <javaActions
+           actionClass="com.model.domain.activity.design.embedededitor.OpenEmbeddedEditor"
+           id="com.model.domain.activity.design.embedededitor.OpenEmbeddedEditor">
+     </javaActions>
+  </extension>
+
+</plugin>

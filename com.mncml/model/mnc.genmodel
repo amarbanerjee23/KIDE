@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<genmodel:GenModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    xmlns:genmodel="http://www.eclipse.org/emf/2002/GenModel" modelDirectory="/com.mncml/src" modelPluginID="com.mncml" modelName="Mnc"
+    rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container" importerID="org.eclipse.emf.importer.ecore"
+    complianceLevel="7.0" copyrightFields="false" usedGenPackages="../../com.dml/model/DML.genmodel#//dataModelPackage ../../com.operation/model/operations.genmodel#//operationsDescription"
+    operationReflection="true" importOrganizing="true">
+  <foreignModel>mnc.ecore</foreignModel>
+  <genPackages prefix="MncModel" disposableProviderFactory="true" ecorePackage="mnc.ecore#/">
+    <genClasses ecoreClass="mnc.ecore#//AbstractOutcomeItems"/>
+    <genClasses ecoreClass="mnc.ecore#//System"/>
+    <genClasses ecoreClass="mnc.ecore#//BehaviorBlock">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//BehaviorBlock/validationRules"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//BehaviorBlock/action"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//AbstractInterfaceItems">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//AbstractInterfaceItems/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//AbstractInterfaceItems/parameters"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//Model">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//Model/systems"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//Model/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//Model/importSection"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//Import">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//Import/importedNamespace"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//InterfaceDescription">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//InterfaceDescription/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//InterfaceDescription/ipaddress"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//InterfaceDescription/port"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//InterfaceDescription/dataPoints"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//InterfaceDescription/alarms"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//InterfaceDescription/commands"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//InterfaceDescription/events"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//InterfaceDescription/responses"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//InterfaceDescription/operatingStatesUtility"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//InterfaceDescription/subscribedItems"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//InterfaceDescription/uses"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//Port">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//Port/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//Port/value"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//Address">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//Address/ipaddress"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//Command">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//Command/asynch"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//OperatingState">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//OperatingState/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//OperatingState/parameters"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//Response"/>
+    <genClasses ecoreClass="mnc.ecore#//Event">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EAttribute mnc.ecore#//Event/publish"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//Alarm">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//Alarm/type"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//Alarm/level"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EAttribute mnc.ecore#//Alarm/publish"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//DataPoint">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//DataPoint/type"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//DataPoint/value"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EAttribute mnc.ecore#//DataPoint/publish"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//SubscribableItemList">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//SubscribableItemList/subscribedEvents"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//SubscribableItemList/subscribedAlarms"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//SubscribableItemList/subscribedDataPoints"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//ControlNode">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute mnc.ecore#//ControlNode/name"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ControlNode/interfaceDescription"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ControlNode/childNodes"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ControlNode/parentNode"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//ControlNode/commandResponseBlocks"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//ControlNode/eventBlocks"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//ControlNode/alarmBlocks"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//ControlNode/dataPointBlocks"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//CommandResponseBlock">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//CommandResponseBlock/command"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//CommandResponseBlock/responseBlock"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//ResponseBlock">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ResponseBlock/response"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//ResponseBlock/responseAggregationRules"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//ResponseAggregationRule">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ResponseAggregationRule/inputResponses"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//ResponseAggregationRule/parameterTranslations"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//ParameterTranslation">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ParameterTranslation/inputParameters"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ParameterTranslation/transformationFunction"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ParameterTranslation/translatedParameters"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//EventBlock">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//EventBlock/event"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//AlarmBlock">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//AlarmBlock/alarm"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//DataPointBlock">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//DataPointBlock/dataPoint"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//CheckParameterCondition">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//CheckParameterCondition/parameter"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//CheckParameterCondition/checkValues"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//CheckParameterCondition/checkMaxValue"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//CheckParameterCondition/checkMinValue"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//CheckParameterCondition/operations"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//Transition">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//Transition/currentState"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//Transition/nextState"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//Transition/entryAction"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//Transition/exitAction"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//Action">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//Action/fireCommand"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//Action/publishEvent"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//Action/raiseAlarm"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//Action/triggerDataPoint"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//Action/executeOperation"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//Action/transitionStates"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//ActionItem">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//ActionItem/actionParemeter"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//ActionParemeter">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//ActionParemeter/parameterMappings"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//ActionParemeter/parameterValues"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//ActionCommand">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ActionCommand/command"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//ActionCommand/responseHandling"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//ActionEvent">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ActionEvent/event"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//ActionAlarm">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ActionAlarm/alarm"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//ActionDataPoint">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ActionDataPoint/dataPoint"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//ActionOperation">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference mnc.ecore#//ActionOperation/operation"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//Validation">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//Validation/onSuccessAction"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//Validation/onFailedAction"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//Validation/parametersValidationRules"/>
+    </genClasses>
+    <genClasses ecoreClass="mnc.ecore#//DataValue"/>
+    <nestedGenPackages prefix="Utility" basePackage="mncModel" disposableProviderFactory="true"
+        ecorePackage="mnc.ecore#//utility">
+      <genClasses ecoreClass="mnc.ecore#//utility/OperatingStateUtility">
+        <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference mnc.ecore#//utility/OperatingStateUtility/operatingStates"/>
+        <genFeatures notify="false" createChild="false" propertySortChoices="true"
+            ecoreFeature="ecore:EReference mnc.ecore#//utility/OperatingStateUtility/startState"/>
+        <genFeatures notify="false" createChild="false" propertySortChoices="true"
+            ecoreFeature="ecore:EReference mnc.ecore#//utility/OperatingStateUtility/endState"/>
+      </genClasses>
+    </nestedGenPackages>
+  </genPackages>
+</genmodel:GenModel>

@@ -1,0 +1,250 @@
+grammar com.mncml.dsl.Mnc with com.dml.dsl.Dml
+
+import "http://mncModel/4.0" as mncModel
+import "platform:/resource/com.mncml/model/mnc.ecore#//utility" as utility
+import "http://dataModelPackage/1.0" as dataModel
+import "http://operationsDescription/1.0" as operations
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+
+Model returns mncModel::Model:
+	{mncModel::Model}
+	importSection+=Import*
+	'Model'
+	name=EString
+	(systems+=InterfaceDescription
+	systems+=ControlNode?);
+
+Import returns mncModel::Import:
+	'import' importedNamespace=QualifiedNameWithWildCard;
+
+QualifiedNameWithWildCard:
+	QualifiedName ('.*')?;
+
+Command returns mncModel::Command:
+	{mncModel::Command}
+	(asynch?='async')? name=EString
+	'['
+	(parameters+=Parameter ("," parameters+=Parameter)*)?
+	']';
+
+Event returns mncModel::Event:
+	{mncModel::Event}
+	(publish?='Publish')? name=EString
+	'[' (parameters+=Parameter (',' parameters+=Parameter)*)? ']';
+
+Response returns mncModel::Response:
+	{mncModel::Response}
+	name=EString
+	'[' (parameters+=Parameter (',' parameters+=Parameter)*)? ']';
+
+Alarm returns mncModel::Alarm:
+	{mncModel::Alarm}
+	(publish?='Publish')? name=EString
+	'[' (parameters+=Parameter (',' parameters+=Parameter)*)? ('level' '=' level=EInt)? ']';
+
+DataPoint returns mncModel::DataPoint:
+	{mncModel::DataPoint}
+	(publish?='Publish')? (type=PrimitiveValueType)? name=EString ('=' value=PrimitiveValue)?
+	'[' (parameters+=Parameter (',' parameters+=Parameter)*)? ']';
+
+OperatingStateUtility returns utility::OperatingStateUtility:
+	{utility::OperatingStateUtility}
+	(operatingStates+=OperatingState*)
+	('startStates' ':' (startState+=[mncModel::OperatingState|ID] (',' startState+=[mncModel::OperatingState|ID]))*)?
+	('endStates' ':' (endState+=[mncModel::OperatingState|ID]) (',' endState+=[mncModel::OperatingState|ID])*)?;
+
+OperatingState returns mncModel::OperatingState:
+	{mncModel::OperatingState}
+	name=EString '[' parameters+=Parameter* ']';
+
+SubscribableItemList returns mncModel::SubscribableItemList:
+	{mncModel::SubscribableItemList}
+	'SubscribableItemList'
+	'{'
+	('subscribedEvents' ':' subscribedEvents+=[mncModel::Event|QualifiedName] (','
+	subscribedEvents+=[mncModel::Event|QualifiedName])*)?
+	('subscribedAlarms' ':' subscribedAlarms+=[mncModel::Alarm|QualifiedName] (','
+	subscribedAlarms+=[mncModel::Alarm|QualifiedName])*)?
+	('subscribedDataPoints' ':' subscribedDataPoints+=[mncModel::DataPoint|QualifiedName] (','
+	subscribedDataPoints+=[mncModel::DataPoint|QualifiedName])*)?
+	'}';
+
+Action returns mncModel::Action:
+	{mncModel::Action}
+	'Action'
+	'{'
+	('raise' 'alarms' '[' raiseAlarm+=ActionAlarm* ']')?
+	('fire' 'commands' '[' fireCommand+=ActionCommand* ']')?
+	('generate' 'events' '[' publishEvent+=ActionEvent* ']')?
+	('trigger' 'data' '[' triggerDataPoint+=ActionDataPoint* ']')?
+	('execute' 'operations' '[' executeOperation+=ActionOperation* ']')?
+	('transition' 'states' '[' transitionStates+=Transition* ']')?
+	'}';
+
+ActionCommand returns mncModel::ActionCommand:
+	{mncModel::ActionCommand}
+	command=[mncModel::Command|QualifiedName] '(' (actionParemeter=ActionParemeter)? ')'
+	('->' 'expected' (responseHandling+=ResponseBlock)*)?;
+
+ActionAlarm returns mncModel::ActionAlarm:
+	{mncModel::ActionAlarm}
+	alarm=[mncModel::Alarm|QualifiedName] '('
+	(actionParemeter=ActionParemeter)? ')';
+
+ActionEvent returns mncModel::ActionEvent:
+	{mncModel::ActionEvent}
+	event=[mncModel::Event|QualifiedName] '('
+	(actionParemeter=ActionParemeter)? ')';
+
+ActionDataPoint returns mncModel::ActionDataPoint:
+	{mncModel::ActionDataPoint}
+	dataPoint=[mncModel::DataPoint|QualifiedName] '('
+	(actionParemeter=ActionParemeter)? ')';
+
+ActionOperation returns mncModel::ActionOperation:
+	{mncModel::ActionOperation}
+	operation=[operations::Operation|QualifiedName] '('
+	(actionParemeter=ActionParemeter)? ')';
+
+ActionParemeter returns mncModel::ActionParemeter:
+	((parameterValues+=PrimitiveValue (',' parameterValues+=PrimitiveValue)*)
+	|
+	(parameterMappings+=ParameterTranslation (',' parameterMappings+=ParameterTranslation)*));
+
+InterfaceDescription returns mncModel::InterfaceDescription:
+	{mncModel::InterfaceDescription}
+	'InterfaceDescription'
+	name=EString ('uses' uses+=[mncModel::InterfaceDescription|QualifiedName] (','
+	uses+=[mncModel::InterfaceDescription|QualifiedName])*)?
+	'{'
+	(((port=Port)? &
+	('dataPoints' '{' (dataPoints+=DataPoint)*) '}')? &
+	('alarms' '{' (alarms+=Alarm)* '}')? &
+	('commands' '{' (commands+=Command)* '}')? &
+	('events' '{' events+=Event* '}')? &
+	('responses' '{' (responses+=Response)* '}')? &
+	('operatingStates' '{'
+	(operatingStatesUtility=OperatingStateUtility)
+	'}')? &
+	(subscribedItems=SubscribableItemList)? &
+	(ipaddress=Address)?)
+	'}';
+
+ControlNode returns mncModel::ControlNode:
+	{mncModel::ControlNode}
+	'ControlNode'
+	name=EString ('implements' 'interface' interfaceDescription=[mncModel::InterfaceDescription|QualifiedName])
+	'{'
+	(('childNodes' '(' (childNodes+=[mncModel::ControlNode|QualifiedName] (','
+	childNodes+=[mncModel::ControlNode|QualifiedName])*) ')')? &
+	('CommandResponseBlock' '{' commandResponseBlocks+=CommandResponseBlock* '}')? &
+	('EventBlock' '{' eventBlocks+=EventBlock* '}')? &
+	('AlarmBlock' '{' alarmBlocks+=AlarmBlock* '}')? &
+	('DataPointBlock' '{' dataPointBlocks+=DataPointBlock* '}')?)
+	'}';
+
+CommandResponseBlock returns mncModel::CommandResponseBlock:
+	{mncModel::CommandResponseBlock}
+	'Command' command=[mncModel::Command|QualifiedName]
+	'{'
+	(action=Action)?
+	(validationRules+=Validation*)
+	('Generate' 'Response' '{' (responseBlock+=ResponseBlock)* '}')?
+	'}';
+
+ResponseBlock returns mncModel::ResponseBlock:
+	{mncModel::ResponseBlock}
+	'expectedResponse' response=[mncModel::Response|QualifiedName]
+	'{'
+	(action=Action)?
+	(validationRules+=Validation*)
+	('ResponseAggregation' '{' responseAggregationRules+=ResponseAggregationRule* '}')?
+	'}';
+
+ResponseAggregationRule returns mncModel::ResponseAggregationRule:
+	{mncModel::ResponseAggregationRule}
+	'received' 'Responses' '(' inputResponses+=[mncModel::Response|QualifiedName] (BooleanOps
+	inputResponses+=[mncModel::Response|QualifiedName])* ')' // will show response from lower level Control Nodes
+	('{'
+	'parameterTranslations' '{' parameterTranslations+=ParameterTranslation* '}'
+	'}')?;
+
+BooleanOps returns ecore::EString:
+	'and' | 'or';
+
+CheckParameterCondition returns mncModel::CheckParameterCondition:
+	{mncModel::CheckParameterCondition}
+	((('parameters' parameter+=[dataModel::Parameter|QualifiedName]) ((BooleanOps|',')
+	parameter+=[dataModel::Parameter|QualifiedName])*)
+	|
+	('operation' operations+=[operations::Operation|QualifiedName]
+	'(' =>parameter+=[dataModel::Parameter|QualifiedName]) (','
+	parameter+=[dataModel::Parameter|QualifiedName])* ')')
+	'['
+	(('Max' 'Value' '=' checkMaxValue=PrimitiveValue)? &
+	('Min' 'Value' '=' checkMinValue=PrimitiveValue)? &
+	('Possible' 'Values' '=' '(' checkValues+=PrimitiveValue (',' checkValues+=PrimitiveValue)* ')')?)
+	']';
+
+Validation returns mncModel::Validation:
+	{mncModel::Validation}
+	'Validate' '{'
+	(parametersValidationRules+=CheckParameterCondition (BooleanOps parametersValidationRules+=CheckParameterCondition)*)?
+	(('onFail' onFailedAction=Action)? &
+	('onSuccess' onSuccessAction=Action)?)
+	'}';
+
+Transition returns mncModel::Transition:
+	{mncModel::Transition}
+	'currentState' ((currentState+=[mncModel::OperatingState|ID] (','
+	currentState+=[mncModel::OperatingState|ID])*) | 'any')
+	('(' 'exitAction' exitAction=Action ')')?
+	'=>'
+	'nextState' nextState=[mncModel::OperatingState|ID]
+	('(' 'entryAction' entryAction=Action ')')?;
+
+ParameterTranslation returns mncModel::ParameterTranslation:
+	{mncModel::ParameterTranslation}
+	'inputParameters' '(' inputParameters+=[dataModel::Parameter|QualifiedName] (','
+	inputParameters+=[dataModel::Parameter|QualifiedName])* ')' '=>'
+	'translatedParameters' '(' (translatedParameters=[dataModel::Parameter|QualifiedName]) ')';
+
+EventBlock returns mncModel::EventBlock:
+	{mncModel::EventBlock}
+	'Event' event=[mncModel::Event|QualifiedName]
+	'{'
+	(action=Action)?
+	(validationRules+=Validation*)
+	'}';
+
+AlarmBlock returns mncModel::AlarmBlock:
+	{mncModel::AlarmBlock}
+	'Alarm' alarm=[mncModel::Alarm|QualifiedName]
+	'{'
+	(action=Action)?
+	(validationRules+=Validation*)
+	'}';
+
+DataPointBlock returns mncModel::DataPointBlock:
+	{mncModel::DataPointBlock}
+	'DataPoint' dataPoint+=[mncModel::DataPoint|QualifiedName] (',' dataPoint+=[mncModel::DataPoint|QualifiedName])*
+	'{'
+	(action=Action)?
+	(validationRules+=Validation*)
+	'}';
+
+Address returns mncModel::Address:
+	{mncModel::Address}
+	'IPaddress' ':' ipaddress=ADDRESSFORMAT;
+
+terminal ADDRESSFORMAT:
+	(INT ('.' INT) ('.' INT) ('.' INT));
+
+Port returns mncModel::Port:
+	{mncModel::Port}
+	'port'
+	name=EString ('=' value=EInt)?;
+
+
+
+ 

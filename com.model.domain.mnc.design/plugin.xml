@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+<plugin>
+  <extension point="org.eclipse.sirius.componentization">
+    <component class="com.model.domain.mnc.design.Activator"
+               id="com.model.domain.mnc.design"
+	       name="mnc">
+    </component>
+  </extension>  
+ 
+
+<extension point="org.eclipse.sirius.diagram.ui.viewOrderingProvider">
+   <viewOrderingProvider providerClass="com.model.domain.mnc.design.layout.CustomViewOrderingProvider" />
+</extension>
+
+<extension
+        point="org.eclipse.sirius.diagram.ui.layoutProvider">
+     <layoutProvider
+           priority="highest"
+           providerClass="com.model.domain.mnc.design.layout.CustomLayoutProvider">
+     </layoutProvider>
+  </extension> 
+	
+	 <extension point="org.eclipse.ui.menus">  
+    <menuContribution    
+          allPopups="false"
+          locationURI="toolbar:org.eclipse.sirius.diagram.ui.tabbar?after=additions">
+        <command
+              commandId="com.model.domain.mnc.design.dashboard"
+              icon="images/dashboard.png"
+              id="test.menus.sampleCommand"
+              label="Dashboard"
+              tooltip="Open Dashboard">
+           <visibleWhen
+                 checkEnabled="false">
+           </visibleWhen>
+  
+        </command> 
+    </menuContribution>
+ </extension>
+  <extension
+        point="org.eclipse.ui.commands">
+     <command
+           id="com.model.domain.mnc.design.dashboard"
+           name="Open Dashboard">
+     </command>
+  </extension>
+  <extension
+        point="org.eclipse.ui.handlers">
+     <handler
+           class="com.model.domain.mnc.design.services.tabbar.DashboardHandler"
+           commandId="com.model.domain.mnc.design.dashboard">
+     </handler>
+  </extension>
+
+  <extension
+        point="org.eclipse.sirius.externalJavaAction">
+     <javaActions
+           actionClass="com.model.domain.mnc.design.embedededitor.OpenEmbeddedEditor"
+           id="com.model.domain.mnc.design.embedededitor.OpenEmbeddedEditor">
+     </javaActions>
+  </extension>
+
+</plugin>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="activityDiagramModel" nsURI="http://activitydiagram/1.0" nsPrefix="ActivityDiagram">
+  <eClassifiers xsi:type="ecore:EClass" name="ActivityDiagram">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="activities" upperBound="-1"
+        eType="#//Activity" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataObjects" upperBound="-1"
+        eType="ecore:EClass ../../com.dml/model/DML.ecore#//Parameter"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="results" upperBound="-1"
+        eType="ecore:EClass ../../com.dml/model/DML.ecore#//Parameter" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="contextDataModel" upperBound="-1"
+        eType="ecore:EClass ../../com.dml/model/DML.ecore#//Parameter"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="physicalContext" upperBound="-1"
+        eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Activity">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="bindCapability" eType="ecore:EClass ../../com.capability/model/capability.ecore#//Capability"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="description" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="conditionalActivity" upperBound="-1"
+        eType="#//ConditionalActivity" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="useControlCapabilities"
+        upperBound="-1" eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//AbstractInterfaceItems"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="requiresOperation" upperBound="-1"
+        eType="ecore:EClass ../../com.operation/model/operations.ecore#//Operation"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="childActivityDiagram" eType="#//ActivityDiagram"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="inputParameters" upperBound="-1"
+        eType="ecore:EClass ../../com.dml/model/DML.ecore#//Parameter"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="interruptedBy" upperBound="-1"
+        eType="#//Activity"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="interrupts" upperBound="-1"
+        eType="#//Activity"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="time" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EFloat"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="unit" eType="#//UnitTime"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="nextActivity" eType="#//Activity"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="nextActivityDiagram" eType="#//ActivityDiagram"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="requiredCapability" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ConditionalActivity">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="onTrueNextActivity" eType="#//Activity"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="onFalseNextActivity" eType="#//Activity"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="onTrueFinalResult" eType="ecore:EClass ../../com.dml/model/DML.ecore#//Parameter"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="onFalseFinalResult" eType="ecore:EClass ../../com.dml/model/DML.ecore#//Parameter"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="outcome" upperBound="-1"
+        eType="#//Outcome" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="bOp" upperBound="-1" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EEnum" name="UnitTime">
+    <eLiterals name="secs" literal="secs"/>
+    <eLiterals name="mins" value="1" literal="mins"/>
+    <eLiterals name="hrs" value="2" literal="hrs"/>
+    <eLiterals name="days" value="3" literal="days"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Outcome">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="capabilityOutcome" eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//AbstractOutcomeItems"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="outcomeValidation" upperBound="-1"
+        eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//CheckParameterCondition"
+        containment="true"/>
+  </eClassifiers>
+</ecore:EPackage>

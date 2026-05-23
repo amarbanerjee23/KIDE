@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="mncModel" nsURI="http://mncModel/4.0" nsPrefix="mncModel">
+  <eClassifiers xsi:type="ecore:EClass" name="AbstractOutcomeItems"/>
+  <eClassifiers xsi:type="ecore:EClass" name="System"/>
+  <eClassifiers xsi:type="ecore:EClass" name="BehaviorBlock">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="validationRules" upperBound="-1"
+        eType="#//Validation" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="action" eType="#//Action"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="AbstractInterfaceItems">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parameters" upperBound="-1"
+        eType="ecore:EClass ../../com.dml/model/DML.ecore#//Parameter" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Model">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="systems" upperBound="-1"
+        eType="#//System" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="importSection" upperBound="-1"
+        eType="#//Import" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Import">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="importedNamespace" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="InterfaceDescription" eSuperTypes="#//System">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="ipaddress" eType="#//Address"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="port" eType="#//Port" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataPoints" upperBound="-1"
+        eType="#//DataPoint" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="alarms" upperBound="-1"
+        eType="#//Alarm" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="commands" upperBound="-1"
+        eType="#//Command" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="events" upperBound="-1"
+        eType="#//Event" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="responses" upperBound="-1"
+        eType="#//Response" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="operatingStatesUtility"
+        eType="#//utility/OperatingStateUtility" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subscribedItems" eType="#//SubscribableItemList"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="uses" upperBound="-1" eType="#//InterfaceDescription"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Port">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="value" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Address">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="ipaddress" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Command" eSuperTypes="#//AbstractInterfaceItems">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="asynch" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="OperatingState">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parameters" upperBound="-1"
+        eType="ecore:EClass ../../com.dml/model/DML.ecore#//Parameter" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Response" eSuperTypes="#//AbstractInterfaceItems #//AbstractOutcomeItems"/>
+  <eClassifiers xsi:type="ecore:EClass" name="Event" eSuperTypes="#//AbstractInterfaceItems #//AbstractOutcomeItems">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="publish" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Alarm" eSuperTypes="#//AbstractInterfaceItems #//AbstractOutcomeItems">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="level" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="publish" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DataPoint" eSuperTypes="#//AbstractInterfaceItems #//AbstractOutcomeItems">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" eType="ecore:EEnum ../../com.dml/model/DML.ecore#//PrimitiveValueType"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="value" eType="ecore:EClass ../../com.dml/model/DML.ecore#//PrimitiveValue"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="publish" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="SubscribableItemList">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subscribedEvents" upperBound="-1"
+        eType="#//Event"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subscribedAlarms" upperBound="-1"
+        eType="#//Alarm"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="subscribedDataPoints" upperBound="-1"
+        eType="#//DataPoint"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ControlNode" eSuperTypes="#//System">
+    <eAnnotations source="http://www.eclipse.org/emf/2002/GenModel">
+      <details key="documentation" value="Control Node"/>
+    </eAnnotations>
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="interfaceDescription" eType="#//InterfaceDescription"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="childNodes" upperBound="-1"
+        eType="#//ControlNode" resolveProxies="false" eOpposite="#//ControlNode/parentNode"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parentNode" eType="#//ControlNode"
+        eOpposite="#//ControlNode/childNodes"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="commandResponseBlocks"
+        upperBound="-1" eType="#//CommandResponseBlock" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="eventBlocks" upperBound="-1"
+        eType="#//EventBlock" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="alarmBlocks" upperBound="-1"
+        eType="#//AlarmBlock" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataPointBlocks" upperBound="-1"
+        eType="#//DataPointBlock" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CommandResponseBlock" eSuperTypes="#//BehaviorBlock">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="command" eType="#//Command"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="responseBlock" upperBound="-1"
+        eType="#//ResponseBlock" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ResponseBlock" eSuperTypes="#//BehaviorBlock">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="response" eType="#//Response"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="responseAggregationRules"
+        upperBound="-1" eType="#//ResponseAggregationRule" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ResponseAggregationRule">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="inputResponses" upperBound="-1"
+        eType="#//Response"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parameterTranslations"
+        upperBound="-1" eType="#//ParameterTranslation" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ParameterTranslation">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="inputParameters" upperBound="-1"
+        eType="ecore:EClass ../../com.dml/model/DML.ecore#//Parameter"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="transformationFunction"
+        eType="ecore:EClass ../../com.operation/model/operations.ecore#//Operation"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="translatedParameters" eType="ecore:EClass ../../com.dml/model/DML.ecore#//Parameter"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="EventBlock" eSuperTypes="#//BehaviorBlock">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="event" eType="#//Event"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="AlarmBlock" eSuperTypes="#//BehaviorBlock">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="alarm" eType="#//Alarm"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DataPointBlock" eSuperTypes="#//BehaviorBlock">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataPoint" upperBound="-1"
+        eType="#//DataPoint"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CheckParameterCondition">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parameter" upperBound="-1"
+        eType="ecore:EClass ../../com.dml/model/DML.ecore#//Parameter"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="checkValues" upperBound="-1"
+        eType="ecore:EClass ../../com.dml/model/DML.ecore#//PrimitiveValue" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="checkMaxValue" eType="ecore:EClass ../../com.dml/model/DML.ecore#//PrimitiveValue"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="checkMinValue" eType="ecore:EClass ../../com.dml/model/DML.ecore#//PrimitiveValue"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="operations" upperBound="-1"
+        eType="ecore:EClass ../../com.operation/model/operations.ecore#//Operation"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Transition">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="currentState" upperBound="-1"
+        eType="#//OperatingState"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="nextState" lowerBound="1"
+        eType="#//OperatingState"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="entryAction" eType="#//Action"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="exitAction" eType="#//Action"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Action">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="fireCommand" upperBound="-1"
+        eType="#//ActionCommand" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="publishEvent" upperBound="-1"
+        eType="#//ActionEvent" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="raiseAlarm" upperBound="-1"
+        eType="#//ActionAlarm" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="triggerDataPoint" upperBound="-1"
+        eType="#//ActionDataPoint" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="executeOperation" upperBound="-1"
+        eType="#//ActionOperation" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="transitionStates" upperBound="-1"
+        eType="#//Transition" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ActionItem">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="actionParemeter" eType="#//ActionParemeter"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ActionParemeter">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parameterMappings" upperBound="-1"
+        eType="#//ParameterTranslation" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parameterValues" upperBound="-1"
+        eType="ecore:EClass ../../com.dml/model/DML.ecore#//PrimitiveValue" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ActionCommand" eSuperTypes="#//ActionItem">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="command" eType="#//Command"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="responseHandling" upperBound="-1"
+        eType="#//ResponseBlock" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ActionEvent" eSuperTypes="#//ActionItem">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="event" eType="#//Event"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ActionAlarm" eSuperTypes="#//ActionItem">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="alarm" eType="#//Alarm"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ActionDataPoint" eSuperTypes="#//ActionItem">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataPoint" eType="#//DataPoint"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ActionOperation" eSuperTypes="#//ActionItem">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="operation" eType="ecore:EClass ../../com.operation/model/operations.ecore#//Operation"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="Validation">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="onSuccessAction" eType="#//Action"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="onFailedAction" eType="#//Action"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="parametersValidationRules"
+        upperBound="-1" eType="#//CheckParameterCondition" containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="DataValue"/>
+  <eSubpackages name="utility" nsURI="http://mncModel/utility/2.0" nsPrefix="MncUtility">
+    <eClassifiers xsi:type="ecore:EClass" name="OperatingStateUtility">
+      <eStructuralFeatures xsi:type="ecore:EReference" name="operatingStates" upperBound="-1"
+          eType="#//OperatingState" containment="true"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="startState" upperBound="-1"
+          eType="#//OperatingState"/>
+      <eStructuralFeatures xsi:type="ecore:EReference" name="endState" upperBound="-1"
+          eType="#//OperatingState"/>
+    </eClassifiers>
+  </eSubpackages>
+</ecore:EPackage>

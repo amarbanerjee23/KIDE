@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+
+<!--
+-->
+
+<plugin>
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+      <!-- @generated DML -->
+      <package
+            uri="http://dataModelPackage/1.0"
+            class="dataModelPackage.DataModelPackage"
+            genModel="model/DML.genmodel"/>
+   </extension>
+
+</plugin>

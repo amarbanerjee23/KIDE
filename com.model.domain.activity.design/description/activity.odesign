@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<description:Group xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:description="http://www.eclipse.org/sirius/description/1.1.0" xmlns:description_1="http://www.eclipse.org/sirius/diagram/description/1.1.0" xmlns:style="http://www.eclipse.org/sirius/diagram/description/style/1.1.0" xmlns:tool="http://www.eclipse.org/sirius/diagram/description/tool/1.1.0" xmlns:tool_1="http://www.eclipse.org/sirius/description/tool/1.1.0" name="activityDiagramFlows" version="12.0.0.2017041100">
+  <ownedViewpoints name="ActivityFlowDiagrams" modelFileExtension="activity">
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="ActivityDescriptionDiagram" titleExpression="service:getActivityTitle()" domainClass="activityDiagramModel.Activity" preconditionExpression="service:singleActivityRepresentationCheckForActivity()" enablePopupBars="true">
+      <layout xsi:type="description_1:CompositeLayout" padding="10"/>
+      <defaultLayer name="ActivityLayer">
+        <nodeMappings name="Operation" semanticCandidatesExpression="service:self.getOperationForAnActivity()" domainClass="mncModel.Operation">
+          <style xsi:type="style:BundledImageDescription" labelExpression="service:getNameSignatureForOperation()" sizeComputationExpression="aql:self.name.size() + self.script.size() + 1" labelPosition="node" resizeKind="NSEW">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='yellow']"/>
+          </style>
+        </nodeMappings>
+        <nodeMappings name="Child Activty Node" semanticCandidatesExpression="feature:childActivityDiagram" domainClass="activityDiagramModel.ActivityDiagram">
+          <style xsi:type="style:WorkspaceImageDescription" borderSizeComputationExpression="3" showIcon="false" sizeComputationExpression="-1" labelPosition="node" resizeKind="NSEW" workspacePath="/com.model.domain.activity.design/icons/sub-process.png">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+          </style>
+        </nodeMappings>
+        <edgeMappings name="outputEdge" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" sourceMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='ActivityDescription']" targetMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='OutputParameters']" targetFinderExpression="aql:self.outputParameters">
+          <style targetArrow="InputFillClosedArrow" sizeComputationExpression="2">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='gray']"/>
+            <centerLabelStyleDescription labelExpression="Input">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="inputEdge" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" sourceMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='ActivityDescription']" targetMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='InputParameters']" targetFinderExpression="aql:self.inputParameters">
+          <style sourceArrow="InputFillClosedArrow" targetArrow="NoDecoration" sizeComputationExpression="2">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='gray']"/>
+            <centerLabelStyleDescription labelExpression="Input">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="capabilityResourceEdge" synchronizationLock="true" sourceMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='ActivityDescription']/@subContainerMappings[name='Capability']" targetMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='Interface']/@subContainerMappings[name='Commands']/@subContainerMappings[name='CommandCapability']" targetFinderExpression="aql:self">
+          <style sourceArrow="InputArrow" sizeComputationExpression="2" routingStyle="manhattan" centeredSourceMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='ActivityDescription']/@subContainerMappings[name='Capability']" centeredTargetMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='Interface']/@subContainerMappings[name='Commands']/@subContainerMappings[name='CommandCapability']">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='gray']"/>
+            <centerLabelStyleDescription labelExpression="Resource Capability Mapping">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="operationResourceEdge" synchronizationLock="true" sourceMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='ActivityDescription']/@subContainerMappings[name='Operation']" targetMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@nodeMappings[name='Operation']" targetFinderExpression="aql:self">
+          <style sizeComputationExpression="2">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='gray']"/>
+            <centerLabelStyleDescription>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="childActivityDiagramResourceEdge" synchronizationLock="true" sourceMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='ActivityDescription']/@subContainerMappings[name='ChildActivityDiagram']" targetMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@nodeMappings[name='Child%20Activty%20Node']" targetFinderExpression="aql:self">
+          <style sizeComputationExpression="2">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='gray']"/>
+            <centerLabelStyleDescription>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <containerMappings name="Model" semanticCandidatesExpression="service: getTheCapabilityResourceModel()" synchronizationLock="true" domainClass="mncModel.Model" childrenPresentation="VerticalStack">
+          <subContainerMappings name="Interface" semanticCandidatesExpression="aql:self.systems->first()" synchronizationLock="true" domainClass="mncModel.InterfaceDescription" childrenPresentation="VerticalStack">
+            <subContainerMappings name="Commands" semanticCandidatesExpression="aql:self.commands" domainClass="utility.CommandUtility" childrenPresentation="VerticalStack">
+              <subContainerMappings name="CommandCapability" semanticCandidatesExpression="aql:self.commands" doubleClickDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ModelCommandDoubleClick']" domainClass="mncModel.Command" childrenPresentation="VerticalStack">
+                <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="service:getCapabilityNameSignature()" widthComputationExpression="aql:self.name.size()">
+                  <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                  <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                  <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+                  <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+                </style>
+              </subContainerMappings>
+              <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="Operations">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_red']"/>
+                <labelBorderStyle href="environment:/viewpoint#//@labelBorderStyles/@labelBorderStyleDescriptions.1"/>
+              </style>
+            </subContainerMappings>
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="Interface">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <containerMappings name="InputParameters" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" semanticCandidatesExpression="aql:self.inputParameters" doubleClickDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='InputOutputDoubleClick']" synchronizationLock="true" domainClass="dataModelPackage.DataModel">
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='orange']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_red']"/>
+          </style>
+        </containerMappings>
+        <containerMappings name="ActivityDescription" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" semanticCandidatesExpression="var:self" doubleClickDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ActivityDoubleClick']" synchronizationLock="true" domainClass="activityDiagramModel.Activity" childrenPresentation="VerticalStack">
+          <subContainerMappings name="ChildActivityDiagram" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" semanticCandidatesExpression="feature:childActivityDiagram" doubleClickDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ActivityChildActivityDiagram']" domainClass="activityDiagramModel.ActivityDiagram">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='blue']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_blue']"/>
+            </style>
+          </subContainerMappings>
+          <subContainerMappings name="Capability" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" semanticCandidatesExpression="aql:self.requireCapability" doubleClickDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='CapabilityDoubleClick']" synchronizationLock="true" domainClass="mncModel.Command">
+            <borderedNodeMappings name=" Capability Input Parameter" semanticCandidatesExpression="feature:parameters" synchronizationLock="true" domainClass="dataModelPackage.Parameter">
+              <style xsi:type="style:SquareDescription" showIcon="false" tooltipExpression="feature:name" sizeComputationExpression="" labelPosition="node" resizeKind="NSEW">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <forbiddenSides>WEST</forbiddenSides>
+                <forbiddenSides>SOUTH</forbiddenSides>
+                <forbiddenSides>EAST</forbiddenSides>
+                <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              </style>
+            </borderedNodeMappings>
+            <borderedNodeMappings name="Capability Output Parameters" semanticCandidatesExpression="service:getOutputParametersForACapability()" domainClass="dataModelPackage.Parameter">
+              <style xsi:type="style:SquareDescription" tooltipExpression="feature:name" labelPosition="node" resizeKind="NSEW">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <forbiddenSides>WEST</forbiddenSides>
+                <forbiddenSides>EAST</forbiddenSides>
+                <forbiddenSides>NORTH</forbiddenSides>
+                <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+              </style>
+            </borderedNodeMappings>
+            <style xsi:type="style:ShapeContainerStyleDescription" borderSizeComputationExpression="1" iconPath="/com.model.domain.activity.design/icons/resource.png">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelFormat>italic</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
+            </style>
+          </subContainerMappings>
+          <subContainerMappings name="Operation" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" semanticCandidatesExpression="aql:self.requiresOperation" doubleClickDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='Operation%20Inside%20Activity']" domainClass="mncModel.Operation">
+            <borderedNodeMappings name="Operation Input Parameter" semanticCandidatesExpression="feature:inputParameters" domainClass="dataModelPackage.Parameter">
+              <style xsi:type="style:SquareDescription" showIcon="false" labelPosition="node" resizeKind="NSEW" width="10">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <forbiddenSides>WEST</forbiddenSides>
+                <forbiddenSides>SOUTH</forbiddenSides>
+                <forbiddenSides>EAST</forbiddenSides>
+                <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              </style>
+            </borderedNodeMappings>
+            <borderedNodeMappings name="Operation Output Parameters" semanticCandidatesExpression="feature:outputParameters" domainClass="dataModelPackage.Parameter">
+              <style xsi:type="style:SquareDescription" labelPosition="node" resizeKind="NSEW">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <forbiddenSides>WEST</forbiddenSides>
+                <forbiddenSides>EAST</forbiddenSides>
+                <forbiddenSides>NORTH</forbiddenSides>
+                <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+              </style>
+            </borderedNodeMappings>
+            <style xsi:type="style:ShapeContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.name + ' : ' + self.script" iconPath="/com.model.domain.activity.design/icons/script.png">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" tooltipExpression="aql:self.name">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <containerMappings name="OutputParameters" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" semanticCandidatesExpression="aql:self.outputParameters" doubleClickDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='InputOutputDoubleClick']" synchronizationLock="true" domainClass="dataModelPackage.DataModel">
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="ActivityDescriptionSection">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="ActivityChildActivityDiagram" elementsToSelect="var:self" mappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='ActivityDescription']/@subContainerMappings[name='ChildActivityDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openChildActivityDiagramForAnActivity()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="ActivityDoubleClick" elementsToSelect="var:self" mappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='ActivityDescription']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="InputOutputDoubleClick" elementsToSelect="var:self" mappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='InputParameters'] //@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='OutputParameters']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="CapabilityDoubleClick" elementsToSelect="var:self" mappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='ActivityDescription']/@subContainerMappings[name='Capability']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="ModelCommandDoubleClick" elementsToSelect="var:self" mappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='Interface']/@subContainerMappings[name='Commands']/@subContainerMappings[name='CommandCapability']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="Operation Inside Activity" mappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDescriptionDiagram']/@defaultLayer/@containerMappings[name='ActivityDescription']/@subContainerMappings[name='Operation']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="ActivityDiagram" titleExpression="service:getActivityDiagramTitle()" initialisation="true" domainClass="activityDiagramModel.ActivityDiagram" preconditionExpression="service:singleActivityRepresentationCheckForActivityDiagram()" enablePopupBars="true">
+      <layout xsi:type="description_1:CompositeLayout" padding="10"/>
+      <defaultLayer name="ActivityDiagramLayer">
+        <nodeMappings name="StartPoint" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" semanticCandidatesExpression="service:getStartPointForActivityDiagram()" synchronizationLock="true" domainClass="activityDiagramModel.Activity">
+          <style xsi:type="style:EllipseNodeDescription" showIcon="false" labelExpression="START" tooltipExpression="START" labelPosition="node" resizeKind="NSEW" horizontalDiameterComputationExpression="7" verticalDiameterComputationExpression="7">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          </style>
+        </nodeMappings>
+        <nodeMappings name="EndPoint" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" labelDirectEdit="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EditFinalOutcomes']" semanticCandidatesExpression="service:getEndPointForOutcomes()" doubleClickDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ElementsDoubleClick']" domainClass="activityDiagramModel.Outcome">
+          <style xsi:type="style:DotDescription" borderSizeComputationExpression="10" showIcon="false" tooltipExpression="feature:name" sizeComputationExpression="aql:self.name.size()" labelPosition="node" resizeKind="NSEW" strokeSizeComputationExpression="aql:self.name.size()">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+          </style>
+        </nodeMappings>
+        <nodeMappings name="ConditionNode" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" labelDirectEdit="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EditConditionOutcome']" semanticCandidatesExpression="service: getAllTheConditionalActivities()" doubleClickDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ElementsDoubleClick']" domainClass="activityDiagramModel.ConditionalActivity">
+          <style xsi:type="style:LozengeNodeDescription" showIcon="false" labelExpression="aql:self.outcome.name" tooltipExpression="aql:self.outcome.name" sizeComputationExpression="" labelPosition="node" resizeKind="NSEW" widthComputationExpression="aql:self.outcome.name.size()" heightComputationExpression="5">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+          </style>
+        </nodeMappings>
+        <edgeMappings name="startEdge" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" synchronizationLock="true" sourceMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='StartPoint']" targetMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@containerMappings[name='Activity']" targetFinderExpression="service:getStartActivity()">
+          <style targetArrow="InputFillClosedArrow" sizeComputationExpression="2" routingStyle="manhattan" endsCentering="Both" centeredSourceMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='StartPoint']" centeredTargetMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@containerMappings[name='Activity']">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='gray']"/>
+            <centerLabelStyleDescription showIcon="false">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="endEdge" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" synchronizationLock="true" sourceMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='ConditionNode']" targetMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='EndPoint']" targetFinderExpression="service:getFinalOutcomes()" reconnections="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ReconnectBetweenConditionsAndFinalOutcomes']">
+          <style targetArrow="InputFillClosedArrow" sizeComputationExpression="2" routingStyle="manhattan" endsCentering="Both" centeredSourceMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='ConditionNode']" centeredTargetMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='EndPoint']">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_red']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="Yes">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="nextActivity" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" sourceMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='ConditionNode']" targetMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@containerMappings[name='Activity']" targetFinderExpression="service:getNextActivityForAnActivityCondition()" reconnections="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ReconnectBetweenConditionsAndActivities']">
+          <style sizeComputationExpression="2" routingStyle="manhattan" endsCentering="Both" centeredSourceMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='ConditionNode']" centeredTargetMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@containerMappings[name='Activity']">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_green']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression=" Yes">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="activityConditionEdge" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" sourceMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@containerMappings[name='Activity']" targetMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='ConditionNode']" targetFinderExpression="aql:self.conditionalActivity->first()">
+          <style sizeComputationExpression="2" routingStyle="manhattan" endsCentering="Both" centeredSourceMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@containerMappings[name='Activity']" centeredTargetMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='ConditionNode']">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='gray']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="Outcome">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="conditionEdge" sourceMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='ConditionNode']" targetMapping="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='ConditionNode']" targetFinderExpression="service:getNextConditionForACondition()" reconnections="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ReconnectBetweenConditionsAndFinalOutcomes']">
+          <style sizeComputationExpression="2" routingStyle="manhattan" endsCentering="Both" centeredSourceMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='ConditionNode']" centeredTargetMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='ConditionNode']">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='gray']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="No">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <containerMappings name="Activity" deletionDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DeleteElement']" labelDirectEdit="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EditActivityName']" semanticCandidatesExpression="aql:self.activities" doubleClickDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ElementsDoubleClick']" synchronizationLock="true" domainClass="activityDiagramModel.Activity" childrenPresentation="VerticalStack">
+          <subContainerMappings name="Child Activity Diagram Container" semanticCandidatesExpression="feature:childActivityDiagram" doubleClickDescription="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='Child%20Activity%20Diagram']" domainClass="activityDiagramModel.ActivityDiagram">
+            <style xsi:type="style:WorkspaceImageDescription" borderSizeComputationExpression="3" borderLineStyle="dash_dot" showIcon="false" tooltipExpression="feature:name" roundedCorner="true" workspacePath="/com.model.domain.activity.design/icons/child-activity-diagram.png">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='orange']"/>
+              <labelFormat>bold</labelFormat>
+              <labelFormat>underline</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="ActivityDiagramSection">
+          <ownedTools xsi:type="tool:ReconnectEdgeDescription" name="ReconnectBetweenConditionsAndActivities" reconnectionKind="RECONNECT_BOTH">
+            <source name="source"/>
+            <target name="target"/>
+            <sourceView name="sourceView"/>
+            <targetView name="targetView"/>
+            <element name="element"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:Unset" featureName="onTrueNextActivity" elementExpression="var:preTarget">
+                <subModelOperations xsi:type="tool_1:SetValue" featureName="onTrueNextActivity" valueExpression="var:target"/>
+              </firstModelOperations>
+            </initialOperation>
+            <edgeView name="edgeView"/>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ReconnectEdgeDescription" name="ReconnectBetweenConditionsAndFinalOutcomes" reconnectionKind="RECONNECT_BOTH">
+            <source name="source"/>
+            <target name="target"/>
+            <sourceView name="sourceView"/>
+            <targetView name="targetView"/>
+            <element name="element"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:Unset" featureName="onTrueFinalOutCome" elementExpression="var:preTarget">
+                <subModelOperations xsi:type="tool_1:SetValue" featureName="onTrueFinalOutCome" valueExpression="var:target"/>
+              </firstModelOperations>
+            </initialOperation>
+            <edgeView name="edgeView"/>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DeleteElementDescription" name="DeleteElement">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <containerView name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:RemoveElement"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DirectEditLabel" name="EditActivityName" forceRefresh="true">
+            <mask mask="{0}"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="var:0"/>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DirectEditLabel" name="EditConditionOutcome">
+            <mask mask="{0}"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="feature:outcome">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="feature:name">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="var:0"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DirectEditLabel" name="EditFinalOutcomes">
+            <mask mask="{0}"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="var:0"/>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="Create Activity" containerMappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@containerMappings[name='Activity']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:CreateInstance" typeName="activityDiagramModel.Activity" referenceName="activities">
+                <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="aql:'Activity '+self.siblings()->size()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="ElementsDoubleClick" elementsToSelect="var:self" mappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@containerMappings[name='Activity'] //@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='ConditionNode'] //@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@nodeMappings[name='EndPoint']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="Child Activity Diagram" mappings="//@ownedViewpoints[name='ActivityFlowDiagrams']/@ownedRepresentations[name='ActivityDiagram']/@defaultLayer/@containerMappings[name='Activity']/@subContainerMappings[name='Child%20Activity%20Diagram%20Container']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openChildActivityDiagramForAnActivity()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedJavaExtensions qualifiedClassName="com.model.domain.activity.design.services.ActivityDiagramServices"/>
+    <ownedJavaExtensions qualifiedClassName="com.model.domain.activity.design.services.ActivityServices"/>
+  </ownedViewpoints>
+</description:Group>

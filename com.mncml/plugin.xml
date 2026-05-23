@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+
+<!--
+-->
+
+<plugin>
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+      <!-- @generated mnc -->
+      <package
+            uri="http://mncModel/4.0"
+            class="mncModel.MncModelPackage"
+            genModel="model/mnc.genmodel"/>
+   </extension>
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+      <!-- @generated mnc -->
+      <package
+            uri="http://mncModel/utility/2.0"
+            class="mncModel.utility.UtilityPackage"
+            genModel="model/mnc.genmodel"/>
+   </extension>
+
+</plugin>

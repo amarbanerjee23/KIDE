@@ -1,0 +1,3 @@
+eclipse.preferences.version=1
+gmf_dashboard/domainGenerationModel=platform\:/resource/com.mncml.dsl.graphical/model/mnc.genmodel
+gmf_dashboard/domainModel=platform\:/resource/com.mncml/model/mnc.ecore

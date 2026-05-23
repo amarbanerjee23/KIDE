@@ -1,0 +1,25 @@
+module GenerateAllEditors
+
+import org.eclipse.emf.mwe2.runtime.workflow.Workflow
+
+Workflow {
+component = @com.dml.dsl.GenerateDml{
+	rootPath = ".."
+}
+component = @com.operation.dsl.GenerateOperation{
+	rootPath = ".."
+}
+//component = @com.context.dsl.GenerateContext{
+//	rootPath = ".."
+//}
+component = @com.mncml.dsl.GenerateMnc{
+	rootPath = ".."
+}
+component = @com.capability.GenerateCapability{
+	rootPath = ".."
+}
+component = @com.smr.activity.GenerateActivityDsl{
+	rootPath = ".."
+}
+}
+

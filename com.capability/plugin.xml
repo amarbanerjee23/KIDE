@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.0"?>
+
+<!--
+-->
+
+<plugin>
+
+   <extension point="org.eclipse.emf.ecore.generated_package">
+      <!-- @generated capability -->
+      <package
+            uri="http://CapabilityDescription/1.0"
+            class="CapabilityDescription.CapabilityDescriptionPackage"
+            genModel="model/capability.genmodel"/>
+   </extension>
+
+</plugin>

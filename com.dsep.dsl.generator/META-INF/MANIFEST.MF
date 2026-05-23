@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Generator
+Bundle-SymbolicName: com.dsep.dsl.generator
+Bundle-Version: 1.0.0.qualifier
+Require-Bundle: org.eclipse.emf.mwe2.runtime;bundle-version="2.10.0",
+ com.capability.dsl;bundle-version="1.0.0",
+ com.dml.dsl;bundle-version="1.0.0",
+ com.mncml.dsl;bundle-version="1.0.0",
+ com.operation.dsl;bundle-version="1.0.0",
+ com.smr.activity.dsl;bundle-version="1.0.0",
+ org.eclipse.emf.mwe2.launch;bundle-version="2.9.1"

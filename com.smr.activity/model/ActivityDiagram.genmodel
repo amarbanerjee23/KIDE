@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<genmodel:GenModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    xmlns:genmodel="http://www.eclipse.org/emf/2002/GenModel" modelDirectory="/com.smr.activity/src" modelPluginID="com.smr.activity"
+    modelName="ActivityDiagram" rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container"
+    importerID="org.eclipse.emf.importer.ecore" complianceLevel="8.0" copyrightFields="false"
+    usedGenPackages="../../com.capability/model/capability.genmodel#//CapabilityDescription ../../com.dml/model/DML.genmodel#//dataModelPackage ../../com.mncml/model/mnc.genmodel#//mncModel ../../com.operation/model/operations.genmodel#//operationsDescription"
+    operationReflection="true" importOrganizing="true">
+  <foreignModel>Activity.ecore</foreignModel>
+  <genPackages prefix="ActivityDiagramModel" disposableProviderFactory="true" ecorePackage="Activity.ecore#/">
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="Activity.ecore#//UnitTime">
+      <genEnumLiterals ecoreEnumLiteral="Activity.ecore#//UnitTime/secs"/>
+      <genEnumLiterals ecoreEnumLiteral="Activity.ecore#//UnitTime/mins"/>
+      <genEnumLiterals ecoreEnumLiteral="Activity.ecore#//UnitTime/hrs"/>
+      <genEnumLiterals ecoreEnumLiteral="Activity.ecore#//UnitTime/days"/>
+    </genEnums>
+    <genClasses ecoreClass="Activity.ecore#//ActivityDiagram">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Activity.ecore#//ActivityDiagram/name"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Activity.ecore#//ActivityDiagram/activities"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Activity.ecore#//ActivityDiagram/dataObjects"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Activity.ecore#//ActivityDiagram/results"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//ActivityDiagram/contextDataModel"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Activity.ecore#//ActivityDiagram/physicalContext"/>
+    </genClasses>
+    <genClasses ecoreClass="Activity.ecore#//Activity">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Activity.ecore#//Activity/name"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//Activity/bindCapability"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Activity.ecore#//Activity/description"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Activity.ecore#//Activity/conditionalActivity"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//Activity/useControlCapabilities"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//Activity/requiresOperation"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//Activity/childActivityDiagram"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//Activity/inputParameters"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//Activity/interruptedBy"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//Activity/interrupts"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Activity.ecore#//Activity/time"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Activity.ecore#//Activity/unit"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Activity.ecore#//Activity/nextActivity"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Activity.ecore#//Activity/nextActivityDiagram"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Activity.ecore#//Activity/requiredCapability"/>
+    </genClasses>
+    <genClasses ecoreClass="Activity.ecore#//ConditionalActivity">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//ConditionalActivity/onTrueNextActivity"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//ConditionalActivity/onFalseNextActivity"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//ConditionalActivity/onTrueFinalResult"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//ConditionalActivity/onFalseFinalResult"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EReference Activity.ecore#//ConditionalActivity/outcome"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Activity.ecore#//ConditionalActivity/bOp"/>
+    </genClasses>
+    <genClasses ecoreClass="Activity.ecore#//Outcome">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Activity.ecore#//Outcome/name"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference Activity.ecore#//Outcome/capabilityOutcome"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Activity.ecore#//Outcome/outcomeValidation"/>
+    </genClasses>
+  </genPackages>
+</genmodel:GenModel>

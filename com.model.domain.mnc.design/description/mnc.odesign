@@ -1,0 +1,1488 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<description:Group xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:description="http://www.eclipse.org/sirius/description/1.1.0" xmlns:description_1="http://www.eclipse.org/sirius/diagram/description/1.1.0" xmlns:style="http://www.eclipse.org/sirius/diagram/description/style/1.1.0" xmlns:tool="http://www.eclipse.org/sirius/diagram/description/tool/1.1.0" xmlns:tool_1="http://www.eclipse.org/sirius/description/tool/1.1.0" name="mnc" version="10.1.3.201511131800">
+  <ownedViewpoints name="StateDiagram" modelFileExtension="mncspec">
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="State Diagram" titleExpression="service:getStateDiagramTitle()" domainClass="mncModel.Model" preconditionExpression="service:singleStateRepresentationCheck()" enablePopupBars="true">
+      <defaultLayer name="Default">
+        <nodeMappings name="StartingPoint" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" domainClass="utility.StateUtility">
+          <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="StartingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          </style>
+        </nodeMappings>
+        <nodeMappings name="EndingPoint" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" domainClass="utility.StateUtility">
+          <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="EndingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          </style>
+        </nodeMappings>
+        <edgeMappings name="StateTransition" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@containerMappings[name='OperatingState']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@containerMappings[name='OperatingState']" targetFinderExpression="feature:nextState" sourceFinderExpression="feature:currentState" domainClass="mncModel.Transition" useDomainElement="true" reconnections="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='TransitionReconnect']">
+          <style targetArrow="InputFillClosedArrow" sizeComputationExpression="2">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="aql:self.eContainer().eContainer().command.name">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="startingedge" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@nodeMappings[name='StartingPoint']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@containerMappings[name='OperatingState']" targetFinderExpression="feature:startState">
+          <style>
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_green']"/>
+            <centerLabelStyleDescription showIcon="false">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="Endingedge" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@nodeMappings[name='EndingPoint']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@containerMappings[name='OperatingState']" targetFinderExpression="feature:endState">
+          <style sourceArrow="InputArrow" targetArrow="NoDecoration">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            <centerLabelStyleDescription showIcon="false">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <containerMappings name="OperatingState" labelDirectEdit="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EditStateName']" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='OpeningEmbededEditor']" domainClass="mncModel.OperatingState">
+          <style xsi:type="style:FlatContainerStyleDescription" arcWidth="50" arcHeight="50" borderSizeComputationExpression="3" showIcon="false" tooltipExpression="OperatingState" roundedCorner="true" widthComputationExpression="15" heightComputationExpression="8">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+            <labelBorderStyle href="environment:/viewpoint#//@labelBorderStyles/@labelBorderStyleDescriptions.2"/>
+          </style>
+        </containerMappings>
+        <toolSections name="Component Creation">
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="CreateState" label="Create New State" forceRefresh="true" elementsToSelect="aql:self" containerMappings="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@containerMappings[name='OperatingState']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:getNewOperatingStateContext()">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.OperatingState" referenceName="operatingStates">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="aql:'State'+self.siblings()->size()"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:EdgeCreationDescription" name="TransitionEdge" label="Create new Transition" precondition="aql:mncModel::OperatingState" forceRefresh="true" edgeMappings="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@edgeMappings[name='StateTransition']" connectionStartPrecondition="aql:mncModel::OperatingState">
+            <sourceVariable name="source"/>
+            <targetVariable name="target"/>
+            <sourceViewVariable name="sourceView"/>
+            <targetViewVariable name="targetView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:getNewTransitionContext()">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.Transition" referenceName="transitions">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="currentState" valueExpression="var:source"/>
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="nextState" valueExpression="var:target"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ReconnectEdgeDescription" name="TransitionReconnect">
+            <source name="source"/>
+            <target name="target"/>
+            <sourceView name="sourceView"/>
+            <targetView name="targetView"/>
+            <element name="element"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:SetValue" featureName="nextState" valueExpression="var:target"/>
+              </firstModelOperations>
+            </initialOperation>
+            <edgeView name="edgeView"/>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DirectEditLabel" name="EditStateName">
+            <mask mask="{0}"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="var:0"/>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool_1:PopupMenu" name="MyMenu" precondition="service:getActionDiagramGenerationPrecondition()">
+            <menuItemDescription xsi:type="tool_1:OperationAction" name="ShowActionDiagram" label="Show Action Diagram" precondition="service:getActionDiagramGenerationPrecondition()" elementsToSelect="aql.self">
+              <view name="views"/>
+              <initialOperation>
+                <firstModelOperations xsi:type="tool:Navigation" createIfNotExistent="true" diagramDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']"/>
+              </initialOperation>
+            </menuItemDescription>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="ClickOnOperatingState" mappings="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@edgeMappings[name='StateTransition'] //@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@nodeMappings[name='StartingPoint'] //@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@nodeMappings[name='EndingPoint']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:BehaviorTool" name="NewBehaiour">
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:self"/>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="OpeningEmbededEditor" mappings="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@containerMappings[name='OperatingState']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ExternalJavaActionCall" name="com.model.domain.mnc.design.embedededitor.OpenEmbeddedEditor" action="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='OpenEmbededEditor']">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="[self.eContainer()/]">
+                  <subModelOperations xsi:type="tool:Navigation" createIfNotExistent="true" diagramDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool_1:ExternalJavaAction" name="OpenEmbededEditor" id="com.model.domain.mnc.design.embedededitor.OpenEmbeddedEditor"/>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="ActionDiagramWithStateDiagram" label="Action Diagram" titleExpression="service:getActionTitle()" domainClass="mncModel.Model" preconditionExpression="service:singleActionRepresentationCheck()" enablePopupBars="true">
+      <defaultLayer name="Default">
+        <nodeMappings name="StartingPoint" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
+          <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="StartingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          </style>
+        </nodeMappings>
+        <nodeMappings name="EndingPoint" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
+          <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="EndingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          </style>
+        </nodeMappings>
+        <edgeMappings name="StateTransition" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@containerMappings[name='State']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:nextState" sourceFinderExpression="feature:currentState" domainClass="mncModel.Transition" useDomainElement="true" reconnections="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='TransitionReconnect']">
+          <style targetArrow="InputFillClosedArrow" sizeComputationExpression="2">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="aql:self.eContainer().eContainer().command.name">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="startingedge" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@nodeMappings[name='StartingPoint']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:startState">
+          <style sizeComputationExpression="3">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_green']"/>
+            <centerLabelStyleDescription showIcon="false">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="Endingedge" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@nodeMappings[name='EndingPoint']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:endState">
+          <style sourceArrow="InputArrow" targetArrow="NoDecoration" sizeComputationExpression="3">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            <centerLabelStyleDescription showIcon="false">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <containerMappings name="State" labelDirectEdit="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EditStateName']" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.OperatingState" childrenPresentation="VerticalStack">
+          <subContainerMappings name="EntryAction" semanticCandidatesExpression="service:getEntryActionTransition()" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" domainClass="mncModel.Transition">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getEntryActionName()" tooltipExpression="aql:'Entry Action Of '+ self.eContainer().eContainer().command.name+' Transition of '+self.currentState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+            </style>
+          </subContainerMappings>
+          <subContainerMappings name="ExitAction" semanticCandidatesExpression="service:getExitActionTransition()" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" domainClass="mncModel.Transition">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getExitActionName()" tooltipExpression="aql:'Exit Action due to '+ self.eContainer().eContainer().command.name+' Transition to '+self.nextState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" arcWidth="50" arcHeight="50" borderSizeComputationExpression="3" showIcon="false" labelExpression="aql:'  \n '+self.name+' '" tooltipExpression="OperatingState" roundedCorner="true">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+            <labelBorderStyle href="environment:/viewpoint#//@labelBorderStyles/@labelBorderStyleDescriptions.2"/>
+          </style>
+        </containerMappings>
+        <containerMappings name="DiagramInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.InterfaceDescription" childrenPresentation="VerticalStack">
+          <subContainerMappings name="EntryActionInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:' EntryAction '" widthComputationExpression="5" heightComputationExpression="2">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            </style>
+          </subContainerMappings>
+          <subContainerMappings name="ExitActionInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:'ExitAction '" widthComputationExpression="5" heightComputationExpression="2">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="4" labelSize="10" showIcon="false" labelExpression="aql:'Diagram Information'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelFormat>underline</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+          </style>
+        </containerMappings>
+        <toolSections>
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="CreateState" label="Create New State" forceRefresh="true" elementsToSelect="aql:self" containerMappings="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@containerMappings[name='State']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:getNewOperatingStateContext()">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.OperatingState" referenceName="operatingStates">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="aql:'State'+self.siblings()->size()"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:EdgeCreationDescription" name="TransitionEdge" label="Create new Transition" precondition="aql:mncModel::OperatingState" forceRefresh="true" edgeMappings="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@edgeMappings[name='StateTransition']" connectionStartPrecondition="aql:mncModel::OperatingState">
+            <sourceVariable name="source"/>
+            <targetVariable name="target"/>
+            <sourceViewVariable name="sourceView"/>
+            <targetViewVariable name="targetView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:getNewTransitionContext()">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.Transition" referenceName="transitions">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="currentState" valueExpression="var:source"/>
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="nextState" valueExpression="var:target"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ReconnectEdgeDescription" name="TransitionReconnect">
+            <source name="source"/>
+            <target name="target"/>
+            <sourceView name="sourceView"/>
+            <targetView name="targetView"/>
+            <element name="element"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:SetValue" featureName="nextState" valueExpression="var:target"/>
+              </firstModelOperations>
+            </initialOperation>
+            <edgeView name="edgeView"/>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DirectEditLabel" name="EditStateName">
+            <mask mask="{0}"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="var:0"/>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool_1:PopupMenu" name="MyMenu">
+            <menuItemDescription xsi:type="tool_1:OperationAction" name="ActionMeenu">
+              <view name="views"/>
+              <initialOperation>
+                <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:getNewTransitionContext()">
+                  <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.Transition" referenceName="transitions">
+                    <subModelOperations xsi:type="tool_1:SetValue" featureName="currentState" valueExpression="var:source"/>
+                    <subModelOperations xsi:type="tool_1:SetValue" featureName="nextState" valueExpression="var:target"/>
+                  </subModelOperations>
+                </firstModelOperations>
+              </initialOperation>
+            </menuItemDescription>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="ClickOnOperatingState" mappings="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@edgeMappings[name='StateTransition'] //@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@containerMappings[name='State']/@subContainerMappings[name='EntryAction'] //@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@containerMappings[name='State']/@subContainerMappings[name='ExitAction']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedJavaExtensions qualifiedClassName="com.model.domain.mnc.design.services.StateDiagramServices"/>
+    <ownedJavaExtensions qualifiedClassName="com.model.domain.mnc.design.services.ActionDiagramServices"/>
+  </ownedViewpoints>
+  <ownedViewpoints name="Block" modelFileExtension="mncspec">
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="BlockDiagram" titleExpression="service:getBlockDiagramTitle()" domainClass="mncModel.Model" preconditionExpression="service:singleBlockRepresentationCheck()" enablePopupBars="true">
+      <defaultLayer name="Default">
+        <edgeMappings name="ChildEdge_BlockDiagram" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='ControlNode_BlockDiagram']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='ControlNode_BlockDiagram']" targetFinderExpression="aql:self.childNodes" sourceFinderExpression="aql:self" domainClass="mncModel.ControlNode" useDomainElement="true">
+          <style sizeComputationExpression="2" foldingStyle="TARGET">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_green']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="child">
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_green']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="ParentEdge_BlockDiagram" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='ControlNode_BlockDiagram']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='ControlNode_BlockDiagram']" targetFinderExpression="aql:self.parentNode" sourceFinderExpression="aql:self" domainClass="mncModel.ControlNode" useDomainElement="true">
+          <style sizeComputationExpression="2">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="parent">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="InterfaceDescriptionUsingEdge_BlockDiagram" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='InterfaceDiscription_BlockDiagram']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='InterfaceDiscription_BlockDiagram']" targetFinderExpression="aql:self.uses">
+          <style sourceArrow="OutputFillClosedArrow" targetArrow="InputFillClosedArrow" sizeComputationExpression="2">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_blue']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="USING">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_blue']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <containerMappings name="Model_BlockDiagram" semanticCandidatesExpression="service:getSemanticCandidates()" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='NodeDoubleClick_BlockDiagram']" domainClass="mncModel.Model" childrenPresentation="VerticalStack">
+          <subContainerMappings name="InterfaceDiscription_BlockDiagram" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='NodeDoubleClick_BlockDiagram']" domainClass="mncModel.InterfaceDescription">
+            <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'  '+self.name+'  '" tooltipExpression="Interface Description" heightComputationExpression="5">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+            </style>
+          </subContainerMappings>
+          <subContainerMappings name="ControlNode_BlockDiagram" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='NodeDoubleClick_BlockDiagram']" domainClass="mncModel.ControlNode">
+            <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'  '+self.name+'  '" tooltipExpression="aql:self.name+' ControlNode'" heightComputationExpression="5">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" showIcon="false" labelExpression="aql:'  '+self.name+'  '">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="DoubleClickSection">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="NodeDoubleClick_BlockDiagram" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram'] //@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='InterfaceDiscription_BlockDiagram'] //@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='ControlNode_BlockDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self.target">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self.eContainer()">
+                  <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createInternalBlockDiagram()"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <subSections name="DoubleClickSection">
+            <ownedTools xsi:type="tool:DoubleClickDescription" name="NodeDoubleClick_BlockDiagram" elementsToSelect="aql:self">
+              <element name="element"/>
+              <elementView name="elementView"/>
+              <initialOperation>
+                <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self.target">
+                  <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self.eContainer()">
+                    <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createInternalBlockDiagram()"/>
+                  </subModelOperations>
+                </firstModelOperations>
+              </initialOperation>
+            </ownedTools>
+          </subSections>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="InternalBlockDiagram" titleExpression="service:getTitle()" domainClass="mncModel.Model" preconditionExpression="service:singleRepresentationCheck()" enablePopupBars="true">
+      <defaultLayer name="Default">
+        <edgeMappings name="ChildEdge" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']" targetFinderExpression="aql:self.childNodes" sourceFinderExpression="aql:self" domainClass="mncModel.ControlNode" useDomainElement="true">
+          <style sizeComputationExpression="4" foldingStyle="TARGET">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='blue']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="child">
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='blue']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="ParentEdge" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']" targetFinderExpression="aql:self.parentNode" sourceFinderExpression="aql:self" domainClass="mncModel.ControlNode" useDomainElement="true">
+          <style sizeComputationExpression="2">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="parent">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="InterfaceDescriptionUsingEdge" deletionDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.2/@ownedTools[name='DeleteUsingEdge']" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='InterfaceDiscription']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='InterfaceDiscription']" targetFinderExpression="aql:self.uses" reconnections="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.2/@ownedTools[name='ReconnectUsingInterfaceDescription']">
+          <style sourceArrow="OutputFillClosedArrow" targetArrow="InputFillClosedArrow" sizeComputationExpression="2">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_blue']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="USING">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_blue']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <containerMappings name="Model" semanticCandidatesExpression="aql:self.eAllContents()" domainClass="mncModel.ControlNode" childrenPresentation="HorizontalStack">
+          <subContainerMappings name="InterfaceDiscription" labelDirectEdit="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.4/@ownedTools[name='InterfaceDiscriptionEditLabel']" semanticCandidatesExpression="aql:self.interfaceDescription" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='InterfaceDiscription_DoubleClick']" domainClass="mncModel.InterfaceDescription" childrenPresentation="VerticalStack">
+            <subContainerMappings name="Datapoints" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DataPointNavigation']" synchronizationLock="true" domainClass="utility.DataPointUtility">
+              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Datapoints: '+self.dataPoints->size()" tooltipExpression="Datapoints" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              </style>
+            </subContainerMappings>
+            <subContainerMappings name="Alarms" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='AlarmNavigation']" domainClass="utility.AlarmUtility">
+              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Alarms: '+self.alarms->size()" tooltipExpression="Alarms" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              </style>
+            </subContainerMappings>
+            <subContainerMappings name="Commands" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='CommandNavigaion']" domainClass="utility.CommandUtility">
+              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Commands: '+self.commands->size()" tooltipExpression="Commands" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              </style>
+            </subContainerMappings>
+            <subContainerMappings name="Events" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EventNavigaion']" domainClass="utility.EventUtility">
+              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Events: '+self.events->size()" tooltipExpression="Events" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              </style>
+            </subContainerMappings>
+            <subContainerMappings name="Responses" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ResponseNavigation']" domainClass="utility.ResponseUtility">
+              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Responses: '+self.responses->size()" tooltipExpression="Responses" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              </style>
+            </subContainerMappings>
+            <subContainerMappings name="States" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='Statenavigation']" domainClass="utility.StateUtility">
+              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Operating States: '+self.operatingStates->size()" tooltipExpression="Operating State" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              </style>
+            </subContainerMappings>
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.name" tooltipExpression="Interface Description">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            </style>
+          </subContainerMappings>
+          <subContainerMappings name="ControlNode" labelDirectEdit="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.4/@ownedTools[name='ControlNodeEditLabel']" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ControlNode_DoubleClick']" domainClass="mncModel.ControlNode" childrenPresentation="VerticalStack">
+            <subContainerMappings name="CommandResponseBlocks" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.1/@ownedTools[name='CommandResponseBlocksNavigation']" domainClass="utility.CommandResponseBlockUtility">
+              <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'Command Response blocks: '+self.commandResponseBlocks->size()">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_red']"/>
+              </style>
+            </subContainerMappings>
+            <subContainerMappings name="EventBlocks" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.1/@ownedTools[name='EventBlocksNavigation']" domainClass="utility.EventBlockUtility">
+              <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'Event blocks: '+self.eventBlocks->size()">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_red']"/>
+              </style>
+            </subContainerMappings>
+            <subContainerMappings name="AlarmBlocks" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.1/@ownedTools[name='AlarmBlocksNavigation']" domainClass="utility.AlarmBlockUtility">
+              <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'Alarm blocks: '+self.alarmBlocks->size()">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_red']"/>
+              </style>
+            </subContainerMappings>
+            <subContainerMappings name="DataPointBlocks" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.1/@ownedTools[name='DataPointNavigation']" domainClass="utility.DataPointBlockUtility">
+              <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'DataPoint blocks: '+self.dataPointBlocks->size()">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_red']"/>
+              </style>
+            </subContainerMappings>
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" tooltipExpression="aql:self.name+' ControlNode'">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_red']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" labelExpression="aql:self.eContainer().name">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="InterfaceDescriptionMouseClickSection">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DataPointNavigation" label="DataPointNavigation(Diagram To Diagram)" forceRefresh="true" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='InterfaceDiscription']/@subContainerMappings[name='Datapoints']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createDataPointsDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="AlarmNavigation" label="AlarmNavigation(Diagram To Diagram)" forceRefresh="true" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='InterfaceDiscription']/@subContainerMappings[name='Alarms']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createAlarmDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="CommandNavigaion" label="CommandNavigation(Diagram To Diagram)" forceRefresh="true" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='InterfaceDiscription']/@subContainerMappings[name='Commands']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createCommandDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="EventNavigaion" label="EventNavigation(Diagram To Diagram)" forceRefresh="true" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='InterfaceDiscription']/@subContainerMappings[name='Events']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createEventDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="ResponseNavigation" label="ResponseNavigation(Diagram To Diagram)" forceRefresh="true" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='InterfaceDiscription']/@subContainerMappings[name='Responses']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createResponseDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="Statenavigation" label="StateNavigation(Diagram To Diagram)" forceRefresh="true" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='InterfaceDiscription']/@subContainerMappings[name='States']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createOperatingStateDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="ControlNode_DoubleClick" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="InterfaceDiscription_DoubleClick" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='InterfaceDiscription']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+        <toolSections name="ControlNodeMouseClickSection">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="CommandResponseBlocksNavigation" label="CommandResponseBlocksNavigation(Diagram To Diagram)" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']/@subContainerMappings[name='CommandResponseBlocks']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createCommandResponseBlocksDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="EventBlocksNavigation" label="EventBlocksNavigation(Diagram To Diagram)" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']/@subContainerMappings[name='EventBlocks']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createEventBlocksDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="AlarmBlocksNavigation" label="AlarmBlocksNavigation(Diagram To Diagram)" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']/@subContainerMappings[name='AlarmBlocks']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createAlarmBlocksDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DataPointNavigation" label="DatapointNavigation(Diagram To Diagram)" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']/@subContainerMappings[name='DataPointBlocks']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createDataPointBlocksDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+        <toolSections name="Parent Edge creation Section">
+          <ownedTools xsi:type="tool:EdgeCreationDescription" name="InterfaceDescriptionUsingCreation" forceRefresh="true" edgeMappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@edgeMappings[name='InterfaceDescriptionUsingEdge']">
+            <sourceVariable name="source"/>
+            <targetVariable name="target"/>
+            <sourceViewVariable name="sourceView"/>
+            <targetViewVariable name="targetView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:source">
+                <subModelOperations xsi:type="tool_1:SetValue" featureName="uses" valueExpression="var:target"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ReconnectEdgeDescription" name="ReconnectUsingInterfaceDescription">
+            <source name="source"/>
+            <target name="target"/>
+            <sourceView name="sourceView"/>
+            <targetView name="targetView"/>
+            <element name="element"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:preSource">
+                <subModelOperations xsi:type="tool_1:SetValue" featureName="uses" valueExpression="var:target"/>
+              </firstModelOperations>
+            </initialOperation>
+            <edgeView name="edgeView"/>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DeleteElementDescription" name="DeleteUsingEdge" forceRefresh="true">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <containerView name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:Unset" featureName="uses"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+        <toolSections name="PopupMenu">
+          <ownedTools xsi:type="tool_1:PopupMenu" name="NavigationMenu" label="Navigation Menu">
+            <menuItemDescription xsi:type="tool_1:OperationAction" name="NavigateToCode" label="Navigate To Code">
+              <view name="views"/>
+              <initialOperation>
+                <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                  <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+                </firstModelOperations>
+              </initialOperation>
+            </menuItemDescription>
+            <menuItemDescription xsi:type="tool_1:OperationAction" name="ShowDialog">
+              <view name="views"/>
+              <initialOperation>
+                <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:container">
+                  <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:showDialog()"/>
+                </firstModelOperations>
+              </initialOperation>
+            </menuItemDescription>
+          </ownedTools>
+        </toolSections>
+        <toolSections name="LabelEdit">
+          <ownedTools xsi:type="tool:DirectEditLabel" name="ControlNodeEditLabel">
+            <mask mask="{0}"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="var:0"/>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DirectEditLabel" name="InterfaceDiscriptionEditLabel">
+            <mask mask="{0}"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:self">
+                <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="var:0"/>
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:renameFile1()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+        <toolSections name="DataPointSection">
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="DataPointCreation" containerMappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='DataPointDiagram']/@defaultLayer/@containerMappings[name='DataPointsSubDiagram']/@subContainerMappings[name='DataPoint']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.DataPoint" referenceName="dataPoints">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="aql:'datapoint'+container.eAllContents()->filter(mncModel::DataPoint)->size()"/>
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="type" valueExpression="int"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="DataPointDiagram" domainClass="utility.DataPointUtility">
+      <defaultLayer name="Default">
+        <containerMappings name="DataPointsSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='DataPointDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DataPointBlocksSubDiagram_DoubleClick']" domainClass="utility.DataPointUtility" childrenPresentation="VerticalStack">
+          <subContainerMappings name="DataPoint" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='DataPointDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickDatapoint']" domainClass="mncModel.DataPoint">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' DataPoints'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='yellow']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+          </style>
+        </containerMappings>
+        <toolSections>
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="DataPointCreation" containerMappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='DataPointDiagram']/@defaultLayer/@containerMappings[name='DataPointsSubDiagram']/@subContainerMappings[name='DataPoint']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.DataPoint" referenceName="dataPoints">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="aql:'datapoint'+container.eAllContents()->filter(mncModel::DataPoint)->size()"/>
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="type" valueExpression="int"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DoubleclickDatapoint" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='DataPointDiagram']/@defaultLayer/@containerMappings[name='DataPointsSubDiagram']/@subContainerMappings[name='DataPoint']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DataPointBlocksSubDiagram_DoubleClick" elementsToSelect="aql:self" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='DataPointDiagram']/@defaultLayer/@containerMappings[name='DataPointsSubDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool_1:PopupMenu" name="OpenEmbeddedEditor">
+            <menuItemDescription xsi:type="tool_1:ExternalJavaAction" name="OpenEmbeddedEditor" id="com.model.domain.mnc.design.embedededitor.OpenEmbeddedEditor"/>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="AlarmDiagram" domainClass="utility.AlarmUtility">
+      <defaultLayer name="Default">
+        <containerMappings name="AlarmsSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='AlarmsSubDiagram_DoubleClick']" domainClass="utility.AlarmUtility" childrenPresentation="VerticalStack">
+          <subContainerMappings name="Alarm" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickAlarm']" domainClass="mncModel.Alarm">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Alarms'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="DoubleClickNavigation">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DoubleclickAlarm" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmDiagram']/@defaultLayer/@containerMappings[name='AlarmsSubDiagram']/@subContainerMappings[name='Alarm']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="AlarmsSubDiagram_DoubleClick" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmDiagram']/@defaultLayer/@containerMappings[name='AlarmsSubDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="AlarmCreation" containerMappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmDiagram']/@defaultLayer/@containerMappings[name='AlarmsSubDiagram']/@subContainerMappings[name='Alarm']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.Alarm" referenceName="alarms">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="aql:'alarm'+container.eAllContents()->filter(mncModel::Alarm)->size()"/>
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="type" valueExpression="int"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="CommandDiagram" domainClass="utility.CommandUtility">
+      <defaultLayer name="Default">
+        <containerMappings name="CommandsSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='CommandsSubDiagram_DoubleClick']" domainClass="utility.CommandUtility" childrenPresentation="VerticalStack">
+          <subContainerMappings name="Command" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickCommand']" domainClass="mncModel.Command">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Commands'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="DoubleClickNavigation">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DoubleclickCommand" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandDiagram']/@defaultLayer/@containerMappings[name='CommandsSubDiagram']/@subContainerMappings[name='Command']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="CommandsSubDiagram_DoubleClick" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandDiagram']/@defaultLayer/@containerMappings[name='CommandsSubDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="CommandCreation" containerMappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandDiagram']/@defaultLayer/@containerMappings[name='CommandsSubDiagram']/@subContainerMappings[name='Command']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.Command" referenceName="commands">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="aql:'command'+container.eAllContents()->filter(mncModel::Command)->size()"/>
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="type" valueExpression="int"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="EventDiagram" domainClass="utility.EventUtility">
+      <defaultLayer name="Default">
+        <containerMappings name="EventsSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='EventDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EventsSubDiagram_DoubleClick']" domainClass="utility.EventUtility" childrenPresentation="VerticalStack">
+          <subContainerMappings name="Event" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='EventDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickDatapoint']" domainClass="mncModel.Event">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Events'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="DoubleClickNavigation">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DoubleclickDatapoint" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='EventDiagram']/@defaultLayer/@containerMappings[name='EventsSubDiagram']/@subContainerMappings[name='Event']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="EventsSubDiagram_DoubleClick" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='EventDiagram']/@defaultLayer/@containerMappings[name='EventsSubDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="EventCreation" containerMappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='EventDiagram']/@defaultLayer/@containerMappings[name='EventsSubDiagram']/@subContainerMappings[name='Event']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.Event" referenceName="events">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="aql:'event'+container.eAllContents()->filter(mncModel::Event)->size()"/>
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="type" valueExpression="int"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="ResponseDiagram" domainClass="utility.ResponseUtility">
+      <defaultLayer name="Default">
+        <containerMappings name="ResponsesSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='ResponseDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ResponsesSubDiagram_DoubleClick']" domainClass="utility.ResponseUtility" childrenPresentation="VerticalStack">
+          <subContainerMappings name="response" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='ResponseDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickResponse']" domainClass="mncModel.Response">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Responses'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="DoubleClickNavigation">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DoubleclickResponse" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='ResponseDiagram']/@defaultLayer/@containerMappings[name='ResponsesSubDiagram']/@subContainerMappings[name='response']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="ResponsesSubDiagram_DoubleClick" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='ResponseDiagram']/@defaultLayer/@containerMappings[name='ResponsesSubDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="ResponseCreation" containerMappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='ResponseDiagram']/@defaultLayer/@containerMappings[name='ResponsesSubDiagram']/@subContainerMappings[name='response']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.Response" referenceName="responses">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="aql:'response'+container.eAllContents()->filter(mncModel::Response)->size()"/>
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="type" valueExpression="int"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="OperatingStateDiagram" domainClass="utility.StateUtility">
+      <defaultLayer name="Default">
+        <containerMappings name="StatesSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='OperatingStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='StatesSubDiagram_DoubleClick']" domainClass="utility.StateUtility" childrenPresentation="VerticalStack">
+          <subContainerMappings name="OperatingState" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='OperatingStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickOperatingState']" domainClass="mncModel.OperatingState">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' States'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="DoubleClickNavigation">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DoubleclickOperatingState" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='OperatingStateDiagram']/@defaultLayer/@containerMappings[name='StatesSubDiagram']/@subContainerMappings[name='OperatingState']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="StatesSubDiagram_DoubleClick" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='OperatingStateDiagram']/@defaultLayer/@containerMappings[name='StatesSubDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="OperatingStateCreation" containerMappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='OperatingStateDiagram']/@defaultLayer/@containerMappings[name='StatesSubDiagram']/@subContainerMappings[name='OperatingState']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.OperatingState" referenceName="operatingStates">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="aql:'state'+container.eAllContents()->filter(mncModel::OperatingState)->size()"/>
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="type" valueExpression="int"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="CommandResponseBlocksDiagram" domainClass="utility.CommandResponseBlockUtility" preconditionExpression="aql:self" enablePopupBars="true">
+      <defaultLayer name="Default">
+        <containerMappings name="CommandResponseBlocksSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandResponseBlocksDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='CommandResponseBlocksSubDiagram_DoubleClick']" domainClass="utility.CommandResponseBlockUtility" childrenPresentation="VerticalStack">
+          <subContainerMappings name="CommandResponseBlock" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandResponseBlocksDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickCommandResponseBlock']" domainClass="mncModel.CommandResponseBlock">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.command.name+': Command Response Block'">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  CommandResponseBlocks'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="DoubleClickNavigation">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DoubleclickCommandResponseBlock" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandResponseBlocksDiagram']/@defaultLayer/@containerMappings[name='CommandResponseBlocksSubDiagram']/@subContainerMappings[name='CommandResponseBlock']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="CommandResponseBlocksSubDiagram_DoubleClick" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandResponseBlocksDiagram']/@defaultLayer/@containerMappings[name='CommandResponseBlocksSubDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="CommandResponseBlockCreation" forceRefresh="true" containerMappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandResponseBlocksDiagram']/@defaultLayer/@containerMappings[name='CommandResponseBlocksSubDiagram']/@subContainerMappings[name='CommandResponseBlock']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.CommandResponseBlock" referenceName="commandResponseBlocks">
+                  <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.Command" referenceName="command">
+                    <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="[SELECT_COMMAND]"/>
+                  </subModelOperations>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="EventBlocksDiagram" domainClass="utility.EventBlockUtility" preconditionExpression="aql:self" enablePopupBars="true">
+      <defaultLayer name="Default">
+        <containerMappings name="EventsBlocksSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='EventBlocksDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EventsBlocksSubDiagram_DoubleClick']" domainClass="utility.EventBlockUtility" childrenPresentation="VerticalStack">
+          <subContainerMappings name="EventBlock" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.EventBlock">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.event.name+': Event Block'">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  EventBlocks'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="DoubleClickNavigation">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DoubleclickEventBlock">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="EventsBlocksSubDiagram_DoubleClick" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='EventBlocksDiagram']/@defaultLayer/@containerMappings[name='EventsBlocksSubDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="AlarmBlocksDiagram" domainClass="utility.AlarmBlockUtility" preconditionExpression="aql:self" enablePopupBars="true">
+      <defaultLayer name="Default">
+        <containerMappings name="AlarmBlocksSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmBlocksDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='AlarmBlocksSubDiagram_DoubleClick']" domainClass="utility.AlarmBlockUtility" childrenPresentation="VerticalStack">
+          <subContainerMappings name="AlarmBlock" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmBlocksDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickAlarmBlocks']" domainClass="mncModel.AlarmBlock">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.alarm.name+': Alarm Block'">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  AlarmBlocks'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="DoubleClickNavigation">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DoubleclickAlarmBlocks" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmBlocksDiagram']/@defaultLayer/@containerMappings[name='AlarmBlocksSubDiagram']/@subContainerMappings[name='AlarmBlock']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="AlarmBlocksSubDiagram_DoubleClick" mappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmBlocksDiagram']/@defaultLayer/@containerMappings[name='AlarmBlocksSubDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="AlarmBlockCreation" forceRefresh="true" containerMappings="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmBlocksDiagram']/@defaultLayer/@containerMappings[name='AlarmBlocksSubDiagram']/@subContainerMappings[name='AlarmBlock']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.AlarmBlock" referenceName="alarmBlocks">
+                  <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.Alarm" referenceName="alarm">
+                    <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="[SELECT_ALARM]"/>
+                  </subModelOperations>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="DataPointBlocksDiagram" domainClass="utility.DataPointBlockUtility" preconditionExpression="aql:self" enablePopupBars="true">
+      <defaultLayer name="Default">
+        <containerMappings name="DataPointBlocksSubDiagram" semanticCandidatesExpression="aql:self" domainClass="utility.DataPointBlockUtility" childrenPresentation="VerticalStack">
+          <subContainerMappings name="DataPointBlock" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.DataPointBlock">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.dataPoint.name+': DataPoint Block'">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  DataPointBlocks'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="DoubleClickNavigation">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DoubleclickDataPointBlocks">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="DataPointBlocksSubDiagram_DoubleClick">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedJavaExtensions qualifiedClassName="com.model.domain.mnc.design.services.BlockDiagramServices"/>
+  </ownedViewpoints>
+  <ownedViewpoints name="ActionDiagram" modelFileExtension="mncspec">
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="ActionDiagram" label="Action Diagram" titleExpression="service:getActionTitle()" domainClass="mncModel.Model" preconditionExpression="service:singleActionRepresentationCheck()" enablePopupBars="true">
+      <defaultLayer name="Default">
+        <nodeMappings name="StartingPoint" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
+          <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="StartingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          </style>
+        </nodeMappings>
+        <nodeMappings name="EndingPoint" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
+          <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="EndingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          </style>
+        </nodeMappings>
+        <edgeMappings name="StateTransition" sourceMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@containerMappings[name='State']" targetMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:nextState" sourceFinderExpression="feature:currentState" domainClass="mncModel.Transition" useDomainElement="true" reconnections="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='TransitionReconnect']">
+          <style targetArrow="InputFillClosedArrow" sizeComputationExpression="2">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <centerLabelStyleDescription showIcon="false" labelExpression="aql:self.eContainer().eContainer().command.name">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="startingedge" sourceMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@nodeMappings[name='StartingPoint']" targetMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:startState">
+          <style sizeComputationExpression="3">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_green']"/>
+            <centerLabelStyleDescription showIcon="false">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <edgeMappings name="Endingedge" sourceMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@nodeMappings[name='EndingPoint']" targetMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:endState">
+          <style sourceArrow="InputArrow" targetArrow="NoDecoration" sizeComputationExpression="3">
+            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            <centerLabelStyleDescription showIcon="false">
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            </centerLabelStyleDescription>
+          </style>
+        </edgeMappings>
+        <containerMappings name="State" labelDirectEdit="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EditStateName']" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.OperatingState" childrenPresentation="VerticalStack">
+          <subContainerMappings name="EntryAction" semanticCandidatesExpression="service:getEntryActionTransition()" domainClass="mncModel.Transition">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getEntryActionName()" tooltipExpression="aql:'Entry Action Of '+ self.eContainer().eContainer().command.name+' Transition of '+self.currentState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+            </style>
+          </subContainerMappings>
+          <subContainerMappings name="ExitAction" semanticCandidatesExpression="service:getExitActionTransition()" domainClass="mncModel.Transition">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getExitActionName()" tooltipExpression="aql:'Exit Action due to '+ self.eContainer().eContainer().command.name+' Transition to '+self.nextState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" arcWidth="50" arcHeight="50" borderSizeComputationExpression="3" showIcon="false" labelExpression="aql:'  \n '+self.name+' '" tooltipExpression="OperatingState" roundedCorner="true">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+            <labelBorderStyle href="environment:/viewpoint#//@labelBorderStyles/@labelBorderStyleDescriptions.2"/>
+          </style>
+        </containerMappings>
+        <containerMappings name="DiagramInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.InterfaceDescription" childrenPresentation="VerticalStack">
+          <subContainerMappings name="EntryActionInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:' EntryAction '" widthComputationExpression="5" heightComputationExpression="2">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            </style>
+          </subContainerMappings>
+          <subContainerMappings name="ExitActionInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
+            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:'ExitAction '" widthComputationExpression="5" heightComputationExpression="2">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="4" labelSize="10" showIcon="false" labelExpression="aql:'Diagram Information'">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelFormat>underline</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+          </style>
+        </containerMappings>
+        <toolSections>
+          <ownedTools xsi:type="tool:ContainerCreationDescription" name="CreateState" label="Create New State" forceRefresh="true" elementsToSelect="aql:self" containerMappings="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@containerMappings[name='State']">
+            <variable name="container"/>
+            <viewVariable name="containerView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:getNewOperatingStateContext()">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.OperatingState" referenceName="operatingStates">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="aql:'State'+self.siblings()->size()"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:EdgeCreationDescription" name="TransitionEdge" label="Create new Transition" precondition="aql:mncModel::OperatingState" forceRefresh="true" edgeMappings="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@edgeMappings[name='StateTransition']" connectionStartPrecondition="aql:mncModel::OperatingState">
+            <sourceVariable name="source"/>
+            <targetVariable name="target"/>
+            <sourceViewVariable name="sourceView"/>
+            <targetViewVariable name="targetView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:getNewTransitionContext()">
+                <subModelOperations xsi:type="tool_1:CreateInstance" typeName="mncModel.Transition" referenceName="transitions">
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="currentState" valueExpression="var:source"/>
+                  <subModelOperations xsi:type="tool_1:SetValue" featureName="nextState" valueExpression="var:target"/>
+                </subModelOperations>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:ReconnectEdgeDescription" name="TransitionReconnect">
+            <source name="source"/>
+            <target name="target"/>
+            <sourceView name="sourceView"/>
+            <targetView name="targetView"/>
+            <element name="element"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="aql:self">
+                <subModelOperations xsi:type="tool_1:SetValue" featureName="nextState" valueExpression="var:target"/>
+              </firstModelOperations>
+            </initialOperation>
+            <edgeView name="edgeView"/>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DirectEditLabel" name="EditStateName">
+            <mask mask="{0}"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:SetValue" featureName="name" valueExpression="var:0"/>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="ClickOnOperatingState">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:openTextEditor()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedJavaExtensions qualifiedClassName="com.model.domain.mnc.design.services.ActionDiagramServices"/>
+  </ownedViewpoints>
+  <ownedViewpoints name="DashBoard" modelFileExtension="mncspec">
+    <ownedRepresentations xsi:type="description_1:DiagramDescription" name="DashBoard" titleExpression="DashBoard" initialisation="true" showOnStartup="true" domainClass="mncModel.Model" preconditionExpression="service:doesDashboardNotExist()" enablePopupBars="true">
+      <defaultLayer name="Default">
+        <containerMappings name="OuterMostLayer" semanticCandidatesExpression="aql:self" domainClass="mncModel.Model">
+          <subContainerMappings name="AddMoreElement" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@toolSections.0/@ownedTools[name='AddMoreElementDoubleClick']" domainClass="mncModel.Model">
+            <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="10" showIcon="false" labelExpression="aql:'  Add More Elements  '" roundedCorner="true" heightComputationExpression="4">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+            </style>
+          </subContainerMappings>
+          <subContainerMappings name="showBlockDiagram" semanticCandidatesExpression="aql:self" domainClass="mncModel.Model" childrenPresentation="VerticalStack">
+            <subContainerMappings name="showAllElementsBlockDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@toolSections.0/@ownedTools[name='showBlockDiagramDoubleClick']" domainClass="mncModel.Model">
+              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" labelSize="10" showIcon="false" labelExpression="aql:'  Show All elements '" roundedCorner="true" heightComputationExpression="4">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelFormat>bold</labelFormat>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+              </style>
+            </subContainerMappings>
+            <subContainerMappings name="showSelectiveElementsBlockDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@toolSections.0/@ownedTools[name='showSelectiveElementsBlockDiagramDoubleClick']" domainClass="mncModel.Model">
+              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" labelSize="10" showIcon="false" labelExpression="aql:'  Show Selective Elements  '" roundedCorner="true" heightComputationExpression="4">
+                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <labelFormat>bold</labelFormat>
+                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+              </style>
+            </subContainerMappings>
+            <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="10" showIcon="false" labelExpression="aql:'  Show Block Diagram  '" roundedCorner="true" heightComputationExpression="4">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+            </style>
+          </subContainerMappings>
+          <subContainerMappings name="showStateDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@toolSections.0/@ownedTools[name='showStateDiagramDoubleClick']" domainClass="mncModel.Model">
+            <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="10" showIcon="false" labelExpression="aql:'  Show State Diagram  '" roundedCorner="true" heightComputationExpression="4">
+              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelFormat>bold</labelFormat>
+              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+            </style>
+          </subContainerMappings>
+          <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="12" showIcon="false" labelExpression="aql:'  MNCML DASHBOARD  '" roundedCorner="true" heightComputationExpression="4">
+            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <labelFormat>bold</labelFormat>
+            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+          </style>
+        </containerMappings>
+        <toolSections name="DoubleClickSection">
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="AddMoreElementDoubleClick" mappings="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@containerMappings[name='OuterMostLayer']/@subContainerMappings[name='AddMoreElement']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:addMoreElements()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="showBlockDiagramDoubleClick" mappings="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@containerMappings[name='OuterMostLayer']/@subContainerMappings[name='showBlockDiagram']/@subContainerMappings[name='showAllElementsBlockDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createBlockDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="showStateDiagramDoubleClick" mappings="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@containerMappings[name='OuterMostLayer']/@subContainerMappings[name='showStateDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createStateDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+          <ownedTools xsi:type="tool:DoubleClickDescription" name="showSelectiveElementsBlockDiagramDoubleClick" mappings="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@containerMappings[name='OuterMostLayer']/@subContainerMappings[name='showBlockDiagram']/@subContainerMappings[name='showSelectiveElementsBlockDiagram']">
+            <element name="element"/>
+            <elementView name="elementView"/>
+            <initialOperation>
+              <firstModelOperations xsi:type="tool_1:ChangeContext" browseExpression="var:element">
+                <subModelOperations xsi:type="tool_1:ChangeContext" browseExpression="service:createSelectedElementsBlockDiagram()"/>
+              </firstModelOperations>
+            </initialOperation>
+          </ownedTools>
+        </toolSections>
+      </defaultLayer>
+    </ownedRepresentations>
+    <ownedJavaExtensions qualifiedClassName="com.model.domain.mnc.design.services.DashBoardServices"/>
+  </ownedViewpoints>
+</description:Group>

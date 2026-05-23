@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<genmodel:GenModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    xmlns:genmodel="http://www.eclipse.org/emf/2002/GenModel" modelDirectory="/com.capability/src" modelPluginID="com.capability"
+    modelName="Capability" rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container"
+    importerID="org.eclipse.emf.importer.ecore" complianceLevel="7.0" copyrightFields="false"
+    usedGenPackages="../../com.dml/model/DML.genmodel#//dataModelPackage ../../com.mncml/model/mnc.genmodel#//mncModel ../../com.operation/model/operations.genmodel#//operationsDescription"
+    operationReflection="true" importOrganizing="true">
+  <foreignModel>capability.ecore</foreignModel>
+  <genPackages prefix="CapabilityDescription" disposableProviderFactory="true" ecorePackage="capability.ecore#/">
+    <genClasses ecoreClass="capability.ecore#//Capability">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute capability.ecore#//Capability/name"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//Capability/componentInterface"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//Capability/requiredINITProcess"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//Capability/providesControlCapabilities"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//Capability/providesOutcomes"/>
+    </genClasses>
+    <genClasses ecoreClass="capability.ecore#//ControlCapabilities">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//ControlCapabilities/commands"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//ControlCapabilities/events"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//ControlCapabilities/alarms"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//ControlCapabilities/dataPoints"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference capability.ecore#//ControlCapabilities/operation"/>
+    </genClasses>
+    <genClasses ecoreClass="capability.ecore#//CapabilitiesOutcome">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//CapabilitiesOutcome/responses"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//CapabilitiesOutcome/events"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//CapabilitiesOutcome/alarms"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference capability.ecore#//CapabilitiesOutcome/dataPoints"/>
+    </genClasses>
+  </genPackages>
+</genmodel:GenModel>

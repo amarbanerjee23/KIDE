@@ -1,0 +1,28 @@
+Manifest-Version: 1.0
+Automatic-Module-Name: com.capability.dsl.ui
+Bundle-ManifestVersion: 2
+Bundle-Name: com.capability.dsl.ui
+Bundle-Vendor: My Company
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.capability.dsl.ui; singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: com.capability.dsl,
+ com.capability,
+ org.eclipse.xtext.ui,
+ org.eclipse.xtext.ui.shared,
+ org.eclipse.xtext.ui.codetemplates.ui,
+ org.eclipse.ui.editors;bundle-version="3.5.0",
+ org.eclipse.ui.ide;bundle-version="3.5.0",
+ org.eclipse.ui,
+ org.eclipse.compare,
+ org.eclipse.xtext.builder,
+ org.eclipse.xtext.xbase.lib;bundle-version="2.14.0",
+ org.eclipse.xtend.lib;bundle-version="2.14.0";resolution:=optional,
+ com.capability.dsl.ide;bundle-version="1.0.0",
+ com.dml.dsl.ui;bundle-version="1.0.0"
+Import-Package: org.apache.log4j
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Export-Package: com.capability.ui.contentassist,
+ com.capability.dsl.ui.internal,
+ com.capability.ui.quickfix
+Bundle-Activator: com.capability.dsl.ui.internal.DslActivator

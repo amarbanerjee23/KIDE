@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="CapabilityDescription" nsURI="http://CapabilityDescription/1.0"
+    nsPrefix="CapabilityDescription1.0">
+  <eClassifiers xsi:type="ecore:EClass" name="Capability">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="componentInterface" upperBound="-1"
+        eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//InterfaceDescription"
+        resolveProxies="false"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="requiredINITProcess" eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//Action"
+        containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="providesControlCapabilities"
+        eType="#//ControlCapabilities" containment="true"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="providesOutcomes" eType="#//CapabilitiesOutcome"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="ControlCapabilities">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="commands" upperBound="-1"
+        eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//Command"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="events" upperBound="-1"
+        eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//Event"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="alarms" upperBound="-1"
+        eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//Alarm"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataPoints" upperBound="-1"
+        eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//DataPoint"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="operation" upperBound="-1"
+        eType="ecore:EClass ../../com.operation/model/operations.ecore#//Operation"
+        containment="true"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="CapabilitiesOutcome">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="responses" upperBound="-1"
+        eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//Response"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="events" upperBound="-1"
+        eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//Event"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="alarms" upperBound="-1"
+        eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//Alarm"/>
+    <eStructuralFeatures xsi:type="ecore:EReference" name="dataPoints" upperBound="-1"
+        eType="ecore:EClass ../../com.mncml/model/mnc.ecore#//DataPoint"/>
+  </eClassifiers>
+</ecore:EPackage>
