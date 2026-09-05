@@ -15,6 +15,9 @@ Workflow {
 				eclipsePlugin = {
 					enabled = true
 				}
+				web = {
+					enabled = true
+				}
 				createEclipseMetaData = true
 			}
 			code = {
@@ -31,6 +34,11 @@ Workflow {
 			referencedResource = "platform:/resource/com.capability/model/capability.genmodel"
 			referencedResource = "platform:/resource/com.dml/model/DML.genmodel"
 			fragment = ecore2xtext.Ecore2XtextValueConverterServiceFragment2 auto-inject {}
+			
+			webSupport = {
+				framework = "Ace"
+				generateServlet = true
+			}
 
 			formatter = {
 				generateStub = true
