@@ -39,8 +39,10 @@ async def client(db_session):
 
 @pytest_asyncio.fixture
 async def test_user(client):
+    import uuid
+    email = f"test_{uuid.uuid4()}@example.com"
     response = await client.post("/api/v1/auth/register", json={
-        "email": "test@example.com",
+        "email": email,
         "password": "password",
         "full_name": "Test User",
         "org_name": "Test Org"

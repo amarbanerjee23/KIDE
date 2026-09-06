@@ -1,8 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { useEditorStore } from '../../stores/editorStore';
 import ValidationPanel from './ValidationPanel';
 import ControlNodeTree from './ControlNodeTree';
+import { exportApi } from '../../api/export';
+
+const DslEditor = ({ model }: { model: any }) => {
+  const [dsl, setDsl] = useState<string>('Loading...');
+  
+  useEffect(() => {
+    exportApi.exportDsl(model)
+      .then(setDsl)
+      .catch(err => setDsl('Error loading DSL: ' + err.message));
+  }, [model]);
+
+  return (
+    <Editor
+      height="100%"
+      defaultLanguage="plaintext"
+      theme="vs-dark"
+      value={dsl}
+      options={{ readOnly: true, minimap: { enabled: false }, padding: { top: 16 } }}
+    />
+  );
+};
 
 const TransformOutput = () => {
   const [activeTab, setActiveTab] = useState<'json' | 'dsl' | 'validation' | 'tree'>('json');
@@ -48,13 +69,7 @@ const TransformOutput = () => {
 
         {activeTab === 'dsl' && (
           transformResult ? (
-            <Editor
-              height="100%"
-              defaultLanguage="plaintext"
-              theme="vs-dark"
-              value={"// Mock DSL generated from model\ncontrol_node " + transformResult.model.interfaceDescription.controlNode.name + " {\n  ...\n}"}
-              options={{ readOnly: true, minimap: { enabled: false }, padding: { top: 16 } }}
-            />
+            <DslEditor model={transformResult.model} />
           ) : <Placeholder />
         )}
 

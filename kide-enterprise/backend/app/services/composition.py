@@ -17,7 +17,7 @@ def compose_control_node(diagram: ActivityDiagramSchema, blocks: SynthesizedBloc
             "name": act.name,
             "requires_operation": act.requires_operation,
             "parameters": act.parameters,
-            "transitions": [t.dict(by_alias=True) for t in act.transitions]
+            "transitions": [t.model_dump(by_alias=True) for t in act.transitions]
         })
         
     return {
