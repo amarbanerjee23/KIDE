@@ -17,7 +17,7 @@ const DslEditor = ({ model }: { model: any }) => {
   return (
     <Editor
       height="100%"
-      defaultLanguage="plaintext"
+      defaultLanguage="mncml"
       theme="vs-dark"
       value={dsl}
       options={{ readOnly: true, minimap: { enabled: false }, padding: { top: 16 } }}

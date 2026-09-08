@@ -7,16 +7,32 @@ import {
   useNodesState,
   useEdgesState,
   MarkerType,
-  BackgroundVariant
+  BackgroundVariant,
+  NodeMouseHandler
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useEditorStore } from '../../stores/editorStore';
 import { nodeTypes } from './FlowNodeTypes';
+import NodePropertyForm from './NodePropertyForm';
 
 const ActivityFlowEditor = () => {
   const activityJson = useEditorStore(state => state.activityJson);
+  const setSelectedNodeId = useEditorStore(state => state.setSelectedNodeId);
+  const selectedNodeId = useEditorStore(state => state.selectedNodeId);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+
+  const onNodeClick: NodeMouseHandler = useCallback((event, node) => {
+    if (node.type === 'activity') {
+      setSelectedNodeId(node.id);
+    } else {
+      setSelectedNodeId(null);
+    }
+  }, [setSelectedNodeId]);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNodeId(null);
+  }, [setSelectedNodeId]);
 
   useEffect(() => {
     try {
@@ -34,7 +50,8 @@ const ActivityFlowEditor = () => {
           id: act.name,
           type: 'activity',
           position: { x: 250, y },
-          data: { ...act }
+          data: { ...act },
+          selected: act.name === selectedNodeId
         });
         
         if (idx === 0) {
@@ -78,15 +95,17 @@ const ActivityFlowEditor = () => {
     } catch (e) {
       // JSON is invalid, keep existing flow
     }
-  }, [activityJson, setNodes, setEdges]);
+  }, [activityJson, selectedNodeId, setNodes, setEdges]);
 
   return (
-    <div className="w-full h-full bg-[#0a0a1a]">
+    <div className="w-full h-full bg-[#0a0a1a] relative">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         fitView
         colorMode="dark"
@@ -95,9 +114,13 @@ const ActivityFlowEditor = () => {
         <Controls className="bg-surface border-accent fill-white" />
         <MiniMap nodeStrokeColor="#16c79a" nodeColor="#16213e" maskColor="rgba(0,0,0,0.5)" className="bg-surface" />
       </ReactFlow>
+      {selectedNodeId && (
+        <div className="absolute top-0 right-0 h-full w-80 bg-surface border-l border-accent z-10 shadow-2xl overflow-y-auto">
+          <NodePropertyForm />
+        </div>
+      )}
     </div>
   );
 };
-
 export default ActivityFlowEditor;
 

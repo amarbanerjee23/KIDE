@@ -9,7 +9,7 @@ from app.auth.dependencies import get_db, get_current_user
 
 router = APIRouter()
 
-@router.get("/", response_model=List[ProjectResponse])
+@router.get("", response_model=List[ProjectResponse])
 async def list_projects(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Project).where(Project.org_id == current_user.org_id))
     projects = result.scalars().all()
@@ -23,7 +23,7 @@ async def list_projects(current_user: User = Depends(get_current_user), db: Asyn
         ))
     return out
 
-@router.post("/", response_model=ProjectResponse)
+@router.post("", response_model=ProjectResponse)
 async def create_project(proj: ProjectCreate, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     p = Project(name=proj.name, description=proj.description, org_id=current_user.org_id, created_by=current_user.id)
     db.add(p)
