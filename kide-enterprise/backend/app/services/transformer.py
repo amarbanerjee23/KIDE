@@ -10,14 +10,14 @@ class TransformResult:
         self.warnings = warnings
         self.errors = errors
 
-def transform_activity_to_mnc(payload: Dict[str, Any]) -> TransformResult:
+def transform_activity_to_mnc(payload: Dict[str, Any], knowledge_base: Dict[str, Any] = None) -> TransformResult:
     errors = validate_activity_diagram(payload)
     if errors:
         return TransformResult({}, [], errors)
         
     try:
         diagram = ActivityDiagramSchema(**payload)
-        blocks = synthesize_interface_blocks(diagram.activities)
+        blocks = synthesize_interface_blocks(diagram.activities, knowledge_base)
         cn = compose_control_node(diagram, blocks)
         
         iface = {

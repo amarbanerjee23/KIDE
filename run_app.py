@@ -66,8 +66,8 @@ def main():
         if args.mode == "web":
             # Start Backend
             print("Starting Backend Server...")
-            uvicorn_exe = os.path.join(venv_dir, "Scripts", "uvicorn") if os.name == "nt" else os.path.join(venv_dir, "bin", "uvicorn")
-            p_backend = run_command(f"{uvicorn_exe} app.main:app --reload --port 8000", cwd=backend_dir)
+            python_exe = os.path.join(venv_dir, "Scripts", "python.exe") if os.name == "nt" else os.path.join(venv_dir, "bin", "python")
+            p_backend = run_command(f"{python_exe} -m uvicorn app.main:app --reload --port 8000", cwd=backend_dir)
             processes.append(p_backend)
             print("\n>>> Web application running at http://localhost:5173 <<<")
             print(">>> API running at http://localhost:8000 <<<\n")

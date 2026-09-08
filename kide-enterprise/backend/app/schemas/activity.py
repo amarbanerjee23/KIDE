@@ -9,7 +9,10 @@ class TransitionSchema(BaseModel):
 class ActivitySchema(BaseModel):
     name: str
     requires_operation: bool = True
+    require_operation: Optional[str] = None
+    require_capability: Optional[str] = None
     parameters: List[Dict[str, Any]] = []
+    # Legacy fallbacks or overrides
     commands: List[Dict[str, Any]] = []
     events: List[Dict[str, Any]] = []
     alarms: List[Dict[str, Any]] = []

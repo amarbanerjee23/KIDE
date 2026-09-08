@@ -4,6 +4,7 @@ from datetime import datetime
 
 class TransformRequest(BaseModel):
     activity_diagram: Dict[str, Any]
+    knowledge_base: Optional[Dict[str, Any]] = None
 
 class TransformResponse(BaseModel):
     model: Dict[str, Any]

@@ -12,7 +12,6 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./uploads"
     EXPORT_DIR: str = "./exports"
 
-    class Config:
-        env_file = ".env"
+    model_config = {"env_file": ".env", "extra": "ignore"}
 
 settings = Settings()

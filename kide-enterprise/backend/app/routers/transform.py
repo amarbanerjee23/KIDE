@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.post("", response_model=TransformResponse)
 async def transform(req: TransformRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    result = transform_activity_to_mnc(req.activity_diagram)
+    result = transform_activity_to_mnc(req.activity_diagram, req.knowledge_base)
     
     if result.errors:
         status = "error"
