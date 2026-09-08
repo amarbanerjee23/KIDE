@@ -21,7 +21,13 @@ export async function fetchClient(endpoint: string, options: RequestInit = {}) {
       throw new Error('Unauthorized');
     }
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'API request failed');
+    let errorMessage = 'API request failed';
+    if (Array.isArray(errorData.detail)) {
+      errorMessage = errorData.detail.map((e: any) => `${e.loc.join('.')}: ${e.msg}`).join(', ');
+    } else if (errorData.detail) {
+      errorMessage = errorData.detail;
+    }
+    throw new Error(errorMessage);
   }
 
   return response.json();

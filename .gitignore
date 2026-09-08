@@ -1,4 +1,7 @@
 /.metadata/
-
+node_modules/
+dist/
+node-v20.11.1-win-x64/
+*.exe
 # Generated demo bundle
 demo/kide-demonstrator.zip

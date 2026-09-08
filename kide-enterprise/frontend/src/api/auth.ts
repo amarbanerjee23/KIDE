@@ -12,6 +12,8 @@ export const authApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
     
     if (!response.ok) {
@@ -23,7 +25,12 @@ export const authApi = {
   register: async (data: { email: string; password: string; fullName: string; orgName?: string }) => {
     return fetchClient('/auth/register', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+        full_name: data.fullName,
+        org_name: data.orgName
+      }),
     });
   },
 

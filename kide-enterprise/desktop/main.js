@@ -35,12 +35,22 @@ function startEmbeddedBackend() {
   if (!store.get("embeddedBackend")) return Promise.resolve();
 
   return new Promise((resolve, reject) => {
-    const backendDir = getBackendPath();
-    const pythonCmd = process.platform === "win32" ? "python" : "python3";
+    let backendDir = getBackendPath();
+    let cmd, args;
+
+    if (isDev) {
+      cmd = process.platform === "win32" ? "python" : "python3";
+      args = ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"];
+    } else {
+      // In production, run the packaged pyinstaller executable
+      const exeName = process.platform === "win32" ? "kide-backend.exe" : "kide-backend";
+      cmd = path.join(backendDir, exeName);
+      args = [];
+    }
 
     backendProcess = spawn(
-      pythonCmd,
-      ["-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000"],
+      cmd,
+      args,
       {
         cwd: backendDir,
         env: {
