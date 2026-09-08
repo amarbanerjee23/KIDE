@@ -79,3 +79,4 @@ const GeminiAssistantPanel = ({ onClose }: { onClose: () => void }) => {
 };
 
 export default GeminiAssistantPanel;
+

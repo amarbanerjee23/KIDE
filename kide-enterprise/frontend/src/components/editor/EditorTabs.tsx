@@ -30,3 +30,4 @@ const EditorTabs = () => {
 };
 
 export default EditorTabs;
+
