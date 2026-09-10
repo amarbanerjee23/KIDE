@@ -53,3 +53,4 @@ jobs:
         run: |
           cd kide-enterprise/frontend
           npm run build
+
