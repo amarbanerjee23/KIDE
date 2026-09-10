@@ -6,6 +6,9 @@ from .parse import router as parse_router
 from .transform import router as transform_router
 from .export import router as export_router
 from .validate import router as validate_router
+from .generators import router as generators_router
+from .knowledge import router as knowledge_router
+from .simulation import router as simulation_router
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -16,3 +19,6 @@ api_router.include_router(parse_router)
 api_router.include_router(transform_router)
 api_router.include_router(export_router)
 api_router.include_router(validate_router)
+api_router.include_router(generators_router)
+api_router.include_router(knowledge_router)
+api_router.include_router(simulation_router)

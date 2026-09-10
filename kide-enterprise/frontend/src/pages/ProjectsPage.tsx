@@ -12,6 +12,7 @@ const ProjectsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState('industrial_cooling');
   
   const queryClient = useQueryClient();
 
@@ -21,7 +22,16 @@ const ProjectsPage = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: projectsApi.createProject,
+    mutationFn: async (data: { name: string; description?: string; template: string }) => {
+      if (data.template === 'blank') {
+        return projectsApi.createProject({ name: data.name, description: data.description });
+      }
+      return projectsApi.createFromTemplate({ 
+        name: data.name, 
+        template: data.template, 
+        description: data.description 
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       setIsModalOpen(false);
@@ -38,7 +48,11 @@ const ProjectsPage = () => {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (newProjectName) {
-      createMutation.mutate({ name: newProjectName, description: newProjectDesc });
+      createMutation.mutate({ 
+        name: newProjectName, 
+        description: newProjectDesc,
+        template: selectedTemplate 
+      });
     }
   };
 
@@ -87,8 +101,26 @@ const ProjectsPage = () => {
             value={newProjectName} 
             onChange={e => setNewProjectName(e.target.value)} 
           />
+
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1.5">Description</label>
+            <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
+              Starter Template
+            </label>
+            <select
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value)}
+              className="w-full bg-[#161b22] border border-gray-700 text-gray-200 text-xs rounded px-3 py-2 outline-none focus:border-blue-500"
+            >
+              <option value="industrial_cooling">Industrial Cooling System (Thesis Case Study)</option>
+              <option value="pick_and_place">Pick & Place Robotic Cell (Multi-DSL)</option>
+              <option value="chemical_reactor">Chemical Reactor Plant (State Machine & Alarms)</option>
+              <option value="assembly_supervisor">Assembly Cell Supervisor (Demo_ECRE.dml)</option>
+              <option value="blank">Blank Project (Empty Workspace)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Description (Optional)</label>
             <textarea 
               className="w-full rounded-md border border-[#0f3460] bg-[#1a1a2e] px-3 py-2 text-sm text-white focus:ring-2 focus:ring-[#16c79a]"
               rows={3}
@@ -107,4 +139,5 @@ const ProjectsPage = () => {
 };
 
 export default ProjectsPage;
+
 

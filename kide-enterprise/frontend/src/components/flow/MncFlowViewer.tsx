@@ -1,14 +1,22 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ReactFlow, Background, Controls, Node, Edge } from '@xyflow/react';
 import { MncModel, Action } from '../../types/models';
 import { nodeTypes } from './FlowNodeTypes';
 
 interface Props {
   model: MncModel;
+  mode?: 'statemachine' | 'blockdiagram' | string;
 }
 
-export const MncFlowViewer: React.FC<Props> = ({ model }) => {
-  const [view, setView] = useState<'state' | 'block'>('state');
+export const MncFlowViewer: React.FC<Props> = ({ model, mode }) => {
+  const [view, setView] = useState<'state' | 'block'>(
+    mode === 'blockdiagram' ? 'block' : 'state'
+  );
+
+  useEffect(() => {
+    if (mode === 'blockdiagram') setView('block');
+    else if (mode === 'statemachine') setView('state');
+  }, [mode]);
 
   const stateNodesEdges = useMemo(() => {
     if (!model.interface_description?.operating_states) return { nodes: [], edges: [] };

@@ -1,9 +1,9 @@
 import * as monaco from 'monaco-editor';
 
 export const dmlLanguageDef: monaco.languages.ILanguageExtensionPoint = {
-  id: 'dml',
+  id: 'dmldsl',
   extensions: ['.dml'],
-  aliases: ['DML', 'dml'],
+  aliases: ['DML', 'dml', 'dmldsl'],
 };
 
 export const dmlLanguageConfig: monaco.languages.LanguageConfiguration = {

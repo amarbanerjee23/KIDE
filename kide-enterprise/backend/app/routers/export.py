@@ -9,4 +9,13 @@ router = APIRouter(prefix="/export", tags=["export"])
 async def export_model(fmt: str, payload: Dict[str, Any] = Body(...)):
     model = payload.get("model") if "model" in payload and isinstance(payload["model"], dict) and "name" in payload["model"] else payload
     content = export_format(model, fmt)
+
+    if fmt.lower() in ("zip", "bundle"):
+        proj_name = model.get("name", "supervisor_package")
+        return Response(
+            content=content,
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={proj_name}_bundle.zip"}
+        )
+
     return Response(content=content, media_type="text/plain")

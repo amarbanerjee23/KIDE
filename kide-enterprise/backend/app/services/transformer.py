@@ -18,14 +18,14 @@ def transform_workspace(payload: Dict[str, Any]) -> Dict[str, Any]:
                 diagram = parse_activity(content)
             except Exception:
                 pass
-        elif file_name.endswith('.capability'):
+        elif file_name.endswith('.capability') or file_name.endswith('.cap'):
             try:
                 cap = parse_capability(content)
                 if "name" in cap:
                     kb["capabilities"][cap["name"]] = cap
             except Exception:
                 pass
-        elif file_name.endswith('.operation'):
+        elif file_name.endswith('.operation') or file_name.endswith('.op'):
             try:
                 op = parse_operation(content)
                 if "name" in op:
@@ -39,6 +39,7 @@ def transform_workspace(payload: Dict[str, Any]) -> Dict[str, Any]:
                     diagram = data
             except Exception:
                 pass
+
                 
     if not diagram:
         return {"error": "No valid Activity Diagram found"}

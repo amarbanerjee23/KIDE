@@ -2,7 +2,7 @@ import * as monaco from 'monaco-editor';
 
 export const capabilityDslLanguageDef: monaco.languages.ILanguageExtensionPoint = {
   id: 'capabilitydsl',
-  extensions: ['.capability'],
+  extensions: ['.capability', '.cap'],
   aliases: ['Capability DSL', 'capabilitydsl'],
 };
 

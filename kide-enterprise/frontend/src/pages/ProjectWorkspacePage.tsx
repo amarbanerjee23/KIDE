@@ -1,14 +1,23 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { MonacoDslEditor } from '../components/editor/MonacoDslEditor';
 import { EditorToolbar } from '../components/editor/EditorToolbar';
+import { SynthesisWorkflowStepper } from '../components/workflow/SynthesisWorkflowStepper';
+
 import { FileExplorer } from '../components/editor/FileExplorer';
 import { EditorTabs } from '../components/editor/EditorTabs';
 import GeminiAssistantPanel from '../components/editor/GeminiAssistantPanel';
 import { ActivityFlowEditor } from '../components/flow/ActivityFlowEditor';
 import { TransformOutput } from '../components/output/TransformOutput';
-import { Bot } from 'lucide-react';
+import { Bot, Loader2 } from 'lucide-react';
+import { useEditorStore } from '../stores/editorStore';
+import { projectsApi } from '../api/projects';
 
 const ProjectWorkspacePage = () => {
+  const { id } = useParams<{ id: string }>();
+  const { setProject, setFiles } = useEditorStore();
+  const [isLoading, setIsLoading] = useState(true);
+
   const [leftWidth, setLeftWidth] = useState(20); // 20% for File Explorer
   const [middleWidth, setMiddleWidth] = useState(40); // 40% for Editor
   const [topHeight, setTopHeight] = useState(60); // percentage for Flow
@@ -16,6 +25,50 @@ const ProjectWorkspacePage = () => {
   
   const containerRef = useRef<HTMLDivElement>(null);
   const rightContainerRef = useRef<HTMLDivElement>(null);
+
+  const getLanguage = (filename: string) => {
+    if (filename.endsWith('.json')) return 'json';
+    if (filename.endsWith('.mnc')) return 'mncml';
+    if (filename.endsWith('.activity')) return 'activitydsl';
+    if (filename.endsWith('.cap') || filename.endsWith('.capability')) return 'capabilitydsl';
+    if (filename.endsWith('.op') || filename.endsWith('.operation')) return 'operationdsl';
+    if (filename.endsWith('.dml')) return 'dmldsl';
+    return 'text';
+  };
+
+  // Load project and project files on mount / id change
+  useEffect(() => {
+    if (!id) return;
+    const numId = Number(id);
+    let isCancelled = false;
+    setIsLoading(true);
+
+    const loadProjectData = async () => {
+      try {
+        const [proj, files] = await Promise.all([
+          projectsApi.getProject(numId),
+          projectsApi.listFiles(numId)
+        ]);
+        if (!isCancelled) {
+          setProject(numId, proj.name);
+          const mappedFiles = files.map(f => ({
+            id: String(f.id),
+            name: f.filename || f.name || 'untitled',
+            content: f.content,
+            language: getLanguage(f.filename || f.name || '')
+          }));
+          setFiles(mappedFiles);
+        }
+      } catch (err) {
+        console.error('Failed to load project workspace:', err);
+      } finally {
+        if (!isCancelled) setIsLoading(false);
+      }
+    };
+
+    loadProjectData();
+    return () => { isCancelled = true; };
+  }, [id, setProject, setFiles]);
 
   // Handle Dragging File Explorer Resizer
   const handleLeftDragStart = (e: React.MouseEvent) => {
@@ -72,14 +125,24 @@ const ProjectWorkspacePage = () => {
     document.removeEventListener('mouseup', handleVDragEnd);
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#0d1117] text-gray-400 gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <span className="text-sm">Loading Project Workspace...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden relative">
       <EditorToolbar />
+      <SynthesisWorkflowStepper />
       
       <div ref={containerRef} className="flex flex-1 overflow-hidden relative">
         
         {/* Panel 1: File Explorer */}
-        <div style={{ width: `${leftWidth}%` }} className="h-full min-w-[150px]">
+        <div style={{ width: `${leftWidth}%` }} className="h-full min-w-[160px]">
           <FileExplorer />
         </div>
 

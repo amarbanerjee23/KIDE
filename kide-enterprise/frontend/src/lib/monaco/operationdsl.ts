@@ -2,7 +2,7 @@ import * as monaco from 'monaco-editor';
 
 export const operationDslLanguageDef: monaco.languages.ILanguageExtensionPoint = {
   id: 'operationdsl',
-  extensions: ['.operation'],
+  extensions: ['.operation', '.op'],
   aliases: ['Operation DSL', 'operationdsl'],
 };
 

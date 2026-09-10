@@ -1,24 +1,31 @@
 import { ParseResult } from '../types/models';
-
-const API_BASE = '/api/v1';
+import { fetchClient } from './client';
 
 export const parseText = async (language: string, text: string): Promise<ParseResult> => {
+  let lang = language.toLowerCase();
+  if (lang === 'activitydsl') lang = 'activity';
+  else if (lang === 'mncml') lang = 'mnc';
+  else if (lang === 'dmldsl') lang = 'dml';
+  else if (lang === 'capabilitydsl') lang = 'capability';
+  else if (lang === 'operationdsl') lang = 'operation';
+
   try {
-    const res = await fetch(`${API_BASE}/parse/${language}`, {
+    const data = await fetchClient(`/parse/${lang}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain',
-      },
-      body: text,
+      body: JSON.stringify({ content: text }),
     });
     
-    if (!res.ok) {
-      throw new Error(`Parse failed with status ${res.status}`);
-    }
-    
-    return await res.json();
-  } catch (error) {
+    const errors = (data.errors || []).map((err: any) => 
+      typeof err === 'string' ? { message: err, severity: 'error' as const } : err
+    );
+
+    return {
+      ast: data.ast || null,
+      errors
+    };
+  } catch (error: any) {
     console.error('Failed to parse:', error);
-    return { ast: null, errors: [{ message: String(error), severity: 'error' }] };
+    return { ast: null, errors: [{ message: error.message || String(error), severity: 'error' }] };
   }
 };
+

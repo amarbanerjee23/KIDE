@@ -259,7 +259,7 @@ export interface User {
 }
 
 export interface Project {
-  id: string | number;
+  id: number;
   name: string;
   description?: string;
   created_by_name?: string;
@@ -269,8 +269,22 @@ export interface Project {
 }
 
 export interface ProjectFile {
-  id: string;
-  project_id: string;
-  name: string;
+  id: number | string;
+  project_id: number | string;
+  filename: string;
+  name?: string;
+  file_type: string;
   content: string;
+  version?: number;
+  created_at?: string;
+  updated_at?: string;
 }
+
+export interface ProjectTemplate {
+  key: string;
+  name: string;
+  description: string;
+  file_count: number;
+  files: string[];
+}
+
