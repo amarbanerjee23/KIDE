@@ -153,3 +153,8 @@ class BaseParser:
             self.eat(self.current_token.type)
             return True
         return False
+
+    def advance_token(self):
+        tok = self.current_token
+        self.current_token = self.lexer.get_next_token()
+        return tok

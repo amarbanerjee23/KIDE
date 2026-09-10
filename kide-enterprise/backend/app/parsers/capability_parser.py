@@ -36,8 +36,11 @@ class CapabilityParser(DmlParser):
             "componentInterface": interfaces,
             "compatible_component_interfaces": interfaces,
             "requiredINITProcess": req_init,
+            "required_init_process": req_init,
             "providesControlCapabilities": control_cap,
-            "providesOutcomes": outcome
+            "provides_control_capabilities": control_cap,
+            "providesOutcomes": outcome,
+            "provides_outcomes": outcome
         }
 
     def parse_action_ref(self) -> str:
@@ -88,7 +91,7 @@ class CapabilityParser(DmlParser):
                     action["executeOperations"].append({"operation": self.parse_action_ref()})
                     self.try_eat(",")
             else:
-                self.lexer.advance()
+                self.advance_token()
 
         self.eat(TokenType.SYMBOL, "}")
         return action
@@ -130,21 +133,27 @@ class CapabilityParser(DmlParser):
         while not self.match("}"):
             if self.try_eat("receivable"):
                 if self.try_eat("responses"):
+                    self.try_eat(":")
                     res["responses"].append(self.parse_qualified_name())
                     while self.try_eat(","):
                         res["responses"].append(self.parse_qualified_name())
                 elif self.try_eat("events"):
+                    self.try_eat(":")
                     res["events"].append(self.parse_qualified_name())
                     while self.try_eat(","):
                         res["events"].append(self.parse_qualified_name())
                 elif self.try_eat("alarms"):
+                    self.try_eat(":")
                     res["alarms"].append(self.parse_qualified_name())
                     while self.try_eat(","):
                         res["alarms"].append(self.parse_qualified_name())
                 elif self.try_eat("dataPoints"):
+                    self.try_eat(":")
                     res["dataPoints"].append(self.parse_qualified_name())
                     while self.try_eat(","):
                         res["dataPoints"].append(self.parse_qualified_name())
+            else:
+                self.advance_token()
         self.eat(TokenType.SYMBOL, "}")
         return res
 

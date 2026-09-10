@@ -45,24 +45,20 @@ class DmlParser(BaseParser):
         }
 
     def parse_parameter(self) -> Dict[str, Any]:
-        # Peek to determine parameter type
         typ_name = self.peek_val()
         is_primitive = typ_name in ("int", "boolean", "float", "string", "object", "date")
         
-        # Check if it's an array type
-        is_array = False
-        saved_pos = self.lexer.pos
-        # Note: A real implementation would save lexer state properly. For this prompt, 
-        # we will distinguish based on basic parsing since this is a simplified descent.
-        
-        # We will parse SimpleType for now if primitive, Abstract if not
-        # Let's simplify and build the structure:
         typ = self.parse_qualified_name()
         
         if self.try_eat("["):
             self.eat(TokenType.SYMBOL, "]")
             name = self.parse_estring()
-            param = {"name": name, "primitiveType": typ if is_primitive else None, "dataModelType": typ if not is_primitive else None}
+            param = {
+                "name": name,
+                "primitiveType": typ if is_primitive else None,
+                "dataModelType": typ if not is_primitive else None,
+                "kind": "ArrayType"
+            }
             if self.try_eat("="):
                 self.eat(TokenType.SYMBOL, "[")
                 vals = []
@@ -72,17 +68,19 @@ class DmlParser(BaseParser):
                         vals.append(self.parse_primitive_value())
                 self.eat(TokenType.SYMBOL, "]")
                 param["values"] = vals
-            return {"ArrayType": param}
+            return param
         else:
             name = self.parse_estring()
             val = None
             if self.try_eat("="):
                 val = self.parse_primitive_value()
                 
-            if is_primitive:
-                return {"SimpleType": {"type": typ, "name": name, "value": val}}
-            else:
-                return {"AbstractType": {"type": typ, "name": name, "value": val}}
+            return {
+                "type": typ,
+                "name": name,
+                "value": val,
+                "kind": "SimpleType" if is_primitive else "AbstractType"
+            }
 
     def parse_qualified_name(self) -> str:
         name = self.eat(TokenType.ID).value
@@ -100,16 +98,15 @@ class DmlParser(BaseParser):
 
     def parse_primitive_value(self) -> Any:
         if self.current_token.type == TokenType.NUMBER:
-            return {"IntValue": {"value": int(self.eat(TokenType.NUMBER).value)}}
+            return int(self.eat(TokenType.NUMBER).value)
         elif self.current_token.type == TokenType.FLOAT:
-            return {"FloatValue": {"value": float(self.eat(TokenType.FLOAT).value)}}
+            return float(self.eat(TokenType.FLOAT).value)
         elif self.current_token.type == TokenType.STRING:
-            return {"StringValue": {"value": self.eat_string()}}
+            return self.eat_string()
         elif self.current_token.value in ("true", "false"):
-            val = self.eat(TokenType.ID).value == "true"
-            return {"BoolValue": {"value": val}}
+            return self.eat(TokenType.ID).value == "true"
         else:
-            return {"AbstractObjectValue": {"abstractValue": self.eat_id()}}
+            return self.eat_id()
 
     def parse(self) -> Dict[str, Any]:
         pkg = self.parse_package()

@@ -126,6 +126,29 @@ def export_python(model: Dict[str, Any]) -> str:
         "    def __init__(self):",
         "        pass",
     ]
+    
+    commands = []
+    systems = model.get("systems") or ([model.get("interface_description")] if model.get("interface_description") else [])
+    for sys in systems:
+        if sys and sys.get("commands"):
+            for c in sys["commands"]:
+                cname = c.get("name") if isinstance(c, dict) else str(c)
+                if cname and cname not in commands:
+                    commands.append(cname)
+                    
+    if not commands:
+        iface = model.get("interface_description")
+        if iface and iface.get("commands"):
+            for c in iface["commands"]:
+                cname = c.get("name") if isinstance(c, dict) else str(c)
+                if cname and cname not in commands:
+                    commands.append(cname)
+
+    for cmd in commands:
+        snake_name = cmd.lower()
+        lines.append(f"    def handle_{snake_name}(self, payload):")
+        lines.append("        pass")
+
     return "\n".join(lines)
 
 def export_format(model: Dict[str, Any], fmt: str) -> str:

@@ -1,12 +1,56 @@
-/.metadata/
+# Dependencies
 node_modules/
-dist/
+.venv/
+venv/
+ENV/
+env/
 node-v20.11.1-win-x64/
-*.exe
-# Generated demo bundle
+
+# Production & Build Artifacts
+dist/
+build/
+out/
 demo/kide-demonstrator.zip
 *.zip
+*.exe
+*.egg-info/
+.eggs/
+
+# Database & Temporary Data
+*.db
+*.sqlite
+*.sqlite3
+kide_data.db
+uploads/
+exports/
+scratch/
+/.metadata/
+
+# Python Cache & Testing
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Environment Variables & Secrets
 .env
-.venv/
+.env.local
+*.pem
+
+# IDE & OS Files
+.DS_Store
+Thumbs.db
+.idea/
+*.suo
+*.user
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*

@@ -57,10 +57,9 @@ class ActivityParser(DmlParser):
         if self.try_eat("has"):
             self.eat(TokenType.ID, "activities")
             self.eat(TokenType.SYMBOL, "{")
-            if not self.match("}"):
+            while self.match("Activity"):
                 diag["activities"].append(self.parse_activity())
-                while self.try_eat(","):
-                    diag["activities"].append(self.parse_activity())
+                self.try_eat(",")
             self.eat(TokenType.SYMBOL, "}")
             
         return diag
@@ -86,7 +85,9 @@ class ActivityParser(DmlParser):
             
         if self.try_eat("requireCapability"):
             self.eat(TokenType.SYMBOL, ":")
-            act["requiredCapability"] = self.parse_estring()
+            req_cap = self.parse_estring()
+            act["requiredCapability"] = req_cap
+            act["require_capability"] = req_cap
             if self.try_eat("{"):
                 ctrl_items = []
                 if not self.match("}"):
@@ -110,12 +111,20 @@ class ActivityParser(DmlParser):
         if self.try_eat("conditions"):
             self.eat(TokenType.SYMBOL, "{")
             while not self.match("}"):
-                self.lexer.advance() # Simplified skip
+                self.advance_token() # Simplified skip
             self.eat(TokenType.SYMBOL, "}")
             
         if self.try_eat("nextActivity"):
             self.eat(TokenType.SYMBOL, ":")
-            act["nextActivity"] = self.parse_qualified_name()
+            nxt = self.parse_qualified_name()
+            act["nextActivity"] = nxt
+            act["next_activity"] = nxt
+
+        if self.try_eat("nextActivityDiagram"):
+            self.eat(TokenType.SYMBOL, ":")
+            nxt_diag = self.parse_qualified_name()
+            act["nextActivityDiagram"] = nxt_diag
+            act["next_activity_diagram"] = nxt_diag
             
         if self.try_eat("time"):
             self.eat(TokenType.SYMBOL, ":")
