@@ -1,26 +1,34 @@
-from typing import Dict, Any, List
-from app.schemas.activity import ActivityDiagramSchema
+from typing import Any, Dict
 
-def validate_activity_diagram(diagram: Dict[str, Any]) -> List[str]:
+def validate_model(diagram: Dict[str, Any], kb: Dict[str, Any]) -> Dict[str, Any]:
     errors = []
-    if "name" not in diagram or not diagram["name"]:
-        errors.append("Diagram must have a name.")
+    warnings = []
     
-    activity_names = set()
+    if not diagram.get("name"):
+        errors.append("Diagram is missing a name")
+        
+    seen_activities = set()
+    
     for act in diagram.get("activities", []):
-        name = act.get("name")
-        if not name:
-            errors.append("Activity must have a name.")
-        elif name in activity_names:
-            errors.append(f"Duplicate activity name: {name}")
-        else:
-            activity_names.add(name)
+        act_name = act.get("name")
+        if not act_name:
+            errors.append("Activity missing name")
+            continue
             
-        for cmd in act.get("commands", []):
-            if not isinstance(cmd.get("name"), str) or not cmd.get("name"):
-                errors.append(f"Invalid command in activity {name}.")
-        for evt in act.get("events", []):
-            if not isinstance(evt.get("name"), str) or not evt.get("name"):
-                errors.append(f"Invalid event in activity {name}.")
-    
-    return errors
+        if act_name in seen_activities:
+            errors.append(f"Duplicate activity name: {act_name}")
+        seen_activities.add(act_name)
+        
+        cap = act.get("bindCapability") or act.get("requiredCapability")
+        if cap and cap not in kb.get("capabilities", {}):
+            errors.append(f"Capability '{cap}' not found in Knowledge Base")
+            
+        for op in act.get("requiresOperation", []):
+            if op not in kb.get("operations", {}):
+                errors.append(f"Operation '{op}' not found in Knowledge Base")
+                
+        for cond in act.get("conditionalActivity", []):
+            if cond.get("onTrueNextActivity") == act_name:
+                errors.append(f"Cycle detected: Activity '{act_name}' transitions to itself")
+                
+    return {"errors": errors, "warnings": warnings}

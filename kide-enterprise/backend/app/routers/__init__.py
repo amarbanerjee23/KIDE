@@ -1,10 +1,18 @@
 from fastapi import APIRouter
-from app.routers import auth, projects, transform, export, admin, validate
+from .auth import router as auth_router
+from .projects import router as projects_router
+from .admin import router as admin_router
+from .parse import router as parse_router
+from .transform import router as transform_router
+from .export import router as export_router
+from .validate import router as validate_router
 
-api_router = APIRouter()
-api_router.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
-api_router.include_router(projects.router, prefix="/api/v1/projects", tags=["projects"])
-api_router.include_router(transform.router, prefix="/api/v1/transform", tags=["transform"])
-api_router.include_router(export.router, prefix="/api/v1/export", tags=["export"])
-api_router.include_router(admin.router, prefix="/api/v1/admin", tags=["admin"])
-api_router.include_router(validate.router, prefix="/api/v1/validate", tags=["validate"])
+api_router = APIRouter(prefix="/api/v1")
+
+api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
+api_router.include_router(projects_router, prefix="/projects", tags=["projects"])
+api_router.include_router(admin_router, prefix="/admin", tags=["admin"])
+api_router.include_router(parse_router)
+api_router.include_router(transform_router)
+api_router.include_router(export_router)
+api_router.include_router(validate_router)

@@ -1,13 +1,12 @@
-from pydantic import BaseModel
 from typing import List, Optional
-from app.schemas.dml import ParameterSchema
+from pydantic import BaseModel, Field
+from .dml import Parameter
 
-class OperationSchema(BaseModel):
+class Operation(BaseModel):
     name: str
-    input_parameters: List[ParameterSchema] = []
-    output_parameters: List[ParameterSchema] = []
-    executable_script: Optional[str] = None
+    inputParameters: List[Parameter] = Field(default_factory=list)
+    executableScript: Optional[str] = None
+    outputParameters: Optional[Parameter] = None
 
-class OperationDescriptionsSchema(BaseModel):
-    operations: List[OperationSchema] = []
-
+class OperationDescriptions(BaseModel):
+    operations: List[Operation] = Field(default_factory=list)

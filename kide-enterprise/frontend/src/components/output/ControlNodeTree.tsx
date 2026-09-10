@@ -1,84 +1,88 @@
 import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, Activity, Settings, Zap, Bell, Database } from 'lucide-react';
-import { useEditorStore } from '../../stores/editorStore';
+import { MncModel } from '../../types/models';
+import { ChevronRight, ChevronDown, Activity, Settings, Cpu, Radio, AlertCircle, Database, GitMerge } from 'lucide-react';
 
-const TreeNode: React.FC<{ label: string, icon?: React.ReactNode, children?: React.ReactNode }> = ({ label, icon, children }) => {
-  const [isOpen, setIsOpen] = useState(true);
-  const hasChildren = React.Children.count(children) > 0;
+interface Props {
+  model: MncModel;
+}
 
+const TreeNode = ({ label, icon: Icon, children, defaultOpen = false }: any) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  
   return (
     <div className="ml-4">
       <div 
-        className={`flex items-center py-1 px-2 hover:bg-accent/50 rounded-md cursor-pointer text-sm ${!hasChildren ? 'ml-6' : ''}`}
+        className="flex items-center gap-2 py-1 cursor-pointer hover:bg-surface rounded px-2"
         onClick={() => setIsOpen(!isOpen)}
       >
-        {hasChildren && (
-          <span className="mr-1 text-gray-400">
-            {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          </span>
+        {children ? (
+          isOpen ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />
+        ) : (
+          <span className="w-3.5 inline-block"></span>
         )}
-        {icon && <span className="mr-2 text-highlight">{icon}</span>}
-        <span className="text-gray-200">{label}</span>
+        {Icon && <Icon size={14} className="text-highlight" />}
+        <span className="text-sm text-gray-200">{label}</span>
       </div>
-      {isOpen && hasChildren && <div className="ml-2 border-l border-accent/50 pl-2">{children}</div>}
+      {isOpen && children && <div className="border-l border-accent ml-2">{children}</div>}
     </div>
   );
 };
 
-const ControlNodeTree = () => {
-  const transformResult = useEditorStore(state => state.transformResult);
-  if (!transformResult?.model) return <div className="p-6 text-gray-500">Run Transform to see output</div>;
-
-  const model = transformResult.model;
-  const cn = model.interfaceDescription.controlNode;
-
+export const ControlNodeTree: React.FC<Props> = ({ model }) => {
+  const { interface_description, control_node } = model;
+  
   return (
-    <div className="p-4 h-full overflow-y-auto">
-      <h3 className="text-sm font-semibold text-gray-400 mb-4 px-2 uppercase tracking-wider">Hierarchy View</h3>
-      <div className="-ml-4">
-        <TreeNode label={`Model: ${model.name}`} icon={<Database className="w-4 h-4" />}>
-          <TreeNode label={`Interface: ${model.interfaceDescription.name}`} icon={<Settings className="w-4 h-4" />}>
-            <TreeNode label={`ControlNode: ${cn.name}`} icon={<Activity className="w-4 h-4" />}>
-              
-              <TreeNode label="Operating States">
-                {cn.operatingStates?.map((os, i) => (
-                  <TreeNode key={i} label={os.name} />
-                ))}
-              </TreeNode>
-
-              <TreeNode label="Actions" icon={<PlayIcon />}>
-                {cn.actions?.map((act, i) => (
-                  <TreeNode key={i} label={`${act.name} (${act.type})`} />
-                ))}
-              </TreeNode>
-
-              <TreeNode label="Events" icon={<Zap className="w-4 h-4" />}>
-                {cn.eventBlock?.map((ev, i) => (
-                  <TreeNode key={i} label={ev.event} />
-                ))}
-              </TreeNode>
-
-              <TreeNode label="Alarms" icon={<Bell className="w-4 h-4" />}>
-                {cn.alarmBlock?.map((al, i) => (
-                  <TreeNode key={i} label={`${al.alarm} [${al.severity}]`} />
-                ))}
-              </TreeNode>
-
-              <TreeNode label="Data Points" icon={<Database className="w-4 h-4" />}>
-                {cn.dataPointBlock?.map((dp, i) => (
-                  <TreeNode key={i} label={`${dp.name} (${dp.type})`} />
-                ))}
-              </TreeNode>
-
+    <div className="font-mono text-sm">
+      <TreeNode label={model.name} icon={Settings} defaultOpen>
+        <TreeNode label="Interface Description" icon={Cpu} defaultOpen>
+          <TreeNode label={`Commands (${interface_description.commands.length})`}>
+            {interface_description.commands.map((c, i) => (
+              <TreeNode key={i} label={c.name} icon={Activity} />
+            ))}
+          </TreeNode>
+          <TreeNode label={`Events (${interface_description.events.length})`}>
+            {interface_description.events.map((e, i) => (
+              <TreeNode key={i} label={e.name} icon={Radio} />
+            ))}
+          </TreeNode>
+          <TreeNode label={`Alarms (${interface_description.alarms.length})`}>
+            {interface_description.alarms.map((a, i) => (
+              <TreeNode key={i} label={a.name} icon={AlertCircle} />
+            ))}
+          </TreeNode>
+          <TreeNode label={`Data Points (${interface_description.data_points.length})`}>
+            {interface_description.data_points.map((d, i) => (
+              <TreeNode key={i} label={d.name} icon={Database} />
+            ))}
+          </TreeNode>
+          {interface_description.operating_states && (
+            <TreeNode label={`States (${interface_description.operating_states.states.length})`}>
+              {interface_description.operating_states.states.map((s, i) => (
+                <TreeNode key={i} label={s.name} icon={GitMerge} />
+              ))}
             </TreeNode>
+          )}
+        </TreeNode>
+
+        <TreeNode label="Control Node" icon={Cpu} defaultOpen>
+          <TreeNode label={`Command Blocks (${control_node.command_response_blocks?.length || 0})`}>
+            {control_node.command_response_blocks?.map((b, i) => (
+              <TreeNode key={i} label={`Block: ${b.command_ref}`}>
+                {b.action && <TreeNode label="Action configured" />}
+                {b.validation_rules && <TreeNode label={`${b.validation_rules.length} Validations`} />}
+                {b.response_blocks?.map((rb, j) => (
+                  <TreeNode key={j} label={`Response: ${rb.response_ref}`} />
+                ))}
+              </TreeNode>
+            ))}
+          </TreeNode>
+          <TreeNode label={`Event Blocks (${control_node.event_blocks?.length || 0})`}>
+             {control_node.event_blocks?.map((b, i) => (
+              <TreeNode key={i} label={b.event_ref} />
+            ))}
           </TreeNode>
         </TreeNode>
-      </div>
+      </TreeNode>
     </div>
   );
 };
-
-const PlayIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>;
-
-export default ControlNodeTree;
-

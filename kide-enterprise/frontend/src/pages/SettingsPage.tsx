@@ -1,4 +1,3 @@
-import React from 'react';
 import { useAuthStore } from '../stores/authStore';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -14,9 +13,9 @@ const SettingsPage = () => {
         <section className="bg-surface border border-accent rounded-lg p-6">
           <h2 className="text-xl font-semibold text-white mb-4">Profile Information</h2>
           <div className="space-y-4 max-w-md">
-            <Input label="Full Name" defaultValue={user?.full_name} disabled />
-            <Input label="Email Address" defaultValue={user?.email} disabled />
-            <Input label="Role" defaultValue={user?.role} disabled />
+            <Input label="Full Name" defaultValue={user?.full_name || user?.name || ''} disabled />
+            <Input label="Email Address" defaultValue={user?.email || ''} disabled />
+            <Input label="Role" defaultValue={user?.role || 'Member'} disabled />
             <Button className="mt-4">Update Profile</Button>
           </div>
         </section>

@@ -9,7 +9,8 @@ from app.auth.dependencies import get_db, get_current_user
 
 router = APIRouter()
 
-@router.get("", response_model=List[ProjectResponse])
+@router.get("")
+@router.get("/")
 async def list_projects(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Project).where(Project.org_id == current_user.org_id))
     projects = result.scalars().all()

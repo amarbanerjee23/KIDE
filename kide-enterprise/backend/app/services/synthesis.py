@@ -1,86 +1,134 @@
-from typing import Dict, Any, List, Optional
-from app.schemas.activity import ActivitySchema
-from app.schemas.capability import CapabilitySchema
+from typing import Any, Dict, List
 
 class SynthesizedBlocks:
     def __init__(self):
+        self.used_interfaces = []
+        self.init_actions = []
+        self.child_nodes = []
+        self.command_response_blocks = []
+        self.event_blocks = []
+        self.alarm_blocks = []
+        self.data_point_blocks = []
+        self.operating_states = []
+        self.subscribed_items = {"events": [], "alarms": [], "data_points": []}
         self.commands = []
         self.events = []
         self.alarms = []
         self.data_points = []
         self.responses = []
+        self.actions = []
 
-def resolve_capability(knowledge_base: Dict[str, Any], operation_ref: str = None, capability_ref: str = None) -> Optional[CapabilitySchema]:
-    if not knowledge_base:
-        return None
-        
-    capabilities = knowledge_base.get("capabilities", [])
-    
-    # If capability is directly referenced
-    if capability_ref:
-        for cap in capabilities:
-            if cap.get("name") == capability_ref:
-                return CapabilitySchema(**cap)
-                
-    # If operation is referenced, in a real knowledge base, we'd query an ontology 
-    # to find which capability provides this operation.
-    # Here we mock that ontology resolution:
-    if operation_ref:
-        for cap in capabilities:
-            # check if capability init process executes this operation
-            init_proc = cap.get("required_init_process", {})
-            if init_proc:
-                exec_ops = init_proc.get("execute_operations", [])
-                for op in exec_ops:
-                    if op.get("operation") == operation_ref:
-                        return CapabilitySchema(**cap)
-    return None
+def _extract_name(item: Any) -> str:
+    if isinstance(item, str):
+        return item
+    if isinstance(item, dict):
+        return item.get("name") or item.get("alarm") or item.get("event") or item.get("command") or ""
+    return str(item)
 
-def synthesize_interface_blocks(activities: List[ActivitySchema], knowledge_base: Dict[str, Any] = None) -> SynthesizedBlocks:
+def synthesize(activity_diagram: Dict[str, Any], kb: Dict[str, Any]) -> SynthesizedBlocks:
     blocks = SynthesizedBlocks()
-    # Add default lifecycle blocks
-    blocks.commands.append({"name": "INIT", "type": "lifecycle"})
-    blocks.responses.append({"name": "INIT_RES", "type": "lifecycle"})
-    blocks.events.append({"name": "Started", "type": "lifecycle"})
-    blocks.events.append({"name": "Ready", "type": "lifecycle"})
-    blocks.events.append({"name": "Stopped", "type": "lifecycle"})
-    blocks.alarms.append({"name": "Aborted", "severity": "MEDIUM"})
     
-    for act in activities:
-        resolved = False
-        
-        # Knowledge-driven synthesis
-        if knowledge_base and (act.require_operation or act.require_capability):
-            cap = resolve_capability(knowledge_base, act.require_operation, act.require_capability)
-            if cap:
-                resolved = True
-                if cap.provides_control_capabilities:
-                    for cmd in cap.provides_control_capabilities.commands:
-                        blocks.commands.append(cmd)
-                        blocks.responses.append({"name": f"ACK_{cmd.get('name', 'cmd')}", "type": "ack"})
-                    for evt in cap.provides_control_capabilities.events:
-                        blocks.events.append(evt)
-                    for alarm in cap.provides_control_capabilities.alarms:
-                        blocks.alarms.append(alarm)
-                    for dp in cap.provides_control_capabilities.data_points:
-                        blocks.data_points.append(dp)
-        
-        # Fallback to direct properties if knowledge resolution failed or was not requested
-        if not resolved:
-            for cmd in act.commands:
-                blocks.commands.append(cmd)
-                blocks.responses.append({"name": f"ACK_{cmd.get('name', 'cmd')}", "type": "ack"})
-            for evt in act.events:
-                blocks.events.append(evt)
-            for alarm in act.alarms:
-                al = dict(alarm)
-                if "severity" not in al:
-                    al["severity"] = "MEDIUM"
-                blocks.alarms.append(al)
-            for dp in act.data_points:
-                d = dict(dp)
-                if "type" not in d:
-                    d["type"] = "string"
-                blocks.data_points.append(d)
-                
+    # 1. Default lifecycle blocks
+    blocks.commands.append({"name": "INIT", "parameters": []})
+    blocks.responses.append({"name": "INIT_RES", "parameters": []})
+    for ev in ["Started", "Ready", "Stopped"]:
+        blocks.events.append({"name": ev, "parameters": []})
+    blocks.alarms.append({"name": "Aborted", "parameters": []})
+    
+    # 2. Default operating states
+    blocks.operating_states.extend([
+        {"name": "INITIALIZED", "parameters": []},
+        {"name": "READY", "parameters": []}
+    ])
+    
+    for st in activity_diagram.get("default_operating_states", []) or activity_diagram.get("defaultOperatingStates", []):
+        name = st.get("name") if isinstance(st, dict) else str(st)
+        blocks.operating_states.append({"name": name, "parameters": []})
+    
+    # Process activities
+    for act in activity_diagram.get("activities", []):
+        act_name = act.get("name", "")
+        if act_name:
+            req_op = bool(act.get("requires_operation") or act.get("requireOperation"))
+            blocks.actions.append({
+                "name": act_name,
+                "requires_operation": req_op,
+                "requiresOperation": req_op,
+                "type": "operation" if req_op else "standard",
+                "parameters": act.get("parameters", []),
+                "transitions": act.get("transitions", [])
+            })
+            blocks.operating_states.append({"name": act_name, "parameters": []})
+            
+        # Direct commands, events, alarms, data points on activity
+        for c in act.get("commands", []):
+            name = _extract_name(c)
+            if name:
+                blocks.commands.append({"name": name, "parameters": []})
+        for e in act.get("events", []):
+            name = _extract_name(e)
+            if name:
+                blocks.events.append({"name": name, "parameters": []})
+        for a in act.get("alarms", []):
+            name = _extract_name(a)
+            if name:
+                blocks.alarms.append({"name": name, "parameters": []})
+        for d in act.get("dataPoints", []) or act.get("data_points", []):
+            name = _extract_name(d)
+            if name:
+                blocks.data_points.append({"name": name, "type": "string", "parameters": []})
+
+        # Bound capability
+        cap_name = act.get("bindCapability") or act.get("requiredCapability")
+        cap = kb.get("capabilities", {}).get(cap_name) if isinstance(kb, dict) else None
+        if cap:
+            blocks.used_interfaces.extend(cap.get("componentInterface", []))
+            
+            req_init = cap.get("requiredINITProcess", {})
+            if req_init:
+                for ev in req_init.get("publishEvents", []):
+                    blocks.subscribed_items["events"].append(_extract_name(ev))
+                for al in req_init.get("raiseAlarms", []):
+                    blocks.subscribed_items["alarms"].append(_extract_name(al))
+                for dp in req_init.get("triggerDataPoints", []):
+                    blocks.subscribed_items["data_points"].append(_extract_name(dp))
+                    
+            ctrl = cap.get("providesControlCapabilities", {})
+            for cmd in ctrl.get("commands", []):
+                cname = _extract_name(cmd)
+                blocks.commands.append({"name": cname, "parameters": []})
+                crb = {
+                    "name": cname,
+                    "command": cname,
+                    "command_ref": cname,
+                    "action": {"fireCommands": [{"command": cname}]},
+                    "responseBlock": [],
+                    "validationRules": []
+                }
+                blocks.command_response_blocks.append(crb)
+
+            for ev in ctrl.get("events", []):
+                ename = _extract_name(ev)
+                blocks.events.append({"name": ename, "parameters": []})
+                blocks.event_blocks.append({"event": ename, "event_ref": ename, "validationRules": []})
+
+            for al in ctrl.get("alarms", []):
+                aname = _extract_name(al)
+                blocks.alarms.append({"name": aname, "parameters": []})
+                blocks.alarm_blocks.append({"alarm": aname, "alarm_ref": aname, "validationRules": []})
+
+            for dp in ctrl.get("dataPoints", []):
+                dname = _extract_name(dp)
+                blocks.data_points.append({"name": dname, "type": "string", "parameters": []})
+                blocks.data_point_blocks.append({"dataPoints": [dname], "data_point_refs": [dname], "validationRules": []})
+
+        if act.get("childActivityDiagram"):
+            blocks.child_nodes.append(act["childActivityDiagram"])
+
+        for cond in act.get("conditionalActivity", []):
+            if cond.get("onTrueNextActivity"):
+                blocks.operating_states.append({"name": cond.get("onTrueNextActivity"), "parameters": []})
+            if cond.get("onTrueFinalResult"):
+                blocks.operating_states.append({"name": cond.get("onTrueFinalResult"), "parameters": []})
+
     return blocks

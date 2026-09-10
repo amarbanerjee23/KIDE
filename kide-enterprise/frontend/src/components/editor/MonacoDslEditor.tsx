@@ -1,74 +1,80 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import Editor, { useMonaco } from '@monaco-editor/react';
-import { useEditorStore } from '../../stores/editorStore';
+import { useEditorStore, useActiveFile } from '../../stores/editorStore';
+import { parseText } from '../../api/parse';
 
-interface MonacoDslEditorProps {
-  readOnly?: boolean;
-}
-
-const MonacoDslEditor: React.FC<MonacoDslEditorProps> = ({ readOnly = false }) => {
+export const MonacoDslEditor: React.FC = () => {
+  const activeFile = useActiveFile();
+  const { updateFileContent, validationErrors, setParsedModel } = useEditorStore();
   const monaco = useMonaco();
-  const { files, activeFileId, updateFileContent, validationErrors } = useEditorStore();
+  const editorRef = useRef<any>(null);
+  const debounceTimerRef = useRef<any>(null);
 
-  const activeFile = files.find(f => f.id === activeFileId);
+  useEffect(() => {
+    if (monaco) {
+      monaco.editor.defineTheme('kide-dark', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [],
+        colors: {
+          'editor.background': '#0a0a1a',
+        }
+      });
+    }
+  }, [monaco]);
 
-  React.useEffect(() => {
-    if (monaco && validationErrors.length > 0) {
-      // In a real app we would map validation errors back to specific lines based on the AST.
-      // For now, we put an error at line 1.
-      const model = monaco.editor.getModels()[0]; // Grab the active model
-      if (model) {
-        const markers = validationErrors.map(err => ({
-          message: err.message,
-          severity: monaco.MarkerSeverity.Error,
-          startLineNumber: 1,
-          startColumn: 1,
-          endLineNumber: 1,
-          endColumn: 1,
-        }));
-        monaco.editor.setModelMarkers(model, 'kide', markers);
-      }
-    } else if (monaco) {
-      const model = monaco.editor.getModels()[0];
-      if (model) {
-        monaco.editor.setModelMarkers(model, 'kide', []);
+  const parseDebounced = (content: string, language: string, fileId: string) => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(async () => {
+      const result = await parseText(language, content);
+      setParsedModel(fileId, result.ast);
+    }, 300);
+  };
+
+  const handleEditorChange = (value: string | undefined) => {
+    if (value !== undefined && activeFile) {
+      updateFileContent(activeFile.id, value);
+      if (activeFile.language !== 'json') {
+        parseDebounced(value, activeFile.language, activeFile.id);
       }
     }
-  }, [monaco, validationErrors, activeFileId]);
+  };
+
+  useEffect(() => {
+    if (monaco && activeFile && editorRef.current) {
+      const model = editorRef.current.getModel();
+      const errors = validationErrors[activeFile.id] || [];
+      const markers = errors.map(err => ({
+        severity: err.severity === 'error' ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning,
+        message: err.message,
+        startLineNumber: err.line || 1,
+        startColumn: err.column || 1,
+        endLineNumber: err.line || 1,
+        endColumn: (err.column || 1) + 1,
+      }));
+      monaco.editor.setModelMarkers(model, 'kide', markers);
+    }
+  }, [monaco, activeFile, validationErrors]);
 
   if (!activeFile) {
-    return <div className="flex-1 flex items-center justify-center text-gray-500 bg-background">No file selected</div>;
+    return <div className="h-full flex items-center justify-center text-gray-500 bg-background">Select a file to edit</div>;
   }
 
-  // Get Monaco language from extension
-  let editorLanguage = 'json';
-  if (activeFile.name.endsWith('.dml')) editorLanguage = 'dmldsl';
-  if (activeFile.name.endsWith('.operation')) editorLanguage = 'operationdsl';
-  if (activeFile.name.endsWith('.capability')) editorLanguage = 'capabilitydsl';
-  // Note: we haven't registered 'activitydsl' yet, so default to json for .activity
-  if (activeFile.name.endsWith('.activity')) editorLanguage = 'json';
-
   return (
-    <div className="flex-1 w-full h-full border-r border-[#0f3460] overflow-hidden">
-      <Editor
-        height="100%"
-        language={editorLanguage}
-        theme="vs-dark"
-        value={activeFile.content}
-        path={activeFile.name} // path helps Monaco separate models for different tabs
-        onChange={(val) => updateFileContent(activeFile.id, val || '')}
-        options={{
-          minimap: { enabled: false },
-          fontSize: 14,
-          readOnly,
-          wordWrap: 'on',
-          scrollBeyondLastLine: false,
-          formatOnPaste: true,
-          padding: { top: 16 }
-        }}
-      />
-    </div>
+    <Editor
+      height="100%"
+      language={activeFile.language}
+      theme="kide-dark"
+      value={activeFile.content}
+      onChange={handleEditorChange}
+      onMount={(editor) => { editorRef.current = editor; }}
+      options={{
+        minimap: { enabled: false },
+        fontSize: 14,
+        fontFamily: "'Fira Code', 'JetBrains Mono', monospace",
+        scrollBeyondLastLine: false,
+        padding: { top: 16 }
+      }}
+    />
   );
 };
-
-export default MonacoDslEditor;

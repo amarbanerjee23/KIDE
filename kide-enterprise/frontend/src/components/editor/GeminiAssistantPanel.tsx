@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Sparkles, Send, X } from 'lucide-react';
-import Button from '../common/Button';
 
 interface Message {
   id: string;

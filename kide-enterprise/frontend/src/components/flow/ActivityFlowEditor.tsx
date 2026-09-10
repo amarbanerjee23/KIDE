@@ -1,126 +1,161 @@
-import React, { useEffect, useMemo, useCallback } from 'react';
-import {
-  ReactFlow,
-  MiniMap,
-  Controls,
-  Background,
-  useNodesState,
-  useEdgesState,
-  MarkerType,
-  BackgroundVariant,
-  NodeMouseHandler
-} from '@xyflow/react';
+import React, { useMemo } from 'react';
+import { ReactFlow, Background, Controls, MiniMap, Node, Edge, useNodesState, useEdgesState } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { useEditorStore } from '../../stores/editorStore';
+import { ActivityDiagram } from '../../types/models';
 import { nodeTypes } from './FlowNodeTypes';
-import NodePropertyForm from './NodePropertyForm';
+import { useActivityFile } from '../../stores/editorStore';
 
-const ActivityFlowEditor = () => {
-  const activityJson = useEditorStore(state => state.activityJson);
-  const setSelectedNodeId = useEditorStore(state => state.setSelectedNodeId);
-  const selectedNodeId = useEditorStore(state => state.selectedNodeId);
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+interface Props {
+  activity?: ActivityDiagram;
+}
 
-  const onNodeClick: NodeMouseHandler = useCallback((event, node) => {
-    if (node.type === 'activity') {
-      setSelectedNodeId(node.id);
-    } else {
-      setSelectedNodeId(null);
-    }
-  }, [setSelectedNodeId]);
+const emptyDiagram: ActivityDiagram = { name: 'Empty', activities: [] };
 
-  const onPaneClick = useCallback(() => {
-    setSelectedNodeId(null);
-  }, [setSelectedNodeId]);
-
-  useEffect(() => {
-    try {
-      const data = JSON.parse(activityJson);
-      if (!data.activities) return;
-
-      const newNodes: any[] = [];
-      const newEdges: any[] = [];
-      let y = 100;
-
-      newNodes.push({ id: 'start', type: 'start', position: { x: 250, y: 0 }, data: { label: 'Start' } });
-
-      data.activities.forEach((act: any, idx: number) => {
-        newNodes.push({
-          id: act.name,
-          type: 'activity',
-          position: { x: 250, y },
-          data: { ...act },
-          selected: act.name === selectedNodeId
-        });
-        
-        if (idx === 0) {
-          newEdges.push({
-            id: `e-start-${act.name}`,
-            source: 'start',
-            target: act.name,
-            markerEnd: { type: MarkerType.ArrowClosed }
-          });
-        }
-        
-        act.transitions?.forEach((t: any) => {
-          newEdges.push({
-            id: `e-${t.from}-${t.to}`,
-            source: t.from,
-            target: t.to,
-            label: t.condition || '',
-            markerEnd: { type: MarkerType.ArrowClosed }
-          });
-        });
-        y += 150;
+const generateLayout = (diagram: ActivityDiagram): { nodes: Node[], edges: Edge[] } => {
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
+  
+  let yPos = 50;
+  let prevId = 'start';
+  
+  nodes.push({
+    id: 'start',
+    type: 'start',
+    position: { x: 250, y: yPos },
+    data: { label: 'Start' }
+  });
+  
+  yPos += 100;
+  
+  (diagram.activities || []).forEach((act, index) => {
+    const actId = `act-${index}`;
+    
+    if (act.condition) {
+      nodes.push({
+        id: actId,
+        type: 'condition',
+        position: { x: 200, y: yPos },
+        data: { condition: act.condition, label: act.name }
       });
-
-      newNodes.push({ id: 'end', type: 'end', position: { x: 250, y }, data: { label: 'End' } });
       
-      // Auto-connect last nodes without outgoing transitions to 'end'
-      const nodesWithOutgoing = new Set(newEdges.map(e => e.source));
-      data.activities.forEach((act: any) => {
-        if (!nodesWithOutgoing.has(act.name)) {
-          newEdges.push({
-            id: `e-${act.name}-end`,
-            source: act.name,
-            target: 'end',
-            markerEnd: { type: MarkerType.ArrowClosed }
-          });
-        }
+      edges.push({
+        id: `e-${prevId}-${actId}`,
+        source: prevId,
+        target: actId,
+        type: 'smoothstep'
       });
-
-      setNodes(newNodes);
-      setEdges(newEdges);
-    } catch (e) {
-      // JSON is invalid, keep existing flow
+      
+      // Simple layout: True goes right, False goes left
+      if (act.condition.true_outcome) {
+        const trueNodeId = `${actId}-true`;
+        nodes.push({
+          id: trueNodeId,
+          type: 'activity',
+          position: { x: 400, y: yPos + 150 },
+          data: { activity: { name: act.condition.true_outcome.outcome }, label: act.condition.true_outcome.outcome }
+        });
+        edges.push({
+          id: `e-${actId}-true`,
+          source: actId,
+          sourceHandle: 'true',
+          target: trueNodeId,
+          label: 'True',
+          type: 'smoothstep'
+        });
+      }
+      
+      if (act.condition.false_outcome) {
+        const falseNodeId = `${actId}-false`;
+        nodes.push({
+          id: falseNodeId,
+          type: 'activity',
+          position: { x: 50, y: yPos + 150 },
+          data: { activity: { name: act.condition.false_outcome.outcome }, label: act.condition.false_outcome.outcome }
+        });
+        edges.push({
+          id: `e-${actId}-false`,
+          source: actId,
+          sourceHandle: 'false',
+          target: falseNodeId,
+          label: 'False',
+          type: 'smoothstep'
+        });
+      }
+      
+      yPos += 300;
+      prevId = actId; // Not strictly correct for converging, but good enough for simple visual
+    } else {
+      nodes.push({
+        id: actId,
+        type: 'activity',
+        position: { x: 200, y: yPos },
+        data: { activity: act, label: act.name }
+      });
+      
+      edges.push({
+        id: `e-${prevId}-${actId}`,
+        source: prevId,
+        target: actId,
+        type: 'smoothstep'
+      });
+      
+      yPos += 150;
+      prevId = actId;
     }
-  }, [activityJson, selectedNodeId, setNodes, setEdges]);
+  });
+  
+  const endId = 'end';
+  nodes.push({
+    id: endId,
+    type: 'end',
+    position: { x: 250, y: yPos },
+    data: { label: 'End' }
+  });
+  
+  edges.push({
+    id: `e-${prevId}-${endId}`,
+    source: prevId,
+    target: endId,
+    type: 'smoothstep'
+  });
+  
+  return { nodes, edges };
+};
+
+export const ActivityFlowEditor: React.FC<Props> = ({ activity: propActivity }) => {
+  const storeActivity = useActivityFile();
+  const activity = propActivity || storeActivity || emptyDiagram;
+  const { nodes: initialNodes, edges: initialEdges } = useMemo(() => generateLayout(activity), [activity]);
+  
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  React.useEffect(() => {
+    const { nodes: newNodes, edges: newEdges } = generateLayout(activity);
+    setNodes(newNodes);
+    setEdges(newEdges);
+  }, [activity, setNodes, setEdges]);
 
   return (
-    <div className="w-full h-full bg-[#0a0a1a] relative">
+    <div className="w-full h-full bg-[#0a0a1a]">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodeClick={onNodeClick}
-        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         fitView
         colorMode="dark"
       >
-        <Background variant={BackgroundVariant.Dots} gap={12} size={1} color="#333" />
-        <Controls className="bg-surface border-accent fill-white" />
-        <MiniMap nodeStrokeColor="#16c79a" nodeColor="#16213e" maskColor="rgba(0,0,0,0.5)" className="bg-surface" />
+        <Background gap={16} color="#16213e" />
+        <Controls />
+        <MiniMap nodeColor={(n) => {
+          if (n.type === 'start') return '#22c55e';
+          if (n.type === 'end') return '#ef4444';
+          if (n.type === 'condition') return '#eab308';
+          return '#3b82f6';
+        }} />
       </ReactFlow>
-      {selectedNodeId && (
-        <div className="absolute top-0 right-0 h-full w-80 bg-surface border-l border-accent z-10 shadow-2xl overflow-y-auto">
-          <NodePropertyForm />
-        </div>
-      )}
     </div>
   );
 };
-export default ActivityFlowEditor;
-

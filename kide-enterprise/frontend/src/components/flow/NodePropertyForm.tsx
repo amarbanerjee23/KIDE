@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useEditorStore } from '../../stores/editorStore';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import { X } from 'lucide-react';
 
 const NodePropertyForm = () => {
-  const { activityJson, setActivityJson, selectedNodeId, setSelectedNodeId } = useEditorStore();
+  const { files, selectedNodeId, setSelectedNodeId, updateFileContent } = useEditorStore();
+  const activeFile = files.find(f => f.name.endsWith('.activity') || f.language === 'activitydsl');
   const [formData, setFormData] = useState<any>(null);
 
   useEffect(() => {
-    if (!selectedNodeId) return;
+    if (!selectedNodeId || !activeFile) return;
     try {
-      const data = JSON.parse(activityJson);
+      const data = JSON.parse(activeFile.content);
       const activity = data.activities?.find((a: any) => a.name === selectedNodeId);
       if (activity) {
         setFormData(activity);
@@ -19,7 +20,7 @@ const NodePropertyForm = () => {
     } catch (e) {
       // invalid json
     }
-  }, [activityJson, selectedNodeId]);
+  }, [activeFile, selectedNodeId]);
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
@@ -31,12 +32,13 @@ const NodePropertyForm = () => {
   };
 
   const handleSave = () => {
+    if (!activeFile) return;
     try {
-      const data = JSON.parse(activityJson);
+      const data = JSON.parse(activeFile.content);
       const index = data.activities?.findIndex((a: any) => a.name === selectedNodeId);
       if (index !== -1 && index !== undefined) {
         data.activities[index] = formData;
-        setActivityJson(JSON.stringify(data, null, 2));
+        updateFileContent(activeFile.id, JSON.stringify(data, null, 2));
       }
     } catch (e) {
       alert("Cannot save: Invalid JSON in editor");

@@ -1,49 +1,50 @@
 import React from 'react';
-import { AlertCircle, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useEditorStore } from '../../stores/editorStore';
+import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
 
-const ValidationPanel = () => {
-  const { validationErrors, transformResult } = useEditorStore();
-  const warnings = transformResult?.warnings || [];
-
-  if (validationErrors.length === 0 && warnings.length === 0 && transformResult) {
-    return (
-      <div className="p-6 flex flex-col items-center justify-center h-full text-gray-400">
-        <CheckCircle className="w-12 h-12 text-green-500 mb-4" />
-        <p className="text-lg">No validation errors or warnings found.</p>
-        <p className="text-sm mt-2">The model is perfectly valid.</p>
-      </div>
-    );
+export const ValidationPanel: React.FC = () => {
+  const { validationErrors, files } = useEditorStore();
+  
+  const entries = Object.entries(validationErrors);
+  if (entries.length === 0) {
+    return <div className="text-gray-400">No validation issues found.</div>;
   }
 
-  if (!transformResult && validationErrors.length === 0) {
-     return <div className="p-6 text-gray-500">Run Transform to see output</div>;
-  }
+  const getIcon = (severity: string) => {
+    switch (severity) {
+      case 'error': return <AlertCircle className="text-red-500 w-4 h-4" />;
+      case 'warning': return <AlertTriangle className="text-yellow-500 w-4 h-4" />;
+      default: return <Info className="text-blue-500 w-4 h-4" />;
+    }
+  };
 
   return (
-    <div className="p-4 h-full overflow-y-auto space-y-4">
-      {validationErrors.map((err, i) => (
-        <div key={`err-${i}`} className="bg-red-500/10 border border-red-500/30 rounded-md p-3 flex items-start">
-          <AlertCircle className="w-5 h-5 text-red-500 mr-3 shrink-0 mt-0.5" />
-          <div>
-            <h4 className="text-sm font-medium text-red-200">Error</h4>
-            <p className="text-sm text-red-400 mt-1">{err.message}</p>
+    <div className="space-y-4">
+      {entries.map(([fileId, errors]) => {
+        const file = files.find(f => f.id === fileId);
+        if (!errors || errors.length === 0) return null;
+        
+        return (
+          <div key={fileId} className="bg-surface rounded border border-accent p-2">
+            <div className="text-sm font-semibold text-gray-200 border-b border-accent pb-1 mb-2">
+              {file?.name || 'Unknown File'}
+            </div>
+            <ul className="space-y-2">
+              {errors.map((err, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-gray-300 bg-background p-2 rounded">
+                  {getIcon(err.severity)}
+                  <div>
+                    <span className="font-mono text-gray-500 text-xs mr-2">
+                      [{err.line || '?'}:{err.column || '?'}]
+                    </span>
+                    {err.message}
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
-      ))}
-      
-      {warnings.map((warn, i) => (
-        <div key={`warn-${i}`} className="bg-yellow-500/10 border border-yellow-500/30 rounded-md p-3 flex items-start">
-          <AlertTriangle className="w-5 h-5 text-yellow-500 mr-3 shrink-0 mt-0.5" />
-          <div>
-            <h4 className="text-sm font-medium text-yellow-200">Warning</h4>
-            <p className="text-sm text-yellow-400 mt-1">{warn}</p>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
-
-export default ValidationPanel;
-

@@ -1,4 +1,3 @@
-import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, FolderOpen, Settings, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
@@ -42,10 +41,10 @@ const Sidebar = () => {
       <div className="p-4 border-t border-[#0f3460]">
         <div className="flex items-center mb-4 px-2">
           <div className="w-8 h-8 rounded-full bg-[#16c79a] flex items-center justify-center text-background font-bold mr-3">
-            {user?.full_name?.charAt(0) || 'U'}
+            {user?.full_name?.charAt(0) || user?.name?.charAt(0) || 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-white truncate">{user?.full_name}</p>
+            <p className="text-sm font-medium text-white truncate">{user?.full_name || user?.name || user?.email}</p>
             <p className="text-xs text-gray-400 truncate">{user?.email}</p>
           </div>
         </div>

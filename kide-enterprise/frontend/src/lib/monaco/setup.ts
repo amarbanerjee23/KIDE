@@ -1,26 +1,40 @@
-import { loader } from '@monaco-editor/react';
-import { mncmlLanguageDef, mncmlMonarchTokensProvider } from './mncml';
-import { activitydslLanguageDef, activitydslMonarchTokensProvider } from './activitydsl';
-import { dmldslLanguageDef, dmldslMonarchTokensProvider } from './dmldsl';
-import { operationdslLanguageDef, operationdslMonarchTokensProvider } from './operationdsl';
-import { capabilitydslLanguageDef, capabilitydslMonarchTokensProvider } from './capabilitydsl';
+import * as monaco from 'monaco-editor';
+import { dmlLanguageDef, dmlLanguageConfig, dmlMonarchTokensProvider, dmlCompletionProvider } from './dmldsl';
+import { mncmlLanguageDef, mncmlLanguageConfig, mncmlMonarchTokensProvider, mncmlCompletionProvider } from './mncml';
+import { activityDslLanguageDef, activityDslLanguageConfig, activityDslMonarchTokensProvider, activityDslCompletionProvider } from './activitydsl';
+import { capabilityDslLanguageDef, capabilityDslLanguageConfig, capabilityDslMonarchTokensProvider, capabilityDslCompletionProvider } from './capabilitydsl';
+import { operationDslLanguageDef, operationDslLanguageConfig, operationDslMonarchTokensProvider, operationDslCompletionProvider } from './operationdsl';
 
-export function setupMonaco() {
-  loader.init().then(monaco => {
-    monaco.languages.register(mncmlLanguageDef);
-    monaco.languages.setMonarchTokensProvider('mncml', mncmlMonarchTokensProvider as any);
+export function setupMonacoLanguages() {
+  // DML
+  monaco.languages.register(dmlLanguageDef);
+  monaco.languages.setLanguageConfiguration(dmlLanguageDef.id, dmlLanguageConfig);
+  monaco.languages.setMonarchTokensProvider(dmlLanguageDef.id, dmlMonarchTokensProvider);
+  monaco.languages.registerCompletionItemProvider(dmlLanguageDef.id, dmlCompletionProvider);
 
-    monaco.languages.register(activitydslLanguageDef);
-    monaco.languages.setMonarchTokensProvider('activitydsl', activitydslMonarchTokensProvider as any);
+  // MNC-ML
+  monaco.languages.register(mncmlLanguageDef);
+  monaco.languages.setLanguageConfiguration(mncmlLanguageDef.id, mncmlLanguageConfig);
+  monaco.languages.setMonarchTokensProvider(mncmlLanguageDef.id, mncmlMonarchTokensProvider);
+  monaco.languages.registerCompletionItemProvider(mncmlLanguageDef.id, mncmlCompletionProvider);
 
-    monaco.languages.register(dmldslLanguageDef);
-    monaco.languages.setMonarchTokensProvider('dmldsl', dmldslMonarchTokensProvider as any);
+  // Activity DSL
+  monaco.languages.register(activityDslLanguageDef);
+  monaco.languages.setLanguageConfiguration(activityDslLanguageDef.id, activityDslLanguageConfig);
+  monaco.languages.setMonarchTokensProvider(activityDslLanguageDef.id, activityDslMonarchTokensProvider);
+  monaco.languages.registerCompletionItemProvider(activityDslLanguageDef.id, activityDslCompletionProvider);
 
-    monaco.languages.register(operationdslLanguageDef);
-    monaco.languages.setMonarchTokensProvider('operationdsl', operationdslMonarchTokensProvider as any);
+  // Capability DSL
+  monaco.languages.register(capabilityDslLanguageDef);
+  monaco.languages.setLanguageConfiguration(capabilityDslLanguageDef.id, capabilityDslLanguageConfig);
+  monaco.languages.setMonarchTokensProvider(capabilityDslLanguageDef.id, capabilityDslMonarchTokensProvider);
+  monaco.languages.registerCompletionItemProvider(capabilityDslLanguageDef.id, capabilityDslCompletionProvider);
 
-    monaco.languages.register(capabilitydslLanguageDef);
-    monaco.languages.setMonarchTokensProvider('capabilitydsl', capabilitydslMonarchTokensProvider as any);
-  });
+  // Operation DSL
+  monaco.languages.register(operationDslLanguageDef);
+  monaco.languages.setLanguageConfiguration(operationDslLanguageDef.id, operationDslLanguageConfig);
+  monaco.languages.setMonarchTokensProvider(operationDslLanguageDef.id, operationDslMonarchTokensProvider);
+  monaco.languages.registerCompletionItemProvider(operationDslLanguageDef.id, operationDslCompletionProvider);
 }
 
+export const setupMonaco = setupMonacoLanguages;

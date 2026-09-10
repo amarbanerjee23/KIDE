@@ -1,4 +1,3 @@
-import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
 import { projectsApi } from '../api/projects';
@@ -14,13 +13,13 @@ const DashboardPage = () => {
   });
 
   const recentProjects = [...projects].sort((a, b) => 
-    new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
   ).slice(0, 3);
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Hello, {user?.full_name}</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Hello, {user?.full_name || user?.name || 'User'}</h1>
         <p className="text-gray-400">Welcome back to KIDE Enterprise.</p>
       </div>
 
@@ -44,7 +43,7 @@ const DashboardPage = () => {
             <h3 className="text-gray-400 font-medium">Active Files</h3>
             <FolderPlus className="text-highlight w-5 h-5" />
           </div>
-          <p className="text-3xl font-bold text-white mt-4">{projects.reduce((sum, p) => sum + p.file_count, 0)}</p>
+          <p className="text-3xl font-bold text-white mt-4">{projects.reduce((sum, p) => sum + (p.file_count || 0), 0)}</p>
         </div>
       </div>
 

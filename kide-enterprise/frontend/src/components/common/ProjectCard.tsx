@@ -31,11 +31,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-[#0f3460]">
         <div className="flex items-center space-x-1">
           <FileJson className="w-3.5 h-3.5" />
-          <span>{project.file_count} files</span>
+          <span>{project.file_count || 0} files</span>
         </div>
         <div className="flex items-center space-x-1">
           <Clock className="w-3.5 h-3.5" />
-          <span>{new Date(project.updated_at).toLocaleDateString()}</span>
+          <span>{new Date(project.updated_at || project.created_at).toLocaleDateString()}</span>
         </div>
       </div>
     </div>

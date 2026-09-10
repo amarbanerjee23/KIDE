@@ -1,4 +1,3 @@
-import React from 'react';
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import AppLayout from './layouts/AppLayout';

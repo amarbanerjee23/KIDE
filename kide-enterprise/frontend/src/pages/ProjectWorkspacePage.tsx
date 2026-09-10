@@ -1,17 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import MonacoDslEditor from '../components/editor/MonacoDslEditor';
-import EditorToolbar from '../components/editor/EditorToolbar';
-import FileExplorer from '../components/editor/FileExplorer';
-import EditorTabs from '../components/editor/EditorTabs';
+import { MonacoDslEditor } from '../components/editor/MonacoDslEditor';
+import { EditorToolbar } from '../components/editor/EditorToolbar';
+import { FileExplorer } from '../components/editor/FileExplorer';
+import { EditorTabs } from '../components/editor/EditorTabs';
 import GeminiAssistantPanel from '../components/editor/GeminiAssistantPanel';
-import ActivityFlowEditor from '../components/flow/ActivityFlowEditor';
-import TransformOutput from '../components/output/TransformOutput';
-import { useEditorStore } from '../stores/editorStore';
+import { ActivityFlowEditor } from '../components/flow/ActivityFlowEditor';
+import { TransformOutput } from '../components/output/TransformOutput';
 import { Bot } from 'lucide-react';
 
 const ProjectWorkspacePage = () => {
-  const { id } = useParams();
   const [leftWidth, setLeftWidth] = useState(20); // 20% for File Explorer
   const [middleWidth, setMiddleWidth] = useState(40); // 40% for Editor
   const [topHeight, setTopHeight] = useState(60); // percentage for Flow

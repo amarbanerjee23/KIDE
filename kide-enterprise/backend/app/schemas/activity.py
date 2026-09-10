@@ -1,50 +1,51 @@
+from typing import List, Optional
+from enum import Enum
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from .dml import Parameter, PrimitiveValue
 
-class TransitionSchema(BaseModel):
-    from_state: str = Field(alias="from")
-    to_state: str = Field(alias="to")
-    condition: Optional[str] = None
+class UnitTime(str, Enum):
+    secs = 'secs'
+    mins = 'mins'
+    hrs = 'hrs'
+    days = 'days'
 
-class ActivitySchema(BaseModel):
+class ActivityCheckParameterCondition(BaseModel):
+    parameter: str
+    checkMaxValue: Optional[PrimitiveValue] = None
+    checkMinValue: Optional[PrimitiveValue] = None
+    checkValues: List[PrimitiveValue] = Field(default_factory=list)
+
+class Outcome(BaseModel):
+    capabilityOutcome: Optional[str] = None
+    outcomeValidation: List[ActivityCheckParameterCondition] = Field(default_factory=list)
+
+class ConditionalActivity(BaseModel):
+    outcomes: List[Outcome] = Field(default_factory=list)
+    bOps: List[str] = Field(default_factory=list)
+    onTrueNextActivity: Optional[str] = None
+    onTrueFinalResult: Optional[str] = None
+
+class Activity(BaseModel):
     name: str
-    requires_operation: bool = True
-    require_operation: Optional[str] = None
-    require_capability: Optional[str] = None
-    parameters: List[Dict[str, Any]] = []
-    # Legacy fallbacks or overrides
-    commands: List[Dict[str, Any]] = []
-    events: List[Dict[str, Any]] = []
-    alarms: List[Dict[str, Any]] = []
-    data_points: List[Dict[str, Any]] = []
-    transitions: List[TransitionSchema] = []
+    description: Optional[str] = None
+    inputParameters: List[str] = Field(default_factory=list)
+    requiredCapability: Optional[str] = None
+    bindCapability: Optional[str] = None
+    useControlCapabilities: List[str] = Field(default_factory=list)
+    requiresOperation: List[str] = Field(default_factory=list)
+    childActivityDiagram: Optional[str] = None
+    conditionalActivity: List[ConditionalActivity] = Field(default_factory=list)
+    nextActivity: Optional[str] = None
+    nextActivityDiagram: Optional[str] = None
+    time: Optional[float] = None
+    unit: Optional[UnitTime] = None
+    interruptedBy: List[str] = Field(default_factory=list)
+    interrupts: List[str] = Field(default_factory=list)
 
-class ActivityDiagramSchema(BaseModel):
+class ActivityDiagram(BaseModel):
     name: str
-    default_operating_states: List[str] = ["IDLE", "RUNNING", "STOPPED", "FAULT"]
-    activities: List[ActivitySchema] = []
-    data_objects: List[Dict[str, Any]] = []
-    context: Optional[Dict[str, Any]] = None
-
-class ControlNodeSchema(BaseModel):
-    name: str
-    operating_states: List[str]
-    actions: List[Dict[str, Any]]
-    event_block: List[Dict[str, Any]]
-    alarm_block: List[Dict[str, Any]]
-    data_point_block: List[Dict[str, Any]]
-    command_response_block: List[Dict[str, Any]]
-
-class InterfaceDescriptionSchema(BaseModel):
-    name: str
-    commands: List[Dict[str, Any]]
-    events: List[Dict[str, Any]]
-    responses: List[Dict[str, Any]]
-    alarms: List[Dict[str, Any]]
-    data_points: List[Dict[str, Any]]
-    operating_states: List[Dict[str, Any]]
-
-class MncModelSchema(BaseModel):
-    name: str
-    interface_description: InterfaceDescriptionSchema
-    control_node: ControlNodeSchema
+    dataObjects: List[str] = Field(default_factory=list)
+    contextDataModel: List[str] = Field(default_factory=list)
+    physicalContexts: List[str] = Field(default_factory=list)
+    producesResults: List[str] = Field(default_factory=list)
+    activities: List[Activity] = Field(default_factory=list)
