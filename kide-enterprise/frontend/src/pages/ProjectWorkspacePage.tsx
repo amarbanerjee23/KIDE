@@ -3,24 +3,33 @@ import { useParams } from 'react-router-dom';
 import { MonacoDslEditor } from '../components/editor/MonacoDslEditor';
 import { EditorToolbar } from '../components/editor/EditorToolbar';
 import { SynthesisWorkflowStepper } from '../components/workflow/SynthesisWorkflowStepper';
-
 import { FileExplorer } from '../components/editor/FileExplorer';
 import { EditorTabs } from '../components/editor/EditorTabs';
 import GeminiAssistantPanel from '../components/editor/GeminiAssistantPanel';
 import { ActivityFlowEditor } from '../components/flow/ActivityFlowEditor';
+import { MncFlowViewer } from '../components/flow/MncFlowViewer';
+import { LiveRunnerConsole } from '../components/simulation/LiveRunnerConsole';
+import { CodeGenerationStudio } from '../components/workflow/CodeGenerationStudio';
 import { TransformOutput } from '../components/output/TransformOutput';
-import { Bot, Loader2 } from 'lucide-react';
+import { 
+  Bot, Loader2, Code2, GitMerge, Activity, Play, 
+  Sparkles, Columns, ArrowRight
+} from 'lucide-react';
 import { useEditorStore } from '../stores/editorStore';
 import { projectsApi } from '../api/projects';
+import { transformWorkspace } from '../api/transform';
 
 const ProjectWorkspacePage = () => {
   const { id } = useParams<{ id: string }>();
-  const { setProject, setFiles } = useEditorStore();
+  const { 
+    setProject, setFiles, files, activeView, setActiveView, 
+    transformResult, setTransformResult, setIsTransforming, isTransforming 
+  } = useEditorStore();
   const [isLoading, setIsLoading] = useState(true);
 
   const [leftWidth, setLeftWidth] = useState(20); // 20% for File Explorer
-  const [middleWidth, setMiddleWidth] = useState(40); // 40% for Editor
-  const [topHeight, setTopHeight] = useState(60); // percentage for Flow
+  const [middleWidth, setMiddleWidth] = useState(45); // 45% for Editor in Split
+  const [topHeight, setTopHeight] = useState(55); // percentage for Flow in Split
   const [showAssistant, setShowAssistant] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
@@ -45,13 +54,13 @@ const ProjectWorkspacePage = () => {
 
     const loadProjectData = async () => {
       try {
-        const [proj, files] = await Promise.all([
+        const [proj, pFiles] = await Promise.all([
           projectsApi.getProject(numId),
           projectsApi.listFiles(numId)
         ]);
         if (!isCancelled) {
           setProject(numId, proj.name);
-          const mappedFiles = files.map(f => ({
+          const mappedFiles = pFiles.map(f => ({
             id: String(f.id),
             name: f.filename || f.name || 'untitled',
             content: f.content,
@@ -88,7 +97,7 @@ const ProjectWorkspacePage = () => {
     document.removeEventListener('mouseup', handleLeftDragEnd);
   };
 
-  // Handle Dragging Editor Resizer
+  // Handle Dragging Editor Resizer (Split mode)
   const handleMiddleDragStart = (e: React.MouseEvent) => {
     e.preventDefault();
     document.addEventListener('mousemove', handleMiddleDrag);
@@ -125,6 +134,20 @@ const ProjectWorkspacePage = () => {
     document.removeEventListener('mouseup', handleVDragEnd);
   };
 
+  const handleRunWorkspaceSynthesis = async () => {
+    if (files.length === 0) return;
+    setIsTransforming(true);
+    try {
+      const res = await transformWorkspace(files);
+      setTransformResult(res);
+      setActiveView('statemachine');
+    } catch (err) {
+      alert(`Synthesis failed: ${err}`);
+    } finally {
+      setIsTransforming(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-[#0d1117] text-gray-400 gap-3">
@@ -134,74 +157,244 @@ const ProjectWorkspacePage = () => {
     );
   }
 
+  const activeModel = transformResult?.model;
+
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden relative">
       <EditorToolbar />
       <SynthesisWorkflowStepper />
       
+      {/* Workspace View Mode Selector Bar */}
+      <div className="flex items-center justify-between px-4 py-1.5 bg-[#0f172a] border-b border-gray-800 text-xs z-10">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
+          <span className="text-gray-400 font-semibold mr-2 hidden sm:inline">Workspace View:</span>
+          
+          <button
+            onClick={() => setActiveView('editor')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
+              activeView === 'editor'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <Code2 className="w-3.5 h-3.5" />
+            <span>Code Editor</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('statemachine')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
+              activeView === 'statemachine'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <GitMerge className="w-3.5 h-3.5" />
+            <span>State Machine</span>
+            {activeModel && (
+              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-blue-900/60 text-blue-200 border border-blue-400/30">
+                Live
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveView('workflow')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
+              activeView === 'workflow'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>Workflow Diagram</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('simulator')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
+              activeView === 'simulator'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/40'
+            }`}
+          >
+            <Play className="w-3.5 h-3.5" />
+            <span>Live Controller Simulator</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('codegen')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
+              activeView === 'codegen'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-950/40'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Code Studio & Templates</span>
+          </button>
+
+          <button
+            onClick={() => setActiveView('split')}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition ${
+              activeView === 'split'
+                ? 'bg-gray-700 text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+            }`}
+            title="Side-by-Side Split View"
+          >
+            <Columns className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Split View</span>
+          </button>
+        </div>
+
+        {/* Gemini Assistant Toggle */}
+        <div className="flex items-center gap-2">
+          {!showAssistant && (
+            <button
+              onClick={() => setShowAssistant(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-blue-400 rounded-lg text-xs font-medium border border-gray-700 hover:border-blue-500/50 transition"
+            >
+              <Bot className="w-3.5 h-3.5" />
+              <span>Ask Gemini</span>
+            </button>
+          )}
+        </div>
+      </div>
+      
+      {/* Dynamic View Body according to activeView */}
       <div ref={containerRef} className="flex flex-1 overflow-hidden relative">
         
-        {/* Panel 1: File Explorer */}
-        <div style={{ width: `${leftWidth}%` }} className="h-full min-w-[160px]">
-          <FileExplorer />
-        </div>
+        {/* VIEW 1: CLEAN CODE EDITOR MODE */}
+        {activeView === 'editor' && (
+          <div className="flex flex-1 h-full overflow-hidden">
+            {/* File Explorer Panel */}
+            <div style={{ width: `${leftWidth}%` }} className="h-full min-w-[180px]">
+              <FileExplorer />
+            </div>
 
-        {/* Resizer 1 */}
-        <div 
-          className="w-1 bg-accent hover:bg-highlight cursor-col-resize z-10 transition-colors"
-          onMouseDown={handleLeftDragStart}
-        />
+            {/* Resizer */}
+            <div 
+              className="w-1 bg-accent hover:bg-highlight cursor-col-resize z-10 transition-colors"
+              onMouseDown={handleLeftDragStart}
+            />
 
-        {/* Panel 2: Editor */}
-        <div style={{ width: `${middleWidth}%` }} className="h-full flex flex-col min-w-[200px]">
-          <EditorTabs />
-          <div className="flex-1 overflow-hidden">
-            <MonacoDslEditor />
+            {/* Monaco Editor Panel */}
+            <div className="flex-1 h-full flex flex-col min-w-[300px]">
+              <EditorTabs />
+              <div className="flex-1 overflow-hidden">
+                <MonacoDslEditor />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Resizer 2 */}
-        <div 
-          className="w-1 bg-accent hover:bg-highlight cursor-col-resize z-10 transition-colors"
-          onMouseDown={handleMiddleDragStart}
-        />
-
-        {/* Panel 3: Flow + Output */}
-        <div ref={rightContainerRef} style={{ width: `${100 - leftWidth - middleWidth}%` }} className="h-full flex flex-col min-w-[200px]">
-          
-          {/* Top Right - Flow Editor */}
-          <div style={{ height: `${topHeight}%` }} className="w-full relative min-h-[100px]">
-            <ActivityFlowEditor />
-            
-            {/* Toggle Assistant Button */}
-            {!showAssistant && (
-              <button 
-                onClick={() => setShowAssistant(true)}
-                className="absolute top-4 right-4 bg-[#161b22] border border-gray-700 hover:border-blue-500 text-blue-400 p-2 rounded-full shadow-lg transition-all z-50 flex items-center justify-center group"
-                title="Open Gemini Assistant"
-              >
-                <Bot className="w-5 h-5" />
-                <span className="w-0 overflow-hidden group-hover:w-24 group-hover:ml-2 whitespace-nowrap transition-all duration-300 text-xs font-semibold">
-                  Ask Gemini
-                </span>
-              </button>
+        {/* VIEW 2: FULL-CANVAS SUPERVISORY STATE MACHINE */}
+        {activeView === 'statemachine' && (
+          <div className="flex-1 h-full relative">
+            {activeModel ? (
+              <MncFlowViewer model={activeModel} mode="statemachine" />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-[#0b0f19]">
+                <div className="p-4 rounded-full bg-blue-950/60 border border-blue-800/80 text-blue-400 mb-4">
+                  <GitMerge className="w-10 h-10" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">No Synthesized Model Yet</h3>
+                <p className="text-xs text-gray-400 max-w-md mb-6 leading-relaxed">
+                  Run the thesis synthesis engine to automatically generate the full supervisory state machine, 
+                  operating states, lifecycle commands, events, and validation blocks from your activity diagram.
+                </p>
+                <button
+                  onClick={handleRunWorkspaceSynthesis}
+                  disabled={isTransforming}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center gap-2 shadow-lg shadow-blue-600/30 transition"
+                >
+                  {isTransforming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  <span>Synthesize Model From Workspace</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
           </div>
+        )}
 
-          {/* Resizer V */}
-          <div 
-            className="h-1 bg-accent hover:bg-highlight cursor-row-resize z-10 transition-colors"
-            onMouseDown={handleVDragStart}
-          />
-
-          {/* Bottom Right - Output */}
-          <div style={{ height: `${100 - topHeight}%` }} className="w-full bg-surface min-h-[100px]">
-            <TransformOutput />
+        {/* VIEW 3: FULL-CANVAS ACTIVITY WORKFLOW */}
+        {activeView === 'workflow' && (
+          <div className="flex-1 h-full relative">
+            <ActivityFlowEditor />
           </div>
+        )}
 
-        </div>
+        {/* VIEW 4: FULL-CANVAS LIVE SIMULATOR */}
+        {activeView === 'simulator' && (
+          <div className="flex-1 h-full p-4 overflow-hidden bg-[#0b0f19]">
+            {Number(id) ? (
+              <LiveRunnerConsole projectId={Number(id)} />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400 text-xs">
+                No active project selected.
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Panel 4: Gemini Assistant (Overlay or Flex) */}
+        {/* VIEW 5: CODE GENERATION STUDIO & TEMPLATES */}
+        {activeView === 'codegen' && (
+          <div className="flex-1 h-full overflow-hidden">
+            <CodeGenerationStudio isEmbedded={true} />
+          </div>
+        )}
+
+        {/* VIEW 6: CLASSIC SIDE-BY-SIDE SPLIT VIEW */}
+        {activeView === 'split' && (
+          <>
+            {/* Panel 1: File Explorer */}
+            <div style={{ width: `${leftWidth}%` }} className="h-full min-w-[160px]">
+              <FileExplorer />
+            </div>
+
+            {/* Resizer 1 */}
+            <div 
+              className="w-1 bg-accent hover:bg-highlight cursor-col-resize z-10 transition-colors"
+              onMouseDown={handleLeftDragStart}
+            />
+
+            {/* Panel 2: Editor */}
+            <div style={{ width: `${middleWidth}%` }} className="h-full flex flex-col min-w-[200px]">
+              <EditorTabs />
+              <div className="flex-1 overflow-hidden">
+                <MonacoDslEditor />
+              </div>
+            </div>
+
+            {/* Resizer 2 */}
+            <div 
+              className="w-1 bg-accent hover:bg-highlight cursor-col-resize z-10 transition-colors"
+              onMouseDown={handleMiddleDragStart}
+            />
+
+            {/* Panel 3: Flow + Output */}
+            <div ref={rightContainerRef} style={{ width: `${100 - leftWidth - middleWidth}%` }} className="h-full flex flex-col min-w-[200px]">
+              {/* Top Right - Flow Editor */}
+              <div style={{ height: `${topHeight}%` }} className="w-full relative min-h-[100px]">
+                <ActivityFlowEditor />
+              </div>
+
+              {/* Resizer V */}
+              <div 
+                className="h-1 bg-accent hover:bg-highlight cursor-row-resize z-10 transition-colors"
+                onMouseDown={handleVDragStart}
+              />
+
+              {/* Bottom Right - Output */}
+              <div style={{ height: `${100 - topHeight}%` }} className="w-full bg-surface min-h-[100px]">
+                <TransformOutput />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Floating Gemini Assistant Panel */}
         {showAssistant && (
           <GeminiAssistantPanel onClose={() => setShowAssistant(false)} />
         )}

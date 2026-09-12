@@ -55,13 +55,24 @@ export const ControlNodeTree: React.FC<Props> = ({ model }) => {
               <TreeNode key={i} label={d.name} icon={Database} />
             ))}
           </TreeNode>
-          {interface_description.operating_states && (
-            <TreeNode label={`States (${interface_description.operating_states.states.length})`}>
-              {interface_description.operating_states.states.map((s, i) => (
-                <TreeNode key={i} label={s.name} icon={GitMerge} />
-              ))}
-            </TreeNode>
-          )}
+          {(() => {
+            const raw = interface_description.operating_states as any;
+            const stateList: string[] = Array.isArray(raw)
+              ? raw.map((s: any) => typeof s === 'string' ? s : s?.name).filter(Boolean)
+              : Array.isArray(raw?.states)
+              ? raw.states.map((s: any) => typeof s === 'string' ? s : s?.name).filter(Boolean)
+              : Array.isArray(raw?.operatingStates)
+              ? raw.operatingStates.map((s: any) => typeof s === 'string' ? s : s?.name).filter(Boolean)
+              : [];
+            if (stateList.length === 0) return null;
+            return (
+              <TreeNode label={`States (${stateList.length})`}>
+                {stateList.map((name, i) => (
+                  <TreeNode key={i} label={name} icon={GitMerge} />
+                ))}
+              </TreeNode>
+            );
+          })()}
         </TreeNode>
 
         <TreeNode label="Control Node" icon={Cpu} defaultOpen>

@@ -17,6 +17,16 @@ export interface GenerateResult {
   file_count: number;
 }
 
+export interface GeneratorTemplateInfo {
+  id: string;
+  name: string;
+  language: string;
+  target_extension: string;
+  thesis_module: string;
+  description: string;
+  template_source: string;
+}
+
 export const generatorsApi = {
   listGenerators: (projectId: number): Promise<GeneratorInfo[]> =>
     fetchClient(`/projects/${projectId}/generators`),
@@ -29,4 +39,10 @@ export const generatorsApi = {
 
   getTemplate: (projectId: number): Promise<{ template: string }> =>
     fetchClient(`/projects/${projectId}/generators/template`),
+
+  listTemplates: (projectId: number): Promise<GeneratorTemplateInfo[]> =>
+    fetchClient(`/projects/${projectId}/generators/templates`),
+
+  getTemplateSource: (projectId: number, generatorId: string): Promise<GeneratorTemplateInfo> =>
+    fetchClient(`/projects/${projectId}/generators/templates/${generatorId}`),
 };

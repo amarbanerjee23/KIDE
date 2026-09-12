@@ -92,15 +92,36 @@ export const OperatingStateNode = ({ data }: NodeProps) => {
   const label = (data.label || '') as string;
   const isStart = !!data.isStart;
   const isEnd = !!data.isEnd;
+  const isReady = label === 'READY';
+  const isAlarm = label.toLowerCase().includes('abort') || label.toLowerCase().includes('error') || label.toLowerCase().includes('fault');
+  const role = (data.role || '') as string;
 
   return (
-    <div className={`px-4 py-2 rounded-full border-2 min-w-[100px] text-center shadow-lg
-      ${isStart ? 'bg-green-900/50 border-green-500' : 
-        isEnd ? 'bg-red-900/50 border-red-500' : 
-        'bg-yellow-900/30 border-yellow-600'}`}>
-      <Handle type="target" position={Position.Top} className="w-2 h-2 !bg-white" />
-      <div className="font-medium text-sm text-gray-100">{label}</div>
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2 !bg-white" />
+    <div className={`px-4 py-3 rounded-xl border-2 min-w-[130px] max-w-[200px] text-center shadow-xl transition-all duration-200 relative group
+      ${isStart ? 'bg-emerald-950/80 border-emerald-500 shadow-emerald-950/50 hover:border-emerald-400' : 
+        isReady ? 'bg-cyan-950/80 border-cyan-500 shadow-cyan-950/50 hover:border-cyan-400' :
+        isEnd ? 'bg-blue-950/80 border-blue-500 shadow-blue-950/50 hover:border-blue-400' : 
+        isAlarm ? 'bg-rose-950/80 border-rose-500 shadow-rose-950/50 hover:border-rose-400' :
+        'bg-indigo-950/80 border-indigo-500/80 shadow-indigo-950/50 hover:border-indigo-400'}`}>
+      
+      {/* 4-Way Handles for clean layout routing */}
+      <Handle type="target" position={Position.Left} id="in-left" className="w-2.5 h-2.5 !bg-white border-2 border-indigo-900" />
+      <Handle type="target" position={Position.Top} id="in-top" className="w-2.5 h-2.5 !bg-white border-2 border-indigo-900" />
+      
+      <div className="flex flex-col items-center">
+        <span className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded font-bold mb-1
+          ${isStart ? 'bg-emerald-900/60 text-emerald-300' :
+            isReady ? 'bg-cyan-900/60 text-cyan-300' :
+            isEnd ? 'bg-blue-900/60 text-blue-300' :
+            isAlarm ? 'bg-rose-900/60 text-rose-300' :
+            'bg-indigo-900/60 text-indigo-300'}`}>
+          {role || (isStart ? 'Start State' : isReady ? 'Operational' : isEnd ? 'Result State' : isAlarm ? 'Safety Alarm' : 'Activity State')}
+        </span>
+        <div className="font-semibold text-sm text-gray-100 truncate w-full" title={label}>{label}</div>
+      </div>
+
+      <Handle type="source" position={Position.Right} id="out-right" className="w-2.5 h-2.5 !bg-white border-2 border-indigo-900" />
+      <Handle type="source" position={Position.Bottom} id="out-bottom" className="w-2.5 h-2.5 !bg-white border-2 border-indigo-900" />
     </div>
   );
 };

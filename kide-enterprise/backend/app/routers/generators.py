@@ -35,6 +35,17 @@ class GenerateRequest(BaseModel):
 async def get_generator_template(current_user: User = Depends(get_current_user)):
     return {"template": DEFAULT_GENERATOR_TEMPLATE}
 
+@router.get("/{project_id}/generators/templates")
+async def list_generator_templates(current_user: User = Depends(get_current_user)):
+    return list(CustomGeneratorEngine.get_all_templates().values())
+
+@router.get("/{project_id}/generators/templates/{generator_id}")
+async def get_specific_generator_template(generator_id: str, current_user: User = Depends(get_current_user)):
+    tpl = CustomGeneratorEngine.get_template_source(generator_id)
+    if not tpl:
+        raise HTTPException(status_code=404, detail="Generator template not found")
+    return tpl
+
 @router.get("/{project_id}/generators")
 async def list_project_generators(
     project_id: int,

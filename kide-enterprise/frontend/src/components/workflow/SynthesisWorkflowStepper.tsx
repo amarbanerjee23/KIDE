@@ -11,7 +11,7 @@ import { KnowledgeCatalogModal } from '../knowledge/KnowledgeCatalogModal';
 export const SynthesisWorkflowStepper: React.FC = () => {
   const { 
     files, activeFileId, transformResult, isTransforming,
-    setActiveFileId, setTransformResult, setIsTransforming
+    setActiveFileId, setTransformResult, setIsTransforming, setActiveView
   } = useEditorStore();
 
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -74,30 +74,34 @@ export const SynthesisWorkflowStepper: React.FC = () => {
     },
     {
       step: 5,
-      title: 'Code Generation & Runner',
+      title: 'Code Studio & Simulator',
       ext: 'Python / ROS2 / Java / PLC',
       icon: FileCode,
       completed: step5Complete,
       badge: step5Complete ? 'Ready' : 'Pending',
-      desc: 'Generate executable Python supervisory controllers, ROS2 nodes, Java, and PLC code with live in-browser execution.'
+      desc: 'Inspect code generation templates and synthesize executable Python, ROS2, Java, and PLC controllers with live simulation.'
     }
   ];
 
-  // Navigate to corresponding file on step click
+  // Navigate to corresponding view and file on step click
   const handleStepClick = (stepNum: number) => {
     setCurrentStep(stepNum);
 
-    if (stepNum === 1 && dmlFiles.length > 0) {
-      setActiveFileId(dmlFiles[0].id);
+    if (stepNum === 1) {
+      if (dmlFiles.length > 0) setActiveFileId(dmlFiles[0].id);
+      setActiveView('editor');
     } else if (stepNum === 2) {
       if (capFiles.length > 0) setActiveFileId(capFiles[0].id);
       else if (opFiles.length > 0) setActiveFileId(opFiles[0].id);
-    } else if (stepNum === 3 && actFiles.length > 0) {
-      setActiveFileId(actFiles[0].id);
+      setActiveView('editor');
+    } else if (stepNum === 3) {
+      if (actFiles.length > 0) setActiveFileId(actFiles[0].id);
+      setActiveView('workflow');
     } else if (stepNum === 4) {
       if (mncFiles.length > 0) setActiveFileId(mncFiles[0].id);
+      setActiveView('statemachine');
     } else if (stepNum === 5) {
-      setIsCodeModalOpen(true);
+      setActiveView('codegen');
     }
   };
 
@@ -108,7 +112,8 @@ export const SynthesisWorkflowStepper: React.FC = () => {
       const activeFile = files.find(f => f.id === activeFileId);
       const res = await transformWorkspace(files, activeFile?.id);
       setTransformResult(res);
-      setCurrentStep(5);
+      setCurrentStep(4);
+      setActiveView('statemachine');
     } catch (err) {
       alert(`Synthesis failed: ${err}`);
     } finally {

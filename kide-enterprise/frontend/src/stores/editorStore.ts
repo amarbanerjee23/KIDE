@@ -14,7 +14,9 @@ interface EditorState {
   isTransforming: boolean;
   isParsing: boolean;
   isSaving: boolean;
+  activeView: 'editor' | 'statemachine' | 'workflow' | 'simulator' | 'codegen' | 'split';
   
+  setActiveView: (view: 'editor' | 'statemachine' | 'workflow' | 'simulator' | 'codegen' | 'split') => void;
   setProject: (id: number | null, name: string | null) => void;
   setFiles: (files: FileItem[]) => void;
   addFile: (file: FileItem) => void;
@@ -45,7 +47,9 @@ export const useEditorStore = create<EditorState>((set) => ({
   isTransforming: false,
   isParsing: false,
   isSaving: false,
+  activeView: 'editor',
 
+  setActiveView: (view) => set({ activeView: view }),
   setProject: (id, name) => set({ projectId: id, projectName: name }),
   setFiles: (files) => set({ 
     files, 

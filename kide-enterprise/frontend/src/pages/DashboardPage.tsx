@@ -505,10 +505,19 @@ const DashboardPage = () => {
                     </div>
                     <div>
                       <span className="font-bold text-amber-400">Operating States: </span>
-                      {(((transformResult.model.control_node as any)?.operating_states || (transformResult.model.interface_description as any)?.operating_states?.states || []) as any[])
-                        .map((s: any) => typeof s === 'string' ? s : s?.name)
-                        .filter(Boolean)
-                        .join(', ')}
+                      {(() => {
+                        const m = transformResult.model;
+                        const ifaceRaw = (m.interface_description as any)?.operating_states || (m.interface_description as any)?.operatingStatesUtility?.operatingStates || [];
+                        const ctrlRaw = (m.control_node as any)?.operating_states || [];
+                        const set = new Set<string>();
+                        if (Array.isArray(ifaceRaw)) {
+                          ifaceRaw.forEach((s: any) => { const n = typeof s === 'string' ? s : s?.name; if (n) set.add(n); });
+                        }
+                        if (Array.isArray(ctrlRaw)) {
+                          ctrlRaw.forEach((s: any) => { const n = typeof s === 'string' ? s : s?.name; if (n) set.add(n); });
+                        }
+                        return Array.from(set).join(', ');
+                      })()}
                     </div>
 
                   </div>
