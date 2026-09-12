@@ -7,7 +7,7 @@ import { ProjectHeader } from '../components/workflow/ProjectHeader';
 import { WorkflowStepper } from '../components/workflow/WorkflowStepper';
 import { WorkspaceNavigation } from '../components/workflow/WorkspaceNavigation';
 import { MonacoDslEditor } from '../components/editor/MonacoDslEditor';
-import { FileExplorer } from '../components/editor/FileExplorer';
+import { ArtifactContextPanel } from '../components/context/ArtifactContextPanel';
 import { EditorTabs } from '../components/editor/EditorTabs';
 import { GeminiAssistantPanel } from '../components/editor/GeminiAssistantPanel';
 import { ActivityFlowEditor } from '../components/flow/ActivityFlowEditor';
@@ -30,10 +30,8 @@ const ProjectWorkspacePage: React.FC = () => {
   } = useEditorStore();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [leftExplorerWidth, setLeftExplorerWidth] = useState(20); // 20%
   const [splitRatio, setSplitRatio] = useState(50); // 50-50 in split mode
   
-  const containerRef = useRef<HTMLDivElement>(null);
   const splitRef = useRef<HTMLDivElement>(null);
 
   const getLanguage = (filename: string) => {
@@ -79,24 +77,6 @@ const ProjectWorkspacePage: React.FC = () => {
     loadProjectData();
     return () => { isCancelled = true; };
   }, [id, setProject, setFiles]);
-
-  // Handle Dragging File Explorer Resizer
-  const handleLeftDragStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    document.addEventListener('mousemove', handleLeftDrag);
-    document.addEventListener('mouseup', handleLeftDragEnd);
-  };
-  const handleLeftDrag = (e: MouseEvent) => {
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const newWidth = ((e.clientX - rect.left) / rect.width) * 100;
-      if (newWidth > 12 && newWidth < 38) setLeftExplorerWidth(newWidth);
-    }
-  };
-  const handleLeftDragEnd = () => {
-    document.removeEventListener('mousemove', handleLeftDrag);
-    document.removeEventListener('mouseup', handleLeftDragEnd);
-  };
 
   // Handle Dragging Split Pane Resizer
   const handleSplitDragStart = (e: React.MouseEvent) => {
@@ -148,25 +128,10 @@ const ProjectWorkspacePage: React.FC = () => {
     switch (view) {
       case 'editor':
         return (
-          <div ref={containerRef} className="flex flex-1 h-full min-h-0 w-full overflow-hidden">
-            {/* File Explorer Panel */}
-            <div style={{ width: `${leftExplorerWidth}%` }} className="h-full min-w-[180px] min-h-0">
-              <FileExplorer />
-            </div>
-
-            {/* Resizer Divider */}
-            <div 
-              className="w-1 bg-gray-800 hover:bg-blue-500 cursor-col-resize z-10 transition-colors"
-              onMouseDown={handleLeftDragStart}
-              title="Drag to resize file explorer"
-            />
-
-            {/* Monaco Editor Panel */}
-            <div className="flex-1 h-full min-h-0 flex flex-col min-w-[300px] overflow-hidden">
-              <EditorTabs />
-              <div className="flex-1 min-h-0 overflow-hidden">
-                <MonacoDslEditor />
-              </div>
+          <div className="flex-1 h-full min-h-0 flex flex-col min-w-[300px] overflow-hidden">
+            <EditorTabs />
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <MonacoDslEditor />
             </div>
           </div>
         );
@@ -305,8 +270,11 @@ const ProjectWorkspacePage: React.FC = () => {
       {/* Region D: Workspace Navigation Tabs */}
       <WorkspaceNavigation />
 
-      {/* Region E: Main Workspace Area & Persistent AI Assistant */}
+      {/* Region E: Main Workspace Area, Contextual Inspector & Persistent AI Assistant */}
       <div className="flex flex-1 min-h-0 w-full overflow-hidden relative">
+        {/* Contextual Artifact Inspector (Middle Column) */}
+        <ArtifactContextPanel />
+
         {/* Main Work Area */}
         <div className="flex-1 flex min-h-0 w-full h-full overflow-hidden">
           {splitMode ? renderSplitContent() : renderWorkspacePane(activeView)}
