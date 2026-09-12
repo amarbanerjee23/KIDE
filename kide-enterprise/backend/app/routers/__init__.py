@@ -9,12 +9,14 @@ from .validate import router as validate_router
 from .generators import router as generators_router
 from .knowledge import router as knowledge_router
 from .simulation import router as simulation_router
+from .ai import router as ai_router
 
 api_router = APIRouter(prefix="/api/v1")
 
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
 api_router.include_router(projects_router, prefix="/projects", tags=["projects"])
 api_router.include_router(admin_router, prefix="/admin", tags=["admin"])
+api_router.include_router(ai_router)
 api_router.include_router(parse_router)
 api_router.include_router(transform_router)
 api_router.include_router(export_router)

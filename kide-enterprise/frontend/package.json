@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "node --test tests/workflow_redesign.test.mjs tests/project_navigator.test.mjs tests/artifact_context_panel.test.mjs tests/inspector_redesign.test.mjs",
+    "test": "node --test tests/workflow_redesign.test.mjs tests/project_navigator.test.mjs tests/artifact_context_panel.test.mjs tests/inspector_redesign.test.mjs tests/ai_copilot.test.mjs tests/semantic_validation.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

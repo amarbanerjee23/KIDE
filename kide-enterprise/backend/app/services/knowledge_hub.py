@@ -381,3 +381,29 @@ DataModel {clean_name}Model {{
 }}
 """
         return {f"{clean_name}.dml": dml_code, f"{clean_name}.cap": cap_code}
+
+class KnowledgeCatalogHelper:
+    def __init__(self):
+        import re
+        self.capabilities: Dict[str, Any] = {}
+        self.operations: Dict[str, Any] = {}
+        for item in EQUIPMENT_CATALOG:
+            for f in item.get("files", []):
+                fname = f.get("filename", "")
+                content = f.get("content", "")
+                if fname.endswith(".cap") or fname.endswith(".capability"):
+                    m = re.search(r"Capability\s+([A-Za-z0-9_]+)", content)
+                    if m:
+                        self.capabilities[m.group(1)] = item
+                elif fname.endswith(".op") or fname.endswith(".operation"):
+                    m = re.search(r"Operation\s+([A-Za-z0-9_]+)", content)
+                    if m:
+                        self.operations[m.group(1)] = item
+
+_knowledge_catalog_helper = None
+
+def get_knowledge_hub_service() -> KnowledgeCatalogHelper:
+    global _knowledge_catalog_helper
+    if _knowledge_catalog_helper is None:
+        _knowledge_catalog_helper = KnowledgeCatalogHelper()
+    return _knowledge_catalog_helper

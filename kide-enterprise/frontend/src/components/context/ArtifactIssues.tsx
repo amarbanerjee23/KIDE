@@ -71,14 +71,26 @@ export const ArtifactIssues: React.FC = () => {
                 <AlertTriangle size={13} className="text-amber-400 shrink-0 mt-0.5" />
               )}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className={`font-semibold text-[10px] uppercase tracking-wider ${
-                    err.severity === 'error' ? 'text-rose-400' : 'text-amber-400'
-                  }`}>
-                    {err.severity === 'error' ? 'Error' : 'Warning'}
-                  </span>
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`font-semibold text-[10px] uppercase tracking-wider ${
+                      err.severity === 'error' ? 'text-rose-400' : 'text-amber-400'
+                    }`}>
+                      {err.severity === 'error' ? 'Error' : 'Warning'}
+                    </span>
+                    {err.ruleId && (
+                      <span className="font-mono text-[9px] px-1 py-0.2 bg-sky-950/60 text-sky-400 border border-sky-800/50 rounded">
+                        {err.ruleId}
+                      </span>
+                    )}
+                    {err.symbol && (
+                      <span className="font-mono text-[9px] px-1 py-0.2 bg-purple-950/60 text-purple-300 border border-purple-800/40 rounded truncate max-w-[100px]">
+                        {err.symbol}
+                      </span>
+                    )}
+                  </div>
                   {err.line && (
-                    <span className="font-mono text-[10px] text-gray-400 bg-gray-800/80 px-1 py-0.2 rounded">
+                    <span className="font-mono text-[10px] text-gray-400 bg-gray-800/80 px-1 py-0.2 rounded shrink-0">
                       Line {err.line}{err.column ? `:${err.column}` : ''}
                     </span>
                   )}
@@ -86,6 +98,17 @@ export const ArtifactIssues: React.FC = () => {
                 <p className="text-[11px] text-gray-300 leading-relaxed">
                   {err.message}
                 </p>
+                {err.suggestion && (
+                  <div className="mt-1.5 p-1.5 rounded bg-amber-950/30 border border-amber-900/40 text-[10px] text-amber-200/90 leading-tight flex items-start gap-1">
+                    <span className="shrink-0">💡</span>
+                    <span>{err.suggestion}</span>
+                  </div>
+                )}
+                {err.quickFix && (
+                  <div className="mt-1 text-[10px] font-mono text-emerald-400 bg-emerald-950/30 px-1.5 py-0.5 rounded border border-emerald-900/40">
+                    Fix: {err.quickFix}
+                  </div>
+                )}
               </div>
             </div>
           </div>

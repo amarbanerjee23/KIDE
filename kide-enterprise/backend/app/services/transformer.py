@@ -53,6 +53,22 @@ def transform_workspace(payload: Dict[str, Any]) -> Dict[str, Any]:
         
     validation_results = validate_model(diagram, kb)
     
+    # Run deep multi-file semantic validation across workspace
+    try:
+        from .semantic_validator import validate_project_semantics
+        _, sem_diagnostics = validate_project_semantics(payload)
+        for diag in sem_diagnostics:
+            msg = f"[{diag.rule_id}] {diag.message}"
+            sev = diag.severity.value if hasattr(diag.severity, "value") else str(diag.severity)
+            if sev == "error":
+                if msg not in validation_results["errors"]:
+                    validation_results["errors"].append(msg)
+            else:
+                if msg not in validation_results["warnings"]:
+                    validation_results["warnings"].append(msg)
+    except Exception as e:
+        print(f"[Transformer] Semantic validation pass warning: {e}")
+    
     blocks = synthesize(diagram, kb)
     mnc_model = compose_mnc_model(diagram.get("name", "Model"), blocks)
     

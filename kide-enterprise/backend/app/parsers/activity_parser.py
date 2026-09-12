@@ -7,6 +7,7 @@ class ActivityParser(DmlParser):
     def parse_activity_diagram(self) -> Dict[str, Any]:
         self.eat(TokenType.ID, "ActivityDiagram")
         name = self.parse_estring()
+        has_outer_brace = bool(self.try_eat("{"))
         
         diag = {
             "name": name,
@@ -74,6 +75,9 @@ class ActivityParser(DmlParser):
                 diag["activities"].append(self.parse_activity())
                 self.try_eat(",")
             self.eat(TokenType.SYMBOL, "}")
+            
+        if has_outer_brace:
+            self.try_eat("}")
             
         return diag
 

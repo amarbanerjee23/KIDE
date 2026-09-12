@@ -240,3 +240,17 @@ async def delete_file(id: int, file_id: int, current_user: User = Depends(get_cu
     await db.commit()
     return {"status": "deleted"}
 
+@router.get("/{id}/ir")
+async def get_project_ir(id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(ProjectFile).where(ProjectFile.project_id == id))
+    files = result.scalars().all()
+    from app.services.semantic_validator import validate_project_semantics
+    file_dicts = [{"id": str(f.id), "name": f.filename, "content": f.content} for f in files]
+    ir, diagnostics = validate_project_semantics(file_dicts, project_id=str(id))
+    return {
+        "project_id": id,
+        "ir": ir.model_dump(),
+        "summary": ir.summary.model_dump(),
+        "diagnostics": [d.model_dump() for d in diagnostics]
+    }
+

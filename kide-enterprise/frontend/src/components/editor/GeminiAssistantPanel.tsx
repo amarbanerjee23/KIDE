@@ -1,11 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useEditorStore, useActiveFile } from '../../stores/editorStore';
-import { Sparkles, Send, X } from 'lucide-react';
+import { 
+  Sparkles, Send, X, Check, FileCode, CheckCircle2, 
+  ChevronDown, ChevronRight, Loader2 
+} from 'lucide-react';
+import { 
+  sendAiMessage, 
+  applyAiPatch, 
+  ChatMessage, 
+  ToolCallRecord, 
+  ProposedPatch, 
+  getAiProviders 
+} from '../../api/ai';
 
-interface Message {
+interface ExtendedMessage extends ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  tool_calls?: ToolCallRecord[];
+  proposed_patches?: ProposedPatch[];
+  provenance_id?: number;
+  provider?: string;
+  model?: string;
 }
 
 interface Props {
@@ -13,18 +29,36 @@ interface Props {
   triggerRef?: React.RefObject<HTMLButtonElement>;
 }
 
+const stageNames: Record<number, string> = {
+  1: 'Data Modeling',
+  2: 'Capabilities & Ops',
+  3: 'Supervisory Workflow',
+  4: 'Automated Synthesis'
+};
+
 export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) => {
   const activeFile = useActiveFile();
-  const { projectName, activeStage } = useEditorStore();
+  const { 
+    projectId, projectName, activeStage, 
+    files, addFile, updateFileContent, setActiveFileId 
+  } = useEditorStore();
 
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
+  const [isLoading, setIsLoading] = useState(false);
+  const [providerInfo, setProviderInfo] = useState<{ provider: string; model: string }>({
+    provider: 'deterministic',
+    model: 'kide-deterministic-copilot'
+  });
+
+  const [appliedPatches, setAppliedPatches] = useState<Record<string, boolean>>({});
+  const [expandedDiffs, setExpandedDiffs] = useState<Record<string, boolean>>({});
+  const [expandedTools, setExpandedTools] = useState<Record<string, boolean>>({});
+
+  const [messages, setMessages] = useState<ExtendedMessage[]>([
     {
-      id: '1',
+      id: 'welcome',
       role: 'assistant',
-      content: `Hello! I am your KIDE AI engineering assistant. I am analyzing ${
-        projectName ? `project "${projectName}"` : 'your workspace'
-      }${activeFile ? ` and active file "${activeFile.name}"` : ''}. How can I assist with your DSL schemas, capability matching, or supervisory synthesis?`
+      content: `Hello! I am your **KIDE AI Engineering Copilot**.\n\nI am connected to project **"${projectName || 'Workspace'}"**${activeFile ? ` with active file \`${activeFile.name}\`` : ''}.\n\nI can validate your DSL models, synthesize supervisory automata, search the thesis Knowledge Hub, and propose deterministic patches with full provenance tracking.`
     }
   ]);
 
@@ -34,6 +68,7 @@ export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) =
 
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Responsive width detection
   useEffect(() => {
@@ -44,7 +79,21 @@ export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) =
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Keyboard accessibility: Escape closes drawer, focus enters input on mount, returns to trigger on unmount
+  // Fetch configured providers on mount
+  useEffect(() => {
+    getAiProviders()
+      .then(res => {
+        setProviderInfo({
+          provider: res.active_provider,
+          model: res.active_model
+        });
+      })
+      .catch(() => {
+        // Default to deterministic copilot
+      });
+  }, []);
+
+  // Keyboard accessibility
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -59,58 +108,126 @@ export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) =
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      // Return focus to trigger button if available
       triggerRef?.current?.focus();
     };
   }, [onClose, triggerRef]);
 
-  const handleSend = (textToSend?: string) => {
-    const msg = textToSend || input;
-    if (!msg.trim()) return;
-    
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: msg };
-    setMessages(prev => [...prev, userMsg]);
-    if (!textToSend) setInput('');
-    
-    // Simulated intelligent response with DSL domain knowledge
-    setTimeout(() => {
-      let reply = "I've analyzed your project.";
-      if (msg.toLowerCase().includes('dml') || msg.toLowerCase().includes('data')) {
-        reply = "In DML, primitive types (`int`, `float`, `boolean`, `string`, `date`) and composite structs (`composites { ... }`) define your device data models. Ensure composite types reference valid defined models.";
-      } else if (msg.toLowerCase().includes('capability') || msg.toLowerCase().includes('cap')) {
-        reply = "Capabilities bind component interfaces to fireable commands and receivable events. Check that your action parameter signatures match the interface definition.";
-      } else if (msg.toLowerCase().includes('activity') || msg.toLowerCase().includes('workflow')) {
-        reply = "Activity diagrams orchestrate supervisory process logic. Each activity requires capabilities or operations and routes outcomes via conditional branch expressions.";
-      } else if (msg.toLowerCase().includes('synthesis') || msg.toLowerCase().includes('state')) {
-        reply = "The thesis automated synthesis engine scans activity diagrams and required capabilities to derive full supervisory automata (operating states, transitions, command/event blocks).";
-      } else {
-        reply = `I have inspected "${activeFile?.name || 'the workspace'}". Everything looks consistent. Would you like me to suggest code generation targets or verify state machine transitions?`;
-      }
+  // Scroll to bottom on new message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
+  const handleSend = async (textToSend?: string) => {
+    const text = (textToSend || input).trim();
+    if (!text || isLoading || !projectId) return;
+
+    const userMsg: ExtendedMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: text
+    };
+
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    if (!textToSend) setInput('');
+    setIsLoading(true);
+
+    try {
+      const chatPayload: ChatMessage[] = newMessages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+      const res = await sendAiMessage(
+        projectId,
+        chatPayload,
+        activeFile?.name
+      );
+
+      const assistantMsg: ExtendedMessage = {
+        id: res.session_id || (Date.now() + 1).toString(),
         role: 'assistant',
-        content: reply
-      }]);
-    }, 700);
+        content: res.message,
+        tool_calls: res.tool_calls,
+        proposed_patches: res.proposed_patches,
+        provenance_id: res.provenance_id,
+        provider: res.provider,
+        model: res.model
+      };
+
+      setMessages(prev => [...prev, assistantMsg]);
+    } catch (err: any) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `⚠️ **AI Engineering Gateway Error**: ${err.message || 'Failed to communicate with AI server. Ensure backend is running.'}`
+        }
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const stageNames: Record<number, string> = {
-    1: '1: Data Modeling',
-    2: '2: Capabilities & Ops',
-    3: '3: Supervisory Workflow',
-    4: '4: Automated Synthesis'
+  const handleApplyPatch = async (patch: ProposedPatch, provenanceId?: number) => {
+    if (!projectId) return;
+    const patchKey = `${patch.filename}_${provenanceId || 0}`;
+
+    try {
+      await applyAiPatch(projectId, provenanceId, [patch]);
+
+      // Apply locally to editor store
+      const existingFile = files.find(f => f.name.toLowerCase() === patch.filename.toLowerCase());
+      if (existingFile) {
+        updateFileContent(existingFile.id, patch.new_content);
+        setActiveFileId(existingFile.id);
+      } else {
+        const ext = patch.filename.split('.').pop()?.toLowerCase() || '';
+        const langMap: Record<string, string> = {
+          dml: 'dml',
+          cap: 'capability',
+          op: 'operation',
+          activity: 'activity',
+          mnc: 'mnc'
+        };
+        const newId = `file_${Date.now()}`;
+        addFile({
+          id: newId,
+          name: patch.filename,
+          content: patch.new_content,
+          language: langMap[ext] || 'text'
+        });
+        setActiveFileId(newId);
+      }
+
+      setAppliedPatches(prev => ({ ...prev, [patchKey]: true }));
+    } catch (err: any) {
+      alert(`Failed to apply patch: ${err.message}`);
+    }
+  };
+
+  const toggleDiff = (key: string) => {
+    setExpandedDiffs(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleTool = (key: string) => {
+    setExpandedTools(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const promptChips = [
-    "Explain active DSL",
+    "Validate all models",
+    "Synthesize state machine",
     "Verify state transitions",
-    "Suggest activity steps"
+    "Explain active DSL",
+    "Suggest activity steps",
+    "Search knowledge for barrier RFID",
+    "Create a safety gate barrier activity patch"
   ];
 
   return (
     <>
-      {/* Overlay Backdrop for constrained screens (< 1440px) */}
+      {/* Overlay Backdrop for small screens */}
       {!isWide && (
         <div 
           className="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-40 animate-in fade-in-50"
@@ -122,12 +239,12 @@ export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) =
       <aside
         ref={containerRef}
         role="dialog"
-        aria-label="Gemini AI Engineering Assistant"
+        aria-label="KIDE AI Engineering Copilot"
         aria-modal={!isWide}
         className={`bg-[#121722] border-l border-gray-800 flex flex-col justify-between shrink-0 select-none z-50 transition-all duration-200 shadow-2xl ${
           isWide 
-            ? 'relative w-[380px] h-full' 
-            : 'fixed top-0 right-0 bottom-0 w-[380px] max-w-[90vw] h-screen animate-in slide-in-from-right'
+            ? 'relative w-[420px] h-full' 
+            : 'fixed top-0 right-0 bottom-0 w-[420px] max-w-[92vw] h-screen animate-in slide-in-from-right'
         }`}
       >
         {/* Top Header */}
@@ -137,9 +254,9 @@ export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) =
               <div className="p-1 rounded bg-blue-950/60 border border-blue-800/40 text-blue-400">
                 <Sparkles className="w-3.5 h-3.5" />
               </div>
-              <span>AI Assistant</span>
-              <span className="text-[10px] font-mono text-blue-300 bg-blue-900/30 px-1.5 py-0.2 rounded border border-blue-700/40">
-                Gemini
+              <span>AI Engineering Copilot</span>
+              <span className="text-[10px] font-mono text-blue-300 bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-700/40 uppercase">
+                {providerInfo.provider}
               </span>
             </div>
 
@@ -155,11 +272,11 @@ export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) =
 
           {/* Context Metadata Pill */}
           <div className="flex items-center gap-1.5 text-[10px] text-gray-400 truncate">
-            <span className="truncate" title={projectName || 'Project'}>
+            <span className="truncate text-gray-300 font-medium" title={projectName || 'Project'}>
               {projectName || 'Project'}
             </span>
             <span>•</span>
-            <span className="text-blue-300 font-medium">
+            <span className="text-blue-300">
               {stageNames[activeStage] || 'Stage 1'}
             </span>
             {activeFile && (
@@ -174,21 +291,171 @@ export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) =
         </div>
 
         {/* Messages Body */}
-        <div className="flex-1 overflow-y-auto p-3.5 space-y-3 scrollbar-thin scrollbar-thumb-gray-800">
+        <div className="flex-1 overflow-y-auto p-3 space-y-3.5 scrollbar-thin scrollbar-thumb-gray-800">
           {messages.map(msg => (
             <div 
               key={msg.id} 
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} space-y-2`}
             >
-              <div className={`max-w-[88%] rounded-xl p-2.5 text-xs leading-relaxed ${
+              {/* Message Bubble */}
+              <div className={`max-w-[94%] rounded-xl p-3 text-xs leading-relaxed ${
                 msg.role === 'user' 
                   ? 'bg-blue-600 text-white rounded-br-none shadow-sm' 
-                  : 'bg-[#1a2130] text-gray-200 border border-gray-700/60 rounded-bl-none shadow-sm'
+                  : 'bg-[#1a2130] text-gray-200 border border-gray-700/60 rounded-bl-none shadow-sm space-y-2'
               }`}>
-                {msg.content}
+                {/* Text Content */}
+                <div className="whitespace-pre-wrap font-sans text-xs">
+                  {msg.content}
+                </div>
+
+                {/* Executed Engineering Tools */}
+                {msg.tool_calls && msg.tool_calls.length > 0 && (
+                  <div className="pt-2 border-t border-gray-700/50 space-y-1.5">
+                    <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                      <span>Engineering Tools Executed ({msg.tool_calls.length})</span>
+                    </div>
+                    <div className="space-y-1">
+                      {msg.tool_calls.map((t, idx) => {
+                        const toolKey = `${msg.id}_tool_${idx}`;
+                        const isExp = expandedTools[toolKey];
+                        return (
+                          <div key={idx} className="rounded bg-[#111622] border border-gray-800 text-[11px] overflow-hidden">
+                            <button
+                              onClick={() => toggleTool(toolKey)}
+                              className="w-full flex items-center justify-between px-2 py-1 hover:bg-gray-800/40 text-left transition"
+                            >
+                              <div className="flex items-center gap-1.5 font-mono text-blue-300 truncate">
+                                <span className="text-[10px]">⚙</span>
+                                <span>{t.tool}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                                <span>{isExp ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}</span>
+                              </div>
+                            </button>
+                            {isExp && (
+                              <div className="p-2 border-t border-gray-800 bg-[#0d1017] font-mono text-[10px] text-gray-400 max-h-32 overflow-y-auto">
+                                <pre className="whitespace-pre-wrap">{JSON.stringify(t.output, null, 2)}</pre>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Proposed Patches Card */}
+                {msg.proposed_patches && msg.proposed_patches.length > 0 && (
+                  <div className="pt-2 border-t border-gray-700/50 space-y-2">
+                    <div className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                      <span>Proposed Engineering Patches ({msg.proposed_patches.length})</span>
+                    </div>
+
+                    {msg.proposed_patches.map((patch, idx) => {
+                      const patchKey = `${patch.filename}_${msg.provenance_id || idx}`;
+                      const isApplied = appliedPatches[patchKey];
+                      const isDiffOpen = expandedDiffs[patchKey] ?? true;
+
+                      return (
+                        <div 
+                          key={idx} 
+                          className="rounded-lg bg-[#141a26] border border-amber-900/40 overflow-hidden shadow-sm"
+                        >
+                          {/* Patch Header */}
+                          <div className="p-2.5 bg-[#171f2e] border-b border-gray-800 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <FileCode className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                              <span className="font-mono font-medium text-gray-200 text-xs truncate">
+                                {patch.filename}
+                              </span>
+                              <span className="text-[9px] px-1 py-0.2 rounded bg-amber-950/60 border border-amber-800/40 text-amber-300 uppercase">
+                                {patch.action}
+                              </span>
+                            </div>
+
+                            <button
+                              onClick={() => toggleDiff(patchKey)}
+                              className="text-[10px] text-gray-400 hover:text-gray-200 flex items-center gap-0.5"
+                            >
+                              <span>{isDiffOpen ? 'Hide Diff' : 'View Diff'}</span>
+                              {isDiffOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                            </button>
+                          </div>
+
+                          {/* Rationale */}
+                          {patch.rationale && (
+                            <div className="px-2.5 py-1.5 text-[11px] text-gray-300 bg-[#121620]/60 border-b border-gray-800/60">
+                              {patch.rationale}
+                            </div>
+                          )}
+
+                          {/* Collapsible Diff View */}
+                          {isDiffOpen && (
+                            <div className="p-2 bg-[#0a0d14] font-mono text-[10px] leading-tight max-h-48 overflow-y-auto border-b border-gray-800">
+                              {patch.diff.split('\n').map((line, lIdx) => {
+                                let lineClass = 'text-gray-400';
+                                if (line.startsWith('+') && !line.startsWith('+++')) lineClass = 'text-emerald-400 bg-emerald-950/30';
+                                else if (line.startsWith('-') && !line.startsWith('---')) lineClass = 'text-rose-400 bg-rose-950/30';
+                                else if (line.startsWith('@')) lineClass = 'text-blue-400';
+
+                                return (
+                                  <div key={lIdx} className={`px-1 py-0.5 ${lineClass} whitespace-pre-wrap break-all`}>
+                                    {line || ' '}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Review & Apply Action */}
+                          <div className="p-2 bg-[#171f2e] flex items-center justify-between">
+                            <span className="text-[10px] text-gray-400">
+                              {isApplied ? 'Changes committed to project' : 'Deterministic patch verified'}
+                            </span>
+
+                            {isApplied ? (
+                              <div className="flex items-center gap-1 text-[11px] font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-2.5 py-1 rounded">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>Applied to Project</span>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleApplyPatch(patch, msg.provenance_id)}
+                                className="flex items-center gap-1.5 text-[11px] font-medium text-white bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 px-3 py-1 rounded shadow transition"
+                              >
+                                <Check className="w-3 h-3" />
+                                <span>Review & Apply Patch</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Provenance Badge */}
+                {msg.provenance_id && (
+                  <div className="pt-1 text-[9px] font-mono text-gray-500 flex items-center justify-between">
+                    <span>Recorded in Provenance Log #{msg.provenance_id}</span>
+                    <span>{msg.provider} • {msg.model}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
+
+          {/* Loading Indicator */}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-[#1a2130] text-gray-300 border border-gray-700/60 rounded-xl rounded-bl-none p-3 text-xs flex items-center gap-2">
+                <Loader2 className="w-3.5 h-3.5 text-blue-400 animate-spin" />
+                <span>Executing engineering tools & analyzing models...</span>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Quick Suggestion Chips & Input */}
@@ -198,8 +465,9 @@ export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) =
             {promptChips.map((chip, idx) => (
               <button
                 key={idx}
+                disabled={isLoading}
                 onClick={() => handleSend(chip)}
-                className="text-[10px] px-2 py-1 rounded-full bg-[#1e2638] hover:bg-[#253046] text-gray-300 hover:text-white border border-gray-700/60 whitespace-nowrap transition"
+                className="text-[10px] px-2.5 py-1 rounded-full bg-[#1e2638] hover:bg-[#253046] active:bg-[#2e3b54] text-gray-300 hover:text-white border border-gray-700/60 whitespace-nowrap transition disabled:opacity-40"
               >
                 {chip}
               </button>
@@ -212,19 +480,20 @@ export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) =
               ref={inputRef}
               type="text" 
               value={input}
+              disabled={isLoading}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask about DSLs, synthesis, transitions..."
-              aria-label="Message input for AI Assistant"
-              className="flex-1 bg-transparent px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none"
+              placeholder="Ask Copilot to validate, synthesize, or patch..."
+              aria-label="Message input for AI Engineering Copilot"
+              className="flex-1 bg-transparent px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none disabled:opacity-40"
             />
             <button 
               onClick={() => handleSend()}
               aria-label="Send message"
-              disabled={!input.trim()}
+              disabled={!input.trim() || isLoading}
               className="p-2 text-blue-400 hover:text-white hover:bg-blue-600 disabled:opacity-30 transition-colors shrink-0"
             >
-              <Send className="w-3.5 h-3.5" />
+              {isLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             </button>
           </div>
         </div>

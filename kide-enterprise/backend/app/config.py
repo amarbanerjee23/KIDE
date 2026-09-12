@@ -13,6 +13,14 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./uploads"
     EXPORT_DIR: str = "./exports"
 
+    # AI Engineering Copilot Gateway (PR 1)
+    GEMINI_API_KEY: str = ""
+    OPENAI_API_KEY: str = ""
+    ANTHROPIC_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    DEFAULT_AI_PROVIDER: str = "gemini" # gemini, openai, local, deterministic
+    DEFAULT_AI_MODEL: str = "gemini-1.5-flash"
+
     @field_validator("DEBUG", mode="before")
     @classmethod
     def parse_debug(cls, v):

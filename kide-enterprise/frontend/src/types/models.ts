@@ -232,10 +232,16 @@ export interface FileItem {
 
 export interface ValidationError {
   fileId?: string;
+  filename?: string;
   line?: number;
   column?: number;
   message: string;
   severity: 'error' | 'warning' | 'info';
+  code?: string;
+  ruleId?: string;
+  symbol?: string;
+  suggestion?: string;
+  quickFix?: string;
 }
 
 export interface ParseResult {
