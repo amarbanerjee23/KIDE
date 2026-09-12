@@ -5,7 +5,7 @@ import { transformWorkspace } from '../../api/transform';
 import { 
   FolderKanban, FileCode2, Activity, GitMerge, Sparkles, Play, 
   CheckCircle2, ChevronRight, Columns, Bot, Loader2, BookOpen, 
-  Zap, ArrowRight
+  Zap, ArrowRight, Network
 } from 'lucide-react';
 import { KnowledgeCatalogModal } from '../knowledge/KnowledgeCatalogModal';
 
@@ -245,6 +245,20 @@ export const UnifiedWorkspaceHeader: React.FC<Props> = ({
           >
             <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
             <span className="hidden xl:inline">Knowledge Hub</span>
+          </button>
+
+          {/* Knowledge Graph Button */}
+          <button
+            onClick={() => setActiveView(activeView === 'knowledgegraph' ? 'editor' : 'knowledgegraph')}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition border ${
+              activeView === 'knowledgegraph'
+                ? 'bg-purple-600/20 text-purple-300 border-purple-500/40 shadow-sm'
+                : 'text-gray-300 hover:text-white hover:bg-gray-800 border-gray-800'
+            }`}
+            title="Explore the Connected Knowledge Graph (Thesis Ontology & Repository)"
+          >
+            <Network className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden xl:inline">Knowledge Graph</span>
           </button>
 
           {/* Split View Toggle */}

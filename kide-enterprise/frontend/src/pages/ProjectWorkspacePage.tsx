@@ -9,6 +9,7 @@ import { ActivityFlowEditor } from '../components/flow/ActivityFlowEditor';
 import { MncFlowViewer } from '../components/flow/MncFlowViewer';
 import { LiveRunnerConsole } from '../components/simulation/LiveRunnerConsole';
 import { CodeGenerationStudio } from '../components/workflow/CodeGenerationStudio';
+import { KnowledgeGraphViewer } from '../components/knowledge/KnowledgeGraphViewer';
 import { TransformOutput } from '../components/output/TransformOutput';
 import { Loader2, GitMerge, Sparkles, ArrowRight } from 'lucide-react';
 import { useEditorStore } from '../stores/editorStore';
@@ -242,6 +243,13 @@ const ProjectWorkspacePage = () => {
         {activeView === 'codegen' && (
           <div className="flex-1 h-full overflow-hidden">
             <CodeGenerationStudio isEmbedded={true} />
+          </div>
+        )}
+
+        {/* VIEW 6: CONNECTED THESIS KNOWLEDGE GRAPH */}
+        {activeView === 'knowledgegraph' && (
+          <div className="flex-1 h-full overflow-hidden">
+            <KnowledgeGraphViewer />
           </div>
         )}
 

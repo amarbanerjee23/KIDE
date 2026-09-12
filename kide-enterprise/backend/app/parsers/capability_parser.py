@@ -46,6 +46,8 @@ class CapabilityParser(DmlParser):
     def parse_action_ref(self) -> str:
         name = self.parse_qualified_name()
         if self.try_eat("("):
+            while not self.match(")") and not self.match(TokenType.EOF):
+                self.advance_token()
             self.try_eat(")")
         return name
 
@@ -79,13 +81,15 @@ class CapabilityParser(DmlParser):
                         action["triggerDataPoints"].append({"dataPoint": self.parse_action_ref()})
                         self.try_eat(",")
             elif self.try_eat("fire"):
-                self.eat(TokenType.ID, "Commands")
+                if self.current_token.value and self.current_token.value.lower() == "commands":
+                    self.advance_token()
                 self.eat(TokenType.SYMBOL, "[")
                 while not self.try_eat("]"):
                     action["fireCommands"].append({"command": self.parse_action_ref()})
                     self.try_eat(",")
             elif self.try_eat("execute"):
-                self.eat(TokenType.ID, "Operations")
+                if self.current_token.value and self.current_token.value.lower() == "operations":
+                    self.advance_token()
                 self.eat(TokenType.SYMBOL, "[")
                 while not self.try_eat("]"):
                     action["executeOperations"].append({"operation": self.parse_action_ref()})

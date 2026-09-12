@@ -14,9 +14,9 @@ interface EditorState {
   isTransforming: boolean;
   isParsing: boolean;
   isSaving: boolean;
-  activeView: 'editor' | 'statemachine' | 'workflow' | 'simulator' | 'codegen' | 'split';
+  activeView: 'editor' | 'statemachine' | 'workflow' | 'simulator' | 'codegen' | 'split' | 'knowledgegraph';
   
-  setActiveView: (view: 'editor' | 'statemachine' | 'workflow' | 'simulator' | 'codegen' | 'split') => void;
+  setActiveView: (view: 'editor' | 'statemachine' | 'workflow' | 'simulator' | 'codegen' | 'split' | 'knowledgegraph') => void;
   setProject: (id: number | null, name: string | null) => void;
   setFiles: (files: FileItem[]) => void;
   addFile: (file: FileItem) => void;
