@@ -17,6 +17,7 @@ from ..services.composition import compose_mnc_model
 from ..services.simulation_runner import SimulationService
 from ..parsers.activity_parser import parse as parse_activity
 from ..parsers.capability_parser import parse as parse_capability
+from ..parsers.operation_parser import parse as parse_operation
 
 router = APIRouter(prefix="/projects", tags=["simulation"])
 
@@ -44,17 +45,29 @@ async def _resolve_project_model(project: Project, db: AsyncSession, activity_fi
                 break
     if not activity_file:
         for f in files:
-            if f.name.endswith(".activity") or f.language == "activity":
+            fname = f.filename or ""
+            ftype = f.file_type or ""
+            if fname.endswith(".activity") or ftype == "activity":
                 activity_file = f
                 break
 
-    kb = {"capabilities": {}}
+    kb = {"capabilities": {}, "operations": {}}
     for f in files:
-        if f.name.endswith(".cap") or f.language == "capability":
+        fname = f.filename or ""
+        ftype = f.file_type or ""
+        if fname.endswith(".cap") or ftype == "capability":
             try:
                 cap_ast = parse_capability(f.content or "")
                 if cap_ast.get("name"):
                     kb["capabilities"][cap_ast["name"]] = cap_ast
+            except Exception:
+                pass
+        elif fname.endswith(".op") or ftype == "operation":
+            try:
+                op_ast = parse_operation(f.content or "")
+                for op in op_ast.get("operations", []):
+                    if op.get("name"):
+                        kb["operations"][op["name"]] = op
             except Exception:
                 pass
 

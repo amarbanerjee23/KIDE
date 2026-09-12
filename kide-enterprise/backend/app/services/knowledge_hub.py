@@ -317,7 +317,7 @@ class KnowledgeHubService:
 
             if existing:
                 existing.content = content
-                imported_files.append({"id": existing.id, "name": existing.filename, "filename": existing.filename, "action": "updated"})
+                imported_files.append({"id": existing.id, "name": existing.filename, "filename": existing.filename, "file_type": ftype, "action": "updated"})
             else:
                 new_file = ProjectFile(
                     project_id=project_id,
@@ -327,7 +327,7 @@ class KnowledgeHubService:
                 )
                 db.add(new_file)
                 await db.flush()
-                imported_files.append({"id": new_file.id, "name": new_file.filename, "filename": new_file.filename, "action": "created"})
+                imported_files.append({"id": new_file.id, "name": new_file.filename, "filename": new_file.filename, "file_type": ftype, "action": "created"})
 
         await db.commit()
         return imported_files

@@ -21,13 +21,19 @@ class ActivityParser(DmlParser):
             self.eat(TokenType.ID, "Objects")
             self.eat(TokenType.SYMBOL, "[")
             if not self.match("]"):
-                if self.peek_val() in ("string", "int", "float", "boolean", "date", "object"):
-                    self.parse_qualified_name()
-                diag["dataObjects"].append(self.parse_qualified_name())
+                first = self.parse_qualified_name()
+                if self.current_token.type == TokenType.ID and not self.match("]"):
+                    second = self.parse_qualified_name()
+                    diag["dataObjects"].append(second)
+                else:
+                    diag["dataObjects"].append(first)
                 while self.try_eat(","):
-                    if self.peek_val() in ("string", "int", "float", "boolean", "date", "object"):
-                        self.parse_qualified_name()
-                    diag["dataObjects"].append(self.parse_qualified_name())
+                    first = self.parse_qualified_name()
+                    if self.current_token.type == TokenType.ID and not self.match("]"):
+                        second = self.parse_qualified_name()
+                        diag["dataObjects"].append(second)
+                    else:
+                        diag["dataObjects"].append(first)
             self.eat(TokenType.SYMBOL, "]")
             
         if self.try_eat("on"):
@@ -45,13 +51,20 @@ class ActivityParser(DmlParser):
         if self.try_eat("produces"):
             self.eat(TokenType.ID, "results")
             self.eat(TokenType.SYMBOL, "(")
-            if self.peek_val() in ("string", "int", "float", "boolean", "date", "object"):
-                self.parse_qualified_name()
-            diag["producesResults"].append(self.parse_qualified_name())
-            while self.try_eat(","):
-                if self.peek_val() in ("string", "int", "float", "boolean", "date", "object"):
-                    self.parse_qualified_name()
-                diag["producesResults"].append(self.parse_qualified_name())
+            if not self.match(")"):
+                first = self.parse_qualified_name()
+                if self.current_token.type == TokenType.ID and not self.match(")"):
+                    second = self.parse_qualified_name()
+                    diag["producesResults"].append(second)
+                else:
+                    diag["producesResults"].append(first)
+                while self.try_eat(","):
+                    first = self.parse_qualified_name()
+                    if self.current_token.type == TokenType.ID and not self.match(")"):
+                        second = self.parse_qualified_name()
+                        diag["producesResults"].append(second)
+                    else:
+                        diag["producesResults"].append(first)
             self.eat(TokenType.SYMBOL, ")")
             
         if self.try_eat("has"):
@@ -110,8 +123,14 @@ class ActivityParser(DmlParser):
             
         if self.try_eat("conditions"):
             self.eat(TokenType.SYMBOL, "{")
-            while not self.match("}"):
-                self.advance_token() # Simplified skip
+            depth = 1
+            while depth > 0 and self.current_token.type != TokenType.EOF:
+                if self.match("{"):
+                    depth += 1
+                elif self.match("}"):
+                    depth -= 1
+                if depth > 0:
+                    self.advance_token()
             self.eat(TokenType.SYMBOL, "}")
             
         if self.try_eat("nextActivity"):

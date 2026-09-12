@@ -13,25 +13,32 @@ def transform_workspace(payload: Dict[str, Any]) -> Dict[str, Any]:
     diagram = None
     
     for file_name, content in payload.items():
-        if file_name.endswith('.activity'):
+        if isinstance(content, dict):
+            if "activities" in content:
+                diagram = content
+            elif "provides_control_capabilities" in content or "compatible_component_interfaces" in content:
+                kb["capabilities"][content.get("name", file_name)] = content
+            elif "executable_script" in content:
+                kb["operations"][content.get("name", file_name)] = content
+        elif file_name.endswith('.activity'):
             try:
                 diagram = parse_activity(content)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[Transformer] Error parsing {file_name}: {e}")
         elif file_name.endswith('.capability') or file_name.endswith('.cap'):
             try:
                 cap = parse_capability(content)
                 if "name" in cap:
                     kb["capabilities"][cap["name"]] = cap
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[Transformer] Error parsing {file_name}: {e}")
         elif file_name.endswith('.operation') or file_name.endswith('.op'):
             try:
                 op = parse_operation(content)
                 if "name" in op:
                     kb["operations"][op["name"]] = op
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[Transformer] Error parsing {file_name}: {e}")
         elif file_name.endswith('.json'):
             try:
                 data = json.loads(content)
