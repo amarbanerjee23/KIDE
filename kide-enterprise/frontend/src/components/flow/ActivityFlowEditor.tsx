@@ -3,7 +3,7 @@ import { ReactFlow, Background, Controls, MiniMap, Node, Edge, useNodesState, us
 import '@xyflow/react/dist/style.css';
 import { ActivityDiagram } from '../../types/models';
 import { nodeTypes } from './FlowNodeTypes';
-import { useActivityFile } from '../../stores/editorStore';
+import { useActivityFile, useEditorStore } from '../../stores/editorStore';
 
 interface Props {
   activity?: ActivityDiagram;
@@ -124,6 +124,7 @@ const generateLayout = (diagram: ActivityDiagram): { nodes: Node[], edges: Edge[
 
 export const ActivityFlowEditor: React.FC<Props> = ({ activity: propActivity }) => {
   const storeActivity = useActivityFile();
+  const { setSelectedNodeId } = useEditorStore();
   const activity = propActivity || storeActivity || emptyDiagram;
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => generateLayout(activity), [activity]);
   
@@ -136,6 +137,13 @@ export const ActivityFlowEditor: React.FC<Props> = ({ activity: propActivity }) 
     setEdges(newEdges);
   }, [activity, setNodes, setEdges]);
 
+  const handleNodeClick = (_: any, node: Node) => {
+    const name = (node.data as any)?.activity?.name || (node.data as any)?.label;
+    if (name && name !== 'Start' && name !== 'End') {
+      setSelectedNodeId(name);
+    }
+  };
+
   return (
     <div className="w-full h-full bg-[#0a0a1a]">
       <ReactFlow
@@ -143,6 +151,8 @@ export const ActivityFlowEditor: React.FC<Props> = ({ activity: propActivity }) 
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeClick={handleNodeClick}
+        onPaneClick={() => setSelectedNodeId(null)}
         nodeTypes={nodeTypes}
         fitView
         colorMode="dark"

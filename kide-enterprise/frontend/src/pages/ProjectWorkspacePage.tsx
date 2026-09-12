@@ -7,7 +7,7 @@ import { ProjectHeader } from '../components/workflow/ProjectHeader';
 import { WorkflowStepper } from '../components/workflow/WorkflowStepper';
 import { WorkspaceNavigation } from '../components/workflow/WorkspaceNavigation';
 import { MonacoDslEditor } from '../components/editor/MonacoDslEditor';
-import { ArtifactContextPanel } from '../components/context/ArtifactContextPanel';
+import { InspectorPanel } from '../components/context/InspectorPanel';
 import { EditorTabs } from '../components/editor/EditorTabs';
 import { GeminiAssistantPanel } from '../components/editor/GeminiAssistantPanel';
 import { ActivityFlowEditor } from '../components/flow/ActivityFlowEditor';
@@ -272,8 +272,8 @@ const ProjectWorkspacePage: React.FC = () => {
 
       {/* Region E: Main Workspace Area, Contextual Inspector & Persistent AI Assistant */}
       <div className="flex flex-1 min-h-0 w-full overflow-hidden relative">
-        {/* Contextual Artifact Inspector (Middle Column) */}
-        <ArtifactContextPanel />
+        {/* Contextual Inspector (Middle Column) */}
+        <InspectorPanel />
 
         {/* Main Work Area */}
         <div className="flex-1 flex min-h-0 w-full h-full overflow-hidden">

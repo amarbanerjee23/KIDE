@@ -5,15 +5,15 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useEditorStore } from '../../stores/editorStore';
-import { knowledgeApi, KnowledgeGraphData, KnowledgeGraphNode, CapabilityMatch } from '../../api/knowledge';
+import { knowledgeApi, KnowledgeGraphNode, CapabilityMatch } from '../../api/knowledge';
 import { 
-  Network, Cpu, Shield, Zap, Wrench, Database, 
+  Network, Cpu, Zap, Wrench, Database, 
   Activity, GitMerge, Search, Download, Sparkles, 
   Layers, X, Loader2, RefreshCw
 } from 'lucide-react';
 
 // Custom Knowledge Node Component
-const KnowledgeNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
+const KnowledgeNodeComponent: React.FC<NodeProps> = ({ data }) => {
   const node = data.node as KnowledgeGraphNode;
   const type = node.type;
 
@@ -43,7 +43,7 @@ const KnowledgeNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
           bg: 'bg-emerald-950/40',
           text: 'text-emerald-300',
           badgeBg: 'bg-emerald-900/60',
-          icon: Shield
+          icon: Network
         };
       case 'capability':
         return {
@@ -101,31 +101,21 @@ const KnowledgeNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
   const Icon = style.icon;
 
   return (
-    <div className={`px-3 py-2.5 rounded-xl border-2 shadow-lg backdrop-blur-md transition-all min-w-[190px] max-w-[240px] select-none ${
-      style.bg
-    } ${style.border} ${
-      selected ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-[#0b0f19] scale-[1.02]' : 'hover:scale-[1.01]'
-    }`}>
-      {/* 4-Way Handles for clean Bezier routing */}
-      <Handle type="target" position={Position.Left} id="left-in" className="w-2.5 h-2.5 !bg-gray-400 !border-2 !border-gray-900" />
-      <Handle type="source" position={Position.Right} id="right-out" className="w-2.5 h-2.5 !bg-gray-400 !border-2 !border-gray-900" />
-      <Handle type="target" position={Position.Top} id="top-in" className="w-2.5 h-2.5 !bg-gray-400 !border-2 !border-gray-900" />
-      <Handle type="source" position={Position.Bottom} id="bottom-out" className="w-2.5 h-2.5 !bg-gray-400 !border-2 !border-gray-900" />
-
-      {/* Header with Type Badge */}
-      <div className="flex items-center justify-between gap-1 mb-1">
-        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${style.badgeBg} ${style.text}`}>
-          {node.type.replace('_', ' ')}
-        </span>
+    <div className={`px-3 py-2 rounded-xl border-2 ${style.border} ${style.bg} backdrop-blur-md shadow-lg min-w-[140px] max-w-[200px]`}>
+      <Handle type="target" position={Position.Left} id="left-in" className="!bg-gray-400 !w-2 !h-2" />
+      <Handle type="source" position={Position.Right} id="right-out" className="!bg-gray-400 !w-2 !h-2" />
+      
+      <div className="flex items-center gap-1.5 mb-1">
         <Icon className={`w-3.5 h-3.5 ${style.text}`} />
+        <span className={`text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded ${style.badgeBg} ${style.text}`}>
+          {type}
+        </span>
       </div>
 
-      {/* Node Name */}
       <div className="font-semibold text-xs text-gray-100 truncate" title={node.name}>
         {node.name}
       </div>
 
-      {/* Category / Context subtitle */}
       <div className="text-[10px] text-gray-400 truncate mt-0.5">
         {node.category || node.properties?.parent_domain || 'Ontology Entity'}
       </div>
@@ -145,11 +135,17 @@ const nodeTypes = {
 };
 
 export const KnowledgeGraphViewer: React.FC = () => {
-  const { projectId, projectName } = useEditorStore();
-  const [scope, setScope] = useState<'project' | 'global'>('project');
-  const [graphData, setGraphData] = useState<KnowledgeGraphData | null>(null);
+  const { 
+    projectId, 
+    projectName, 
+    graphScope, 
+    setGraphScope, 
+    graphData, 
+    setGraphData, 
+    setSelectedGraphNode 
+  } = useEditorStore();
+  
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [selectedNode, setSelectedNode] = useState<KnowledgeGraphNode | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -163,7 +159,7 @@ export const KnowledgeGraphViewer: React.FC = () => {
   const fetchGraph = useCallback(async () => {
     setIsLoading(true);
     try {
-      if (scope === 'project' && projectId) {
+      if (graphScope === 'project' && projectId) {
         const data = await knowledgeApi.getProjectGraph(projectId);
         setGraphData(data);
       } else {
@@ -175,7 +171,7 @@ export const KnowledgeGraphViewer: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [scope, projectId]);
+  }, [graphScope, projectId, setGraphData]);
 
   useEffect(() => {
     fetchGraph();
@@ -186,27 +182,27 @@ export const KnowledgeGraphViewer: React.FC = () => {
     if (!graphData) return { nodes: [], edges: [] };
 
     const q = searchQuery.toLowerCase().trim();
-    const filteredNodesList = graphData.nodes.filter(n => {
+    const filteredNodesList = graphData.nodes.filter((n: any) => {
       const matchSearch = !q || n.name.toLowerCase().includes(q) || (n.category && n.category.toLowerCase().includes(q));
       const matchType = filterType === 'all' || n.type === filterType;
       return matchSearch && matchType;
     });
 
-    const filteredIds = new Set(filteredNodesList.map(n => n.id));
+    const filteredIds = new Set(filteredNodesList.map((n: any) => n.id));
 
     // Group nodes by Layer / Category for clean layout
-    const layer0 = filteredNodesList.filter(n => ['domain', 'repository', 'project'].includes(n.type));
-    const layer1 = filteredNodesList.filter(n => ['device', 'interface'].includes(n.type));
-    const layer2 = filteredNodesList.filter(n => ['capability', 'datamodel'].includes(n.type));
-    const layer3 = filteredNodesList.filter(n => ['operation', 'activity', 'workflow'].includes(n.type));
-    const layer4 = filteredNodesList.filter(n => ['operating_state'].includes(n.type));
+    const layer0 = filteredNodesList.filter((n: any) => ['domain', 'repository', 'project'].includes(n.type));
+    const layer1 = filteredNodesList.filter((n: any) => ['device', 'interface'].includes(n.type));
+    const layer2 = filteredNodesList.filter((n: any) => ['capability', 'datamodel'].includes(n.type));
+    const layer3 = filteredNodesList.filter((n: any) => ['operation', 'activity', 'workflow'].includes(n.type));
+    const layer4 = filteredNodesList.filter((n: any) => ['operating_state'].includes(n.type));
 
     const layers = [layer0, layer1, layer2, layer3, layer4];
     const positionedNodes: Node[] = [];
 
     layers.forEach((layerNodes, colIdx) => {
       const x = 80 + colIdx * 300;
-      layerNodes.forEach((n, rowIdx) => {
+      layerNodes.forEach((n: any, rowIdx: number) => {
         const y = 80 + rowIdx * 110;
         positionedNodes.push({
           id: n.id,
@@ -219,8 +215,8 @@ export const KnowledgeGraphViewer: React.FC = () => {
 
     // Edges with smooth curves & labels
     const positionedEdges: Edge[] = graphData.edges
-      .filter(e => filteredIds.has(e.source) && filteredIds.has(e.target))
-      .map(e => ({
+      .filter((e: any) => filteredIds.has(e.source) && filteredIds.has(e.target))
+      .map((e: any) => ({
         id: e.id,
         source: e.source,
         target: e.target,
@@ -243,8 +239,8 @@ export const KnowledgeGraphViewer: React.FC = () => {
   }, [graphData, filterType, searchQuery]);
 
   const handleNodeClick = (_: any, n: Node) => {
-    const raw = graphData?.nodes.find(item => item.id === n.id);
-    if (raw) setSelectedNode(raw);
+    const raw = graphData?.nodes.find((item: any) => item.id === n.id);
+    if (raw) setSelectedGraphNode(raw);
   };
 
   const handleExportRdf = async () => {
@@ -286,17 +282,23 @@ export const KnowledgeGraphViewer: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="flex bg-[#1a2333] p-0.5 rounded-lg border border-gray-700/60">
             <button
-              onClick={() => setScope('project')}
+              onClick={() => {
+                setGraphScope('project');
+                setSelectedGraphNode(null);
+              }}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition ${
-                scope === 'project' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
+                graphScope === 'project' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
               }`}
             >
               <span>📁 Project Graph</span>
             </button>
             <button
-              onClick={() => setScope('global')}
+              onClick={() => {
+                setGraphScope('global');
+                setSelectedGraphNode(null);
+              }}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition ${
-                scope === 'global' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
+                graphScope === 'global' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
               }`}
               title="Explore the global thesis equipment & ontology repository"
             >
@@ -359,7 +361,7 @@ export const KnowledgeGraphViewer: React.FC = () => {
             <span>Match Capabilities</span>
           </button>
 
-          {scope === 'project' && (
+          {graphScope === 'project' && (
             <button
               onClick={handleExportRdf}
               className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md text-xs border border-gray-700 transition"
@@ -394,6 +396,7 @@ export const KnowledgeGraphViewer: React.FC = () => {
           edges={edges}
           nodeTypes={nodeTypes}
           onNodeClick={handleNodeClick}
+          onPaneClick={() => setSelectedGraphNode(null)}
           fitView
           attributionPosition="bottom-left"
           className="bg-[#0b0f19]"
@@ -424,86 +427,6 @@ export const KnowledgeGraphViewer: React.FC = () => {
           <div className="flex items-center gap-2 text-rose-300"><span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Supervisory States (MNC-ML)</div>
         </div>
       </div>
-
-      {/* Right Slide-over Inspector Drawer */}
-      {selectedNode && (
-        <div className="absolute right-0 top-12 bottom-0 w-80 bg-[#0d121d] border-l border-gray-800 shadow-2xl p-4 flex flex-col justify-between z-20 overflow-y-auto">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-gray-800">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-200">Entity Details</span>
-                <span className="text-[10px] font-mono bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded border border-blue-700/40">
-                  {selectedNode.type}
-                </span>
-              </div>
-              <button 
-                onClick={() => setSelectedNode(null)}
-                className="text-gray-400 hover:text-white p-1 rounded hover:bg-gray-800"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-4">
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Name</label>
-                <div className="text-sm font-semibold text-white mt-0.5">{selectedNode.name}</div>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Category</label>
-                <div className="text-xs text-gray-300 mt-0.5">{selectedNode.category}</div>
-              </div>
-
-              {selectedNode.thesis_reference && (
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Thesis Reference</label>
-                  <div className="text-xs text-amber-300 font-mono mt-0.5 bg-amber-950/30 p-1.5 rounded border border-amber-800/40">
-                    📖 {selectedNode.thesis_reference}
-                  </div>
-                </div>
-              )}
-
-              {selectedNode.source_file && (
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Source Model File</label>
-                  <div className="text-xs text-blue-400 font-mono mt-0.5">
-                    📄 {selectedNode.source_file}
-                  </div>
-                </div>
-              )}
-
-              {/* Node Properties */}
-              {selectedNode.properties && Object.keys(selectedNode.properties).length > 0 && (
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Attributes & Contracts</label>
-                  <div className="mt-1 bg-gray-900/80 p-2 rounded-lg border border-gray-800 text-[11px] font-mono space-y-1.5 text-gray-300 max-h-48 overflow-y-auto">
-                    {Object.entries(selectedNode.properties).map(([k, v]) => (
-                      <div key={k} className="border-b border-gray-800/60 pb-1 last:border-none">
-                        <span className="text-gray-500">{k}: </span>
-                        <span className="text-gray-200">
-                          {Array.isArray(v) 
-                            ? v.map((item: any) => typeof item === 'object' ? item.name || JSON.stringify(item) : String(item)).join(', ') || '[]'
-                            : typeof v === 'object' ? JSON.stringify(v) : String(v)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-gray-800">
-            <button
-              onClick={() => setSelectedNode(null)}
-              className="w-full py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg text-xs font-semibold transition"
-            >
-              Close Inspector
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Semantic Capability Matcher Modal */}
       {showMatchModal && (

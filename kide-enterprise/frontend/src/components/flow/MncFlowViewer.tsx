@@ -4,6 +4,7 @@ import '@xyflow/react/dist/style.css';
 import { MncModel } from '../../types/models';
 import { nodeTypes } from './FlowNodeTypes';
 import { GitMerge, Layers, Info } from 'lucide-react';
+import { useEditorStore } from '../../stores/editorStore';
 
 interface Props {
   model: MncModel;
@@ -29,6 +30,7 @@ interface TransitionInfo {
 }
 
 export const MncFlowViewer: React.FC<Props> = ({ model, mode }) => {
+  const { setSelectedNodeId } = useEditorStore();
   const [view, setView] = useState<'state' | 'block'>(
     mode === 'blockdiagram' ? 'block' : 'state'
   );
@@ -378,7 +380,10 @@ export const MncFlowViewer: React.FC<Props> = ({ model, mode }) => {
   const handleNodeClick = (_: any, node: Node) => {
     const stateName = node.id.replace('state-', '');
     const found = statesList.find(s => s.name === stateName);
-    if (found) setSelectedState(found);
+    if (found) {
+      setSelectedState(found);
+      setSelectedNodeId(found.name);
+    }
   };
 
   return (
@@ -440,6 +445,10 @@ export const MncFlowViewer: React.FC<Props> = ({ model, mode }) => {
           edges={edges}
           nodeTypes={nodeTypes}
           onNodeClick={handleNodeClick}
+          onPaneClick={() => {
+            setSelectedState(null);
+            setSelectedNodeId(null);
+          }}
           fitView
           colorMode="dark"
         >

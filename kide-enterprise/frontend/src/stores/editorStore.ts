@@ -40,6 +40,12 @@ interface EditorState {
   splitLayout: SplitLayoutOption;
   aiAssistantOpen: boolean;
 
+  // Knowledge Graph Context State
+  graphScope: 'project' | 'global';
+  graphData: any | null;
+  selectedGraphNode: any | null;
+  selectedGraphEdge: any | null;
+
   // Actions
   setActiveView: (view: WorkspaceView) => void;
   setActiveStage: (stage: 1 | 2 | 3 | 4) => void;
@@ -56,6 +62,10 @@ interface EditorState {
   removeFile: (id: string) => void;
   setActiveFileId: (id: string | null) => void;
   setSelectedNodeId: (id: string | null) => void;
+  setGraphScope: (scope: 'project' | 'global') => void;
+  setGraphData: (data: any | null) => void;
+  setSelectedGraphNode: (node: any | null) => void;
+  setSelectedGraphEdge: (edge: any | null) => void;
   setTransformResult: (result: TransformResult | null) => void;
   setParsedModel: (fileId: string, ast: any) => void;
   setValidationErrors: (fileId: string, errors: ValidationError[]) => void;
@@ -89,6 +99,12 @@ export const useEditorStore = create<EditorState>((set) => ({
   splitMode: false,
   splitLayout: 'code-workflow',
   aiAssistantOpen: false,
+
+  // Knowledge Graph Context State defaults
+  graphScope: 'project',
+  graphData: null,
+  selectedGraphNode: null,
+  selectedGraphEdge: null,
 
   setActiveView: (view) => set({ activeView: view }),
   setActiveStage: (stage) => set({ activeStage: stage }),
@@ -127,6 +143,10 @@ export const useEditorStore = create<EditorState>((set) => ({
   })),
   setActiveFileId: (id) => set({ activeFileId: id }),
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
+  setGraphScope: (scope) => set({ graphScope: scope }),
+  setGraphData: (data) => set({ graphData: data }),
+  setSelectedGraphNode: (node) => set({ selectedGraphNode: node, selectedNodeId: node ? node.name : null }),
+  setSelectedGraphEdge: (edge) => set({ selectedGraphEdge: edge }),
   setTransformResult: (result) => set({ 
     transformResult: result, 
     isSynthesisStale: false 

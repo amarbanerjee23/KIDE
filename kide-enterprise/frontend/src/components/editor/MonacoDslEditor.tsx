@@ -3,10 +3,11 @@ import Editor, { useMonaco } from '@monaco-editor/react';
 import { useEditorStore, useActiveFile } from '../../stores/editorStore';
 import { setupMonacoLanguages } from '../../lib/monaco/setup';
 import { validateActiveModel, registerNavigationHandler } from '../../lib/monaco/xtextLanguageService';
+import { extractOutlineSymbols } from '../../utils/outlineExtractor';
 
 export const MonacoDslEditor: React.FC = () => {
   const activeFile = useActiveFile();
-  const { updateFileContent, setActiveFileId } = useEditorStore();
+  const { updateFileContent, setActiveFileId, setSelectedNodeId } = useEditorStore();
   const monaco = useMonaco();
   const editorRef = useRef<any>(null);
   const debounceTimerRef = useRef<any>(null);
@@ -102,6 +103,32 @@ export const MonacoDslEditor: React.FC = () => {
         if (activeFile && monaco) {
           runValidation(activeFile.id, activeFile.content, activeFile.language);
         }
+
+        let cursorDebounce: any = null;
+        editor.onDidChangeCursorPosition((e) => {
+          if (cursorDebounce) clearTimeout(cursorDebounce);
+          cursorDebounce = setTimeout(() => {
+            if (!activeFile) return;
+            const line = e.position.lineNumber;
+            const symbols = extractOutlineSymbols(activeFile.content, activeFile.name);
+            const findSymbolAtLine = (items: typeof symbols): string | null => {
+              for (const item of items) {
+                if (item.line && Math.abs(item.line - line) <= 3) {
+                  return item.name;
+                }
+                if (item.children) {
+                  const m = findSymbolAtLine(item.children);
+                  if (m) return m;
+                }
+              }
+              return null;
+            };
+            const match = findSymbolAtLine(symbols);
+            if (match) {
+              setSelectedNodeId(match);
+            }
+          }, 300);
+        });
       }}
       options={{
         minimap: { enabled: false },
