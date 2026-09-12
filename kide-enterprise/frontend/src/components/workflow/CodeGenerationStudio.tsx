@@ -7,7 +7,8 @@ import {
 import { generatorsApi, GeneratorInfo, GeneratorTemplateInfo } from '../../api/generators';
 import { 
   Code, Download, Copy, Check, FileCode, Cpu, Layers, 
-  Sparkles, Play, Loader2, Wrench, Plus, Eye, BookOpen
+  Play, Loader2, Wrench, Plus, Eye, BookOpen, 
+  FileCheck
 } from 'lucide-react';
 
 interface Props {
@@ -18,8 +19,8 @@ interface Props {
 type TargetTab = 'python' | 'ros2' | 'java' | 'plc' | 'cpp' | 'custom' | 'mnc' | 'json';
 type ViewMode = 'output' | 'template';
 
-export const CodeGenerationStudio: React.FC<Props> = ({ onClose, isEmbedded = false }) => {
-  const { transformResult, projectName, projectId, setActiveView } = useEditorStore();
+export const CodeGenerationStudio: React.FC<Props> = () => {
+  const { transformResult, projectName, projectId } = useEditorStore();
   const [activeTab, setActiveTab] = useState<TargetTab>('python');
   const [viewMode, setViewMode] = useState<ViewMode>('output');
   
@@ -93,52 +94,61 @@ export const CodeGenerationStudio: React.FC<Props> = ({ onClose, isEmbedded = fa
               setCustomScriptCode(tpl.template_source || '');
             }
           } catch (e) {
-            // Fallback for custom
             setTemplateMeta(null);
             setTemplateContent('// Template source unavailable');
           }
         }
       } catch (err: any) {
-        console.error('Generation error:', err);
-        setOutputContent(`// Error generating target: ${err?.message || err}`);
+        console.error('Error fetching generated code/template:', err);
+        setOutputContent(`// Error generating code: ${err.message || err}`);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadData();
-  }, [activeTab, model, selectedGeneratorId, projectId]);
+  }, [activeTab, model, projectId, selectedGeneratorId]);
 
   const handleCopy = () => {
-    const textToCopy = viewMode === 'output' ? outputContent : templateContent;
+    const textToCopy = viewMode === 'template' ? templateContent : outputContent;
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDownloadFile = () => {
-    const content = viewMode === 'output' ? outputContent : templateContent;
-    const ext = viewMode === 'output' 
-      ? (activeTab === 'python' ? '.py' : activeTab === 'ros2' ? '_node.py' : activeTab === 'java' ? '.java' : activeTab === 'plc' ? '.st' : activeTab === 'cpp' ? '.hpp' : '.txt')
-      : '.template.py';
-    const filename = `${modelName}_${activeTab}${ext}`;
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const targetMap: Record<string, { ext: string; mime: string }> = {
+      python: { ext: '_controller.py', mime: 'text/x-python' },
+      ros2: { ext: '_ros2_node.py', mime: 'text/x-python' },
+      java: { ext: 'SupervisorController.java', mime: 'text/x-java-source' },
+      plc: { ext: '_plc.st', mime: 'text/plain' },
+      cpp: { ext: '_controller.hpp', mime: 'text/x-c++hdr' },
+      mnc: { ext: '.mncspec', mime: 'text/plain' },
+      json: { ext: '.json', mime: 'application/json' },
+      custom: { ext: '_custom.txt', mime: 'text/plain' }
+    };
+    const target = targetMap[activeTab] || { ext: '.txt', mime: 'text/plain' };
+    const filename = `${modelName}${target.ext}`;
+    const textToSave = viewMode === 'template' ? templateContent : outputContent;
+    
+    const blob = new Blob([textToSave], { type: target.mime });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = viewMode === 'template' ? `${activeTab}_generator_template.py` : filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleDownloadZip = async () => {
     if (!model) return;
     setIsDownloading(true);
     try {
-      await downloadZipBundle(model, `${modelName}_controller_suite.zip`);
+      await downloadZipBundle(model);
     } catch (err) {
-      console.error('Download error:', err);
+      console.error('Failed to download ZIP bundle:', err);
     } finally {
       setIsDownloading(false);
     }
@@ -153,7 +163,7 @@ export const CodeGenerationStudio: React.FC<Props> = ({ onClose, isEmbedded = fa
         name: customGenName, 
         code: customScriptCode || undefined 
       });
-      setGenStatus(`Created custom generator: ${res.name}`);
+      setGenStatus(`Created generator: ${res.name}`);
       setCustomGenName('');
       const list = await generatorsApi.listGenerators(projectId);
       setGenerators(list);
@@ -176,7 +186,7 @@ export const CodeGenerationStudio: React.FC<Props> = ({ onClose, isEmbedded = fa
       const entries = Object.entries(res.files);
       if (entries.length > 0) {
         setOutputContent(entries[0][1]);
-        setGenStatus(`Executed successfully! Emitted ${entries.length} file(s): ${entries.map(e => e[0]).join(', ')}`);
+        setGenStatus(`Generated ${entries.length} file(s): ${entries.map(e => e[0]).join(', ')}`);
         setViewMode('output');
       }
     } catch (err: any) {
@@ -187,9 +197,7 @@ export const CodeGenerationStudio: React.FC<Props> = ({ onClose, isEmbedded = fa
   };
 
   const getLanguage = () => {
-    if (viewMode === 'template') {
-      return templateMeta?.language || 'python';
-    }
+    if (viewMode === 'template') return templateMeta?.language || 'python';
     if (activeTab === 'python' || activeTab === 'ros2') return 'python';
     if (activeTab === 'java') return 'java';
     if (activeTab === 'plc') return 'text';
@@ -198,232 +206,221 @@ export const CodeGenerationStudio: React.FC<Props> = ({ onClose, isEmbedded = fa
     return 'plaintext';
   };
 
+  const targetList = [
+    { id: 'python', label: 'Python Controller', sub: 'Async supervisory event loop', icon: FileCode },
+    { id: 'ros2', label: 'ROS2 (rclpy) Node', sub: 'Lifecycle node & topics', icon: Cpu },
+    { id: 'java', label: 'Java Controller', sub: 'Eclipse Xtext specification', icon: Code },
+    { id: 'plc', label: 'PLC (IEC 61131-3)', sub: 'Structured text FUNCTION_BLOCK', icon: Layers },
+    { id: 'cpp', label: 'Embedded C++', sub: 'FreeRTOS / Arduino class', icon: Cpu },
+    { id: 'mnc', label: 'MNC-ML Formal Spec', sub: 'Supervisory thesis syntax', icon: FileCheck },
+    { id: 'custom', label: 'Custom (.generator.py)', sub: 'Custom project script', icon: Wrench },
+  ];
+
   return (
-    <div className={`flex flex-col h-full bg-[#0b0f19] text-slate-100 ${isEmbedded ? '' : 'border border-slate-700 rounded-xl overflow-hidden shadow-2xl'}`}>
+    <div className="w-full h-full flex bg-[#0b0f19] text-gray-200 overflow-hidden">
       
-      {/* Top Header */}
-      <div className="flex flex-wrap items-center justify-between px-4 py-3 bg-[#111827] border-b border-gray-800 gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-indigo-600/20 text-indigo-400 rounded-lg border border-indigo-500/30">
-            <Sparkles className="w-5 h-5" />
+      {/* LEFT SIDEBAR: Generation Targets (Sleek Linear Style) */}
+      <aside className="w-64 bg-[#0d121d] border-r border-gray-800 flex flex-col justify-between shrink-0 select-none">
+        
+        {/* Target Header */}
+        <div className="p-3 border-b border-gray-800/80">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Target Controllers</span>
+            <span className="text-[10px] font-mono bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded border border-blue-700/30">
+              {modelName}
+            </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-white">Code Generation Studio & Templates</h2>
-              <span className="text-[11px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-mono font-semibold border border-indigo-500/30">
-                {modelName}
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">
-              Inspect generator templates & synthesize production-ready controllers (Python, ROS2, Java, PLC ST, C++)
-            </p>
-          </div>
+          <p className="text-[11px] text-gray-500 mt-0.5">Select a target compiler or custom generator script</p>
         </div>
 
-        {/* Global Actions */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveView('simulator')}
-            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow"
-            title="Launch interactive digital twin controller runner"
-          >
-            <Play className="w-3.5 h-3.5" />
-            <span>Launch Live Runner</span>
-          </button>
-          
-          <button
-            onClick={handleDownloadZip}
-            disabled={isDownloading || !model}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow"
-          >
-            {isDownloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            <span>Export Suite (.ZIP)</span>
-          </button>
-
-          {onClose && (
-            <button 
-              onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition ml-2"
-            >
-              ✕
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Target Selector & View Mode Switcher */}
-      <div className="flex flex-wrap items-center justify-between px-4 py-2 bg-[#0f172a] border-b border-gray-800 text-xs gap-2">
-        {/* Target Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto">
-          {[
-            { id: 'python', label: 'Python Controller', icon: FileCode },
-            { id: 'ros2', label: 'ROS2 (rclpy)', icon: Cpu },
-            { id: 'java', label: 'Java (Eclipse)', icon: Code },
-            { id: 'plc', label: 'PLC (IEC 61131-3)', icon: Layers },
-            { id: 'cpp', label: 'Embedded C++', icon: Cpu },
-            { id: 'custom', label: 'Custom (.generator.py)', icon: Wrench },
-            { id: 'mnc', label: 'MNC Spec', icon: FileCode },
-            { id: 'json', label: 'JSON IR', icon: FileCode },
-          ].map((tab) => {
-            const Icon = tab.icon;
+        {/* Target Options List */}
+        <div className="p-2 space-y-1 overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-gray-800">
+          {targetList.map((target) => {
+            const Icon = target.icon;
+            const isSelected = activeTab === target.id;
             return (
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as TargetTab)}
-                className={`px-3 py-1.5 rounded-md flex items-center gap-1.5 transition font-mono whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'bg-indigo-600 text-white font-semibold shadow'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                key={target.id}
+                onClick={() => setActiveTab(target.id as TargetTab)}
+                className={`w-full text-left p-2.5 rounded-lg flex items-start gap-2.5 transition-all group ${
+                  isSelected
+                    ? 'bg-blue-600/20 text-blue-300 border border-blue-500/40 shadow-sm'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50 border border-transparent'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{tab.label}</span>
+                <div className={`p-1.5 rounded-md mt-0.5 ${
+                  isSelected ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 group-hover:text-gray-200'
+                }`}>
+                  <Icon className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold truncate">{target.label}</span>
+                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>}
+                  </div>
+                  <p className="text-[10px] text-gray-500 truncate mt-0.5">{target.sub}</p>
+                </div>
               </button>
             );
           })}
         </div>
 
-        {/* View Mode Switcher: Generated Output vs Generator Template */}
-        <div className="flex items-center gap-2">
-          <div className="flex bg-slate-900 p-0.5 rounded-lg border border-slate-700">
-            <button
-              onClick={() => setViewMode('output')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold transition ${
-                viewMode === 'output' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span>Generated Code</span>
-            </button>
-            <button
-              onClick={() => setViewMode('template')}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold transition ${
-                viewMode === 'template' ? 'bg-amber-600 text-white shadow' : 'text-slate-400 hover:text-white'
-              }`}
-              title="Inspect the Generator Template & Transformation Rules"
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>Generator Template</span>
-            </button>
-          </div>
-
+        {/* Sidebar Footer Actions */}
+        <div className="p-3 border-t border-gray-800/80 bg-[#0a0e17] space-y-2">
           <button
-            onClick={handleCopy}
-            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs flex items-center gap-1 transition"
+            onClick={handleDownloadZip}
+            disabled={isDownloading || !model}
+            className="w-full py-2 px-3 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg text-xs font-medium flex items-center justify-center gap-2 border border-gray-700 transition"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copied' : 'Copy'}</span>
+            {isDownloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5 text-blue-400" />}
+            <span>Export Suite (.ZIP)</span>
           </button>
+        </div>
+      </aside>
+
+      {/* RIGHT MAIN WORKSPACE: Monaco Editor & Compact Header */}
+      <main className="flex-1 flex flex-col min-w-0 bg-[#0b0f19]">
+        
+        {/* Compact Workspace Header Bar */}
+        <div className="h-11 bg-[#111622] border-b border-gray-800 px-4 flex items-center justify-between text-xs select-none gap-3">
           
-          <button
-            onClick={handleDownloadFile}
-            className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs flex items-center gap-1 transition"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Save File</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Template Metadata Banner (When viewing template) */}
-      {viewMode === 'template' && templateMeta && (
-        <div className="px-4 py-2 bg-amber-950/30 border-b border-amber-800/40 text-xs flex flex-wrap items-center justify-between gap-2">
+          {/* Left: View Mode Segmented Pill */}
           <div className="flex items-center gap-2">
-            <span className="font-bold text-amber-400">Template Target:</span>
-            <span className="text-slate-200 font-semibold">{templateMeta.name}</span>
-            <span className="text-slate-400 text-[11px]">&bull; {templateMeta.description}</span>
-          </div>
-          <div className="flex items-center gap-2 text-[11px]">
-            <span className="text-amber-300 font-mono bg-amber-900/40 px-2 py-0.5 rounded border border-amber-800/50">
-              Ref: {templateMeta.thesis_module}
-            </span>
-          </div>
-        </div>
-      )}
+            <div className="flex bg-[#1a2333] p-0.5 rounded-lg border border-gray-700/60">
+              <button
+                onClick={() => setViewMode('output')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition ${
+                  viewMode === 'output' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>Generated Output</span>
+              </button>
+              <button
+                onClick={() => setViewMode('template')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition ${
+                  viewMode === 'template' ? 'bg-amber-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
+                }`}
+                title="View the underlying generator template implementation"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Generator Template</span>
+              </button>
+            </div>
 
-      {/* Custom Generator Controls (When on Custom tab) */}
-      {activeTab === 'custom' && (
-        <div className="p-3 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+            {/* Template Thesis Reference Pill */}
+            {viewMode === 'template' && templateMeta?.thesis_module && (
+              <span className="hidden md:inline-flex text-[11px] text-amber-300 font-mono bg-amber-950/40 px-2.5 py-0.5 rounded-full border border-amber-800/50">
+                Thesis Ref: {templateMeta.thesis_module}
+              </span>
+            )}
+          </div>
+
+          {/* Right: Actions */}
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-semibold">Active Generator:</span>
-            <select
-              value={selectedGeneratorId}
-              onChange={(e) => setSelectedGeneratorId(e.target.value)}
-              className="bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-slate-200 font-mono text-xs focus:outline-none focus:border-indigo-500"
-            >
-              {generators.map(g => (
-                <option key={g.id} value={g.id}>
-                  {g.name} {g.builtin ? '(Builtin)' : '(Project Script)'}
-                </option>
-              ))}
-            </select>
+            {activeTab === 'custom' && (
+              <button
+                onClick={handleRunCustomGenerator}
+                disabled={isExecutingGen}
+                className="flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-semibold transition shadow-sm"
+              >
+                {isExecutingGen ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                <span>Run Generator</span>
+              </button>
+            )}
+
             <button
-              onClick={handleRunCustomGenerator}
-              disabled={isExecutingGen}
-              className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold flex items-center gap-1 transition shadow"
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md text-xs border border-gray-700 transition"
+              title="Copy code to clipboard"
             >
-              {isExecutingGen ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-              Execute Generator
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="NewGeneratorName"
-              value={customGenName}
-              onChange={(e) => setCustomGenName(e.target.value)}
-              className="bg-slate-800 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-indigo-500 w-44"
-            />
             <button
-              onClick={handleCreateCustomGenerator}
-              disabled={isCreatingGen || !customGenName.trim()}
-              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded text-xs font-semibold flex items-center gap-1 transition"
+              onClick={handleDownloadFile}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-md text-xs border border-gray-700 transition"
+              title="Download this file"
             >
-              <Plus className="w-3.5 h-3.5" />
-              Save As Project Script
+              <Download className="w-3.5 h-3.5" />
+              <span>Save File</span>
             </button>
           </div>
         </div>
-      )}
 
-      {genStatus && (
-        <div className="px-4 py-1.5 bg-indigo-950/60 text-indigo-300 text-xs border-b border-indigo-800/40 font-mono flex items-center justify-between">
-          <span>{genStatus}</span>
-          <button onClick={() => setGenStatus(null)} className="text-slate-400 hover:text-white">✕</button>
-        </div>
-      )}
+        {/* Custom Generator Quick Creation Banner (only when on custom tab) */}
+        {activeTab === 'custom' && (
+          <div className="px-4 py-2 bg-indigo-950/30 border-b border-indigo-900/40 flex flex-wrap items-center justify-between text-xs gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400 font-medium">Select Script:</span>
+              <select
+                value={selectedGeneratorId}
+                onChange={(e) => setSelectedGeneratorId(e.target.value)}
+                className="bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500"
+              >
+                {generators.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name} {g.builtin ? '(Builtin)' : '(Project Script)'}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-      {/* Main Monaco Editor for Code / Template */}
-      <div className="flex-1 relative overflow-hidden">
-        {isLoading && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs">
-            <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
-            <span className="ml-2 text-xs text-slate-300">Compiling target architecture...</span>
+            <div className="flex items-center gap-2 flex-1 max-w-sm">
+              <span className="text-gray-400 font-medium">New:</span>
+              <input
+                type="text"
+                placeholder="e.g. Safety_Audit.generator.py"
+                value={customGenName}
+                onChange={(e) => setCustomGenName(e.target.value)}
+                className="flex-1 bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500"
+              />
+              <button
+                onClick={handleCreateCustomGenerator}
+                disabled={isCreatingGen || !customGenName.trim()}
+                className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded text-xs font-semibold flex items-center gap-1 transition"
+              >
+                {isCreatingGen ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                <span>Add</span>
+              </button>
+            </div>
+            {genStatus && (
+              <span className="text-[11px] text-indigo-300 font-mono truncate">{genStatus}</span>
+            )}
           </div>
         )}
 
-        <Editor
-          height="100%"
-          language={getLanguage()}
-          value={viewMode === 'output' ? outputContent : templateContent}
-          theme="vs-dark"
-          options={{
-            readOnly: viewMode === 'output',
-            minimap: { enabled: false },
-            fontSize: 12,
-            lineNumbers: 'on',
-            scrollBeyondLastLine: false,
-            wordWrap: 'on'
-          }}
-        />
-      </div>
+        {/* Monaco Editor Container */}
+        <div className="flex-1 relative overflow-hidden">
+          {isLoading ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0b0f19] text-gray-400 gap-2 z-10">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+              <span className="text-xs">Generating code...</span>
+            </div>
+          ) : null}
 
-      {/* Footer Info */}
-      <div className="px-4 py-2 bg-[#0d131f] border-t border-gray-800 flex items-center justify-between text-[11px] text-slate-400 font-mono">
-        <span>Active Target: {activeTab.toUpperCase()} ({viewMode === 'output' ? 'Synthesized Source' : 'Xtext / AbstractGenerator Template'})</span>
-        <span>Thesis Module: GenerateMnCDesignFromActivityDiagram &bull; IFileSystemAccess2</span>
-      </div>
+          <Editor
+            height="100%"
+            language={getLanguage()}
+            value={viewMode === 'template' ? templateContent : outputContent}
+            theme="vs-dark"
+            options={{
+              readOnly: viewMode !== 'template' && activeTab !== 'custom',
+              minimap: { enabled: false },
+              fontSize: 13,
+              fontFamily: "'JetBrains Mono', 'Fira Code', Menlo, monospace",
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              tabSize: 4,
+              padding: { top: 12, bottom: 12 },
+              lineNumbers: 'on',
+              folding: true,
+              wordWrap: 'on'
+            }}
+          />
+        </div>
+      </main>
     </div>
   );
 };

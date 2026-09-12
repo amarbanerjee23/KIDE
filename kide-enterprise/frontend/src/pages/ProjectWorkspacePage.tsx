@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { MonacoDslEditor } from '../components/editor/MonacoDslEditor';
-import { EditorToolbar } from '../components/editor/EditorToolbar';
-import { SynthesisWorkflowStepper } from '../components/workflow/SynthesisWorkflowStepper';
+import { UnifiedWorkspaceHeader } from '../components/workflow/UnifiedWorkspaceHeader';
 import { FileExplorer } from '../components/editor/FileExplorer';
 import { EditorTabs } from '../components/editor/EditorTabs';
 import GeminiAssistantPanel from '../components/editor/GeminiAssistantPanel';
@@ -11,10 +10,7 @@ import { MncFlowViewer } from '../components/flow/MncFlowViewer';
 import { LiveRunnerConsole } from '../components/simulation/LiveRunnerConsole';
 import { CodeGenerationStudio } from '../components/workflow/CodeGenerationStudio';
 import { TransformOutput } from '../components/output/TransformOutput';
-import { 
-  Bot, Loader2, Code2, GitMerge, Activity, Play, 
-  Sparkles, Columns, ArrowRight
-} from 'lucide-react';
+import { Loader2, GitMerge, Sparkles, ArrowRight } from 'lucide-react';
 import { useEditorStore } from '../stores/editorStore';
 import { projectsApi } from '../api/projects';
 import { transformWorkspace } from '../api/transform';
@@ -161,106 +157,10 @@ const ProjectWorkspacePage = () => {
 
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden relative">
-      <EditorToolbar />
-      <SynthesisWorkflowStepper />
-      
-      {/* Workspace View Mode Selector Bar */}
-      <div className="flex items-center justify-between px-4 py-1.5 bg-[#0f172a] border-b border-gray-800 text-xs z-10">
-        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
-          <span className="text-gray-400 font-semibold mr-2 hidden sm:inline">Workspace View:</span>
-          
-          <button
-            onClick={() => setActiveView('editor')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
-              activeView === 'editor'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          >
-            <Code2 className="w-3.5 h-3.5" />
-            <span>Code Editor</span>
-          </button>
-
-          <button
-            onClick={() => setActiveView('statemachine')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
-              activeView === 'statemachine'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          >
-            <GitMerge className="w-3.5 h-3.5" />
-            <span>State Machine</span>
-            {activeModel && (
-              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-blue-900/60 text-blue-200 border border-blue-400/30">
-                Live
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveView('workflow')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
-              activeView === 'workflow'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-white hover:bg-gray-800'
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5" />
-            <span>Workflow Diagram</span>
-          </button>
-
-          <button
-            onClick={() => setActiveView('simulator')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
-              activeView === 'simulator'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/40'
-            }`}
-          >
-            <Play className="w-3.5 h-3.5" />
-            <span>Live Controller Simulator</span>
-          </button>
-
-          <button
-            onClick={() => setActiveView('codegen')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition ${
-              activeView === 'codegen'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-950/40'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Code Studio & Templates</span>
-          </button>
-
-          <button
-            onClick={() => setActiveView('split')}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-medium transition ${
-              activeView === 'split'
-                ? 'bg-gray-700 text-white shadow-sm'
-                : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
-            }`}
-            title="Side-by-Side Split View"
-          >
-            <Columns className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Split View</span>
-          </button>
-        </div>
-
-        {/* Gemini Assistant Toggle */}
-        <div className="flex items-center gap-2">
-          {!showAssistant && (
-            <button
-              onClick={() => setShowAssistant(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-blue-400 rounded-lg text-xs font-medium border border-gray-700 hover:border-blue-500/50 transition"
-            >
-              <Bot className="w-3.5 h-3.5" />
-              <span>Ask Gemini</span>
-            </button>
-          )}
-        </div>
-      </div>
+      <UnifiedWorkspaceHeader 
+        showAssistant={showAssistant} 
+        setShowAssistant={setShowAssistant} 
+      />
       
       {/* Dynamic View Body according to activeView */}
       <div ref={containerRef} className="flex flex-1 overflow-hidden relative">
