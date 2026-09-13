@@ -214,6 +214,23 @@ export class CapabilityParser {
       if (this.peek().type === TokenType.IDENTIFIER || this.peek().type === TokenType.STRING) {
         const tok = this.advance();
         outList.push({ name: tok.value, kind, range: tok.range });
+
+        // Handle optional arguments like `()` or `(param1, param2)`
+        if (this.match('(')) {
+          while (this.peek().value !== ')' && this.peek().type !== TokenType.EOF) {
+            this.advance();
+          }
+          this.match(')');
+        }
+
+        // Handle optional response block: -> expected ...
+        if (this.match('->')) {
+          while (this.peek().value !== ',' && this.peek().value !== ']' && this.peek().type !== TokenType.EOF) {
+            this.advance();
+          }
+        }
+      } else {
+        this.advance();
       }
       this.match(',');
     }

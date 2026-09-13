@@ -247,6 +247,8 @@ export class DmlParser {
           kind: 'DataModel',
           range: compTok.range
         });
+      } else {
+        this.advance();
       }
       this.match(',');
     }

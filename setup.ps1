@@ -1,5 +1,5 @@
 # ========================================================================
-# KIDE Enterprise PowerShell Launcher
+# KIDE Enterprise Infrastructure Setup & Runner (PowerShell)
 # ========================================================================
 
 [CmdletBinding()]
@@ -12,21 +12,20 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ScriptDir
 
-# UTF-8 console output
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host "========================================================================" -ForegroundColor Cyan
-Write-Host "             KIDE Enterprise PowerShell Launcher" -ForegroundColor Cyan
+Write-Host "     KIDE Enterprise Infrastructure Setup & Runner (PowerShell)" -ForegroundColor Cyan
 Write-Host "========================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-# 1. Prepend bundled Node.js if available
+# 1. Prepend bundled portable Node.js if available
 $BundledNode = Join-Path $ScriptDir "node-v20.11.1-win-x64"
 if (Test-Path $BundledNode) {
     $env:PATH = "$BundledNode;$($env:PATH)"
 }
 
-# 2. Locate working Python 3
+# 2. Locate working Python 3.10+
 $PythonCmd = $null
 $VenvPython = Join-Path $ScriptDir "kide-enterprise\backend\.venv\Scripts\python.exe"
 if (Test-Path $VenvPython) {
@@ -40,7 +39,7 @@ if (-not $PythonCmd) {
     foreach ($cand in @("python", "py", "python3")) {
         if (Get-Command $cand -ErrorAction SilentlyContinue) {
             try {
-                & $cand -c "import sys; sys.exit(0 if sys.version_info[0] >= 3 else 1)" | Out-Null
+                & $cand -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" | Out-Null
                 $PythonCmd = $cand
                 break
             } catch {}
@@ -49,7 +48,7 @@ if (-not $PythonCmd) {
 }
 
 if (-not $PythonCmd) {
-    Write-Host "[ERROR] Python 3 was not found on your system PATH." -ForegroundColor Red
+    Write-Host "[ERROR] Python 3.10+ was not found on your system PATH." -ForegroundColor Red
     Write-Host "Please install Python 3.10+ from https://www.python.org/downloads/" -ForegroundColor Yellow
     exit 1
 }
@@ -66,7 +65,8 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-$RunPyPath = Join-Path $ScriptDir "run.py"
+$SetupPyPath = Join-Path $ScriptDir "setup.py"
 
-# 4. Launch run.py
-& $PythonCmd $RunPyPath @ScriptArgs
+# 4. Launch setup.py with forwarded arguments
+& $PythonCmd $SetupPyPath @ScriptArgs
+

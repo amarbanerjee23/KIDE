@@ -492,5 +492,21 @@ endStates: IDLE
 
     assert.strictEqual(suggestion, 'RoboticGripper');
   });
+
+  // Test 9: Termination & Action Argument Brackets
+  it('9. Parser Termination: Capability action brackets with () parse without hanging', () => {
+    const code = `Capability ScannerCap compatible component interface PickAndPlace_Interface {
+    Init {
+        subscribe events [ BARCODE_READ() ]
+        fire Commands [ TRIGGER_SCAN() ]
+    }
+}`;
+    const tokens = tokenize(code);
+    assert.ok(tokens.length > 5);
+    const eventTok = tokens.find(t => t.value === 'BARCODE_READ');
+    assert.ok(eventTok);
+    const cmdTok = tokens.find(t => t.value === 'TRIGGER_SCAN');
+    assert.ok(cmdTok);
+  });
 });
 

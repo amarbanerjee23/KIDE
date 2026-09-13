@@ -103,23 +103,30 @@ export class OperationParser {
     const inputs: DmlParameterNode[] = [];
     if (this.match('(')) {
       while (this.peek().value !== ')' && this.peek().type !== TokenType.EOF) {
-        const pTypeTok = this.advance();
-        const pNameTok = this.advance();
-        inputs.push({
-          type: 'Parameter',
-          id: `op_param_${pNameTok.value}`,
-          name: pNameTok.value,
-          range: {
-            startLine: pTypeTok.range.startLine,
-            startColumn: pTypeTok.range.startColumn,
-            endLine: pNameTok.range.endLine,
-            endColumn: pNameTok.range.endColumn
-          },
-          children: [],
-          references: [],
-          paramType: 'simple',
-          valueType: pTypeTok.value
-        });
+        if (this.peek().type === TokenType.IDENTIFIER || this.peek().type === TokenType.STRING) {
+          const pTypeTok = this.advance();
+          let pNameTok = pTypeTok;
+          if (this.peek().value !== ',' && this.peek().value !== ')' && this.peek().type !== TokenType.EOF) {
+            pNameTok = this.advance();
+          }
+          inputs.push({
+            type: 'Parameter',
+            id: `op_param_${pNameTok.value}`,
+            name: pNameTok.value,
+            range: {
+              startLine: pTypeTok.range.startLine,
+              startColumn: pTypeTok.range.startColumn,
+              endLine: pNameTok.range.endLine,
+              endColumn: pNameTok.range.endColumn
+            },
+            children: [],
+            references: [],
+            paramType: 'simple',
+            valueType: pTypeTok.value
+          });
+        } else {
+          this.advance();
+        }
         this.match(',');
       }
       this.match(')');

@@ -12,11 +12,24 @@ import { Sparkles, CheckCircle2, AlertTriangle, XCircle, Code2, ChevronRight } f
 
 export const MonacoDslEditor: React.FC = () => {
   const activeFile = useActiveFile();
-  const { files, updateFileContent, setActiveFileId, setSelectedNodeId, validationErrors } = useEditorStore();
+  const fileCount = useEditorStore((state) => state.files.length);
+  const projectId = useEditorStore((state) => state.projectId) || 1;
+  const activeFileErrors = useEditorStore(
+    (state) => (activeFile ? state.validationErrors[activeFile.id] : undefined)
+  );
+  const updateFileContent = useEditorStore((state) => state.updateFileContent);
+  const setActiveFileId = useEditorStore((state) => state.setActiveFileId);
+  const setSelectedNodeId = useEditorStore((state) => state.setSelectedNodeId);
+
   const monaco = useMonaco();
   const editorRef = useRef<any>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([]);
   const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
+
+  const activeFileRef = useRef(activeFile);
+  useEffect(() => {
+    activeFileRef.current = activeFile;
+  }, [activeFile]);
 
   // 1. Initialize KIDE Language Platform & Theme
   useEffect(() => {
@@ -35,10 +48,8 @@ export const MonacoDslEditor: React.FC = () => {
           { token: 'operator', foreground: 'd4d4d4' },
           { token: 'brackets', foreground: 'ffd700' },
           { token: 'class', foreground: '4ec9b0', fontStyle: 'bold' },
-          { token: 'interface', foreground: '4ec9b0' },
-          { token: 'function', foreground: 'dcdcaa' },
-          { token: 'event', foreground: 'c586c0' },
-          { token: 'property', foreground: '9cdcfe' }
+          { token: 'type', foreground: '4ec9b0' },
+          { token: 'annotation', foreground: 'c586c0' }
         ],
         colors: {
           'editor.background': '#0d1117',
@@ -53,10 +64,10 @@ export const MonacoDslEditor: React.FC = () => {
   }, [monaco]);
 
   // 2. Index workspace files on project load or file list change (NOT on every keystroke)
-  const fileCount = files.length;
   useEffect(() => {
-    if (files && files.length > 0) {
-      kideLanguageService.indexWorkspaceFiles(files);
+    const currentFiles = useEditorStore.getState().files;
+    if (currentFiles && currentFiles.length > 0) {
+      kideLanguageService.indexWorkspaceFiles(currentFiles);
     }
   }, [fileCount]);
 
@@ -79,7 +90,7 @@ export const MonacoDslEditor: React.FC = () => {
     if (activeFile && editorRef.current && monaco) {
       documentManager.attachToEditor(
         editorRef.current,
-        1,
+        projectId,
         activeFile.id,
         activeFile.name,
         activeFile.content
@@ -97,29 +108,31 @@ export const MonacoDslEditor: React.FC = () => {
       );
       setBreadcrumbs(initialBc);
     }
-  }, [activeFile?.id, monaco]);
+  }, [activeFile?.id, monaco, projectId]);
 
-  // 5. Handle typing with incremental indexing and diagnostics
-  const handleEditorChange = (value: string | undefined) => {
-    if (value !== undefined && activeFile) {
-      updateFileContent(activeFile.id, value);
-      kideLanguageService.onDocumentChanged(activeFile.id, activeFile.name, value);
+  // 5. Handle typing with incremental indexing and diagnostics (stable callback reference)
+  const handleEditorChange = useCallback((value: string | undefined) => {
+    const currentFile = activeFileRef.current;
+    if (value !== undefined && currentFile && value !== currentFile.content) {
+      updateFileContent(currentFile.id, value);
+      kideLanguageService.onDocumentChanged(currentFile.id, currentFile.name, value);
     }
-  };
+  }, [updateFileContent]);
 
   // 6. Manual Format Action
   const handleFormat = useCallback(() => {
-    if (!activeFile || !editorRef.current) return;
-    const formatted = kideLanguageService.format(activeFile.content, activeFile.name);
-    if (formatted && formatted !== activeFile.content) {
-      updateFileContent(activeFile.id, formatted);
+    const currentFile = activeFileRef.current;
+    if (!currentFile || !editorRef.current) return;
+    const formatted = kideLanguageService.format(currentFile.content, currentFile.name);
+    if (formatted && formatted !== currentFile.content) {
+      updateFileContent(currentFile.id, formatted);
       const model = editorRef.current.getModel();
       if (model) {
         model.setValue(formatted);
       }
-      kideLanguageService.revalidateAndIndexFile(activeFile.id, activeFile.name, formatted);
+      kideLanguageService.revalidateAndIndexFile(currentFile.id, currentFile.name, formatted);
     }
-  }, [activeFile, updateFileContent]);
+  }, [updateFileContent]);
 
   if (!activeFile) {
     return (
@@ -130,9 +143,9 @@ export const MonacoDslEditor: React.FC = () => {
     );
   }
 
-  const activeErrors = validationErrors[activeFile.id] || [];
-  const errorCount = activeErrors.filter(e => e.severity === 'error').length;
-  const warningCount = activeErrors.filter(e => e.severity === 'warning').length;
+  const activeErrors = activeFileErrors || [];
+  const errorCount = activeErrors.filter((e: any) => e.severity === 'error').length;
+  const warningCount = activeErrors.filter((e: any) => e.severity === 'warning').length;
 
   return (
     <div className="h-full flex flex-col bg-[#0d1117]">
@@ -207,7 +220,9 @@ export const MonacoDslEditor: React.FC = () => {
           height="100%"
           language={activeFile.language}
           theme="kide-dark"
-          value={activeFile.content}
+          path={documentManager.getUri(projectId, activeFile.id, activeFile.name).toString()}
+          defaultValue={activeFile.content}
+          keepCurrentModel={true}
           onChange={handleEditorChange}
           loading={
             <div className="h-full flex items-center justify-center text-gray-500 bg-[#0d1117] text-xs">
@@ -218,7 +233,7 @@ export const MonacoDslEditor: React.FC = () => {
             editorRef.current = editor;
 
             // Attach persistent model
-            documentManager.attachToEditor(editor, 1, activeFile.id, activeFile.name, activeFile.content);
+            documentManager.attachToEditor(editor, projectId, activeFile.id, activeFile.name, activeFile.content);
 
             // Re-validate document
             kideLanguageService.revalidateAndIndexFile(activeFile.id, activeFile.name, activeFile.content);
@@ -230,14 +245,15 @@ export const MonacoDslEditor: React.FC = () => {
 
               if (cursorDebounce) clearTimeout(cursorDebounce);
               cursorDebounce = setTimeout(() => {
-                if (!activeFile) return;
+                const currentFile = activeFileRef.current;
+                if (!currentFile) return;
                 const line = e.position.lineNumber;
                 const col = e.position.column;
 
                 // Exact AST lookup
                 const node = kideLanguageService.findNodeAtPosition(
-                  activeFile.language || activeFile.name,
-                  activeFile.content,
+                  currentFile.language || currentFile.name,
+                  currentFile.content,
                   line,
                   col
                 );
@@ -248,8 +264,8 @@ export const MonacoDslEditor: React.FC = () => {
 
                 // Update breadcrumb bar
                 const bc = kideLanguageService.getBreadcrumbs(
-                  activeFile.language || activeFile.name,
-                  activeFile.content,
+                  currentFile.language || currentFile.name,
+                  currentFile.content,
                   line,
                   col
                 );

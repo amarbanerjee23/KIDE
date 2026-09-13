@@ -185,6 +185,8 @@ export class ActivityParser {
             const opRef: SymbolReference = { name: opTok.value, kind: 'Operation', range: opTok.range };
             reqOps.push(opRef);
             references.push(opRef);
+          } else {
+            this.advance();
           }
           this.match(',');
         }

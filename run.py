@@ -2,10 +2,10 @@
 """
 KIDE Enterprise Application Launcher
 ====================================
-Cross-platform launcher for Windows, macOS, and Linux.
-Manages dependencies, environment configuration, backend (FastAPI),
-and frontend (Vite/React) development servers with unified lifecycle
-and graceful shutdown.
+Bulletproof cross-platform launcher for Windows, macOS, and Linux.
+Manages dependencies, environment configuration, port reclamation,
+backend (FastAPI / Uvicorn), and frontend (Vite / React) development
+servers with unified lifecycle and graceful shutdown.
 """
 
 import os
@@ -16,10 +16,19 @@ import signal
 import time
 import argparse
 import webbrowser
+import socket
 import urllib.request
 import urllib.error
 
-# ANSI terminal colors
+# Ensure UTF-8 output on all platforms
+if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
+# ANSI terminal colors with Windows console setup
 class Colors:
     CYAN = '\033[96m'
     GREEN = '\033[92m'
@@ -35,7 +44,8 @@ class Colors:
     def strip(cls):
         cls.CYAN = cls.GREEN = cls.YELLOW = cls.RED = cls.BLUE = cls.MAGENTA = cls.BOLD = cls.DIM = cls.RESET = ''
 
-if os.name == 'nt' and not os.environ.get('WT_SESSION') and not os.environ.get('ANSICON'):
+if os.name == 'nt':
+    # Enable ANSI escape processing in Windows console
     try:
         import ctypes
         kernel32 = ctypes.windll.kernel32
@@ -44,7 +54,7 @@ if os.name == 'nt' and not os.environ.get('WT_SESSION') and not os.environ.get('
         pass
 
 def log(msg, color=Colors.CYAN, prefix="[KIDE]"):
-    print(f"{color}{Colors.BOLD}{prefix}{Colors.RESET} {msg}")
+    print(f"{color}{Colors.BOLD}{prefix}{Colors.RESET} {msg}", flush=True)
 
 def log_success(msg):
     log(msg, color=Colors.GREEN, prefix="[OK]")
@@ -56,10 +66,54 @@ def log_error(msg):
     log(msg, color=Colors.RED, prefix="[ERROR]")
 
 def check_port_in_use(port: int, host: str = "127.0.0.1") -> bool:
-    import socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.settimeout(0.5)
+        s.settimeout(0.4)
         return s.connect_ex((host, port)) == 0
+
+def reclaim_port(port: int, host: str = "127.0.0.1") -> bool:
+    """Free port if occupied by an orphan/stale process from a previous run."""
+    if not check_port_in_use(port, host):
+        return True
+
+    log_warn(f"Port {port} is occupied by an existing process. Reclaiming port...")
+    if sys.platform == "win32":
+        try:
+            # Find PID using netstat
+            cmd = f'netstat -ano | findstr /R /C:":{port} .*LISTENING"'
+            proc = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            output = proc.stdout.strip()
+            if not output:
+                # Fallback to general findstr
+                proc = subprocess.run(f'netstat -ano | findstr :{port}', shell=True, capture_output=True, text=True)
+                output = proc.stdout.strip()
+
+            killed = False
+            for line in output.splitlines():
+                parts = line.strip().split()
+                if len(parts) >= 5 and "LISTENING" in parts:
+                    pid = parts[-1]
+                    if pid != "0" and pid != str(os.getpid()):
+                        log(f"Terminating orphan process on port {port} (PID: {pid})...")
+                        subprocess.run(f"taskkill /F /T /PID {pid}", shell=True, capture_output=True)
+                        killed = True
+
+            time.sleep(0.8)
+            if not check_port_in_use(port, host):
+                log_success(f"Port {port} successfully reclaimed.")
+                return True
+        except Exception as e:
+            log_warn(f"Failed to auto-kill process on port {port}: {e}")
+    else:
+        try:
+            subprocess.run(f"fuser -k {port}/tcp", shell=True, capture_output=True)
+            time.sleep(0.5)
+            if not check_port_in_use(port, host):
+                log_success(f"Port {port} successfully reclaimed.")
+                return True
+        except Exception:
+            pass
+
+    return not check_port_in_use(port, host)
 
 def wait_for_service(url: str, timeout: float = 15.0, name: str = "Service") -> bool:
     start_time = time.time()
@@ -88,7 +142,7 @@ def print_banner(frontend_url: str, backend_url: str, docs_url: str, mode: str =
   {Colors.DIM}* Press Ctrl+C at any time to gracefully terminate all services.{Colors.RESET}
 {Colors.CYAN}========================================================================{Colors.RESET}
 """
-    print(banner)
+    print(banner, flush=True)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -117,6 +171,11 @@ def main():
     if not os.path.isdir(kide_dir):
         log_error(f"Cannot find kide-enterprise root directory at: {kide_dir}")
         sys.exit(1)
+
+    # Automatically prepend bundled node.js if present
+    bundled_node = os.path.join(repo_root, "node-v20.11.1-win-x64")
+    if os.path.isdir(bundled_node):
+        os.environ["PATH"] = bundled_node + os.pathsep + os.environ.get("PATH", "")
 
     log(f"Initializing KIDE Enterprise on {sys.platform.upper()} (Python {sys.version.split()[0]})...")
 
@@ -216,14 +275,20 @@ def main():
         log_success("All KIDE Enterprise dependencies installed. Exiting (--install-only).")
         sys.exit(0)
 
-    # 5. Launch Servers
+    # 5. Port Conflict Reclaiming
+    if not args.frontend_only:
+        reclaim_port(args.port, args.host)
+    if not args.backend_only and args.mode == "web":
+        reclaim_port(args.frontend_port, "127.0.0.1")
+
+    # 6. Launch Servers
     processes = []
-    
+
     def kill_tree(p):
         if p and p.poll() is None:
             try:
                 if is_win:
-                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], capture_output=True)
+                    subprocess.run(f"taskkill /F /T /PID {p.pid}", shell=True, capture_output=True)
                 else:
                     os.killpg(os.getpgid(p.pid), signal.SIGTERM)
             except Exception:
@@ -236,7 +301,7 @@ def main():
         log_warn("Shutting down KIDE Enterprise services...")
         for proc in processes:
             kill_tree(proc)
-        log_success("All processes terminated.")
+        log_success("All services safely stopped.")
 
     def signal_handler(sig, frame):
         cleanup_all()
@@ -247,10 +312,6 @@ def main():
         signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        # Check port conflicts
-        if not args.frontend_only and check_port_in_use(args.port, args.host):
-            log_warn(f"Port {args.port} is already in use. Attempting to run backend anyway...")
-
         # Start Backend Server
         if not args.frontend_only:
             log(f"Starting Backend Uvicorn Server on {args.host}:{args.port}...")
@@ -262,7 +323,11 @@ def main():
             if not args.no_reload:
                 uvicorn_cmd.append("--reload")
 
-            popen_kwargs = {"cwd": backend_dir}
+            backend_env = os.environ.copy()
+            backend_env["PYTHONPATH"] = backend_dir
+            backend_env["PYTHONUNBUFFERED"] = "1"
+
+            popen_kwargs = {"cwd": backend_dir, "env": backend_env}
             if is_win:
                 popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
             else:
@@ -277,7 +342,8 @@ def main():
             npm_cmd = "npm.cmd" if is_win else "npm"
             frontend_cmd = [npm_cmd, "run", "dev", "--", "--port", str(args.frontend_port)]
 
-            popen_kwargs = {"cwd": frontend_dir, "shell": is_win}
+            frontend_env = os.environ.copy()
+            popen_kwargs = {"cwd": frontend_dir, "shell": is_win, "env": frontend_env}
             if is_win:
                 popen_kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
             else:
@@ -329,7 +395,7 @@ def main():
             except Exception as e:
                 log_warn(f"Could not open browser automatically: {e}")
 
-        # Keep alive
+        # Keep alive and monitor child health
         while True:
             for p in processes:
                 code = p.poll()
@@ -345,4 +411,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
