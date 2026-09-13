@@ -4,8 +4,9 @@ import { useEditorStore } from '../../stores/editorStore';
 import { projectsApi } from '../../api/projects';
 import { 
   BookOpen, Download, Cpu, Check, Layers, X, 
-  Search, Loader2
+  Search, Loader2, UploadCloud
 } from 'lucide-react';
+import { KnowledgeIngestionModal } from './KnowledgeIngestionModal';
 
 interface KnowledgeCatalogModalProps {
   isOpen: boolean;
@@ -26,24 +27,26 @@ export const KnowledgeCatalogModal: React.FC<KnowledgeCatalogModalProps> = ({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [isIngestionOpen, setIsIngestionOpen] = useState<boolean>(false);
+
+  const fetchCatalog = async () => {
+    setIsLoading(true);
+    try {
+      const items = await knowledgeApi.getCatalog();
+      setCatalog(items);
+      if (items.length > 0) {
+        const detail = await knowledgeApi.getCatalogItem(items[0].id);
+        setSelectedItem(detail);
+      }
+    } catch (err) {
+      console.error('Failed to load knowledge catalog:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) return;
-    const fetchCatalog = async () => {
-      setIsLoading(true);
-      try {
-        const items = await knowledgeApi.getCatalog();
-        setCatalog(items);
-        if (items.length > 0) {
-          const detail = await knowledgeApi.getCatalogItem(items[0].id);
-          setSelectedItem(detail);
-        }
-      } catch (err) {
-        console.error('Failed to load knowledge catalog:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchCatalog();
   }, [isOpen]);
 
@@ -125,12 +128,21 @@ export const KnowledgeCatalogModal: React.FC<KnowledgeCatalogModalProps> = ({
               </p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsIngestionOpen(true)}
+              className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-medium flex items-center gap-1.5 transition shadow-sm"
+            >
+              <UploadCloud className="w-3.5 h-3.5" />
+              Ingest Datasheet (Req 24)
+            </button>
+            <button 
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Content Body */}
@@ -304,6 +316,12 @@ export const KnowledgeCatalogModal: React.FC<KnowledgeCatalogModalProps> = ({
           </div>
         </div>
       </div>
+
+      <KnowledgeIngestionModal
+        isOpen={isIngestionOpen}
+        onClose={() => setIsIngestionOpen(false)}
+        onPromoted={fetchCatalog}
+      />
     </div>
   );
 };

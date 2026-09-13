@@ -10,11 +10,12 @@ import {
   getWorkflowStagesStatus, getPrimaryProjectAction, PrimaryAction 
 } from '../../utils/workflowState';
 import { KnowledgeCatalogModal } from '../knowledge/KnowledgeCatalogModal';
+import { KnowledgeIngestionModal } from '../knowledge/KnowledgeIngestionModal';
 import { 
   FolderKanban, ChevronRight, CheckCircle2, AlertTriangle, 
   Loader2, Sparkles, Zap, ChevronDown, BookOpen, Network, 
   Columns, Bot, Download, Layers, Code2, RefreshCw, 
-  Check, Play
+  Check, Play, UploadCloud
 } from 'lucide-react';
 
 export const ProjectHeader: React.FC = () => {
@@ -29,6 +30,7 @@ export const ProjectHeader: React.FC = () => {
   } = useEditorStore();
 
   const [isKnowledgeCatalogOpen, setIsKnowledgeCatalogOpen] = useState(false);
+  const [isIngestionModalOpen, setIsIngestionModalOpen] = useState(false);
   const [isKnowledgeMenuOpen, setIsKnowledgeMenuOpen] = useState(false);
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [validationSuccessPill, setValidationSuccessPill] = useState<string | null>(null);
@@ -331,6 +333,22 @@ export const ProjectHeader: React.FC = () => {
                 <button
                   onClick={() => {
                     setIsKnowledgeMenuOpen(false);
+                    setIsIngestionModalOpen(true);
+                  }}
+                  className="w-full text-left px-3 py-2 text-xs text-gray-200 hover:bg-gray-800 flex items-center gap-2.5 transition"
+                >
+                  <UploadCloud className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <div>
+                    <div className="font-semibold flex items-center gap-1.5">
+                      <span>Ingest Datasheet</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-500/20 text-sky-300 font-bold border border-sky-500/30">Req 24</span>
+                    </div>
+                    <div className="text-[10px] text-gray-400">PDF/CSV extraction & DSL synthesis</div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsKnowledgeMenuOpen(false);
                     setActiveView('knowledgegraph');
                   }}
                   className="w-full text-left px-3 py-2 text-xs text-gray-200 hover:bg-gray-800 flex items-center gap-2.5 transition"
@@ -490,6 +508,15 @@ export const ProjectHeader: React.FC = () => {
         onImportSuccess={() => {
           setIsKnowledgeCatalogOpen(false);
           window.location.reload();
+        }}
+      />
+
+      {/* Knowledge Ingestion Pipeline Modal */}
+      <KnowledgeIngestionModal
+        isOpen={isIngestionModalOpen}
+        onClose={() => setIsIngestionModalOpen(false)}
+        onPromoted={() => {
+          setIsKnowledgeCatalogOpen(true);
         }}
       />
     </>

@@ -1,3 +1,4 @@
+import re
 import difflib
 import json
 import logging
@@ -89,6 +90,31 @@ class AIGatewayService:
                     "rationale": {"type": "string", "description": "Engineering rationale for this change"}
                 },
                 "required": ["filename", "new_content", "rationale"]
+            }
+        },
+        {
+            "name": "analyze_impact",
+            "description": "Analyze the change impact blast radius (affected activities, states, broken transitions, code targets) of modifying or deleting a symbol or file",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "target_symbol": {"type": "string", "description": "Symbol name being analyzed"},
+                    "target_file": {"type": "string", "description": "File being analyzed"},
+                    "action": {"type": "string", "enum": ["modify", "delete", "rename"], "description": "Change action"}
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "reconfigure_capability",
+            "description": "Automatically reconfigure supervisory activity workflows to substitute a deprecated capability with an updated capability, verifying safety invariants",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "deprecated_capability": {"type": "string", "description": "Name of deprecated capability"},
+                    "replacement_capability": {"type": "string", "description": "Name of replacement capability"}
+                },
+                "required": ["deprecated_capability", "replacement_capability"]
             }
         }
     ]
@@ -360,6 +386,46 @@ class AIGatewayService:
             )
             return {"status": "patch_prepared", "filename": filename, "rationale": rationale}, patch
 
+        elif tool_name == "analyze_impact":
+            target_symbol = arguments.get("target_symbol")
+            target_file = arguments.get("target_file")
+            action = arguments.get("action", "modify")
+
+            stmt = select(ProjectFile).where(ProjectFile.project_id == project.id)
+            res = await db.execute(stmt)
+            files = res.scalars().all()
+            file_dicts = [{"id": str(f.id), "name": f.filename, "content": f.content or ""} for f in files]
+
+            from app.schemas.traceability import ImpactAnalysisRequest
+            from app.services.traceability import TraceabilityService
+
+            req = ImpactAnalysisRequest(
+                target_symbol=target_symbol,
+                target_file=target_file,
+                action=action
+            )
+            impact_res = TraceabilityService.analyze_change_impact(file_dicts, req)
+            return impact_res.model_dump(), None
+
+        elif tool_name == "reconfigure_capability":
+            dep_cap = arguments.get("deprecated_capability", "")
+            rep_cap = arguments.get("replacement_capability", "")
+
+            stmt = select(ProjectFile).where(ProjectFile.project_id == project.id)
+            res = await db.execute(stmt)
+            files = res.scalars().all()
+            file_dicts = [{"id": str(f.id), "name": f.filename, "content": f.content or ""} for f in files]
+
+            from app.schemas.traceability import ReconfigurationRequest
+            from app.services.reconfiguration import SemanticReconfigurationService
+
+            req = ReconfigurationRequest(
+                deprecated_capability=dep_cap,
+                replacement_capability=rep_cap
+            )
+            prop = SemanticReconfigurationService.compute_reconfiguration_plan(file_dicts, req)
+            return prop.model_dump(), prop.patches if prop.patches else None
+
         return {"error": f"Unknown tool: {tool_name}"}, None
 
     # ─────────────────────────────────────────────────────────────
@@ -501,7 +567,83 @@ class AIGatewayService:
                 f"Please review the proposed diff below. You can click **[ Review & Apply Patch ]** to write this file to your project."
             )
 
-        elif any(w in last_prompt for w in ["search", "knowledge", "device", "chiller", "sensor", "rfid", "robot", "catalog", "equipment"]):
+        elif any(w in last_prompt for w in ["impact", "blast", "what happens if", "breaking", "affect", "radius"]):
+            # Extract target symbol if mentioned
+            target_sym = None
+            for f in ctx_out.get("files", []):
+                name_no_ext = f["filename"].split(".")[0]
+                if name_no_ext.lower() in last_prompt:
+                    target_sym = name_no_ext
+                    break
+            if not target_sym:
+                target_sym = "ChillerCooling"
+
+            impact_out, _ = await cls.execute_tool("analyze_impact", {"target_symbol": target_sym, "action": "delete" if "delete" in last_prompt or "remov" in last_prompt else "modify"}, project, db, current_user)
+            executed_tools.append(ToolCallRecord(
+                id=str(uuid.uuid4())[:8],
+                tool="analyze_impact",
+                input={"target_symbol": target_sym},
+                output=impact_out
+            ))
+
+            risk = impact_out.get("risk_level", "HIGH")
+            acts = ", ".join(impact_out.get("affected_activities", [])) or "None"
+            states = ", ".join(impact_out.get("affected_states", [])) or "None"
+            gens = ", ".join(impact_out.get("affected_code_generators", [])) or "None"
+            mitigations = "\n".join([f"- {m}" for m in impact_out.get("recommended_mitigations", [])])
+
+            reply = (
+                f"📊 **Change Impact Analysis Report for `{target_sym}`**\n\n"
+                f"- **Calculated Risk Level**: `{risk}`\n"
+                f"- **Impacted Symbols Count**: {impact_out.get('impacted_symbols_count', 0)}\n"
+                f"- **Affected Activities**: {acts}\n"
+                f"- **Affected Operating States**: {states}\n"
+                f"- **Affected Code Generators**: {gens}\n\n"
+                f"**Recommended Mitigations**:\n{mitigations}"
+            )
+
+        elif any(w in last_prompt for w in ["reconfigure", "substitute", "replace capability", "swap"]):
+            raw_prompt = messages[-1].content if messages else ""
+            dep_cap = "ChillerCooling"
+            rep_cap = "SmartChillerV2"
+            if "with" in raw_prompt.lower():
+                parts = re.split(r'\bwith\b', raw_prompt, flags=re.IGNORECASE)
+                if len(parts) >= 2:
+                    rep_words = parts[1].strip().split()
+                    if rep_words:
+                        rep_cap = rep_words[0].strip(" '\"`.,")
+                before_with = parts[0]
+                for word in before_with.strip().split():
+                    cleaned = word.strip(" '\"`.,")
+                    if any(c.isupper() for c in cleaned) and len(cleaned) > 2 and cleaned.lower() not in ["reconfigure", "substitute", "replace", "workflow", "to"]:
+                        dep_cap = cleaned
+
+            reconf_out, patch = await cls.execute_tool("reconfigure_capability", {
+                "deprecated_capability": dep_cap,
+                "replacement_capability": rep_cap
+            }, project, db, current_user)
+            executed_tools.append(ToolCallRecord(
+                id=str(uuid.uuid4())[:8],
+                tool="reconfigure_capability",
+                input={"deprecated_capability": dep_cap, "replacement_capability": rep_cap},
+                output=reconf_out
+            ))
+            if patch:
+                if isinstance(patch, list):
+                    proposed_patches.extend(patch)
+                else:
+                    proposed_patches.append(patch)
+
+            reply = (
+                f"🔄 **Automated Semantic Reconfiguration Proposal**\n\n"
+                f"{reconf_out.get('explanation')}\n\n"
+                f"- **Deprecated Capability**: `{dep_cap}`\n"
+                f"- **Replacement Capability**: `{rep_cap}`\n"
+                f"- **Affected Files**: {', '.join(reconf_out.get('affected_files', [])) or 'None'}\n\n"
+                f"Review the generated substitution diff below and click **[ Review & Apply Patch ]** to commit."
+            )
+
+        elif any(w in last_prompt for w in ["search", "knowledge", "device", "sensor", "rfid", "robot", "catalog", "equipment"]):
             # Extract query
             query = last_prompt.replace("search", "").replace("knowledge", "").replace("find", "").strip() or "chiller sensor"
             kg_out, _ = await cls.execute_tool("search_knowledge", {"query": query}, project, db, current_user)

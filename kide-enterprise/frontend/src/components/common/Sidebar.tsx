@@ -3,7 +3,7 @@ import { NavLink, useMatch } from 'react-router-dom';
 import { 
   LayoutDashboard, FolderOpen, Settings, LogOut, 
   PanelLeftClose, PanelLeftOpen, FolderTree, Search, 
-  AlertCircle, ListTree 
+  AlertCircle, ListTree, ShieldCheck 
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useEditorStore } from '../../stores/editorStore';
@@ -101,6 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/projects', icon: FolderOpen, label: 'Projects' },
     { to: '/settings', icon: Settings, label: 'Settings' },
+    ...(user?.role === 'owner' ? [{ to: '/admin', icon: ShieldCheck, label: 'Admin Console' }] : [])
   ];
 
   // Count problems for collapsed mode badge

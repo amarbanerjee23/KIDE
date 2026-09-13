@@ -218,6 +218,8 @@ export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) =
   const promptChips = [
     "Validate all models",
     "Synthesize state machine",
+    "Analyze impact of removing ChillerCooling",
+    "Reconfigure workflow to use SmartChillerV2",
     "Verify state transitions",
     "Explain active DSL",
     "Suggest activity steps",

@@ -4,7 +4,10 @@ from sqlalchemy import select, desc
 from typing import List
 from datetime import datetime, timezone
 
-from app.auth.dependencies import get_current_user, get_db
+from app.auth.dependencies import get_current_user, get_db, require_permission
+from app.auth.rbac import Permission
+from app.services.audit import AuditService
+from app.services.entitlements import EntitlementsService
 from app.models.user import User
 from app.models.project import Project, ProjectFile
 from app.models.ai_provenance import AIProvenance
@@ -58,6 +61,9 @@ async def chat(
     Multi-turn engineering chat endpoint with real-time tool execution,
     strict server-side authorization, and provenance recording.
     """
+    if current_user.org_id:
+        await EntitlementsService.check_can_use_ai(db, current_user.org_id, estimated_tokens=1000)
+
     try:
         response = await AIGatewayService.chat(
             project_id=request.project_id,
@@ -68,6 +74,12 @@ async def chat(
             provider=request.provider,
             model=request.model
         )
+
+        if current_user.org_id:
+            last_msg_len = len(request.messages[-1].content) if request.messages else 50
+            token_count = max(250, (last_msg_len + len(response.message or "")) // 3)
+            await EntitlementsService.record_ai_usage(db, current_user.org_id, token_count)
+
         return response
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(ve))
@@ -77,7 +89,7 @@ async def chat(
 @router.post("/apply-patch", response_model=ApplyPatchResponse)
 async def apply_patch(
     request: ApplyPatchRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.PATCH_APPLY)),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -137,6 +149,17 @@ async def apply_patch(
 
     project.updated_at = utcnow()
     await db.commit()
+
+    # Immutable Audit Log
+    await AuditService.log(
+        db=db,
+        org_id=current_user.org_id,
+        action="project:patch_applied",
+        actor=current_user,
+        target_type="project",
+        target_id=str(project.id),
+        details={"applied_files": applied_files, "provenance_id": request.provenance_id}
+    )
 
     return ApplyPatchResponse(
         status="applied",
