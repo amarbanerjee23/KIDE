@@ -27,7 +27,7 @@ class ProjectResponse(BaseModel):
 
 class ProjectFileCreate(BaseModel):
     filename: str
-    file_type: str
+    file_type: Optional[str] = "text"
     content: str
 
 class ProjectFileUpdate(BaseModel):

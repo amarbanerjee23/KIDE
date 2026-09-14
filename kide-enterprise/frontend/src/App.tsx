@@ -8,6 +8,8 @@ import DashboardPage from './pages/DashboardPage';
 import ProjectsPage from './pages/ProjectsPage';
 import ProjectWorkspacePage from './pages/ProjectWorkspacePage';
 import SettingsPage from './pages/SettingsPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import KnowledgeGraphPage from './pages/KnowledgeGraphPage';
 
 const ProtectedRoute = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -28,11 +30,13 @@ function App() {
       </Route>
 
       <Route element={<ProtectedRoute />}>
+        <Route path="/knowledge-graph" element={<KnowledgeGraphPage />} />
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/projects/:id" element={<ProjectWorkspacePage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/admin" element={<AdminDashboardPage />} />
         </Route>
       </Route>
     </Routes>

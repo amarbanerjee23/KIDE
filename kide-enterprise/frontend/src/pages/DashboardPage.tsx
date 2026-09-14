@@ -10,7 +10,7 @@ import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
 import { 
   FolderPlus, Play, LayoutDashboard, Sparkles, CheckCircle2, 
-  ArrowRight
+  ArrowRight, Network
 } from 'lucide-react';
 import { TransformResult } from '../types/models';
 
@@ -345,7 +345,15 @@ const DashboardPage = () => {
           <h1 className="text-3xl font-bold text-white mb-2">Hello, {user?.full_name || user?.name || 'Researcher'}</h1>
           <p className="text-gray-400">Welcome to KIDE Enterprise — Model-Driven Supervisory Control Synthesis.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <Button 
+            variant="secondary" 
+            onClick={() => window.open('/knowledge-graph', '_blank')}
+            className="border-indigo-500/40 text-indigo-400 hover:bg-indigo-950/40"
+            title="Open Knowledge Graph Studio in a new tab"
+          >
+            <Network className="w-4 h-4 mr-2 text-indigo-400" /> Knowledge Graph Studio ↗
+          </Button>
           <Button 
             variant="secondary" 
             onClick={() => {
@@ -363,7 +371,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Metrics Banner */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-surface border border-accent p-6 rounded-lg">
           <div className="flex items-center justify-between">
             <h3 className="text-gray-400 font-medium">Total Projects</h3>
@@ -384,6 +392,62 @@ const DashboardPage = () => {
             <FolderPlus className="text-highlight w-5 h-5" />
           </div>
           <p className="text-3xl font-bold text-white mt-4">{projects.reduce((sum, p) => sum + (p.file_count || 0), 0)}</p>
+        </div>
+      </div>
+
+      {/* Knowledge Graph Studio Showcase Banner */}
+      <div className="mb-10 bg-gradient-to-r from-[#111625] via-[#141b2f] to-[#101524] border border-indigo-500/30 rounded-xl p-6 relative overflow-hidden shadow-xl">
+        <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-2.5 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-600/40 text-indigo-300 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Network className="w-3.5 h-3.5 text-indigo-400" />
+                Thesis Metamodel Ontology
+              </span>
+              <span className="text-gray-400 text-xs font-mono">&bull; 19 Domains &bull; 69+ Physical Devices</span>
+            </div>
+            <h2 className="text-xl font-bold text-white tracking-tight">
+              Pre-Available Industrial Knowledge Graph Studio
+            </h2>
+            <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
+              Explore the complete property knowledge graph across 19 real-world industrial automation domains. Inspect fine-grained thesis ontology entities—Commands, Events, Alarms, DataPoints, Parameters, Interfaces, Capabilities, DataModels, and Supervisory Workflows—and 1-click import reusable building blocks into your projects.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-gray-400">
+              <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
+                ⚡ Fireable Commands
+              </span>
+              <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
+                📡 Receivable Events
+              </span>
+              <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
+                🚨 Raised Alarms
+              </span>
+              <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
+                📊 Telemetry DataPoints
+              </span>
+              <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
+                🐢 W3C OWL/RDF Turtle
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
+            <Button
+              onClick={() => window.open('/knowledge-graph', '_blank')}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/20 text-xs px-4 py-2.5 flex items-center justify-center gap-2"
+            >
+              <Network className="w-4 h-4" />
+              <span>Open Knowledge Graph in New Tab ↗</span>
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => navigate('/knowledge-graph')}
+              className="border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white text-xs px-4 py-2.5 flex items-center justify-center gap-2"
+            >
+              <span>Explore Studio View &rarr;</span>
+            </Button>
+          </div>
         </div>
       </div>
 

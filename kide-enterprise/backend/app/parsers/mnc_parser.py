@@ -89,6 +89,7 @@ class MncParser(DmlParser):
                                 params.append(self.parse_parameter())
                         self.eat(TokenType.SYMBOL, "]")
                     res["commands"].append({"name": cname, "asynch": asynch, "parameters": params})
+                    self.try_eat(",")
             elif self.try_eat("events"):
                 self.eat(TokenType.SYMBOL, "{")
                 while not self.try_eat("}"):
@@ -102,6 +103,7 @@ class MncParser(DmlParser):
                                 params.append(self.parse_parameter())
                         self.eat(TokenType.SYMBOL, "]")
                     res["events"].append({"name": ename, "publish": pub, "parameters": params})
+                    self.try_eat(",")
             elif self.try_eat("alarms"):
                 self.eat(TokenType.SYMBOL, "{")
                 while not self.try_eat("}"):
@@ -119,6 +121,7 @@ class MncParser(DmlParser):
                         self.eat(TokenType.SYMBOL, "=")
                         level = int(self.eat(TokenType.NUMBER).value)
                     res["alarms"].append({"name": aname, "publish": pub, "parameters": params, "level": level})
+                    self.try_eat(",")
             elif self.try_eat("dataPoints"):
                 self.eat(TokenType.SYMBOL, "{")
                 while not self.try_eat("}"):
@@ -140,6 +143,7 @@ class MncParser(DmlParser):
                     dp_dict = {"name": dpname, "publish": pub, "type": typ, "value": val, "parameters": params}
                     res["dataPoints"].append(dp_dict)
                     res["data_points"].append(dp_dict)
+                    self.try_eat(",")
             elif self.try_eat("operatingStates"):
                 self.eat(TokenType.SYMBOL, "{")
                 op_states = []
@@ -161,6 +165,7 @@ class MncParser(DmlParser):
                         if self.try_eat("["):
                             self.eat(TokenType.SYMBOL, "]")
                         op_states.append({"name": st_name})
+                        self.try_eat(",")
                 res["operatingStates"] = op_states
                 res["operating_states"] = [s["name"] for s in op_states]
                 res["operatingStatesUtility"] = {

@@ -8,11 +8,17 @@ class DmlParser(BaseParser):
         if self.try_eat("Package"):
             pkg["name"] = self.parse_estring()
         
+        has_brace = bool(self.try_eat("{"))
         models = []
         while self.match("DataModel"):
             models.append(self.parse_datamodel())
+            self.try_eat(",")
         
+        if has_brace:
+            self.try_eat("}")
+
         pkg["dataModelCollections"] = models
+        pkg["data_models"] = models
         return pkg
 
     def parse_datamodel(self) -> Dict[str, Any]:

@@ -200,23 +200,15 @@ export function buildWorkspaceSymbolIndex(): SymbolDefinition[] {
   return symbols;
 }
 
-/**
- * Listener callback for cross-file navigation.
- */
-type NavigationHandler = (targetFileId: string, line: number, column: number) => void;
-let globalNavHandler: NavigationHandler | null = null;
+import {
+  registerNavigationHandler,
+  navigateToDefinition
+} from '../kide-language/languageService';
 
-export function registerNavigationHandler(handler: NavigationHandler) {
-  globalNavHandler = handler;
-}
-
-export function navigateToDefinition(fileId: string, line: number, column: number) {
-  if (globalNavHandler) {
-    globalNavHandler(fileId, line, column);
-  } else {
-    useEditorStore.getState().setActiveFileId(fileId);
-  }
-}
+export {
+  registerNavigationHandler,
+  navigateToDefinition
+};
 
 /**
  * Xtext Definition Provider (Go to Definition / Ctrl+Click).

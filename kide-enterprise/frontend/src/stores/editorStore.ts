@@ -13,6 +13,8 @@ export type WorkspaceView =
 export type SplitLayoutOption = 
   | 'code-workflow' 
   | 'code-statemachine' 
+  | 'code-knowledgegraph'
+  | 'workflow-knowledgegraph'
   | 'workflow-simulator';
 
 interface EditorState {
@@ -127,12 +129,16 @@ export const useEditorStore = create<EditorState>((set) => ({
     activeFileId: files.length > 0 ? (files.find(f => f.name.endsWith('.activity') || f.name.endsWith('.json'))?.id || files[0].id) : null 
   }),
   addFile: (file) => set((state) => ({ files: [...state.files, file], activeFileId: file.id })),
-  updateFileContent: (id, content) => set((state) => ({
-    files: state.files.map(f => f.id === id ? { ...f, content } : f),
-    dirtyFileIds: state.dirtyFileIds.includes(id) ? state.dirtyFileIds : [...state.dirtyFileIds, id],
-    // If files are edited after synthesis, mark synthesis as STALE
-    isSynthesisStale: state.transformResult !== null ? true : state.isSynthesisStale
-  })),
+  updateFileContent: (id, content) => set((state) => {
+    const target = state.files.find(f => f.id === id);
+    if (target && target.content === content) return state;
+    return {
+      files: state.files.map(f => f.id === id ? { ...f, content } : f),
+      dirtyFileIds: state.dirtyFileIds.includes(id) ? state.dirtyFileIds : [...state.dirtyFileIds, id],
+      // If files are edited after synthesis, mark synthesis as STALE
+      isSynthesisStale: state.transformResult !== null ? true : state.isSynthesisStale
+    };
+  }),
   markFileSaved: (id) => set((state) => ({
     dirtyFileIds: state.dirtyFileIds.filter(fId => fId !== id)
   })),
@@ -141,8 +147,8 @@ export const useEditorStore = create<EditorState>((set) => ({
     dirtyFileIds: state.dirtyFileIds.filter(fId => fId !== id),
     activeFileId: state.activeFileId === id ? (state.files.find(f => f.id !== id)?.id || null) : state.activeFileId
   })),
-  setActiveFileId: (id) => set({ activeFileId: id }),
-  setSelectedNodeId: (id) => set({ selectedNodeId: id }),
+  setActiveFileId: (id) => set((state) => (state.activeFileId === id ? state : { activeFileId: id })),
+  setSelectedNodeId: (id) => set((state) => (state.selectedNodeId === id ? state : { selectedNodeId: id })),
   setGraphScope: (scope) => set({ graphScope: scope }),
   setGraphData: (data) => set({ graphData: data }),
   setSelectedGraphNode: (node) => set({ selectedGraphNode: node, selectedNodeId: node ? node.name : null }),
@@ -156,9 +162,19 @@ export const useEditorStore = create<EditorState>((set) => ({
     newModels.set(fileId, ast);
     return { parsedModels: newModels };
   }),
-  setValidationErrors: (fileId, errors) => set((state) => ({
-    validationErrors: { ...state.validationErrors, [fileId]: errors }
-  })),
+  setValidationErrors: (fileId, errors) => set((state) => {
+    const existing = state.validationErrors[fileId];
+    if (existing && existing.length === errors.length) {
+      const unchanged = existing.every((e, idx) => 
+        e.line === errors[idx].line && 
+        e.column === errors[idx].column && 
+        e.message === errors[idx].message && 
+        e.severity === errors[idx].severity
+      );
+      if (unchanged) return state;
+    }
+    return { validationErrors: { ...state.validationErrors, [fileId]: errors } };
+  }),
   clearResults: () => set({ 
     transformResult: null, 
     parsedModels: new Map(), 
@@ -171,12 +187,14 @@ export const useEditorStore = create<EditorState>((set) => ({
 }));
 
 export const useActiveFile = () => {
-  const { files, activeFileId } = useEditorStore();
+  const activeFileId = useEditorStore((state) => state.activeFileId);
+  const files = useEditorStore((state) => state.files);
   return files.find(f => f.id === activeFileId);
 };
 
 export const useActivityFile = () => {
-  const { files, parsedModels } = useEditorStore();
+  const files = useEditorStore((state) => state.files);
+  const parsedModels = useEditorStore((state) => state.parsedModels);
   const activityFile = files.find(f => f.language === 'activitydsl');
   if (activityFile && parsedModels.has(activityFile.id)) {
     return parsedModels.get(activityFile.id) as ActivityDiagram;

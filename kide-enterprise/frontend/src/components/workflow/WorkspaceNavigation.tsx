@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { useEditorStore, WorkspaceView, SplitLayoutOption } from '../../stores/editorStore';
 import { 
-  FileCode2, GitMerge, Activity, Play, Sparkles, 
+  FileCode2, GitMerge, Activity, Play, Sparkles, Network,
   Columns, ChevronDown 
 } from 'lucide-react';
 
@@ -19,6 +19,7 @@ export const WorkspaceNavigation: React.FC = () => {
     { id: 'editor', label: 'Code', icon: FileCode2 },
     { id: 'statemachine', label: 'State Machine', icon: GitMerge },
     { id: 'workflow', label: 'Workflow', icon: Activity },
+    { id: 'knowledgegraph', label: 'Knowledge Graph', icon: Network },
     { id: 'simulator', label: 'Simulator', icon: Play },
     { id: 'codegen', label: 'Generate', icon: Sparkles },
   ];
@@ -39,6 +40,8 @@ export const WorkspaceNavigation: React.FC = () => {
   const splitOptions: { id: SplitLayoutOption; label: string }[] = [
     { id: 'code-workflow', label: 'Code | Workflow' },
     { id: 'code-statemachine', label: 'Code | State Machine' },
+    { id: 'code-knowledgegraph', label: 'Code | Knowledge Graph' },
+    { id: 'workflow-knowledgegraph', label: 'Workflow | Knowledge Graph' },
     { id: 'workflow-simulator', label: 'Workflow | Simulator' },
   ];
 

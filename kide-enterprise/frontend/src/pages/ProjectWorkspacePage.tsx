@@ -232,6 +232,12 @@ const ProjectWorkspacePage: React.FC = () => {
     if (splitLayout === 'code-statemachine') {
       leftView = 'editor';
       rightView = 'statemachine';
+    } else if (splitLayout === 'code-knowledgegraph') {
+      leftView = 'editor';
+      rightView = 'knowledgegraph';
+    } else if (splitLayout === 'workflow-knowledgegraph') {
+      leftView = 'workflow';
+      rightView = 'knowledgegraph';
     } else if (splitLayout === 'workflow-simulator') {
       leftView = 'workflow';
       rightView = 'simulator';
