@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cheatsheet title="From activities to an MNC model">
+   <intro>
+      <description>Describe a mission as a flow of activities and turn it into an MNC model with the bundled transformation.</description>
+   </intro>
+   <item title="Open the example activity flow">
+      <description>Open <b>demo/example-workspace/MissionPlanning.activity</b>. It declares three activities that hand over to each other.</description>
+   </item>
+   <item title="Add an activity">
+      <description>Inside the <b>has activities</b> block press <b>Ctrl+Space</b> and choose the <b>activity</b> template. Fill in the name and the capability it requires.</description>
+   </item>
+   <item title="Chain it">
+      <description>Use <b>nextActivity:</b> to point at the following activity. Content assist lists only activities of the same diagram.</description>
+   </item>
+   <item title="Check the timing">
+      <description>Add <b>time: 30 secs</b>. The validator warns when an activity that interrupts another has no duration.</description>
+   </item>
+   <item title="Run the transformation">
+      <description>Right-click the file and run the <b>activity2mnc</b> transformation from <b>com.smr.activity.activity2mnc</b>. The generated MNC model appears next to the source file.</description>
+   </item>
+</cheatsheet>

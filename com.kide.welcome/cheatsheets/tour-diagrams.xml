@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cheatsheet title="Open and read the Sirius diagrams">
+   <intro>
+      <description>Learn where the graphical representations live and what the KIDE visual language means.</description>
+   </intro>
+   <item title="Open the representations file">
+      <description>Open <b>com.mncml/representations.aird</b>. Expand the viewpoints and double-click a representation to open it.</description>
+   </item>
+   <item title="Enable the viewpoints">
+      <description>If nothing is listed, use <b>Viewpoint Selection</b> and tick <b>ActivityFlowDiagrams</b> and the MNC viewpoints.</description>
+   </item>
+   <item title="Read the colours">
+      <description>Blue is a capability, amber is an activity, green is data or a parameter, slate is an MNC structural element. Borders and labels follow the same palette everywhere.</description>
+   </item>
+   <item title="Follow the edges">
+      <description>Grey connectors carry flow, dashed connectors carry a binding between a capability and a resource. Labels sit at the centre of every connector.</description>
+   </item>
+   <item title="Keep the text and the diagram in sync">
+      <description>Edit the textual model and save. The diagram refreshes on the next open, or immediately with the live preview described in <b>tools/kide-live-preview</b>.</description>
+   </item>
+</cheatsheet>

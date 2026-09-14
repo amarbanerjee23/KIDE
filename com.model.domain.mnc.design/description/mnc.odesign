@@ -5,49 +5,49 @@
       <defaultLayer name="Default">
         <nodeMappings name="StartingPoint" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" domainClass="utility.StateUtility">
           <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="StartingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <color xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
           </style>
         </nodeMappings>
         <nodeMappings name="EndingPoint" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" domainClass="utility.StateUtility">
           <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="EndingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <color xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
           </style>
         </nodeMappings>
         <edgeMappings name="StateTransition" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@containerMappings[name='OperatingState']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@containerMappings[name='OperatingState']" targetFinderExpression="feature:nextState" sourceFinderExpression="feature:currentState" domainClass="mncModel.Transition" useDomainElement="true" reconnections="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='TransitionReconnect']">
           <style targetArrow="InputFillClosedArrow" sizeComputationExpression="2">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <centerLabelStyleDescription showIcon="false" labelExpression="aql:self.eContainer().eContainer().command.name">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <edgeMappings name="startingedge" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@nodeMappings[name='StartingPoint']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@containerMappings[name='OperatingState']" targetFinderExpression="feature:startState">
           <style>
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_green']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
             <centerLabelStyleDescription showIcon="false">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <edgeMappings name="Endingedge" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@nodeMappings[name='EndingPoint']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@containerMappings[name='OperatingState']" targetFinderExpression="feature:endState">
           <style sourceArrow="InputArrow" targetArrow="NoDecoration">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
             <centerLabelStyleDescription showIcon="false">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <containerMappings name="OperatingState" labelDirectEdit="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EditStateName']" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='State%20Diagram']/@defaultLayer/@toolSections.0/@ownedTools[name='OpeningEmbededEditor']" domainClass="mncModel.OperatingState">
-          <style xsi:type="style:FlatContainerStyleDescription" arcWidth="50" arcHeight="50" borderSizeComputationExpression="3" showIcon="false" tooltipExpression="OperatingState" roundedCorner="true" widthComputationExpression="15" heightComputationExpression="8">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="50" arcHeight="50" borderSizeComputationExpression="3" showIcon="false" tooltipExpression="OperatingState" roundedCorner="true" widthComputationExpression="15" heightComputationExpression="8">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
             <labelBorderStyle href="environment:/viewpoint#//@labelBorderStyles/@labelBorderStyleDescriptions.2"/>
           </style>
         </containerMappings>
@@ -137,96 +137,96 @@
       <defaultLayer name="Default">
         <nodeMappings name="StartingPoint" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
           <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="StartingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <color xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
           </style>
         </nodeMappings>
         <nodeMappings name="EndingPoint" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
           <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="EndingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <color xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
           </style>
         </nodeMappings>
         <edgeMappings name="StateTransition" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@containerMappings[name='State']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:nextState" sourceFinderExpression="feature:currentState" domainClass="mncModel.Transition" useDomainElement="true" reconnections="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='TransitionReconnect']">
           <style targetArrow="InputFillClosedArrow" sizeComputationExpression="2">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <centerLabelStyleDescription showIcon="false" labelExpression="aql:self.eContainer().eContainer().command.name">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <edgeMappings name="startingedge" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@nodeMappings[name='StartingPoint']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:startState">
           <style sizeComputationExpression="3">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_green']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
             <centerLabelStyleDescription showIcon="false">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <edgeMappings name="Endingedge" sourceMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@nodeMappings[name='EndingPoint']" targetMapping="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:endState">
           <style sourceArrow="InputArrow" targetArrow="NoDecoration" sizeComputationExpression="3">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
             <centerLabelStyleDescription showIcon="false">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <containerMappings name="State" labelDirectEdit="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EditStateName']" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.OperatingState" childrenPresentation="VerticalStack">
           <subContainerMappings name="EntryAction" semanticCandidatesExpression="service:getEntryActionTransition()" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" domainClass="mncModel.Transition">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getEntryActionName()" tooltipExpression="aql:'Entry Action Of '+ self.eContainer().eContainer().command.name+' Transition of '+self.currentState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getEntryActionName()" tooltipExpression="aql:'Entry Action Of '+ self.eContainer().eContainer().command.name+' Transition of '+self.currentState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
             </style>
           </subContainerMappings>
           <subContainerMappings name="ExitAction" semanticCandidatesExpression="service:getExitActionTransition()" doubleClickDescription="//@ownedViewpoints[name='StateDiagram']/@ownedRepresentations[name='ActionDiagramWithStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ClickOnOperatingState']" domainClass="mncModel.Transition">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getExitActionName()" tooltipExpression="aql:'Exit Action due to '+ self.eContainer().eContainer().command.name+' Transition to '+self.nextState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getExitActionName()" tooltipExpression="aql:'Exit Action due to '+ self.eContainer().eContainer().command.name+' Transition to '+self.nextState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" arcWidth="50" arcHeight="50" borderSizeComputationExpression="3" showIcon="false" labelExpression="aql:'  \n '+self.name+' '" tooltipExpression="OperatingState" roundedCorner="true">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="50" arcHeight="50" borderSizeComputationExpression="3" showIcon="false" labelExpression="aql:'  \n '+self.name+' '" tooltipExpression="OperatingState" roundedCorner="true">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
             <labelBorderStyle href="environment:/viewpoint#//@labelBorderStyles/@labelBorderStyleDescriptions.2"/>
           </style>
         </containerMappings>
         <containerMappings name="DiagramInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.InterfaceDescription" childrenPresentation="VerticalStack">
           <subContainerMappings name="EntryActionInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:' EntryAction '" widthComputationExpression="5" heightComputationExpression="2">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:' EntryAction '" widthComputationExpression="5" heightComputationExpression="2">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
             </style>
           </subContainerMappings>
           <subContainerMappings name="ExitActionInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:'ExitAction '" widthComputationExpression="5" heightComputationExpression="2">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:'ExitAction '" widthComputationExpression="5" heightComputationExpression="2">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="4" labelSize="10" showIcon="false" labelExpression="aql:'Diagram Information'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="4" labelSize="10" showIcon="false" labelExpression="aql:'Diagram Information'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
             <labelFormat>underline</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
           </style>
         </containerMappings>
         <toolSections>
@@ -307,52 +307,52 @@
       <defaultLayer name="Default">
         <edgeMappings name="ChildEdge_BlockDiagram" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='ControlNode_BlockDiagram']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='ControlNode_BlockDiagram']" targetFinderExpression="aql:self.childNodes" sourceFinderExpression="aql:self" domainClass="mncModel.ControlNode" useDomainElement="true">
           <style sizeComputationExpression="2" foldingStyle="TARGET">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_green']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
             <centerLabelStyleDescription showIcon="false" labelExpression="child">
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_green']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <edgeMappings name="ParentEdge_BlockDiagram" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='ControlNode_BlockDiagram']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='ControlNode_BlockDiagram']" targetFinderExpression="aql:self.parentNode" sourceFinderExpression="aql:self" domainClass="mncModel.ControlNode" useDomainElement="true">
           <style sizeComputationExpression="2">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
             <centerLabelStyleDescription showIcon="false" labelExpression="parent">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <edgeMappings name="InterfaceDescriptionUsingEdge_BlockDiagram" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='InterfaceDiscription_BlockDiagram']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@containerMappings[name='Model_BlockDiagram']/@subContainerMappings[name='InterfaceDiscription_BlockDiagram']" targetFinderExpression="aql:self.uses">
           <style sourceArrow="OutputFillClosedArrow" targetArrow="InputFillClosedArrow" sizeComputationExpression="2">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_blue']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.0"/>
             <centerLabelStyleDescription showIcon="false" labelExpression="USING">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_blue']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.0"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <containerMappings name="Model_BlockDiagram" semanticCandidatesExpression="service:getSemanticCandidates()" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='NodeDoubleClick_BlockDiagram']" domainClass="mncModel.Model" childrenPresentation="VerticalStack">
           <subContainerMappings name="InterfaceDiscription_BlockDiagram" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='NodeDoubleClick_BlockDiagram']" domainClass="mncModel.InterfaceDescription">
-            <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'  '+self.name+'  '" tooltipExpression="Interface Description" heightComputationExpression="5">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" showIcon="false" labelExpression="aql:'  '+self.name+'  '" tooltipExpression="Interface Description" heightComputationExpression="5">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
             </style>
           </subContainerMappings>
           <subContainerMappings name="ControlNode_BlockDiagram" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='BlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='NodeDoubleClick_BlockDiagram']" domainClass="mncModel.ControlNode">
-            <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'  '+self.name+'  '" tooltipExpression="aql:self.name+' ControlNode'" heightComputationExpression="5">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" showIcon="false" labelExpression="aql:'  '+self.name+'  '" tooltipExpression="aql:self.name+' ControlNode'" heightComputationExpression="5">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" showIcon="false" labelExpression="aql:'  '+self.name+'  '">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="3" showIcon="false" labelExpression="aql:'  '+self.name+'  '">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
           </style>
         </containerMappings>
         <toolSections name="DoubleClickSection">
@@ -387,133 +387,133 @@
       <defaultLayer name="Default">
         <edgeMappings name="ChildEdge" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']" targetFinderExpression="aql:self.childNodes" sourceFinderExpression="aql:self" domainClass="mncModel.ControlNode" useDomainElement="true">
           <style sizeComputationExpression="4" foldingStyle="TARGET">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='blue']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.0"/>
             <centerLabelStyleDescription showIcon="false" labelExpression="child">
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='blue']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.0"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <edgeMappings name="ParentEdge" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='ControlNode']" targetFinderExpression="aql:self.parentNode" sourceFinderExpression="aql:self" domainClass="mncModel.ControlNode" useDomainElement="true">
           <style sizeComputationExpression="2">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
             <centerLabelStyleDescription showIcon="false" labelExpression="parent">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <edgeMappings name="InterfaceDescriptionUsingEdge" deletionDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.2/@ownedTools[name='DeleteUsingEdge']" sourceMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='InterfaceDiscription']" targetMapping="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@containerMappings[name='Model']/@subContainerMappings[name='InterfaceDiscription']" targetFinderExpression="aql:self.uses" reconnections="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.2/@ownedTools[name='ReconnectUsingInterfaceDescription']">
           <style sourceArrow="OutputFillClosedArrow" targetArrow="InputFillClosedArrow" sizeComputationExpression="2">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_blue']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.0"/>
             <centerLabelStyleDescription showIcon="false" labelExpression="USING">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_blue']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.0"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <containerMappings name="Model" semanticCandidatesExpression="aql:self.eAllContents()" domainClass="mncModel.ControlNode" childrenPresentation="HorizontalStack">
           <subContainerMappings name="InterfaceDiscription" labelDirectEdit="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.4/@ownedTools[name='InterfaceDiscriptionEditLabel']" semanticCandidatesExpression="aql:self.interfaceDescription" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='InterfaceDiscription_DoubleClick']" domainClass="mncModel.InterfaceDescription" childrenPresentation="VerticalStack">
             <subContainerMappings name="Datapoints" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DataPointNavigation']" synchronizationLock="true" domainClass="utility.DataPointUtility">
-              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Datapoints: '+self.dataPoints->size()" tooltipExpression="Datapoints" widthComputationExpression="3" heightComputationExpression="3">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Datapoints: '+self.dataPoints->size()" tooltipExpression="Datapoints" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
               </style>
             </subContainerMappings>
             <subContainerMappings name="Alarms" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='AlarmNavigation']" domainClass="utility.AlarmUtility">
-              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Alarms: '+self.alarms->size()" tooltipExpression="Alarms" widthComputationExpression="3" heightComputationExpression="3">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Alarms: '+self.alarms->size()" tooltipExpression="Alarms" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
               </style>
             </subContainerMappings>
             <subContainerMappings name="Commands" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='CommandNavigaion']" domainClass="utility.CommandUtility">
-              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Commands: '+self.commands->size()" tooltipExpression="Commands" widthComputationExpression="3" heightComputationExpression="3">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Commands: '+self.commands->size()" tooltipExpression="Commands" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
               </style>
             </subContainerMappings>
             <subContainerMappings name="Events" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EventNavigaion']" domainClass="utility.EventUtility">
-              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Events: '+self.events->size()" tooltipExpression="Events" widthComputationExpression="3" heightComputationExpression="3">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Events: '+self.events->size()" tooltipExpression="Events" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
               </style>
             </subContainerMappings>
             <subContainerMappings name="Responses" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ResponseNavigation']" domainClass="utility.ResponseUtility">
-              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Responses: '+self.responses->size()" tooltipExpression="Responses" widthComputationExpression="3" heightComputationExpression="3">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Responses: '+self.responses->size()" tooltipExpression="Responses" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
               </style>
             </subContainerMappings>
             <subContainerMappings name="States" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='Statenavigation']" domainClass="utility.StateUtility">
-              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Operating States: '+self.operatingStates->size()" tooltipExpression="Operating State" widthComputationExpression="3" heightComputationExpression="3">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="30" arcHeight="30" showIcon="false" labelExpression="aql:'Operating States: '+self.operatingStates->size()" tooltipExpression="Operating State" widthComputationExpression="3" heightComputationExpression="3">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
               </style>
             </subContainerMappings>
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.name" tooltipExpression="Interface Description">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" labelExpression="aql:self.name" tooltipExpression="Interface Description">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.5"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
             </style>
           </subContainerMappings>
           <subContainerMappings name="ControlNode" labelDirectEdit="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.4/@ownedTools[name='ControlNodeEditLabel']" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ControlNode_DoubleClick']" domainClass="mncModel.ControlNode" childrenPresentation="VerticalStack">
             <subContainerMappings name="CommandResponseBlocks" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.1/@ownedTools[name='CommandResponseBlocksNavigation']" domainClass="utility.CommandResponseBlockUtility">
-              <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'Command Response blocks: '+self.commandResponseBlocks->size()">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_red']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" showIcon="false" labelExpression="aql:'Command Response blocks: '+self.commandResponseBlocks->size()">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
               </style>
             </subContainerMappings>
             <subContainerMappings name="EventBlocks" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.1/@ownedTools[name='EventBlocksNavigation']" domainClass="utility.EventBlockUtility">
-              <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'Event blocks: '+self.eventBlocks->size()">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_red']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" showIcon="false" labelExpression="aql:'Event blocks: '+self.eventBlocks->size()">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
               </style>
             </subContainerMappings>
             <subContainerMappings name="AlarmBlocks" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.1/@ownedTools[name='AlarmBlocksNavigation']" domainClass="utility.AlarmBlockUtility">
-              <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'Alarm blocks: '+self.alarmBlocks->size()">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_red']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" showIcon="false" labelExpression="aql:'Alarm blocks: '+self.alarmBlocks->size()">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
               </style>
             </subContainerMappings>
             <subContainerMappings name="DataPointBlocks" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='InternalBlockDiagram']/@defaultLayer/@toolSections.1/@ownedTools[name='DataPointNavigation']" domainClass="utility.DataPointBlockUtility">
-              <style xsi:type="style:FlatContainerStyleDescription" showIcon="false" labelExpression="aql:'DataPoint blocks: '+self.dataPointBlocks->size()">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_red']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" showIcon="false" labelExpression="aql:'DataPoint blocks: '+self.dataPointBlocks->size()">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
               </style>
             </subContainerMappings>
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" tooltipExpression="aql:self.name+' ControlNode'">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" tooltipExpression="aql:self.name+' ControlNode'">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_red']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" labelExpression="aql:self.eContainer().name">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="3" labelExpression="aql:self.eContainer().name">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
           </style>
         </containerMappings>
         <toolSections name="InterfaceDescriptionMouseClickSection">
@@ -721,19 +721,19 @@
       <defaultLayer name="Default">
         <containerMappings name="DataPointsSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='DataPointDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DataPointBlocksSubDiagram_DoubleClick']" domainClass="utility.DataPointUtility" childrenPresentation="VerticalStack">
           <subContainerMappings name="DataPoint" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='DataPointDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickDatapoint']" domainClass="mncModel.DataPoint">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' DataPoints'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' DataPoints'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='yellow']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.2"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
           </style>
         </containerMappings>
         <toolSections>
@@ -777,19 +777,19 @@
       <defaultLayer name="Default">
         <containerMappings name="AlarmsSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='AlarmsSubDiagram_DoubleClick']" domainClass="utility.AlarmUtility" childrenPresentation="VerticalStack">
           <subContainerMappings name="Alarm" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickAlarm']" domainClass="mncModel.Alarm">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Alarms'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Alarms'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
           </style>
         </containerMappings>
         <toolSections name="DoubleClickNavigation">
@@ -830,19 +830,19 @@
       <defaultLayer name="Default">
         <containerMappings name="CommandsSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='CommandsSubDiagram_DoubleClick']" domainClass="utility.CommandUtility" childrenPresentation="VerticalStack">
           <subContainerMappings name="Command" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickCommand']" domainClass="mncModel.Command">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Commands'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Commands'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
           </style>
         </containerMappings>
         <toolSections name="DoubleClickNavigation">
@@ -883,19 +883,19 @@
       <defaultLayer name="Default">
         <containerMappings name="EventsSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='EventDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EventsSubDiagram_DoubleClick']" domainClass="utility.EventUtility" childrenPresentation="VerticalStack">
           <subContainerMappings name="Event" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='EventDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickDatapoint']" domainClass="mncModel.Event">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Events'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Events'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
           </style>
         </containerMappings>
         <toolSections name="DoubleClickNavigation">
@@ -936,19 +936,19 @@
       <defaultLayer name="Default">
         <containerMappings name="ResponsesSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='ResponseDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='ResponsesSubDiagram_DoubleClick']" domainClass="utility.ResponseUtility" childrenPresentation="VerticalStack">
           <subContainerMappings name="response" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='ResponseDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickResponse']" domainClass="mncModel.Response">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Responses'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' Responses'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
           </style>
         </containerMappings>
         <toolSections name="DoubleClickNavigation">
@@ -989,19 +989,19 @@
       <defaultLayer name="Default">
         <containerMappings name="StatesSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='OperatingStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='StatesSubDiagram_DoubleClick']" domainClass="utility.StateUtility" childrenPresentation="VerticalStack">
           <subContainerMappings name="OperatingState" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='OperatingStateDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickOperatingState']" domainClass="mncModel.OperatingState">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.type+': '+self.name">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' States'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+' States'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
           </style>
         </containerMappings>
         <toolSections name="DoubleClickNavigation">
@@ -1042,19 +1042,19 @@
       <defaultLayer name="Default">
         <containerMappings name="CommandResponseBlocksSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandResponseBlocksDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='CommandResponseBlocksSubDiagram_DoubleClick']" domainClass="utility.CommandResponseBlockUtility" childrenPresentation="VerticalStack">
           <subContainerMappings name="CommandResponseBlock" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='CommandResponseBlocksDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickCommandResponseBlock']" domainClass="mncModel.CommandResponseBlock">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.command.name+': Command Response Block'">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.command.name+': Command Response Block'">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  CommandResponseBlocks'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  CommandResponseBlocks'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
           </style>
         </containerMappings>
         <toolSections name="DoubleClickNavigation">
@@ -1096,19 +1096,19 @@
       <defaultLayer name="Default">
         <containerMappings name="EventsBlocksSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='EventBlocksDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EventsBlocksSubDiagram_DoubleClick']" domainClass="utility.EventBlockUtility" childrenPresentation="VerticalStack">
           <subContainerMappings name="EventBlock" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.EventBlock">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.event.name+': Event Block'">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.event.name+': Event Block'">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  EventBlocks'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  EventBlocks'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
           </style>
         </containerMappings>
         <toolSections name="DoubleClickNavigation">
@@ -1137,19 +1137,19 @@
       <defaultLayer name="Default">
         <containerMappings name="AlarmBlocksSubDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmBlocksDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='AlarmBlocksSubDiagram_DoubleClick']" domainClass="utility.AlarmBlockUtility" childrenPresentation="VerticalStack">
           <subContainerMappings name="AlarmBlock" semanticCandidatesExpression="feature:eAllContents" doubleClickDescription="//@ownedViewpoints[name='Block']/@ownedRepresentations[name='AlarmBlocksDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='DoubleclickAlarmBlocks']" domainClass="mncModel.AlarmBlock">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.alarm.name+': Alarm Block'">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.alarm.name+': Alarm Block'">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  AlarmBlocks'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  AlarmBlocks'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
           </style>
         </containerMappings>
         <toolSections name="DoubleClickNavigation">
@@ -1191,19 +1191,19 @@
       <defaultLayer name="Default">
         <containerMappings name="DataPointBlocksSubDiagram" semanticCandidatesExpression="aql:self" domainClass="utility.DataPointBlockUtility" childrenPresentation="VerticalStack">
           <subContainerMappings name="DataPointBlock" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.DataPointBlock">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.dataPoint.name+': DataPoint Block'">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:self.dataPoint.name+': DataPoint Block'">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  DataPointBlocks'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" labelExpression="aql:self.eContainer().name+':  DataPointBlocks'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_gray']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.7"/>
           </style>
         </containerMappings>
         <toolSections name="DoubleClickNavigation">
@@ -1235,96 +1235,96 @@
       <defaultLayer name="Default">
         <nodeMappings name="StartingPoint" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
           <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="StartingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <color xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
           </style>
         </nodeMappings>
         <nodeMappings name="EndingPoint" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
           <style xsi:type="style:EllipseNodeDescription" borderSizeComputationExpression="5" showIcon="false" labelExpression="" tooltipExpression="EndingPoint" hideLabelByDefault="true" labelPosition="node" resizeKind="NSEW">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='white']"/>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <color xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.10"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <color xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
           </style>
         </nodeMappings>
         <edgeMappings name="StateTransition" sourceMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@containerMappings[name='State']" targetMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:nextState" sourceFinderExpression="feature:currentState" domainClass="mncModel.Transition" useDomainElement="true" reconnections="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='TransitionReconnect']">
           <style targetArrow="InputFillClosedArrow" sizeComputationExpression="2">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <centerLabelStyleDescription showIcon="false" labelExpression="aql:self.eContainer().eContainer().command.name">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <edgeMappings name="startingedge" sourceMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@nodeMappings[name='StartingPoint']" targetMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:startState">
           <style sizeComputationExpression="3">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='dark_green']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
             <centerLabelStyleDescription showIcon="false">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <edgeMappings name="Endingedge" sourceMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@nodeMappings[name='EndingPoint']" targetMapping="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@containerMappings[name='State']" targetFinderExpression="feature:endState">
           <style sourceArrow="InputArrow" targetArrow="NoDecoration" sizeComputationExpression="3">
-            <strokeColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+            <strokeColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
             <centerLabelStyleDescription showIcon="false">
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             </centerLabelStyleDescription>
           </style>
         </edgeMappings>
         <containerMappings name="State" labelDirectEdit="//@ownedViewpoints[name='ActionDiagram']/@ownedRepresentations[name='ActionDiagram']/@defaultLayer/@toolSections.0/@ownedTools[name='EditStateName']" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.OperatingState" childrenPresentation="VerticalStack">
           <subContainerMappings name="EntryAction" semanticCandidatesExpression="service:getEntryActionTransition()" domainClass="mncModel.Transition">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getEntryActionName()" tooltipExpression="aql:'Entry Action Of '+ self.eContainer().eContainer().command.name+' Transition of '+self.currentState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getEntryActionName()" tooltipExpression="aql:'Entry Action Of '+ self.eContainer().eContainer().command.name+' Transition of '+self.currentState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
             </style>
           </subContainerMappings>
           <subContainerMappings name="ExitAction" semanticCandidatesExpression="service:getExitActionTransition()" domainClass="mncModel.Transition">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getExitActionName()" tooltipExpression="aql:'Exit Action due to '+ self.eContainer().eContainer().command.name+' Transition to '+self.nextState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="3" showIcon="false" labelExpression="service:getExitActionName()" tooltipExpression="aql:'Exit Action due to '+ self.eContainer().eContainer().command.name+' Transition to '+self.nextState.name+' State '" widthComputationExpression="3" heightComputationExpression="3">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" arcWidth="50" arcHeight="50" borderSizeComputationExpression="3" showIcon="false" labelExpression="aql:'  \n '+self.name+' '" tooltipExpression="OperatingState" roundedCorner="true">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="50" arcHeight="50" borderSizeComputationExpression="3" showIcon="false" labelExpression="aql:'  \n '+self.name+' '" tooltipExpression="OperatingState" roundedCorner="true">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
             <labelBorderStyle href="environment:/viewpoint#//@labelBorderStyles/@labelBorderStyleDescriptions.2"/>
           </style>
         </containerMappings>
         <containerMappings name="DiagramInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="mncModel.InterfaceDescription" childrenPresentation="VerticalStack">
           <subContainerMappings name="EntryActionInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:' EntryAction '" widthComputationExpression="5" heightComputationExpression="2">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:' EntryAction '" widthComputationExpression="5" heightComputationExpression="2">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='red']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.6"/>
             </style>
           </subContainerMappings>
           <subContainerMappings name="ExitActionInformation" semanticCandidatesExpression="feature:eAllContents" domainClass="utility.StateUtility">
-            <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:'ExitAction '" widthComputationExpression="5" heightComputationExpression="2">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="1" showIcon="false" labelExpression="aql:'ExitAction '" widthComputationExpression="5" heightComputationExpression="2">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='green']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.4"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" borderSizeComputationExpression="4" labelSize="10" showIcon="false" labelExpression="aql:'Diagram Information'">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" borderSizeComputationExpression="4" labelSize="10" showIcon="false" labelExpression="aql:'Diagram Information'">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
             <labelFormat>underline</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_yellow']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_orange']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.3"/>
           </style>
         </containerMappings>
         <toolSections>
@@ -1391,56 +1391,56 @@
       <defaultLayer name="Default">
         <containerMappings name="OuterMostLayer" semanticCandidatesExpression="aql:self" domainClass="mncModel.Model">
           <subContainerMappings name="AddMoreElement" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@toolSections.0/@ownedTools[name='AddMoreElementDoubleClick']" domainClass="mncModel.Model">
-            <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="10" showIcon="false" labelExpression="aql:'  Add More Elements  '" roundedCorner="true" heightComputationExpression="4">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="10" showIcon="false" labelExpression="aql:'  Add More Elements  '" roundedCorner="true" heightComputationExpression="4">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.5"/>
             </style>
           </subContainerMappings>
           <subContainerMappings name="showBlockDiagram" semanticCandidatesExpression="aql:self" domainClass="mncModel.Model" childrenPresentation="VerticalStack">
             <subContainerMappings name="showAllElementsBlockDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@toolSections.0/@ownedTools[name='showBlockDiagramDoubleClick']" domainClass="mncModel.Model">
-              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" labelSize="10" showIcon="false" labelExpression="aql:'  Show All elements '" roundedCorner="true" heightComputationExpression="4">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="20" arcHeight="20" labelSize="10" showIcon="false" labelExpression="aql:'  Show All elements '" roundedCorner="true" heightComputationExpression="4">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
                 <labelFormat>bold</labelFormat>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.5"/>
               </style>
             </subContainerMappings>
             <subContainerMappings name="showSelectiveElementsBlockDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@toolSections.0/@ownedTools[name='showSelectiveElementsBlockDiagramDoubleClick']" domainClass="mncModel.Model">
-              <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" labelSize="10" showIcon="false" labelExpression="aql:'  Show Selective Elements  '" roundedCorner="true" heightComputationExpression="4">
-                <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+              <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="20" arcHeight="20" labelSize="10" showIcon="false" labelExpression="aql:'  Show Selective Elements  '" roundedCorner="true" heightComputationExpression="4">
+                <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
                 <labelFormat>bold</labelFormat>
-                <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-                <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
-                <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+                <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+                <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
+                <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.5"/>
               </style>
             </subContainerMappings>
-            <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="10" showIcon="false" labelExpression="aql:'  Show Block Diagram  '" roundedCorner="true" heightComputationExpression="4">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="10" showIcon="false" labelExpression="aql:'  Show Block Diagram  '" roundedCorner="true" heightComputationExpression="4">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.5"/>
             </style>
           </subContainerMappings>
           <subContainerMappings name="showStateDiagram" semanticCandidatesExpression="aql:self" doubleClickDescription="//@ownedViewpoints[name='DashBoard']/@ownedRepresentations[name='DashBoard']/@defaultLayer/@toolSections.0/@ownedTools[name='showStateDiagramDoubleClick']" domainClass="mncModel.Model">
-            <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="10" showIcon="false" labelExpression="aql:'  Show State Diagram  '" roundedCorner="true" heightComputationExpression="4">
-              <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+            <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="10" showIcon="false" labelExpression="aql:'  Show State Diagram  '" roundedCorner="true" heightComputationExpression="4">
+              <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
               <labelFormat>bold</labelFormat>
-              <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-              <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
-              <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+              <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+              <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
+              <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.5"/>
             </style>
           </subContainerMappings>
-          <style xsi:type="style:FlatContainerStyleDescription" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="12" showIcon="false" labelExpression="aql:'  MNCML DASHBOARD  '" roundedCorner="true" heightComputationExpression="4">
-            <borderColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
+          <style xsi:type="style:FlatContainerStyleDescription" labelFormat="bold" arcWidth="20" arcHeight="20" borderSizeComputationExpression="1" labelSize="12" showIcon="false" labelExpression="aql:'  MNCML DASHBOARD  '" roundedCorner="true" heightComputationExpression="4">
+            <borderColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
             <labelFormat>bold</labelFormat>
-            <labelColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='black']"/>
-            <backgroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_blue']"/>
-            <foregroundColor xsi:type="description:SystemColor" href="environment:/viewpoint#//@systemColors/@entries[name='light_green']"/>
+            <labelColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.9"/>
+            <backgroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.1"/>
+            <foregroundColor xsi:type="description:UserFixedColor" href="#//@userColorsPalettes.0/@entries.5"/>
           </style>
         </containerMappings>
         <toolSections name="DoubleClickSection">
@@ -1485,4 +1485,18 @@
     </ownedRepresentations>
     <ownedJavaExtensions qualifiedClassName="com.model.domain.mnc.design.services.DashBoardServices"/>
   </ownedViewpoints>
+  <!-- KIDE visual language palette -->
+  <userColorsPalettes name="KIDE">
+    <entries xsi:type="description:UserFixedColor" red="82" green="132" blue="226" name="CapabilityBlue"/>
+    <entries xsi:type="description:UserFixedColor" red="219" green="230" blue="250" name="CapabilityBlueLight"/>
+    <entries xsi:type="description:UserFixedColor" red="226" green="152" blue="46" name="ActivityAmber"/>
+    <entries xsi:type="description:UserFixedColor" red="252" green="238" blue="214" name="ActivityAmberLight"/>
+    <entries xsi:type="description:UserFixedColor" red="62" green="166" blue="118" name="DataGreen"/>
+    <entries xsi:type="description:UserFixedColor" red="219" green="242" blue="231" name="DataGreenLight"/>
+    <entries xsi:type="description:UserFixedColor" red="96" green="110" blue="133" name="StructureSlate"/>
+    <entries xsi:type="description:UserFixedColor" red="233" green="237" blue="243" name="StructureSlateLight"/>
+    <entries xsi:type="description:UserFixedColor" red="138" green="149" blue="168" name="EdgeGrey"/>
+    <entries xsi:type="description:UserFixedColor" red="31" green="36" blue="48" name="InkDark"/>
+    <entries xsi:type="description:UserFixedColor" red="253" green="253" blue="255" name="Paper"/>
+  </userColorsPalettes>
 </description:Group>

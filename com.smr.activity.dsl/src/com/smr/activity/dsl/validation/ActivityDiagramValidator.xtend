@@ -46,7 +46,7 @@ class ActivityDiagramValidator extends AbstractActivityDiagramValidator {
 	public static val INVALID_CAPABILITY_OUTCOME = 'invalidCapabilityOutcome'
 	public static val TYPE_MISMATCH = 'typeMismatch'
 	public static val INPUT_PARAMETER_NOT_FOUND = 'inputParameterNotFound'
-	public static val OUTPUT_PARAMETER_NOT_FOUND = 'inputParameterNotFound'
+	public static val OUTPUT_PARAMETER_NOT_FOUND = 'outputParameterNotFound'
 
 	static def getCandidateParametersForOutcome(Outcome outcome) {
 		var activity = EcoreUtil2.getContainerOfType(outcome, Activity)
@@ -208,7 +208,7 @@ class ActivityDiagramValidator extends AbstractActivityDiagramValidator {
 		var allowedCapabilityOutcomes = getCandidateCapabilityOutcomes(outcome)
 		var allowedOutcomeParameters = getCandidateParametersForOutcome(outcome)
 		if (allowedCapabilityOutcomes.size > 0 && !allowedCapabilityOutcomes.contains(outcome.capabilityOutcome)) {
-			error('Given outcome is not provided by the capability behavior',
+			error("The capability this activity requires never produces this outcome, so the branch can never be taken. Pick one of the outcomes the capability declares.",
 				ActivityDiagramModelPackage.Literals.OUTCOME__CAPABILITY_OUTCOME, INVALID_CAPABILITY_OUTCOME)
 		}
 		var usedOutcomeParams = new BasicEList<Parameter>
@@ -216,7 +216,7 @@ class ActivityDiagramValidator extends AbstractActivityDiagramValidator {
 			usedOutcomeParams += map.parameter
 		}
 		if (!allowedOutcomeParameters.containsAll(usedOutcomeParams)) {
-			error('Given outcome parameter is not provided by the capability behavior',
+			error("The outcome does not carry this parameter, so there is nothing to read here. Use a parameter the outcome declares.",
 				ActivityDiagramModelPackage.Literals.OUTCOME__OUTCOME_VALIDATION, INVALID_OUTCOME)
 		}
 	}
@@ -227,7 +227,7 @@ class ActivityDiagramValidator extends AbstractActivityDiagramValidator {
 			var actDg = EcoreUtil2.getContainerOfType(conAct, ActivityDiagram)
 			if (actDg !== null && actDg.results !== null) {
 				if (!actDg.results.contains(conAct.onTrueFinalResult)) {
-					error('Produced result is not a part of this Activity Diagram',
+					error("This result is not declared by the activity diagram, so nothing downstream can use it. Declare it on the diagram, or produce a result that is.",
 						ActivityDiagramModelPackage.Literals.CONDITIONAL_ACTIVITY__ON_TRUE_FINAL_RESULT, INVALID_RESULT)
 				}
 			}
@@ -238,7 +238,7 @@ class ActivityDiagramValidator extends AbstractActivityDiagramValidator {
 	def checkValidControlCapabilitiesForGivenCapability(Activity activity) {
 		var interfaceItems = getCandidateAbstractItemsAsControlCapabilities(activity)
 		if (activity.useControlCapabilities !== null && !interfaceItems.containsAll(activity.useControlCapabilities)) {
-			error('Given control capabilities are not provided by the capability behavior',
+			error("The required capability does not offer this control item. Choose one of the commands, events, alarms or data points the capability provides.",
 				ActivityDiagramModelPackage.Literals.ACTIVITY__USE_CONTROL_CAPABILITIES, INVALID_CONTROL_CAPABILITY)
 		}
 	}
@@ -253,17 +253,17 @@ class ActivityDiagramValidator extends AbstractActivityDiagramValidator {
 			if ((outcomeParameter instanceof SimpleType) && !(max instanceof ArrayValues)) {
 				var partype = (outcomeParameter as SimpleType).type
 				if (!partype.getName().equals(getTypeOfPrimitiveValue(max).getName())) {
-					error('Type mismatch between Outcome parameter and value',
+					error("The value does not match the type of the outcome parameter. Give a value of the parameter's declared type.",
 						MncModelPackage.Literals.CHECK_PARAMETER_CONDITION__PARAMETER, TYPE_MISMATCH)
 				}
 
 			}
 			if ((outcomeParameter instanceof SimpleType) && (max instanceof ArrayValues)) {
-				error('Type mismatch -> Parameter is not Array Type and Outcome value is',
+				error("The parameter expects a single value but a list was given. Remove the list, or declare the parameter as an array.",
 					MncModelPackage.Literals.CHECK_PARAMETER_CONDITION__PARAMETER, TYPE_MISMATCH)
 			}
 			if ((outcomeParameter instanceof ArrayType) && !(max instanceof ArrayValues)) {
-				error('Type mismatch -> Parameter is Array Type and Outcome value is not',
+				error("The parameter expects a list of values but a single value was given. Wrap the value in a list, or stop declaring the parameter as an array.",
 					MncModelPackage.Literals.CHECK_PARAMETER_CONDITION__PARAMETER, TYPE_MISMATCH)
 			}
 
@@ -271,7 +271,7 @@ class ActivityDiagramValidator extends AbstractActivityDiagramValidator {
 				var partype = (outcomeParameter as ArrayType).primitiveType
 
 				if (!partype.getName().equals(getTypeOfPrimitiveValue(max).getName())) {
-					error('Type mismatch between Outcome parameter and value',
+					error("The value does not match the type of the outcome parameter. Give a value of the parameter's declared type.",
 						MncModelPackage.Literals.CHECK_PARAMETER_CONDITION__PARAMETER, TYPE_MISMATCH)
 				}
 			}
@@ -364,7 +364,7 @@ class ActivityDiagramValidator extends AbstractActivityDiagramValidator {
 		var validInputParameters = getValidInputParametersForAnActivity(activity)
 		if (activity.inputParameters !== null && !validInputParameters.containsAll(activity.inputParameters)) {
 			error(
-				'The specified Input Parameter is neither generated from the previous activity nor is provided by the activity diagram',
+				"Nothing supplies this input: no earlier activity produces it and the activity diagram does not provide it. Produce it in a preceding activity, or declare it as an input of the diagram.",
 				ActivityDiagramModelPackage.Literals.ACTIVITY__INPUT_PARAMETERS, INPUT_PARAMETER_NOT_FOUND)
 		}
 	}

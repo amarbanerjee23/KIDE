@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cheatsheet title="Write your first capability model">
+   <intro>
+      <description>This tour takes about ten minutes. You will create a capability file, use content assist, and read the validation feedback in plain language.</description>
+   </intro>
+   <item title="Open the example workspace">
+      <description>In the Project Explorer open <b>demo/example-workspace</b>. It already contains a small MNC model, one capability and one activity flow.</description>
+   </item>
+   <item title="Create a capability file">
+      <description>Right-click the example folder and choose <b>New &gt; File</b>. Name it <b>MyCapability.cap</b>. The KIDE capability editor opens automatically.</description>
+   </item>
+   <item title="Use the templates">
+      <description>Press <b>Ctrl+Space</b> on the empty line and pick the <b>capability</b> template. A complete skeleton with interface, control capabilities and outcomes is inserted; press <b>Tab</b> to move between the placeholders.</description>
+   </item>
+   <item title="Bind an interface">
+      <description>After <b>compatible component interface</b> press <b>Ctrl+Space</b> again. Only interfaces declared in the MNC model are offered, so the reference is always valid.</description>
+   </item>
+   <item title="Read the validation feedback">
+      <description>Type a command name that the interface does not declare. The editor underlines it and the Problems view explains which interface was expected. Press <b>Ctrl+1</b> for the quick fix that removes the item.</description>
+   </item>
+   <item title="See it as a diagram">
+      <description>Open the Sirius representation in <b>com.model.domain.activity.design</b> to see the same model drawn with the KIDE visual language.</description>
+   </item>
+</cheatsheet>

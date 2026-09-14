@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<introContent>
+   <page id="root" style-id="page" title="Welcome to KIDE">
+      <group id="header" style-id="header">
+         <text id="title" style-id="title">KIDE</text>
+         <text id="subtitle" style-id="subtitle">Knowledge-Integrated DSL Engineering workspace</text>
+      </group>
+      <group id="tours" style-id="tours">
+         <link id="tour1" label="Write your first capability model" style-id="card"
+               url="http://org.eclipse.ui.intro/runAction?pluginId=org.eclipse.ui.cheatsheets&amp;class=org.eclipse.ui.internal.cheatsheets.actions.OpenCheatSheetAction&amp;cheatSheetId=com.kide.welcome.tour.firstModel">
+            <text>Ten minutes: a capability, its interface and live validation.</text>
+         </link>
+         <link id="tour2" label="From activities to an MNC model" style-id="card"
+               url="http://org.eclipse.ui.intro/runAction?pluginId=org.eclipse.ui.cheatsheets&amp;class=org.eclipse.ui.internal.cheatsheets.actions.OpenCheatSheetAction&amp;cheatSheetId=com.kide.welcome.tour.activityToMnc">
+            <text>Model an activity flow and generate the MNC model from it.</text>
+         </link>
+         <link id="tour3" label="Open and read the Sirius diagrams" style-id="card"
+               url="http://org.eclipse.ui.intro/runAction?pluginId=org.eclipse.ui.cheatsheets&amp;class=org.eclipse.ui.internal.cheatsheets.actions.OpenCheatSheetAction&amp;cheatSheetId=com.kide.welcome.tour.diagrams">
+            <text>Where the diagrams live and what every colour and shape means.</text>
+         </link>
+      </group>
+   </page>
+</introContent>

@@ -3,22 +3,47 @@
  */
 package com.smr.activity.dsl.ui.quickfix
 
+import com.smr.activity.dsl.validation.ActivityDiagramValidator
 import org.eclipse.xtext.ui.editor.quickfix.DefaultQuickfixProvider
+import org.eclipse.xtext.ui.editor.quickfix.Fix
+import org.eclipse.xtext.ui.editor.quickfix.IssueResolutionAcceptor
+import org.eclipse.xtext.validation.Issue
 
 /**
- * Custom quickfixes.
- *
- * See https://www.eclipse.org/Xtext/documentation/310_eclipse_support.html#quick-fixes
+ * One-click repairs for the problems the activity validator reports. Each fix
+ * removes the part of the plan that cannot hold, which is the only repair that
+ * can be made without guessing the author's intent.
  */
 class ActivityDiagramQuickfixProvider extends DefaultQuickfixProvider {
 
-//	@Fix(ActivityDiagramValidator.INVALID_NAME)
-//	def capitalizeName(Issue issue, IssueResolutionAcceptor acceptor) {
-//		acceptor.accept(issue, 'Capitalize name', 'Capitalize the name.', 'upcase.png') [
-//			context |
-//			val xtextDocument = context.xtextDocument
-//			val firstLetter = xtextDocument.get(issue.offset, 1)
-//			xtextDocument.replace(issue.offset, 1, firstLetter.toUpperCase)
-//		]
-//	}
+	@Fix(ActivityDiagramValidator.INVALID_OUTCOME)
+	def removeUnreachableOutcome(Issue issue, IssueResolutionAcceptor acceptor) {
+		acceptor.removeIssueText(issue, 'Remove this outcome',
+			'The required capability never produces this outcome, so this branch can never be taken.')
+	}
+
+	@Fix(ActivityDiagramValidator.INVALID_RESULT)
+	def removeUndeclaredResult(Issue issue, IssueResolutionAcceptor acceptor) {
+		acceptor.removeIssueText(issue, 'Remove this result',
+			'The activity diagram does not declare this result, so nothing downstream can use it.')
+	}
+
+	@Fix(ActivityDiagramValidator.INVALID_CONTROL_CAPABILITY)
+	def removeUnsupportedControlCapability(Issue issue, IssueResolutionAcceptor acceptor) {
+		acceptor.removeIssueText(issue, 'Remove this control item',
+			'The required capability does not offer this command, event, alarm or data point.')
+	}
+
+	@Fix(ActivityDiagramValidator.INPUT_PARAMETER_NOT_FOUND)
+	def removeUnsuppliedInput(Issue issue, IssueResolutionAcceptor acceptor) {
+		acceptor.removeIssueText(issue, 'Remove this input parameter',
+			'Nothing upstream supplies this input, so the activity cannot read it.')
+	}
+
+	private def void removeIssueText(IssueResolutionAcceptor acceptor, Issue issue, String label,
+		String description) {
+		acceptor.accept(issue, label, description, null) [ context |
+			context.xtextDocument.replace(issue.offset, issue.length, '')
+		]
+	}
 }

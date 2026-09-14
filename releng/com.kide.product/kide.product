@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?pde version="3.5"?>
+
+<product name="KIDE Modelling Studio" uid="com.kide.product" id="com.kide.product.kide" application="org.eclipse.ui.ide.workbench" version="1.0.0.qualifier" type="features" includeLaunchers="true" autoIncludeRequirements="true">
+
+   <configIni use="default"/>
+
+   <launcherArgs>
+      <programArgs>-data @noDefault -showsplash com.kide.product</programArgs>
+      <vmArgs>-Xms512m -Xmx2048m -Dosgi.instance.area.default=@user.home/kide-workspace</vmArgs>
+   </launcherArgs>
+
+   <launcher name="kide">
+      <win useIco="false"/>
+   </launcher>
+
+   <vm/>
+
+   <plugins>
+      <plugin id="com.kide.welcome"/>
+      <plugin id="com.capability"/>
+      <plugin id="com.capability.dsl"/>
+      <plugin id="com.capability.dsl.ide"/>
+      <plugin id="com.capability.dsl.ui"/>
+      <plugin id="com.dml"/>
+      <plugin id="com.dml.dsl"/>
+      <plugin id="com.dml.dsl.ide"/>
+      <plugin id="com.dml.dsl.ui"/>
+      <plugin id="com.mncml"/>
+      <plugin id="com.mncml.dsl"/>
+      <plugin id="com.mncml.dsl.ide"/>
+      <plugin id="com.mncml.dsl.ui"/>
+      <plugin id="com.operation"/>
+      <plugin id="com.operation.dsl"/>
+      <plugin id="com.operation.dsl.ide"/>
+      <plugin id="com.operation.dsl.ui"/>
+      <plugin id="com.smr.activity"/>
+      <plugin id="com.smr.activity.dsl"/>
+      <plugin id="com.smr.activity.dsl.ide"/>
+      <plugin id="com.smr.activity.dsl.ui"/>
+      <plugin id="com.smr.activity.activity2mnc"/>
+      <plugin id="com.model.domain.activity.design"/>
+      <plugin id="com.model.domain.mnc.design"/>
+      <plugin id="com.system.knowledge.plugin"/>
+   </plugins>
+
+   <features>
+      <feature id="org.eclipse.platform" installMode="root"/>
+      <feature id="org.eclipse.emf.sdk"/>
+      <feature id="org.eclipse.xtext.sdk"/>
+      <feature id="org.eclipse.xtext.xbase.lib"/>
+      <feature id="org.eclipse.sirius.runtime"/>
+      <feature id="org.eclipse.sirius.runtime.ide.ui"/>
+      <feature id="org.eclipse.sirius.specifier"/>
+   </features>
+
+   <configurations>
+      <plugin id="org.eclipse.core.runtime" autoStart="true" startLevel="0"/>
+      <plugin id="org.eclipse.equinox.common" autoStart="true" startLevel="2"/>
+      <plugin id="org.eclipse.equinox.event" autoStart="true" startLevel="2"/>
+      <plugin id="org.eclipse.equinox.simpleconfigurator" autoStart="true" startLevel="1"/>
+      <plugin id="com.kide.welcome" autoStart="true" startLevel="4"/>
+   </configurations>
+
+   <preferencesInfo>
+      <targetfile overwrite="false"/>
+   </preferencesInfo>
+
+</product>
