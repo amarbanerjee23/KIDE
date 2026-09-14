@@ -3,7 +3,7 @@ import { NavLink, useMatch } from 'react-router-dom';
 import { 
   LayoutDashboard, FolderOpen, Settings, LogOut, 
   PanelLeftClose, PanelLeftOpen, FolderTree, Search, 
-  AlertCircle, ListTree, ShieldCheck 
+  AlertCircle, ListTree, ShieldCheck, Network 
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useEditorStore } from '../../stores/editorStore';
@@ -100,6 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const globalNavItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/projects', icon: FolderOpen, label: 'Projects' },
+    { to: '/knowledge-graph', icon: Network, label: 'Knowledge Graph' },
     { to: '/settings', icon: Settings, label: 'Settings' },
     ...(user?.role === 'owner' ? [{ to: '/admin', icon: ShieldCheck, label: 'Admin Console' }] : [])
   ];

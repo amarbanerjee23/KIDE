@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "node --test tests/workflow_redesign.test.mjs tests/project_navigator.test.mjs tests/artifact_context_panel.test.mjs tests/inspector_redesign.test.mjs tests/ai_copilot.test.mjs tests/semantic_validation.test.mjs tests/traceability_impact.test.mjs tests/enterprise_rbac.test.mjs tests/subscription_billing.test.mjs tests/admin_analytics.test.mjs tests/knowledge_ingestion.test.mjs tests/live_simulation.test.mjs tests/kide_language_platform.test.mjs",
+    "test": "node --test tests/workflow_redesign.test.mjs tests/project_navigator.test.mjs tests/artifact_context_panel.test.mjs tests/inspector_redesign.test.mjs tests/ai_copilot.test.mjs tests/semantic_validation.test.mjs tests/traceability_impact.test.mjs tests/enterprise_rbac.test.mjs tests/subscription_billing.test.mjs tests/admin_analytics.test.mjs tests/knowledge_ingestion.test.mjs tests/live_simulation.test.mjs tests/kide_language_platform.test.mjs tests/knowledge_store.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

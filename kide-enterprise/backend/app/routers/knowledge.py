@@ -1,5 +1,5 @@
 """
-Router for External Knowledge Hub, Equipment Catalog, and Knowledge Graph.
+Router for External Knowledge Hub, Equipment Catalog, Knowledge Store, and Knowledge Graph.
 """
 
 from typing import Any, Dict, List, Optional
@@ -13,7 +13,7 @@ from ..models.project import Project, ProjectFile
 from ..models.user import User
 from ..auth.dependencies import get_current_user
 from ..services.knowledge_hub import KnowledgeHubService
-from ..services.knowledge_graph import KnowledgeGraphService
+from ..services.knowledge_graph import KnowledgeGraphService, KnowledgeStoreService
 from ..services.synthesis import synthesize
 from ..services.composition import compose_mnc_model
 from ..parsers.activity_parser import parse as parse_activity
@@ -25,6 +25,9 @@ router = APIRouter(prefix="", tags=["knowledge"])
 class ImportKnowledgeRequest(BaseModel):
     catalog_id: str
 
+class ImportEntityRequest(BaseModel):
+    entity_id: str
+
 class ConvertSpecRequest(BaseModel):
     spec_type: str
     content: str
@@ -32,6 +35,10 @@ class ConvertSpecRequest(BaseModel):
 
 class MatchCapabilityRequest(BaseModel):
     query: str
+
+# ---------------------------------------------------------------------------
+# 1. CATALOG & STORE ENDPOINTS
+# ---------------------------------------------------------------------------
 
 @router.get("/knowledge/catalog")
 async def get_knowledge_catalog(current_user: User = Depends(get_current_user)):
@@ -49,6 +56,32 @@ async def get_global_knowledge_graph(current_user: User = Depends(get_current_us
     """Returns the global cross-domain Knowledge Repository Graph."""
     return KnowledgeGraphService.build_global_catalog_graph()
 
+@router.get("/knowledge/store/summary")
+async def get_knowledge_store_summary(current_user: User = Depends(get_current_user)):
+    """Returns the domain summary and entity statistics from the Knowledge Graph Store."""
+    return KnowledgeStoreService.get_summary()
+
+@router.get("/knowledge/store/entities")
+async def get_knowledge_store_entities(
+    entity_type: Optional[str] = Query(None, description="Filter by entity type (capability, datamodel, activity, operation, device, workflow)"),
+    domain_id: Optional[str] = Query(None, description="Filter by domain ID"),
+    query: Optional[str] = Query(None, description="Keyword search query"),
+    current_user: User = Depends(get_current_user)
+):
+    """Queries reusable entities from the Knowledge Graph Store."""
+    return KnowledgeStoreService.get_entities(entity_type=entity_type, domain_id=domain_id, query=query)
+
+@router.get("/knowledge/store/entities/{entity_id}")
+async def get_knowledge_store_entity_detail(
+    entity_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Retrieves full metadata, connected edges, declaring DSL specification, and graph neighbors for an entity."""
+    detail = KnowledgeStoreService.get_entity_detail(entity_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail=f"Entity '{entity_id}' not found in Knowledge Store")
+    return detail
+
 @router.post("/knowledge/match")
 async def match_capabilities(
     payload: MatchCapabilityRequest,
@@ -56,6 +89,10 @@ async def match_capabilities(
 ):
     """Recommends equipment and capabilities based on activity queries or task keywords."""
     return KnowledgeGraphService.match_capabilities(payload.query)
+
+# ---------------------------------------------------------------------------
+# 2. PROJECT KNOWLEDGE GRAPH & REUSABILITY
+# ---------------------------------------------------------------------------
 
 @router.get("/projects/{project_id}/knowledge-graph")
 async def get_project_knowledge_graph(
@@ -154,6 +191,7 @@ async def import_knowledge_into_project(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """Imports an entire domain equipment bundle from the knowledge catalog into the project."""
     res = await db.execute(select(Project).where(Project.id == project_id, Project.org_id == current_user.org_id))
     project = res.scalars().first()
     if not project:
@@ -166,6 +204,29 @@ async def import_knowledge_into_project(
             "catalog_id": payload.catalog_id,
             "imported_files": imported
         }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/projects/{project_id}/import-entity", status_code=status.HTTP_200_OK)
+async def import_knowledge_entity_into_project(
+    project_id: int,
+    payload: ImportEntityRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Imports a single reusable entity (capability, datamodel, activity, operation) into the project."""
+    res = await db.execute(select(Project).where(Project.id == project_id, Project.org_id == current_user.org_id))
+    project = res.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        result = await KnowledgeStoreService.import_entity_into_project(
+            db=db,
+            project_id=project_id,
+            entity_id=payload.entity_id
+        )
+        return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -200,10 +200,15 @@ export function buildWorkspaceSymbolIndex(): SymbolDefinition[] {
   return symbols;
 }
 
-export {
+import {
   registerNavigationHandler,
   navigateToDefinition
 } from '../kide-language/languageService';
+
+export {
+  registerNavigationHandler,
+  navigateToDefinition
+};
 
 /**
  * Xtext Definition Provider (Go to Definition / Ctrl+Click).

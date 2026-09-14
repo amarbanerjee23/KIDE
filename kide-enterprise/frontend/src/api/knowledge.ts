@@ -59,6 +59,41 @@ export interface CapabilityMatch {
   }>;
 }
 
+export interface StoreSummary {
+  stats: {
+    domains: number;
+    devices: number;
+    capabilities: number;
+    operations: number;
+    datamodels: number;
+    workflows: number;
+    activities: number;
+    total_nodes: number;
+    total_edges: number;
+    [key: string]: number;
+  };
+  domains: Array<{
+    id: string;
+    name: string;
+    category: string;
+    thesis_reference: string;
+    description: string;
+    devices: string[];
+    file_count: number;
+  }>;
+}
+
+export interface StoreEntity {
+  id: string;
+  name: string;
+  type: string;
+  category: string;
+  thesis_reference?: string;
+  source_file?: string;
+  properties?: Record<string, any>;
+  content_preview?: string;
+}
+
 export const knowledgeApi = {
   getCatalog: (): Promise<CatalogItem[]> =>
     fetchClient('/knowledge/catalog'),
@@ -71,6 +106,24 @@ export const knowledgeApi = {
 
   getProjectGraph: (projectId: number): Promise<KnowledgeGraphData> =>
     fetchClient(`/projects/${projectId}/knowledge-graph`),
+
+  getStoreSummary: (): Promise<StoreSummary> =>
+    fetchClient('/knowledge/store/summary'),
+
+  getStoreEntities: (params?: { entity_type?: string; domain_id?: string; query?: string }): Promise<StoreEntity[]> => {
+    const searchParams = new URLSearchParams();
+    if (params?.entity_type && params.entity_type !== 'all') searchParams.append('entity_type', params.entity_type);
+    if (params?.domain_id && params.domain_id !== 'all') searchParams.append('domain_id', params.domain_id);
+    if (params?.query) searchParams.append('query', params.query);
+    const qs = searchParams.toString();
+    return fetchClient(`/knowledge/store/entities${qs ? `?${qs}` : ''}`);
+  },
+
+  getEntityDetail: (entityId: string): Promise<any> =>
+    fetchClient(`/knowledge/store/entities/${encodeURIComponent(entityId)}`),
+
+  importEntity: (projectId: number, entityId: string): Promise<{ message: string; imported_file: any; entity_name: string; entity_type: string }> =>
+    fetchClient(`/projects/${projectId}/import-entity`, { method: 'POST', body: JSON.stringify({ entity_id: entityId }) }),
 
   matchCapabilities: (query: string): Promise<CapabilityMatch[]> =>
     fetchClient('/knowledge/match', { method: 'POST', body: JSON.stringify({ query }) }),

@@ -13,6 +13,8 @@ export type WorkspaceView =
 export type SplitLayoutOption = 
   | 'code-workflow' 
   | 'code-statemachine' 
+  | 'code-knowledgegraph'
+  | 'workflow-knowledgegraph'
   | 'workflow-simulator';
 
 interface EditorState {
