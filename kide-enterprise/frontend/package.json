@@ -6,30 +6,33 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "node --test tests/workflow_redesign.test.mjs tests/project_navigator.test.mjs tests/artifact_context_panel.test.mjs tests/inspector_redesign.test.mjs tests/ai_copilot.test.mjs tests/semantic_validation.test.mjs tests/traceability_impact.test.mjs tests/enterprise_rbac.test.mjs tests/subscription_billing.test.mjs tests/admin_analytics.test.mjs tests/knowledge_ingestion.test.mjs tests/live_simulation.test.mjs tests/kide_language_platform.test.mjs tests/knowledge_store.test.mjs",
+    "test": "node --test tests/workflow_redesign.test.mjs tests/project_navigator.test.mjs tests/artifact_context_panel.test.mjs tests/inspector_redesign.test.mjs tests/ai_copilot.test.mjs tests/semantic_validation.test.mjs tests/traceability_impact.test.mjs tests/enterprise_rbac.test.mjs tests/subscription_billing.test.mjs tests/admin_analytics.test.mjs tests/knowledge_ingestion.test.mjs tests/live_simulation.test.mjs tests/kide_language_platform.test.mjs tests/knowledge_store.test.mjs tests/graph_layout.test.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^3.1.1",
+    "@monaco-editor/react": "^4.6.0",
+    "@tanstack/react-query": "^5.50.0",
+    "@types/d3-force": "^3.0.10",
+    "@types/dagre": "^0.7.54",
+    "@xyflow/react": "^12.0.0",
+    "clsx": "^2.1.0",
+    "d3-force": "^3.0.0",
+    "lucide-react": "^0.400.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0",
-    "@monaco-editor/react": "^4.6.0",
-    "@xyflow/react": "^12.0.0",
-    "@tanstack/react-query": "^5.50.0",
-    "zustand": "^4.5.0",
-    "lucide-react": "^0.400.0",
-    "clsx": "^2.1.0",
-    "tailwind-merge": "^2.4.0"
+    "tailwind-merge": "^2.4.0",
+    "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.0",
-    "typescript": "^5.5.0",
-    "vite": "^5.3.0",
-    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.0",
     "postcss": "^8.4.0",
-    "autoprefixer": "^10.4.0"
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.5.0",
+    "vite": "^5.3.0"
   }
 }
-

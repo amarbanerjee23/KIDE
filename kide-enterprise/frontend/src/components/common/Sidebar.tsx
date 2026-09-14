@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useMatch } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { projectsApi } from '../../api/projects';
 import { 
   LayoutDashboard, FolderOpen, Settings, LogOut, 
   PanelLeftClose, PanelLeftOpen, FolderTree, Search, 
@@ -25,6 +27,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Check if we are inside a project workspace route
   const projectRouteMatch = useMatch({ path: '/projects/:id', end: false });
   const isInsideProject = Boolean(projectRouteMatch || projectId);
+
+  // Projects query for global navigation mode
+  const { data: projects = [] } = useQuery({
+    queryKey: ['projects'],
+    queryFn: projectsApi.listProjects,
+    enabled: !isInsideProject,
+  });
 
   // Active mode in Project Navigator
   const [activeNavigatorMode, setActiveNavigatorMode] = useState<NavigatorMode>('explorer');
@@ -247,8 +256,90 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )
       ) : (
-        /* When not in a project workspace, leave clean flexible space (no decorative cards) */
-        <div className="flex-1 min-h-0" />
+        /* When outside a project workspace (e.g. Dashboard), provide quick project access & knowledge catalog */
+        <div className="flex-1 min-h-0 flex flex-col px-2.5 py-3 border-t border-gray-800/80 overflow-y-auto space-y-4">
+          {!isCollapsed ? (
+            <>
+              {/* Quick Workspaces Section */}
+              <div className="space-y-1">
+                <div className="px-1 text-[10px] font-bold uppercase tracking-wider text-gray-500 flex items-center justify-between">
+                  <span>Recent Workspaces</span>
+                  <span className="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-mono">
+                    {projects.length}
+                  </span>
+                </div>
+                <div className="space-y-0.5">
+                  {projects.slice(0, 4).map((p) => (
+                    <NavLink
+                      key={p.id}
+                      to={`/projects/${p.id}`}
+                      className="flex items-center justify-between px-2 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-100 hover:bg-gray-800/60 transition group"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <FolderOpen className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                        <span className="truncate">{p.name}</span>
+                      </div>
+                      <span className="text-[10px] text-gray-600 group-hover:text-blue-400">
+                        →
+                      </span>
+                    </NavLink>
+                  ))}
+                  {projects.length === 0 && (
+                    <div className="text-[11px] text-gray-500 px-2 py-1 italic">
+                      No active projects
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Knowledge Catalog Quick Link */}
+              <div className="space-y-1 pt-1">
+                <div className="px-1 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                  Pre-available Knowledge
+                </div>
+                <button
+                  onClick={() => window.open('/knowledge-graph', '_blank')}
+                  className="w-full text-left flex items-center justify-between px-2 py-1.5 rounded-lg text-xs bg-indigo-950/30 hover:bg-indigo-950/60 border border-indigo-800/40 text-indigo-300 transition group"
+                  title="Open Knowledge Graph Studio in new tab"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Network className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <span className="truncate">69 Industrial Devices</span>
+                  </div>
+                  <span className="text-[10px] text-indigo-400 group-hover:translate-x-0.5 transition-transform">
+                    ↗
+                  </span>
+                </button>
+              </div>
+
+              {/* Synthesis Engine Status Card */}
+              <div className="mt-auto pt-2 px-1">
+                <div className="p-2 rounded-lg bg-gray-900/80 border border-gray-800 text-[10px] space-y-1">
+                  <div className="flex items-center justify-between text-gray-400">
+                    <span className="font-semibold text-gray-300">Synthesis Engine</span>
+                    <span className="flex items-center gap-1 text-emerald-400 font-mono">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Active
+                    </span>
+                  </div>
+                  <div className="text-gray-500 font-mono">5 DSL Grammars Online</div>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Collapsed view icons */
+            <div className="flex flex-col items-center space-y-2">
+              <button
+                onClick={() => window.open('/knowledge-graph', '_blank')}
+                className="p-2 rounded-lg text-gray-400 hover:text-indigo-400 hover:bg-indigo-950/30 transition"
+                title="Knowledge Graph (69 Devices)"
+                aria-label="Knowledge Graph"
+              >
+                <Network className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       {/* ────────────────────────────────────────────────

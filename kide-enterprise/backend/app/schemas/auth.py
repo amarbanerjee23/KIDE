@@ -1,6 +1,13 @@
-from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
+from pydantic import BaseModel, ConfigDict
+
+try:
+    import email_validator  # noqa: F401
+    from pydantic import EmailStr
+except (ImportError, ModuleNotFoundError):
+    # Resilient fallback if email-validator package is not installed in bare runtime environments
+    EmailStr = str  # type: ignore
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -24,5 +31,5 @@ class UserResponse(BaseModel):
     role: str
     org_name: Optional[str] = None
     created_at: datetime
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+

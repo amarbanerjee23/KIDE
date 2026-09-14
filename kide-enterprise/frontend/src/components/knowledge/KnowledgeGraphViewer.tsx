@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   ReactFlow, Background, Controls, MiniMap, 
-  Node, Edge, MarkerType, Handle, Position, NodeProps 
+  Node, Handle, Position, NodeProps 
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useEditorStore } from '../../stores/editorStore';
@@ -12,6 +13,11 @@ import {
   CapabilityMatch, 
   StoreSummary 
 } from '../../api/knowledge';
+import { 
+  computeGraphLayout, 
+  GraphLayoutType, 
+  GraphDensityMode 
+} from '../../lib/graphLayout';
 import { FileItem } from '../../types/models';
 import { 
   Network, Cpu, Zap, Wrench, Database, 
@@ -33,6 +39,7 @@ const getLanguageForFilename = (filename: string): string => {
 // Custom Knowledge Node Component
 const KnowledgeNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
   const node = data.node as KnowledgeGraphNode;
+  const isCompact = Boolean(data.compact);
   const type = node.type;
 
   const getTypeStyle = () => {
@@ -158,12 +165,35 @@ const KnowledgeNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
   const style = getTypeStyle();
   const Icon = style.icon;
 
+  if (isCompact) {
+    return (
+      <div className={`px-2.5 py-1.5 rounded-lg border-2 transition-all cursor-pointer flex items-center gap-2 ${
+        selected ? 'ring-2 ring-blue-400 shadow-blue-500/20 scale-105' : ''
+      } ${style.border} ${style.bg} backdrop-blur-md shadow-md min-w-[130px] max-w-[190px]`}>
+        <Handle type="target" position={Position.Left} id="left-in" className="!bg-gray-400 !w-1.5 !h-1.5" />
+        <Handle type="source" position={Position.Right} id="right-out" className="!bg-gray-400 !w-1.5 !h-1.5" />
+        <Handle type="target" position={Position.Top} id="top-in" className="!bg-gray-400 !w-1.5 !h-1.5" />
+        <Handle type="source" position={Position.Bottom} id="bottom-out" className="!bg-gray-400 !w-1.5 !h-1.5" />
+
+        <Icon className={`w-3.5 h-3.5 shrink-0 ${style.text}`} />
+        <span className="font-semibold text-[11px] text-gray-100 truncate" title={node.name}>
+          {node.name}
+        </span>
+        <span className={`text-[8px] uppercase font-bold px-1 rounded ml-auto ${style.badgeBg} ${style.text}`}>
+          {type.slice(0, 3)}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className={`px-3 py-2.5 rounded-xl border-2 transition-all cursor-pointer ${
       selected ? 'ring-2 ring-blue-400 shadow-blue-500/20 scale-105' : ''
     } ${style.border} ${style.bg} backdrop-blur-md shadow-lg min-w-[150px] max-w-[220px]`}>
       <Handle type="target" position={Position.Left} id="left-in" className="!bg-gray-400 !w-2 !h-2" />
       <Handle type="source" position={Position.Right} id="right-out" className="!bg-gray-400 !w-2 !h-2" />
+      <Handle type="target" position={Position.Top} id="top-in" className="!bg-gray-400 !w-2 !h-2" />
+      <Handle type="source" position={Position.Bottom} id="bottom-out" className="!bg-gray-400 !w-2 !h-2" />
       
       <div className="flex items-center gap-1.5 mb-1">
         <Icon className={`w-3.5 h-3.5 ${style.text}`} />
@@ -195,6 +225,9 @@ const nodeTypes = {
 };
 
 export const KnowledgeGraphViewer: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const initialDomain = searchParams.get('domain') || 'all';
+
   const { 
     projectId, 
     projectName, 
@@ -213,7 +246,9 @@ export const KnowledgeGraphViewer: React.FC = () => {
   
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [filterType, setFilterType] = useState<string>('all');
-  const [selectedDomain, setSelectedDomain] = useState<string>('all');
+  const [selectedDomain, setSelectedDomain] = useState<string>(initialDomain);
+  const [layoutType, setLayoutType] = useState<GraphLayoutType>('dagre-lr');
+  const [densityMode, setDensityMode] = useState<GraphDensityMode>('standard');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [storeSummary, setStoreSummary] = useState<StoreSummary | null>(null);
 
@@ -374,59 +409,13 @@ export const KnowledgeGraphViewer: React.FC = () => {
       return matchSearch && matchType && matchDomain;
     });
 
-    const filteredIds = new Set(filteredNodesList.map((n: any) => n.id));
-
-    // Group nodes by Layer / Category for clean layout
-    const layer0 = filteredNodesList.filter((n: any) => ['domain', 'repository', 'project'].includes(n.type));
-    const layer1 = filteredNodesList.filter((n: any) => ['device', 'interface'].includes(n.type));
-    const layer2 = filteredNodesList.filter((n: any) => ['capability', 'datamodel', 'operation'].includes(n.type));
-    const layer3 = filteredNodesList.filter((n: any) => ['workflow', 'activity', 'command', 'event'].includes(n.type));
-    const layer4 = filteredNodesList.filter((n: any) => ['operating_state', 'alarm', 'datapoint', 'parameter', 'supervisor'].includes(n.type));
-    const layerOther = filteredNodesList.filter((n: any) => 
-      !['domain', 'repository', 'project', 'device', 'interface', 'capability', 'datamodel', 'operation', 'workflow', 'activity', 'command', 'event', 'operating_state', 'alarm', 'datapoint', 'parameter', 'supervisor'].includes(n.type)
-    );
-
-    const layers = [layer0, layer1, layer2, layer3, layer4];
-    if (layerOther.length > 0) layers.push(layerOther);
-    const positionedNodes: Node[] = [];
-
-    layers.forEach((layerNodes, colIdx) => {
-      const x = 60 + colIdx * 320;
-      layerNodes.forEach((n: any, rowIdx: number) => {
-        const y = 60 + rowIdx * 120;
-        positionedNodes.push({
-          id: n.id,
-          type: 'knowledgeNode',
-          position: { x, y },
-          data: { node: n }
-        });
-      });
+    return computeGraphLayout({
+      layoutType,
+      density: densityMode,
+      filteredNodes: filteredNodesList,
+      filteredEdges: graphData.edges,
     });
-
-    // Edges with smooth curves & labels
-    const positionedEdges: Edge[] = graphData.edges
-      .filter((e: any) => filteredIds.has(e.source) && filteredIds.has(e.target))
-      .map((e: any) => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        sourceHandle: 'right-out',
-        targetHandle: 'left-in',
-        type: 'smoothstep',
-        label: e.label,
-        style: { stroke: '#475569', strokeWidth: 1.5 },
-        labelStyle: { fill: '#94a3b8', fontSize: 10, fontFamily: 'monospace' },
-        labelBgStyle: { fill: '#0f172a', fillOpacity: 0.85 },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#64748b',
-          width: 14,
-          height: 14
-        }
-      }));
-
-    return { nodes: positionedNodes, edges: positionedEdges };
-  }, [graphData, filterType, selectedDomain, searchQuery, storeSummary]);
+  }, [graphData, filterType, selectedDomain, searchQuery, storeSummary, layoutType, densityMode]);
 
   const handleNodeClick = (_: any, n: Node) => {
     const raw = graphData?.nodes.find((item: any) => item.id === n.id);
@@ -599,6 +588,49 @@ export const KnowledgeGraphViewer: React.FC = () => {
 
         {/* Right: Actions & Stats */}
         <div className="flex items-center gap-2">
+          {/* Standard Layout Engine Selector */}
+          <div className="flex items-center bg-gray-900 border border-gray-700/80 rounded-md px-2 py-0.5">
+            <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider mr-1.5 hidden sm:inline">
+              Layout:
+            </span>
+            <select
+              value={layoutType}
+              onChange={(e) => setLayoutType(e.target.value as GraphLayoutType)}
+              className="bg-transparent text-gray-200 text-xs font-medium focus:outline-none cursor-pointer pr-1"
+              title="Switch standard graph visualization layout"
+            >
+              <option value="dagre-lr" className="bg-gray-900 text-gray-200">
+                Hierarchical (Dagre LR)
+              </option>
+              <option value="dagre-tb" className="bg-gray-900 text-gray-200">
+                Hierarchical (Dagre TB)
+              </option>
+              <option value="force" className="bg-gray-900 text-gray-200">
+                Force-Directed (Organic)
+              </option>
+              <option value="radial" className="bg-gray-900 text-gray-200">
+                Concentric / Radial
+              </option>
+              <option value="layered" className="bg-gray-900 text-gray-200">
+                Metamodel Layers
+              </option>
+            </select>
+          </div>
+
+          {/* Density Toggle */}
+          <button
+            onClick={() => setDensityMode(densityMode === 'standard' ? 'compact' : 'standard')}
+            className={`px-2 py-1 rounded-md text-[11px] font-semibold border transition flex items-center gap-1 ${
+              densityMode === 'compact'
+                ? 'bg-blue-600/20 border-blue-500/40 text-blue-300'
+                : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200'
+            }`}
+            title="Toggle between standard detailed cards and compact nodes"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">{densityMode === 'compact' ? 'Compact' : 'Standard'}</span>
+          </button>
+
           {graphData && (
             <span className="hidden md:inline-flex text-[11px] text-gray-400 font-mono bg-gray-900 px-2.5 py-1 rounded-md border border-gray-800">
               {nodes.length} Nodes &bull; {edges.length} Edges
@@ -666,6 +698,7 @@ export const KnowledgeGraphViewer: React.FC = () => {
 
         <div className="flex-1 h-full relative">
           <ReactFlow
+            key={`${layoutType}-${densityMode}`}
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
@@ -699,7 +732,16 @@ export const KnowledgeGraphViewer: React.FC = () => {
 
           {/* Legend Overlay in Canvas */}
           <div className="absolute bottom-4 left-4 bg-[#111827]/90 backdrop-blur-md border border-gray-800 p-2.5 rounded-xl text-[11px] space-y-1.5 shadow-xl hidden md:block select-none pointer-events-none z-10 max-h-72 overflow-y-auto">
-            <div className="font-bold text-gray-300 text-[10px] uppercase tracking-wider mb-1">Knowledge Ontology Layers</div>
+            <div className="flex items-center justify-between gap-3 mb-1 border-b border-gray-800/80 pb-1">
+              <span className="font-bold text-gray-300 text-[10px] uppercase tracking-wider">Knowledge Ontology</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-950/80 text-blue-300 font-mono border border-blue-800/40">
+                {layoutType === 'dagre-lr' && 'Dagre LR'}
+                {layoutType === 'dagre-tb' && 'Dagre TB'}
+                {layoutType === 'force' && 'Force Organic'}
+                {layoutType === 'radial' && 'Radial Orbits'}
+                {layoutType === 'layered' && 'Metamodel Layers'}
+              </span>
+            </div>
             <div className="flex items-center gap-2 text-purple-300"><span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Domain / Project Root</div>
             <div className="flex items-center gap-2 text-cyan-300"><span className="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> Physical Devices</div>
             <div className="flex items-center gap-2 text-indigo-300"><span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Semantic Capabilities (.cap)</div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
 import { projectsApi } from '../api/projects';
+import { knowledgeApi } from '../api/knowledge';
 import { transformData } from '../api/transform';
 import ProjectCard from '../components/common/ProjectCard';
 import Button from '../components/common/Button';
@@ -10,7 +11,7 @@ import Input from '../components/common/Input';
 import Modal from '../components/common/Modal';
 import { 
   FolderPlus, Play, LayoutDashboard, Sparkles, CheckCircle2, 
-  ArrowRight, Network
+  ArrowRight, Network, Cpu, ChevronRight, ExternalLink 
 } from 'lucide-react';
 import { TransformResult } from '../types/models';
 
@@ -267,6 +268,11 @@ const DashboardPage = () => {
     queryFn: projectsApi.listProjects,
   });
 
+  const { data: storeSummary } = useQuery({
+    queryKey: ['storeSummary'],
+    queryFn: knowledgeApi.getStoreSummary,
+  });
+
   const recentProjects = [...projects].sort((a, b) => 
     new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
   ).slice(0, 6);
@@ -338,149 +344,295 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Hello, {user?.full_name || user?.name || 'Researcher'}</h1>
-          <p className="text-gray-400">Welcome to KIDE Enterprise — Model-Driven Supervisory Control Synthesis.</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Button 
-            variant="secondary" 
-            onClick={() => window.open('/knowledge-graph', '_blank')}
-            className="border-indigo-500/40 text-indigo-400 hover:bg-indigo-950/40"
-            title="Open Knowledge Graph Studio in a new tab"
-          >
-            <Network className="w-4 h-4 mr-2 text-indigo-400" /> Knowledge Graph Studio ↗
-          </Button>
-          <Button 
-            variant="secondary" 
-            onClick={() => {
-              setTransformResult(null);
-              setIsExampleModalOpen(true);
-            }}
-            className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-950/40"
-          >
-            <Sparkles className="w-4 h-4 mr-2 text-emerald-400" /> Try Example Transform
-          </Button>
-          <Button onClick={() => setIsNewProjectModalOpen(true)}>
-            <FolderPlus className="w-4 h-4 mr-2" /> New Project
-          </Button>
-        </div>
-      </div>
-
-      {/* Metrics Banner */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-surface border border-accent p-6 rounded-lg">
-          <div className="flex items-center justify-between">
-            <h3 className="text-gray-400 font-medium">Total Projects</h3>
-            <LayoutDashboard className="text-highlight w-5 h-5" />
-          </div>
-          <p className="text-3xl font-bold text-white mt-4">{projects.length}</p>
-        </div>
-        <div className="bg-surface border border-accent p-6 rounded-lg">
-          <div className="flex items-center justify-between">
-            <h3 className="text-gray-400 font-medium">Thesis Templates</h3>
-            <Sparkles className="text-amber-400 w-5 h-5" />
-          </div>
-          <p className="text-3xl font-bold text-white mt-4">{THESIS_EXAMPLES_INFO.length}</p>
-        </div>
-        <div className="bg-surface border border-accent p-6 rounded-lg">
-          <div className="flex items-center justify-between">
-            <h3 className="text-gray-400 font-medium">Total Project Files</h3>
-            <FolderPlus className="text-highlight w-5 h-5" />
-          </div>
-          <p className="text-3xl font-bold text-white mt-4">{projects.reduce((sum, p) => sum + (p.file_count || 0), 0)}</p>
-        </div>
-      </div>
-
-      {/* Knowledge Graph Studio Showcase Banner */}
-      <div className="mb-10 bg-gradient-to-r from-[#111625] via-[#141b2f] to-[#101524] border border-indigo-500/30 rounded-xl p-6 relative overflow-hidden shadow-xl">
-        <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2.5 max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-600/40 text-indigo-300 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                <Network className="w-3.5 h-3.5 text-indigo-400" />
-                Thesis Metamodel Ontology
-              </span>
-              <span className="text-gray-400 text-xs font-mono">&bull; 19 Domains &bull; 69+ Physical Devices</span>
+    <div className="w-full h-full overflow-y-auto bg-[#0b0f19]">
+      <div className="p-6 lg:p-8 max-w-[1780px] mx-auto flex flex-col xl:flex-row gap-8 items-start">
+        
+        {/* ── Left Rail: Industrial Domains & Workspaces Hub ── */}
+        <aside className="w-full xl:w-80 shrink-0 flex flex-col gap-6">
+          {/* 1. Quick Workspaces Navigator */}
+          <div className="bg-[#111622] border border-gray-800/80 rounded-xl p-4 shadow-lg">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <FolderPlus className="w-4 h-4 text-blue-400" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-300">Quick Workspaces</h3>
+              </div>
+              <button
+                onClick={() => setIsNewProjectModalOpen(true)}
+                className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold"
+              >
+                + New
+              </button>
             </div>
-            <h2 className="text-xl font-bold text-white tracking-tight">
-              Pre-Available Industrial Knowledge Graph Studio
-            </h2>
-            <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
-              Explore the complete property knowledge graph across 19 real-world industrial automation domains. Inspect fine-grained thesis ontology entities—Commands, Events, Alarms, DataPoints, Parameters, Interfaces, Capabilities, DataModels, and Supervisory Workflows—and 1-click import reusable building blocks into your projects.
+
+            <div className="space-y-1.5">
+              {recentProjects.map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => navigate(`/projects/${p.id}`)}
+                  className="w-full text-left p-2.5 rounded-lg bg-gray-900/60 hover:bg-gray-800/80 border border-gray-800 hover:border-blue-500/40 flex items-center justify-between group transition"
+                >
+                  <div className="min-w-0 flex-1 pr-2">
+                    <div className="font-semibold text-xs text-gray-200 group-hover:text-white truncate">
+                      {p.name}
+                    </div>
+                    <div className="text-[10px] text-gray-500 truncate mt-0.5">
+                      {p.file_count || 0} files &bull; {new Date(p.updated_at || p.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-blue-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              ))}
+              {recentProjects.length === 0 && (
+                <div className="p-3 text-center text-xs text-gray-500 bg-gray-900/40 rounded-lg border border-dashed border-gray-800">
+                  No projects yet. Click "+ New" to begin.
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 2. Real-World Industrial Domains Directory */}
+          <div className="bg-[#111622] border border-gray-800/80 rounded-xl p-4 shadow-lg flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-indigo-400" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-300">Industrial Domains</h3>
+              </div>
+              <button
+                onClick={() => window.open('/knowledge-graph', '_blank')}
+                className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1"
+                title="Open complete Knowledge Graph Studio in new tab"
+              >
+                <span>Full Graph</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400 mb-3 leading-relaxed">
+              19 real-world automation domains with 69 physical devices ready for supervisory synthesis.
             </p>
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-gray-400">
-              <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
-                ⚡ Fireable Commands
-              </span>
-              <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
-                📡 Receivable Events
-              </span>
-              <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
-                🚨 Raised Alarms
-              </span>
-              <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
-                📊 Telemetry DataPoints
-              </span>
-              <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
-                🐢 W3C OWL/RDF Turtle
-              </span>
+
+            <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
+              {(storeSummary?.domains || [
+                { id: 'siemens_motion_s120', name: 'Siemens S7-1500 & SINAMICS S120', category: 'Motion Control' },
+                { id: 'robotic_pick_and_place', name: 'Robotic Pick-and-Place Cell', category: 'Robotics & Automation' },
+                { id: 'boom_barrier_system', name: 'Boom Barrier Vehicle Entry', category: 'Access Control' },
+                { id: 'emerson_fisher_valves', name: 'Emerson Fisher DVC6200 Valve', category: 'Flow Control' },
+                { id: 'beckhoff_twincat_ethercat', name: 'Beckhoff TwinCAT 3 & EtherCAT', category: 'High-Speed Automation' },
+                { id: 'haas_cnc_machining', name: 'Haas VF-2 3-Axis CNC Center', category: 'Subtractive Machining' },
+                { id: 'abb_irc5_robotics', name: 'ABB IRB 2600 & IRC5 Cell', category: 'Heavy Robotics' },
+                { id: 'industrial_cooling_system', name: 'Industrial Process Cooling Loop', category: 'Process Utilities' },
+                { id: 'chemical_batch_reactor', name: 'Continuous Chemical Reactor', category: 'Petrochemical' },
+                { id: 'festo_cpx_pneumatics', name: 'Festo CPX Valve Terminal', category: 'Pneumatics & Fluid' },
+                { id: 'keyence_vision_inspection', name: 'Keyence CV-X400 Vision System', category: 'Quality Control' },
+                { id: 'sartorius_biostat_bioreactor', name: 'Sartorius BIOSTAT Bioreactor', category: 'Biotech & Pharma' },
+                { id: 'sma_solar_bess_inverter', name: 'SMA Sunny Tripower & BESS', category: 'Microgrids' },
+              ]).map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => window.open(`/knowledge-graph?domain=${d.id}`, '_blank')}
+                  className="w-full text-left p-2 rounded-lg bg-gray-900/60 hover:bg-indigo-950/40 border border-gray-800/80 hover:border-indigo-500/40 flex items-center justify-between group transition"
+                  title={`Open ${d.name} in Knowledge Graph Studio`}
+                >
+                  <div className="min-w-0 flex-1 pr-2">
+                    <div className="font-medium text-xs text-gray-200 group-hover:text-indigo-300 truncate">
+                      {d.name}
+                    </div>
+                    <div className="text-[10px] text-gray-500 truncate">
+                      {d.category}
+                    </div>
+                  </div>
+                  <ExternalLink className="w-3 h-3 text-gray-600 group-hover:text-indigo-400 shrink-0" />
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
-            <Button
-              onClick={() => window.open('/knowledge-graph', '_blank')}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/20 text-xs px-4 py-2.5 flex items-center justify-center gap-2"
-            >
-              <Network className="w-4 h-4" />
-              <span>Open Knowledge Graph in New Tab ↗</span>
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => navigate('/knowledge-graph')}
-              className="border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white text-xs px-4 py-2.5 flex items-center justify-center gap-2"
-            >
-              <span>Explore Studio View &rarr;</span>
-            </Button>
+          {/* 3. Synthesis Platform Health Status */}
+          <div className="bg-[#111622] border border-gray-800/80 rounded-xl p-4 shadow-lg space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold uppercase tracking-wider text-gray-400">Synthesis Engine</span>
+              <span className="flex items-center gap-1.5 text-emerald-400 font-mono text-[11px] font-semibold">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                ONLINE
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-gray-400 pt-1 border-t border-gray-800">
+              <div className="bg-gray-900/80 p-2 rounded border border-gray-800/80">
+                <div className="text-gray-500 text-[9px] uppercase">DSLs</div>
+                <div className="font-bold text-gray-200 mt-0.5">5 Metamodels</div>
+              </div>
+              <div className="bg-gray-900/80 p-2 rounded border border-gray-800/80">
+                <div className="text-gray-500 text-[9px] uppercase">Catalog</div>
+                <div className="font-bold text-gray-200 mt-0.5">69 Devices</div>
+              </div>
+              <div className="bg-gray-900/80 p-2 rounded border border-gray-800/80">
+                <div className="text-gray-500 text-[9px] uppercase">Semantics</div>
+                <div className="font-bold text-gray-200 mt-0.5">W3C RDF/OWL</div>
+              </div>
+              <div className="bg-gray-900/80 p-2 rounded border border-gray-800/80">
+                <div className="text-gray-500 text-[9px] uppercase">Synthesis</div>
+                <div className="font-bold text-gray-200 mt-0.5">MNC-ML IR</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* ── Main Content Area ── */}
+        <div className="flex-1 min-w-0 flex flex-col gap-8 w-full">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Hello, {user?.full_name || user?.name || 'Researcher'}</h1>
+              <p className="text-gray-400">Welcome to KIDE Enterprise — Model-Driven Supervisory Control Synthesis.</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                variant="secondary" 
+                onClick={() => window.open('/knowledge-graph', '_blank')}
+                className="border-indigo-500/40 text-indigo-400 hover:bg-indigo-950/40"
+                title="Open Knowledge Graph Studio in a new tab"
+              >
+                <Network className="w-4 h-4 mr-2 text-indigo-400" /> Knowledge Graph Studio ↗
+              </Button>
+              <Button 
+                variant="secondary" 
+                onClick={() => {
+                  setTransformResult(null);
+                  setIsExampleModalOpen(true);
+                }}
+                className="border-emerald-500/40 text-emerald-400 hover:bg-emerald-950/40"
+              >
+                <Sparkles className="w-4 h-4 mr-2 text-emerald-400" /> Try Example Transform
+              </Button>
+              <Button onClick={() => setIsNewProjectModalOpen(true)}>
+                <FolderPlus className="w-4 h-4 mr-2" /> New Project
+              </Button>
+            </div>
+          </div>
+
+          {/* Metrics Banner */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-5">
+            <div className="bg-surface border border-accent p-5 rounded-xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Total Projects</h3>
+                <LayoutDashboard className="text-blue-400 w-4 h-4" />
+              </div>
+              <p className="text-3xl font-bold text-white mt-3">{projects.length}</p>
+            </div>
+            <div className="bg-surface border border-accent p-5 rounded-xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Thesis Templates</h3>
+                <Sparkles className="text-amber-400 w-4 h-4" />
+              </div>
+              <p className="text-3xl font-bold text-white mt-3">{THESIS_EXAMPLES_INFO.length}</p>
+            </div>
+            <div className="bg-surface border border-accent p-5 rounded-xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Total Files</h3>
+                <FolderPlus className="text-emerald-400 w-4 h-4" />
+              </div>
+              <p className="text-3xl font-bold text-white mt-3">{projects.reduce((sum, p) => sum + (p.file_count || 0), 0)}</p>
+            </div>
+            <div className="bg-surface border border-accent p-5 rounded-xl">
+              <div className="flex items-center justify-between">
+                <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Catalog Devices</h3>
+                <Cpu className="text-purple-400 w-4 h-4" />
+              </div>
+              <p className="text-3xl font-bold text-white mt-3">69 <span className="text-xs font-normal text-gray-400 font-mono">in 19 Domains</span></p>
+            </div>
+          </div>
+
+          {/* Knowledge Graph Studio Showcase Banner */}
+          <div className="bg-gradient-to-r from-[#111625] via-[#141b2f] to-[#101524] border border-indigo-500/30 rounded-xl p-6 relative overflow-hidden shadow-xl">
+            <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+              <div className="space-y-2.5 max-w-2xl">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-600/40 text-indigo-300 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <Network className="w-3.5 h-3.5 text-indigo-400" />
+                    Thesis Metamodel Ontology
+                  </span>
+                  <span className="text-gray-400 text-xs font-mono">&bull; 19 Domains &bull; 69+ Physical Devices</span>
+                </div>
+                <h2 className="text-xl font-bold text-white tracking-tight">
+                  Pre-Available Industrial Knowledge Graph Studio
+                </h2>
+                <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
+                  Explore the complete property knowledge graph across 19 real-world industrial automation domains. Inspect fine-grained thesis ontology entities—Commands, Events, Alarms, DataPoints, Parameters, Interfaces, Capabilities, DataModels, and Supervisory Workflows—and 1-click import reusable building blocks into your projects.
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-gray-400">
+                  <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
+                    ⚡ Fireable Commands
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
+                    📡 Receivable Events
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
+                    🚨 Raised Alarms
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
+                    📊 Telemetry DataPoints
+                  </span>
+                  <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
+                    🐢 W3C OWL/RDF Turtle
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
+                <Button
+                  onClick={() => window.open('/knowledge-graph', '_blank')}
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/20 text-xs px-4 py-2.5 flex items-center justify-center gap-2"
+                >
+                  <Network className="w-4 h-4" />
+                  <span>Open Knowledge Graph in New Tab ↗</span>
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => navigate('/knowledge-graph')}
+                  className="border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white text-xs px-4 py-2.5 flex items-center justify-center gap-2"
+                >
+                  <span>Explore Studio View &rarr;</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Projects Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-white">Recent Projects</h2>
+            </div>
+
+            {recentProjects.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
+                {recentProjects.map(project => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+              </div>
+            ) : (
+              <div className="bg-surface border border-dashed border-accent rounded-lg p-12 text-center">
+                <p className="text-gray-400 mb-4">No projects yet. Get started by creating one or running a thesis example.</p>
+                <div className="flex justify-center gap-3">
+                  <Button onClick={() => setIsNewProjectModalOpen(true)}>
+                    <FolderPlus className="w-4 h-4 mr-2" /> Create First Project
+                  </Button>
+                  <Button 
+                    variant="secondary" 
+                    onClick={() => {
+                      setTransformResult(null);
+                      setIsExampleModalOpen(true);
+                    }}
+                  >
+                    <Sparkles className="w-4 h-4 mr-2 text-emerald-400" /> Explore Thesis Examples
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Recent Projects Section */}
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-white">Recent Projects</h2>
       </div>
-
-      {recentProjects.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {recentProjects.map(project => (
-            <ProjectCard key={project.id} project={project} />
-          ))}
-        </div>
-      ) : (
-        <div className="bg-surface border border-dashed border-accent rounded-lg p-12 text-center">
-          <p className="text-gray-400 mb-4">No projects yet. Get started by creating one or running a thesis example.</p>
-          <div className="flex justify-center gap-3">
-            <Button onClick={() => setIsNewProjectModalOpen(true)}>
-              <FolderPlus className="w-4 h-4 mr-2" /> Create First Project
-            </Button>
-            <Button 
-              variant="secondary"
-              onClick={() => {
-                setTransformResult(null);
-                setIsExampleModalOpen(true);
-              }}
-            >
-              <Sparkles className="w-4 h-4 mr-2 text-emerald-400" /> Explore Thesis Examples
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Try Example Transform Modal */}
       <Modal

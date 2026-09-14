@@ -25,6 +25,7 @@ jobs:
           python -m pip install --upgrade pip
           cd kide-enterprise/backend
           pip install fastapi uvicorn pydantic pydantic-settings sqlalchemy aiosqlite httpx pytest pytest-asyncio passlib bcrypt python-jose python-multipart
+          pip install -r requirements.txt
 
       - name: Run Pytest Suite
         run: |
@@ -33,6 +34,7 @@ jobs:
 
   frontend-build:
     name: Frontend Typecheck & Production Build
+    name: Frontend Tests, Typecheck & Production Build
     runs-on: ubuntu-latest
 
     steps:
@@ -49,8 +51,14 @@ jobs:
           cd kide-enterprise/frontend
           npm install
 
+      - name: Run Frontend Tests
+        run: |
+          cd kide-enterprise/frontend
+          npm test
+
       - name: Run TypeScript Check & Vite Build
         run: |
           cd kide-enterprise/frontend
           npm run build
+
 

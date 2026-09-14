@@ -261,7 +261,7 @@ def main():
         log_success("Virtual environment created.")
 
     # Verify or install backend dependencies
-    check_code = "import fastapi, uvicorn, sqlalchemy, aiosqlite; print('READY')"
+    check_code = "import fastapi, uvicorn, sqlalchemy, aiosqlite, email_validator; print('READY')"
     has_backend_deps = False
     try:
         proc = subprocess.run([python_exe, "-c", check_code], capture_output=True, text=True, cwd=backend_dir)
@@ -271,8 +271,9 @@ def main():
         has_backend_deps = False
 
     if not has_backend_deps or args.clean:
-        log("Installing/upgrading backend dependencies (pip install -e .)...")
-        install_res = subprocess.run([pip_exe, "install", "-e", "."], cwd=backend_dir)
+        log("Installing/upgrading backend dependencies (pip install -r requirements.txt -e .)...")
+        install_res = subprocess.run([pip_exe, "install", "-r", "requirements.txt", "-e", "."], cwd=backend_dir)
+
         if install_res.returncode != 0:
             log_error("Backend dependency installation failed.")
             sys.exit(1)
