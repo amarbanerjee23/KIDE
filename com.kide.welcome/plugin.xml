@@ -4,7 +4,7 @@
 
    <extension point="org.eclipse.ui.intro">
       <intro class="org.eclipse.ui.intro.config.CustomizableIntroPart" id="com.kide.welcome.intro"/>
-      <introProductBinding introId="com.kide.welcome.intro" productId="com.kide.product.kide"/>
+      <introProductBinding introId="com.kide.welcome.intro" productId="com.kide.branding.kide"/>
    </extension>
 
    <extension point="org.eclipse.ui.intro.config">

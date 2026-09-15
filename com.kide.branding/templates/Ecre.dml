@@ -1,0 +1,7 @@
+DataModel ECRE {
+	primitives {
+		boolean isValidTruck = false,
+		int RFID_TAG_VALUE,
+		date ecre_date
+	}
+}

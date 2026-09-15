@@ -1,0 +1,17 @@
+Model Ecre
+
+InterfaceDescription LoadingInterface {
+	commands {
+		StartLoading []
+		StopLoading []
+	}
+	events {
+		Publish LoadingStarted []
+	}
+	alarms {
+		Publish TruckNotValid [ level = 2 ]
+	}
+	responses {
+		LoadingAccepted []
+	}
+}

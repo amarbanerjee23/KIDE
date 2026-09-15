@@ -42,7 +42,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.compare;bundle-version="3.7.300",
  org.eclipse.emf.compare.rcp;bundle-version="2.5.2",
  org.eclipse.emf.compare.edit;bundle-version="4.3.1"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.smr.activity.activity2mnc.handlers,
  com.smr.activity.activity2mnc.methods
 Automatic-Module-Name: com.smr.activity.activity2mnc

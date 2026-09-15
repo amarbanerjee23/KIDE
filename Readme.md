@@ -1,106 +1,108 @@
 # KIDE — Knowledge-Integrated DSL Engineering Workspace
 
-This repository contains the implementation artifacts accompanying the PhD work (DSLs, metamodels, editors, model transformations, and Sirius-based modeling environments).
+KIDE is a modelling studio for capability, activity, data and MNC models:
+textual languages with live validation, generated Sirius diagrams, and a
+transformation from activity models to MNC models.
 
-## What is in this repository
+It is released as a standalone application for Windows, Linux and macOS, and as
+a p2 update site for existing Eclipse installations.
 
-The codebase is organized as an Eclipse/Xtext/Sirius multi-project workspace, including:
+## Install
 
-- `com.mncml` — EMF metamodel implementation for MNC domain objects.
-- `com.mncml.dsl` / `com.mncml.dsl.ui` — textual DSL and Eclipse UI integration for MNC modeling.
-- `com.smr.activity.dsl` — activity DSL components.
-- `com.smr.activity.activity2mnc` — transformation logic from activity models to MNC models.
-- `com.model.domain.*.design` — Sirius viewpoint/design projects for graphical modeling.
-- Additional support projects (`com.capability.dsl.*`, `com.dml`, etc.).
+Download the archive for your platform from the
+[Releases page](https://github.com/amarbanerjee23/KIDE/releases), unpack it and
+run `kide`. Java 11 or newer is the only prerequisite.
 
-## Getting started in one step
+Full instructions, including installing into an existing Eclipse:
+[`docs/installation.md`](docs/installation.md).
 
-Three ways in, from least to most setup:
+## First five minutes
 
-| I want to… | Do this |
-| --- | --- |
-| See what KIDE does, in a browser, with nothing installed | `cd kide-web-demo && npm install && npm run dev` |
-| Watch my own models render as I edit them | `node tools/kide-live-preview/server.js demo/example-workspace` |
-| Use the full Eclipse tooling | Build the KIDE Modelling Studio product (below) |
+1. **File > New > KIDE Modelling Project** — you get a project with a data
+   model, a component interface, a capability and an activity flow that already
+   validate.
+2. **Help > Welcome** — three guided tours walk through those same files.
+3. Edit `models/Loading.cap`. `Ctrl+Space` for block templates, hover anything
+   for a plain-language explanation, `Ctrl+1` to fix a problem.
 
-### KIDE Modelling Studio
+[`docs/user-guide.md`](docs/user-guide.md) covers the languages, the diagrams and
+the transformation.
 
-`releng/com.kide.product/kide.product` defines a ready-made Eclipse product with
-every KIDE plug-in, Xtext, EMF and Sirius already inside. Open it in Eclipse and
-choose **Launch an Eclipse application**, or export it to get a standalone
-application. It starts on a Welcome page with three guided tours
-(**Help → Welcome**, or **Help → Cheat Sheets → KIDE guided tours**):
+## The languages
 
-1. Write your first capability and activity model.
-2. Transform an activity model into an MNC model.
-3. Open and read the Sirius diagrams.
-
-`demo/example-workspace` holds a small worked example — a loading interface, the
-capability built on it, and a mission-planning activity diagram — that the tours
-walk through.
-
-### Browser demo
-
-`kide-web-demo/` is a self-contained web page: type a KIDE-style model on the
-left and the diagram builds itself on the right, with plain-language validation
-underneath. Useful for showing the idea to someone who will not install Eclipse.
-
-### Live preview for the real editors
-
-`tools/kide-live-preview/` watches a folder of `.cap` and `.activity` files and
-serves an auto-refreshing diagram. See its README for details.
+| Extension | Language | What you describe |
+| --- | --- | --- |
+| `.dml` | Data | the primitive values the system exchanges |
+| `.mncspec` | MNC specification | commands, events, alarms and responses of a component |
+| `.cap` | Capability | what a component can do, bound to an interface |
+| `.activity` | Activity | the flow of work that uses those capabilities |
 
 ## The KIDE visual language
 
-One colour per concept, in the Sirius diagrams, the editors, the browser demo
-and the live preview:
+One colour per concept, in the diagrams, the editors and the workbench theme:
 
 | Concept | Colour |
 | --- | --- |
-| Capability | blue `#5284e2` |
-| Activity | amber `#e2982e` |
-| Data and outcomes | green `#3ea676` |
-| Structure and containers | slate `#606e85` |
+| Capability | blue `#5284E2` |
+| Activity | amber `#E2982E` |
+| Data and outcomes | green `#3EA676` |
+| Structure and containers | slate `#606E85` |
 
 `tools/apply_visual_language.py` installs that palette into the Sirius design
 files. Re-run it after editing a `.odesign` with the Sirius specification editor
-if new system colours creep back in.
+if system colours creep back in.
 
-## Editor experience
+## Building from source
 
-The capability and activity editors now offer syntax and semantic colouring in
-the palette above, hover documentation explaining each element in plain words,
-content-assist templates (`capability`, `controlCapabilities`, `init`,
-`activityDiagram`, `activity`, `conditionalActivity` — press Ctrl+Space), and
-quick fixes on the problems the validators report. Validation messages say what
-is wrong and what to do about it, rather than restating the rule.
-
-## Demonstrable product build
-
-A reproducible demonstrator packaging step is provided:
+JDK 17 and Maven 3.9+:
 
 ```bash
-python scripts/build_demo_product.py
+mvn clean verify
 ```
 
-This generates:
+Produces:
 
-- `demo/kide-demonstrator.zip` — a portable demonstrator package.
-- `demo/QUICKSTART.md` — operator instructions to run the tooling in Eclipse.
-- `demo/product/manifest.json` — discovered plugin/bundle inventory for the demonstrator.
+- `releng/com.kide.repository/target/repository` — the p2 update site.
+- `releng/com.kide.repository/target/products/` — the platform archives.
 
-## How to run the demonstrator
+The build is Tycho pomless: plug-in and feature projects build from their
+manifests. Third-party versions are declared in exactly one place,
+`releng/com.kide.target/com.kide.target.target`.
 
-1. Install **Eclipse Modeling Tools** (2023-12 or newer) with Xtext and Sirius.
-2. Import all folders in this repository as existing Eclipse projects.
-3. Run `Project -> Build All`.
-4. Or skip steps 1-3 entirely and build the KIDE Modelling Studio product described above.
-5. Open one of the modeling entrypoints:
-   - `com.mncml/representations.aird`
-   - `com.model.domain.activity.design/representations.aird`
-5. Use the textual editors and transformations from the DSL projects.
+## Repository layout
 
-## Notes
+| Path | Contents |
+| --- | --- |
+| `com.capability`, `com.dml`, `com.mncml`, `com.operation`, `com.smr.activity` | EMF metamodels |
+| `*.dsl`, `*.dsl.ide`, `*.dsl.ui` | Xtext grammars, validation, quick fixes, editors |
+| `com.model.domain.*.design` | Sirius viewpoints |
+| `com.smr.activity.activity2mnc` | activity-to-MNC transformation |
+| `com.kide.branding`, `com.kide.welcome` | product identity, perspective, wizard, themes, tours |
+| `releng/` | target platform, features, product, update site |
+| `docs/` | installation, user, administrator, architecture, release docs |
+| `demo/example-workspace` | the worked example the tours use |
+| `tools/kide-live-preview` | lightweight diagram preview outside Eclipse |
+| `kide-web-demo/` | browser demo of the modelling idea, no install |
 
-- This repository already includes generated Java/classes for multiple modules.
-- The demonstrator script creates a distribution-oriented view (zip + manifest + quickstart) to make the workspace usable as a product handoff artifact.
+## Documentation
+
+- [Installation](docs/installation.md)
+- [User guide](docs/user-guide.md)
+- [Administrator guide](docs/administrator-guide.md)
+- [Architecture](docs/architecture.md)
+- [Release process](docs/release-process.md)
+- [Contributing](CONTRIBUTING.md) · [Support](SUPPORT.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md)
+
+## Known limitations
+
+- `com.system.knowledge.plugin` depends on NeoEMF, which is not in the target
+  platform; it is research code and is not part of the release build.
+- `.mncspec` has no grammar in this repository, so those files open as plain text
+  and are not validated.
+
+## Licence
+
+EPL-2.0. See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
+
+This repository accompanies PhD work; the languages, metamodels and
+transformations are the research contribution, packaged here as a product.

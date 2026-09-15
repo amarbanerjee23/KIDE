@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Tycho pomless build: plug-in and feature projects are built straight from
+  MANIFEST.MF and feature.xml, so no per-bundle pom.xml is needed.
+-->
+<extensions>
+  <extension>
+    <groupId>org.eclipse.tycho</groupId>
+    <artifactId>tycho-build</artifactId>
+    <version>4.0.8</version>
+  </extension>
+</extensions>

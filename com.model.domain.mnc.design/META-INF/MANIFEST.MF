@@ -38,7 +38,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.ui.workbench,
  com.mncml.dsl.ui
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Import-Package: org.eclipse.jdt.core
 Export-Package: com.model.domain.mnc.design.embedededitor,
  org.obeonetwork.dsl.viewpoint.xtext.support.action

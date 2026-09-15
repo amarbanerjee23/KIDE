@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.kide</groupId>
+  <artifactId>kide-parent</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>KIDE</name>
+  <description>Knowledge-Integrated DSL Engineering workspace</description>
+
+  <licenses>
+    <license>
+      <name>Eclipse Public License - v 2.0</name>
+      <url>https://www.eclipse.org/legal/epl-2.0/</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <properties>
+    <tycho.version>4.0.8</tycho.version>
+    <maven.compiler.release>11</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <tycho.compiler.failOnWarning>false</tycho.compiler.failOnWarning>
+  </properties>
+
+  <!--
+    com.system.knowledge.plugin is intentionally NOT a module: it depends on
+    NeoEMF (fr.inria.atlanmod.*), which is not in the target platform.
+    See docs/architecture.md.
+  -->
+  <modules>
+    <module>com.capability</module>
+    <module>com.capability.dsl</module>
+    <module>com.capability.dsl.ide</module>
+    <module>com.capability.dsl.ui</module>
+    <module>com.dml</module>
+    <module>com.dml.dsl</module>
+    <module>com.dml.dsl.ide</module>
+    <module>com.dml.dsl.ui</module>
+    <module>com.mncml</module>
+    <module>com.mncml.dsl</module>
+    <module>com.mncml.dsl.ide</module>
+    <module>com.mncml.dsl.ui</module>
+    <module>com.operation</module>
+    <module>com.operation.dsl</module>
+    <module>com.operation.dsl.ide</module>
+    <module>com.operation.dsl.ui</module>
+    <module>com.smr.activity</module>
+    <module>com.smr.activity.dsl</module>
+    <module>com.smr.activity.dsl.ide</module>
+    <module>com.smr.activity.dsl.ui</module>
+    <module>com.smr.activity.activity2mnc</module>
+    <module>com.model.domain.mnc.design</module>
+    <module>com.model.domain.activity.design</module>
+    <module>com.dsep.dsl.generator</module>
+    <module>com.kide.welcome</module>
+    <module>com.kide.branding</module>
+    <module>releng</module>
+  </modules>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-maven-plugin</artifactId>
+        <version>${tycho.version}</version>
+        <extensions>true</extensions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>target-platform-configuration</artifactId>
+        <version>${tycho.version}</version>
+        <configuration>
+          <target>
+            <artifact>
+              <groupId>com.kide</groupId>
+              <artifactId>com.kide.target</artifactId>
+              <version>1.0.0-SNAPSHOT</version>
+            </artifact>
+          </target>
+          <environments>
+            <environment><os>linux</os><ws>gtk</ws><arch>x86_64</arch></environment>
+            <environment><os>win32</os><ws>win32</ws><arch>x86_64</arch></environment>
+            <environment><os>macosx</os><ws>cocoa</ws><arch>x86_64</arch></environment>
+            <environment><os>macosx</os><ws>cocoa</ws><arch>aarch64</arch></environment>
+          </environments>
+          <executionEnvironment>JavaSE-11</executionEnvironment>
+          <pomDependencies>consider</pomDependencies>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-packaging-plugin</artifactId>
+        <version>${tycho.version}</version>
+        <configuration>
+          <timestampProvider>jgit</timestampProvider>
+          <jgit.ignore>pom.xml</jgit.ignore>
+          <jgit.dirtyWorkingTree>warning</jgit.dirtyWorkingTree>
+          <format>'v'yyyyMMdd'-'HHmm</format>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.tycho</groupId>
+            <artifactId>tycho-buildtimestamp-jgit</artifactId>
+            <version>${tycho.version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-compiler-plugin</artifactId>
+        <version>${tycho.version}</version>
+        <configuration>
+          <!-- Source level comes from each bundle's BREE (JavaSE-11). -->
+          <encoding>UTF-8</encoding>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-source-plugin</artifactId>
+        <version>${tycho.version}</version>
+        <executions>
+          <execution>
+            <id>plugin-source</id>
+            <goals><goal>plugin-source</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.eclipse.tycho</groupId>
+        <artifactId>tycho-surefire-plugin</artifactId>
+        <version>${tycho.version}</version>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!-- Enabled in the release workflow when signing secrets are configured. -->
+    <profile>
+      <id>sign</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jarsigner-plugin</artifactId>
+            <version>3.0.0</version>
+            <executions>
+              <execution>
+                <id>sign</id>
+                <goals><goal>sign</goal></goals>
+              </execution>
+            </executions>
+            <configuration>
+              <keystore>${env.KIDE_KEYSTORE}</keystore>
+              <alias>${env.KIDE_KEY_ALIAS}</alias>
+              <storepass>${env.KIDE_KEYSTORE_PASSWORD}</storepass>
+              <tsa>http://timestamp.digicert.com</tsa>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

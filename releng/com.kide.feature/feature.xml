@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.kide.feature"
+      label="KIDE Modelling Tools"
+      version="1.0.0.qualifier"
+      provider-name="KIDE"
+      license-feature="org.eclipse.license"
+      license-feature-version="0.0.0">
+
+   <description url="https://github.com/amarbanerjee23/KIDE">
+      Capability, activity, data and MNC modelling: textual languages with live
+      validation, Sirius diagrams, and the activity-to-MNC transformation.
+   </description>
+
+   <copyright>
+      Copyright (c) 2026 KIDE contributors.
+   </copyright>
+
+   <license url="https://www.eclipse.org/legal/epl-2.0/">
+      Eclipse Public License - v 2.0. See NOTICE.md for third-party components.
+   </license>
+
+   <requires>
+      <import feature="org.eclipse.platform" version="4.22.0" match="greaterOrEqual"/>
+      <import feature="org.eclipse.xtext.redist" version="2.25.0" match="greaterOrEqual"/>
+      <import feature="org.eclipse.sirius.runtime" version="6.6.0" match="greaterOrEqual"/>
+   </requires>
+
+   <plugin id="com.kide.branding" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.kide.welcome" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+
+   <plugin id="com.capability" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.capability.dsl" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.capability.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.capability.dsl.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+
+   <plugin id="com.dml" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.dml.dsl" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.dml.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.dml.dsl.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+
+   <plugin id="com.mncml" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.mncml.dsl" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.mncml.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.mncml.dsl.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+
+   <plugin id="com.operation" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.operation.dsl" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.operation.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.operation.dsl.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+
+   <plugin id="com.smr.activity" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.smr.activity.dsl" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.smr.activity.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.smr.activity.dsl.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.smr.activity.activity2mnc" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+
+   <plugin id="com.model.domain.mnc.design" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.model.domain.activity.design" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+</feature>

@@ -1,0 +1,90 @@
+/*
+ * KIDE Light.
+ * Capability blue #5284E2, activity amber #E2982E, structure slate #606E85.
+ */
+
+Shell {
+	background-color: #F4F6FA;
+	color: #1F2430;
+	font-family: 'Segoe UI', 'Inter', 'Cantarell', sans-serif;
+}
+
+CTabFolder {
+	background-color: #EDF1F7;
+	tab-outline: #DCE3ED;
+	swt-selected-tab-fill: #FFFFFF;
+	swt-unselected-tabs-color: #EDF1F7;
+	swt-simple: false;
+	swt-mru-visible: false;
+	swt-corner-radius: 6;
+	swt-tab-height: 30px;
+}
+
+CTabFolder Canvas {
+	background-color: #EDF1F7;
+}
+
+CTabItem {
+	color: #606E85;
+	font-weight: normal;
+}
+
+CTabItem:selected {
+	color: #1F2430;
+	font-weight: bold;
+	swt-selected-image-visible: true;
+}
+
+CTabFolder.MArea CTabItem:selected {
+	color: #1F2430;
+}
+
+CTabFolder:selected {
+	swt-selected-tab-highlight: #5284E2;
+	swt-selected-tab-highlight-top: true;
+}
+
+CTabFolder Button {
+	background-color: #EDF1F7;
+}
+
+/* Views and editors */
+
+.MPartStack {
+	swt-shadow-visible: false;
+}
+
+.MPart Composite {
+	background-color: #FFFFFF;
+}
+
+.MPartStack.active {
+	swt-selected-tab-highlight: #5284E2;
+}
+
+.MPartStack.busy CTabItem:selected {
+	color: #E2982E;
+}
+
+/* Toolbars and status line */
+
+ToolBar {
+	background-color: #F4F6FA;
+	color: #606E85;
+}
+
+#org-eclipse-ui-main-toolbar,
+#PerspectiveSwitcher {
+	background-color: #F4F6FA;
+	color: #1F2430;
+	eclipse-perspective-keyline-color: #DCE3ED;
+}
+
+Label, Text, Combo, Sash, Group {
+	background-color: #F4F6FA;
+	color: #1F2430;
+}
+
+Sash {
+	background-color: #E5EAF2;
+}
