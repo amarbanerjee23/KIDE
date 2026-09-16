@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.kide.languageserver.feature"
+      label="KIDE Language Server"
+      version="1.0.0.qualifier"
+      provider-name="KIDE">
+
+   <description>
+      Headless multi-language Xtext/LSP runtime for the KIDE DSL family.
+   </description>
+
+   <license url="https://www.eclipse.org/legal/epl-2.0/">
+      Eclipse Public License 2.0
+   </license>
+
+   <plugin id="com.kide.languageserver" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.dml.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.capability.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.mncml.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.operation.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.smr.activity.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+
+   <!-- Xtext 2.25 declares LSP4J optional because the same IDE bundle can be
+        used without an LSP server. KIDE's headless ServerModule uses it
+        unconditionally, so the product feature must make these runtime bundles
+        explicit instead of relying on optional dependency closure. -->
+   <plugin id="org.eclipse.lsp4j" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="org.eclipse.lsp4j.jsonrpc" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+
+   <!-- Product configuration starts this bundle at level 1, so it must be part of
+        the headless feature closure rather than being supplied incidentally by
+        Eclipse UI/platform features. -->
+   <plugin id="org.eclipse.equinox.simpleconfigurator" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+</feature>

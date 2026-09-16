@@ -3,23 +3,13 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>com.kide</groupId>
     <artifactId>kide-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
-
-  <artifactId>kide-releng</artifactId>
-  <packaging>pom</packaging>
-  <name>KIDE Release Engineering</name>
-
-  <modules>
-    <module>com.kide.target</module>
-    <module>com.kide.feature</module>
-    <module>com.kide.sdk.feature</module>
-    <module>com.kide.languageserver.feature</module>
-    <module>com.kide.repository</module>
-    <module>com.kide.languageserver.repository</module>
-  </modules>
+  <artifactId>com.kide.languageserver</artifactId>
+  <packaging>eclipse-plugin</packaging>
+  <name>KIDE Language Server</name>
 </project>

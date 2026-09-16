@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?pde version="3.5"?>
+
+<product name="KIDE Language Server" uid="com.kide.languageserver.product" id="com.kide.languageserver.product" application="com.kide.languageserver.application" version="1.0.0.qualifier" type="features" includeLaunchers="true" includeJRE="true" autoIncludeRequirements="true">
+
+   <configIni use="default"/>
+
+   <launcherArgs>
+      <!-- The native Eclipse launcher otherwise attempts to initialise the GTK
+           splash path on Linux before the headless Equinox application starts. -->
+      <programArgs>-nosplash
+      </programArgs>
+      <vmArgs>-Xms128m
+-Xmx1024m
+-XX:+UseG1GC
+-Dosgi.requiredJavaVersion=11
+      </vmArgs>
+   </launcherArgs>
+
+   <launcher name="kide-languageserver"/>
+
+   <vm>
+      <linux include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17</linux>
+      <macos include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17</macos>
+      <windows include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17</windows>
+   </vm>
+
+   <license>
+      <url>https://www.eclipse.org/legal/epl-2.0/</url>
+      <text>
+KIDE Language Server is published under the Eclipse Public License 2.0.
+Third-party components keep their own licences; see NOTICE.md in the source repository.
+      </text>
+   </license>
+
+   <plugins/>
+
+   <features>
+      <feature id="com.kide.languageserver.feature" installMode="root"/>
+      <feature id="org.eclipse.equinox.executable" installMode="root"/>
+   </features>
+
+   <configurations>
+      <plugin id="org.eclipse.core.runtime" autoStart="true" startLevel="0"/>
+      <plugin id="org.eclipse.equinox.common" autoStart="true" startLevel="2"/>
+      <plugin id="org.eclipse.equinox.simpleconfigurator" autoStart="true" startLevel="1"/>
+      <property name="eclipse.buildId" value="1.0.0"/>
+      <property name="eclipse.p2.profile" value="KIDE-Language-Server"/>
+      <property name="eclipse.p2.data.area" value="@config.dir/../p2"/>
+   </configurations>
+
+</product>

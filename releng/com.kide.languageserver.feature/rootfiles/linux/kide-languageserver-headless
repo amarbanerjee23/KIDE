@@ -1,0 +1,47 @@
+#!/bin/sh
+# Start the KIDE LSP through Equinox's Java launcher, bypassing the GTK native
+# launcher so the server works on CI agents, containers and remote hosts with
+# no X11/Wayland display.
+set -eu
+
+BASE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+# JustJ publishes more than one Linux runtime flavour (for example `minimal`
+# and `full.stripped`). The product decides which flavour is materialized, so
+# the headless wrapper must bind to the packaged Linux x86_64 runtime rather
+# than hard-code one JustJ flavour. Deliberately do not fall back to system Java:
+# the standalone server contract requires its embedded runtime.
+JAVA=""
+for candidate in "$BASE_DIR"/plugins/org.eclipse.justj.openjdk.hotspot.jre.*.linux.x86_64_*/jre/bin/java; do
+  if [ -x "$candidate" ]; then
+    JAVA=$candidate
+    break
+  fi
+done
+if [ -z "$JAVA" ]; then
+  echo "KIDE language server: bundled JustJ Linux x86_64 Java runtime was not found" >&2
+  exit 70
+fi
+
+EQUINOX_LAUNCHER=""
+for candidate in "$BASE_DIR"/plugins/org.eclipse.equinox.launcher_*.jar; do
+  if [ -f "$candidate" ]; then
+    EQUINOX_LAUNCHER=$candidate
+    break
+  fi
+done
+if [ -z "$EQUINOX_LAUNCHER" ]; then
+  echo "KIDE language server: Equinox launcher JAR was not found" >&2
+  exit 70
+fi
+
+exec "$JAVA" \
+  -Xms128m \
+  -Xmx1024m \
+  -XX:+UseG1GC \
+  -Dosgi.requiredJavaVersion=11 \
+  -jar "$EQUINOX_LAUNCHER" \
+  -configuration "$BASE_DIR/configuration" \
+  -nosplash \
+  -application com.kide.languageserver.application \
+  "$@"
