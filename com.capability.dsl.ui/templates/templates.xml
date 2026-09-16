@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+<template autoinsert="true" context="com.capability.Capability.Capability" deleted="false"
+	description="A complete capability with interface binding, control capabilities and outcomes"
+	enabled="true" id="com.capability.templates.capability" name="capability">Capability ${name} compatible component interface ${interfaceName} {
+	providesControlCapabilities {
+		fireable commands : ${command}
+		receivable events : ${event}
+	}
+	providesOutcomes {
+		receivable responses ${response}
+	}
+}${cursor}</template>
+<template autoinsert="true" context="com.capability.Capability.ControlCapabilities" deleted="false"
+	description="Control capabilities block with all four item kinds"
+	enabled="true" id="com.capability.templates.controlCapabilities" name="controlCapabilities">{
+	fireable commands : ${command}
+	receivable events : ${event}
+	raised alarms : ${alarm}
+	subscribable DataPoints : ${dataPoint}
+}${cursor}</template>
+<template autoinsert="true" context="com.capability.Capability.Action" deleted="false"
+	description="Initialisation process for a capability"
+	enabled="true" id="com.capability.templates.init" name="init">Init {
+	fire Commands [ ${command}() ]
+	subscribe events [ ${event}() ]
+}${cursor}</template>
+</templates>

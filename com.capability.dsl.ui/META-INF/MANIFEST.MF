@@ -21,7 +21,7 @@ Require-Bundle: com.capability.dsl,
  com.capability.dsl.ide;bundle-version="1.0.0",
  com.dml.dsl.ui;bundle-version="1.0.0"
 Import-Package: org.apache.log4j
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.capability.ui.contentassist,
  com.capability.dsl.ui.internal,
  com.capability.ui.quickfix

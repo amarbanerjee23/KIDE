@@ -12,7 +12,7 @@ Require-Bundle: com.smr.activity.dsl,
  org.antlr.runtime;bundle-version="[3.2.0,3.2.1)",
  com.dml.dsl.ide;bundle-version="1.0.0",
  com.dml.dsl;bundle-version="1.0.0"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.smr.activity.dsl.ide.contentassist.antlr,
  com.smr.activity.dsl.ide.contentassist.antlr.internal
 Automatic-Module-Name: com.smr.activity.dsl.ide

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<introContent>
+   <page id="root" style-id="page" title="Welcome to KIDE">
+
+      <group id="header" style-id="header">
+         <img id="logo" style-id="logo" src="intro/images/logo.png" alt="KIDE"/>
+         <text id="title" style-id="title">KIDE Modelling Studio</text>
+         <text id="subtitle" style-id="subtitle">Capability, activity, data and MNC modelling — textual models, live validation, generated diagrams.</text>
+      </group>
+
+      <group id="start" style-id="start">
+         <text id="start-heading" style-id="section-heading">Start here</text>
+         <link id="new-project" label="Create a KIDE modelling project" style-id="primary-card"
+               url="http://org.eclipse.ui.intro/runAction?pluginId=com.kide.branding&amp;class=com.kide.branding.intro.NewProjectIntroAction">
+            <text>A project with a data model, an interface, a capability and an activity flow you can edit straight away.</text>
+         </link>
+      </group>
+
+      <group id="tours" style-id="tours">
+         <text id="tours-heading" style-id="section-heading">Guided tours</text>
+         <link id="tour1" label="1 — Write your first capability model" style-id="card"
+               url="http://org.eclipse.ui.intro/runAction?pluginId=org.eclipse.ui.cheatsheets&amp;class=org.eclipse.ui.internal.cheatsheets.actions.OpenCheatSheetAction&amp;cheatSheetId=com.kide.welcome.tour.firstModel">
+            <text>Ten minutes: a capability, its interface and live validation.</text>
+         </link>
+         <link id="tour2" label="2 — From activities to an MNC model" style-id="card"
+               url="http://org.eclipse.ui.intro/runAction?pluginId=org.eclipse.ui.cheatsheets&amp;class=org.eclipse.ui.internal.cheatsheets.actions.OpenCheatSheetAction&amp;cheatSheetId=com.kide.welcome.tour.activityToMnc">
+            <text>Model an activity flow and generate the MNC model from it.</text>
+         </link>
+         <link id="tour3" label="3 — Open and read the Sirius diagrams" style-id="card"
+               url="http://org.eclipse.ui.intro/runAction?pluginId=org.eclipse.ui.cheatsheets&amp;class=org.eclipse.ui.internal.cheatsheets.actions.OpenCheatSheetAction&amp;cheatSheetId=com.kide.welcome.tour.diagrams">
+            <text>Where the diagrams live and what every colour and shape means.</text>
+         </link>
+      </group>
+
+      <group id="learn" style-id="learn">
+         <text id="learn-heading" style-id="section-heading">Learn more</text>
+         <link id="guide" label="User guide" style-id="link"
+               url="http://org.eclipse.ui.intro/openBrowser?url=https://github.com/amarbanerjee23/KIDE/blob/main/docs/user-guide.md">
+            <text>The languages, the editors, the diagrams and the shortcuts.</text>
+         </link>
+         <link id="admin" label="Administrator guide" style-id="link"
+               url="http://org.eclipse.ui.intro/openBrowser?url=https://github.com/amarbanerjee23/KIDE/blob/main/docs/administrator-guide.md">
+            <text>Rolling KIDE out to a team, mirroring updates, standard settings.</text>
+         </link>
+         <link id="workbench" label="Go to the workbench" style-id="link"
+               url="http://org.eclipse.ui.intro/close">
+            <text>Close this page and start working.</text>
+         </link>
+      </group>
+
+   </page>
+</introContent>

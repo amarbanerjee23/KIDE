@@ -1,0 +1,10 @@
+Capability Loading compatible component interface LoadingInterface {
+	providesControlCapabilities {
+		fireable commands : StartLoading, StopLoading
+		receivable events : LoadingStarted
+		raised alarms : TruckNotValid
+	}
+	providesOutcomes {
+		receivable responses LoadingAccepted
+	}
+}

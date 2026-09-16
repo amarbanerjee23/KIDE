@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.kide.sdk.feature"
+      label="KIDE Language Development Kit"
+      version="1.0.0.qualifier"
+      provider-name="KIDE">
+
+   <description url="https://github.com/amarbanerjee23/KIDE">
+      Optional. The MWE2 workflow and generator used to regenerate the KIDE
+      languages. Install this only if you change the grammars themselves.
+   </description>
+
+   <copyright>
+      Copyright (c) 2026 KIDE contributors.
+   </copyright>
+
+   <license url="https://www.eclipse.org/legal/epl-2.0/">
+      Eclipse Public License - v 2.0. See NOTICE.md for third-party components.
+   </license>
+
+   <requires>
+      <import feature="com.kide.feature" version="1.0.0" match="greaterOrEqual"/>
+   </requires>
+
+   <plugin id="com.dsep.dsl.generator" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+</feature>

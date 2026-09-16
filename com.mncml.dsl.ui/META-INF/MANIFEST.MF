@@ -22,7 +22,7 @@ Require-Bundle: com.mncml.dsl,
  com.mncml.dsl.ide,
  com.smr.activity.activity2mnc;bundle-version="1.0.0"
 Import-Package: org.apache.log4j
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.mncml.dsl.ui,
  com.mncml.dsl.ui.contentassist,
  com.mncml.dsl.ui.internal,

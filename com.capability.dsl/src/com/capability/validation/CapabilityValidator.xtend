@@ -109,22 +109,22 @@ class CapabilityValidator extends AbstractCapabilityValidator {
 				}
 				
 				if (!getCommandsFromAllInterfaces(interfaceDescriptions).containsAll(null)) {
-					error('Command is not a part of component interface description',
+					error("This command is not offered by the component interface this capability is declared against. Check the spelling, or add the command to the interface description first.",
 						MncModelPackage.Literals.ACTION__FIRE_COMMAND,
 						INVALID_CONTROL_CAPABILITIES_COMAND)
 				}
 				if (!getEventsFromAllInterfaces(interfaceDescriptions).containsAll(availableEvents)) {
-					error('Event is not a part of component interface description',
+					error("This event is not published by the component interface this capability is declared against. Check the spelling, or add the event to the interface description first.",
 						MncModelPackage.Literals.ACTION__PUBLISH_EVENT,
 						INVALID_CONTROL_CAPABILITIES_EVENT)
 				}
 				if (!getAlarmsFromAllInterfaces(interfaceDescriptions).containsAll(availableAlarms)) {
-					error('Alarm is not a part of component interface description',
+					error("This alarm is not raised by the component interface this capability is declared against. Check the spelling, or add the alarm to the interface description first.",
 						MncModelPackage.Literals.ACTION__RAISE_ALARM,
 						INVALID_CONTROL_CAPABILITIES_ALARM)
 				}
 				if (!getDataPointsFromAllInterfaces(interfaceDescriptions).containsAll(availableDataPoints)) {
-					error('Datapoint is not a part of component interface description',
+					error("This data point is not exposed by the component interface this capability is declared against. Check the spelling, or add the data point to the interface description first.",
 						MncModelPackage.Literals.ACTION__TRIGGER_DATA_POINT,
 						INVALID_CONTROL_CAPABILITIES_DATAPOINT)
 				}
@@ -142,22 +142,22 @@ class CapabilityValidator extends AbstractCapabilityValidator {
 		if (capability !== null) {
 			var interfaceDescriptions = capability.componentInterface
 			if (!getCommandsFromAllInterfaces(interfaceDescriptions).containsAll(controlCapability.commands)) {
-				error('Command is not a part of component interface description',
+				error("This command is not offered by the component interface this capability is declared against. Check the spelling, or add the command to the interface description first.",
 					CapabilityDescriptionPackage.Literals.CONTROL_CAPABILITIES__COMMANDS,
 					INVALID_CONTROL_CAPABILITIES_COMAND)
 			}
 			if (!getEventsFromAllInterfaces(interfaceDescriptions).containsAll(controlCapability.events)) {
-				error('Event is not a part of component interface description',
+				error("This event is not published by the component interface this capability is declared against. Check the spelling, or add the event to the interface description first.",
 					CapabilityDescriptionPackage.Literals.CONTROL_CAPABILITIES__EVENTS,
 					INVALID_CONTROL_CAPABILITIES_EVENT)
 			}
 			if (!getAlarmsFromAllInterfaces(interfaceDescriptions).containsAll(controlCapability.alarms)) {
-				error('Alarm is not a part of component interface description',
+				error("This alarm is not raised by the component interface this capability is declared against. Check the spelling, or add the alarm to the interface description first.",
 					CapabilityDescriptionPackage.Literals.CONTROL_CAPABILITIES__ALARMS,
 					INVALID_CONTROL_CAPABILITIES_ALARM)
 			}
 			if (!getDataPointsFromAllInterfaces(interfaceDescriptions).containsAll(controlCapability.dataPoints)) {
-				error('Datapoint is not a part of component interface description',
+				error("This data point is not exposed by the component interface this capability is declared against. Check the spelling, or add the data point to the interface description first.",
 					CapabilityDescriptionPackage.Literals.CONTROL_CAPABILITIES__DATA_POINTS,
 					INVALID_CONTROL_CAPABILITIES_DATAPOINT)
 			}

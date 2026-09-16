@@ -1,0 +1,17 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: %pluginName
+Bundle-Vendor: %providerName
+Bundle-SymbolicName: com.kide.branding;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: com.kide.branding.KideBrandingPlugin
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-Localization: plugin
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.core.resources,
+ org.eclipse.ui,
+ org.eclipse.ui.ide,
+ org.eclipse.ui.intro;resolution:=optional,
+ org.eclipse.ui.cheatsheets;resolution:=optional
+Automatic-Module-Name: com.kide.branding

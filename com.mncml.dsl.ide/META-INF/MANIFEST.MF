@@ -11,7 +11,7 @@ Require-Bundle: com.mncml,
  org.eclipse.xtext.xbase.ide,
  org.antlr.runtime;bundle-version="[3.2.0,3.2.1)",
  com.dml.dsl;bundle-version="1.0.0"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.mncml.dsl.ide,
  com.mncml.dsl.ide.contentassist.antlr,
  com.mncml.dsl.ide.contentassist.antlr.internal

@@ -13,7 +13,7 @@ Require-Bundle: com.operation.dsl,
  org.antlr.runtime;bundle-version="[3.2.0,3.2.1)",
  com.dml.dsl.ide;bundle-version="1.0.0",
  com.dml.dsl;bundle-version="1.0.0"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.operation.dsl.ide.contentassist.antlr.internal,
  com.operation.dsl.ide.contentassist.antlr
 

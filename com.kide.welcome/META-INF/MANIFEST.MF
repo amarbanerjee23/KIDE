@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Welcome
+Bundle-SymbolicName: com.kide.welcome;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Vendor: KIDE
+Require-Bundle: org.eclipse.ui,
+ org.eclipse.ui.intro,
+ org.eclipse.ui.cheatsheets
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Automatic-Module-Name: com.kide.welcome

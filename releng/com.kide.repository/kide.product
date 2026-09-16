@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?pde version="3.5"?>
+
+<product name="KIDE Modelling Studio" uid="com.kide.product" id="com.kide.branding.kide" application="org.eclipse.ui.ide.workbench" version="1.0.0.qualifier" type="features" includeLaunchers="true" autoIncludeRequirements="true">
+
+   <configIni use="default"/>
+
+   <launcherArgs>
+      <programArgs>-data @noDefault
+-perspective com.kide.branding.perspective
+      </programArgs>
+      <programArgsLin>--launcher.GTK_version 3
+-keyring @user.home/.eclipse_keyring
+      </programArgsLin>
+      <vmArgs>-Xms512m
+-Xmx2048m
+-XX:+UseG1GC
+-XX:MaxMetaspaceSize=768m
+-Dosgi.instance.area.default=@user.home/kide-workspace
+-Dosgi.requiredJavaVersion=11
+-Declipse.p2.unsignedPolicy=allow
+--add-modules=ALL-SYSTEM
+      </vmArgs>
+      <vmArgsMac>-XstartOnFirstThread
+-Dorg.eclipse.swt.internal.carbon.smallFonts
+      </vmArgsMac>
+   </launcherArgs>
+
+   <windowImages i16="/com.kide.branding/icons/kide16.png"
+                 i32="/com.kide.branding/icons/kide32.png"
+                 i48="/com.kide.branding/icons/kide48.png"
+                 i64="/com.kide.branding/icons/kide64.png"
+                 i128="/com.kide.branding/icons/kide128.png"
+                 i256="/com.kide.branding/icons/kide256.png"/>
+
+   <splash
+      location="com.kide.branding"
+      startupProgressRect="0,326,500,4"
+      startupMessageRect="40,292,420,20"
+      startupForegroundColor="FDFDFF"/>
+
+   <launcher name="kide">
+      <linux icon="/com.kide.branding/icons/kide256.xpm"/>
+      <macosx icon="/com.kide.branding/icons/kide.icns"/>
+      <win useIco="true">
+         <ico path="/com.kide.branding/icons/kide.ico"/>
+         <bmp/>
+      </win>
+   </launcher>
+
+   <vm>
+      <linux include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17</linux>
+      <macos include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17</macos>
+      <windows include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17</windows>
+   </vm>
+
+   <license>
+      <url>https://www.eclipse.org/legal/epl-2.0/</url>
+      <text>
+KIDE Modelling Studio is published under the Eclipse Public License 2.0.
+Third-party components keep their own licences; see NOTICE.md in the source
+repository for the full list.
+      </text>
+   </license>
+
+   <plugins/>
+
+   <features>
+      <feature id="com.kide.feature" installMode="root"/>
+      <feature id="com.kide.sdk.feature" installMode="root"/>
+      <feature id="org.eclipse.platform" installMode="root"/>
+      <feature id="org.eclipse.rcp" installMode="root"/>
+      <feature id="org.eclipse.help" installMode="root"/>
+      <feature id="org.eclipse.emf.sdk"/>
+      <feature id="org.eclipse.emf.compare"/>
+      <feature id="org.eclipse.emf.compare.ide.ui"/>
+      <feature id="org.eclipse.xtext.redist"/>
+      <feature id="org.eclipse.sirius.runtime"/>
+      <feature id="org.eclipse.sirius.runtime.ide.ui"/>
+      <feature id="org.eclipse.sirius.runtime.aql"/>
+      <feature id="org.eclipse.sirius.specifier"/>
+      <feature id="org.eclipse.sirius.specifier.ide.ui.aql"/>
+      <feature id="org.eclipse.equinox.p2.user.ui" installMode="root"/>
+   </features>
+
+   <configurations>
+      <plugin id="org.apache.felix.scr" autoStart="true" startLevel="2"/>
+      <plugin id="org.eclipse.core.runtime" autoStart="true" startLevel="0"/>
+      <plugin id="org.eclipse.equinox.common" autoStart="true" startLevel="2"/>
+      <plugin id="org.eclipse.equinox.event" autoStart="true" startLevel="2"/>
+      <plugin id="org.eclipse.equinox.simpleconfigurator" autoStart="true" startLevel="1"/>
+      <plugin id="com.kide.branding" autoStart="true" startLevel="4"/>
+      <plugin id="com.kide.welcome" autoStart="true" startLevel="4"/>
+      <property name="eclipse.buildId" value="1.0.0"/>
+      <property name="osgi.instance.area.default" value="@user.home/kide-workspace"/>
+      <property name="eclipse.p2.profile" value="KIDE"/>
+      <property name="eclipse.p2.data.area" value="@config.dir/../p2"/>
+   </configurations>
+
+   <preferencesInfo>
+      <targetfile overwrite="false"/>
+   </preferencesInfo>
+
+   <cssInfo/>
+
+</product>

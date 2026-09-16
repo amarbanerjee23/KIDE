@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+<template autoinsert="true" context="com.smr.activity.dsl.ActivityDiagram.ActivityDiagram" deleted="false"
+	description="An activity diagram with a first activity"
+	enabled="true" id="com.smr.activity.templates.activityDiagram" name="activityDiagram">ActivityDiagram ${name}
+has activities {
+	Activity ${firstActivity} {
+		description : "${what_it_does}"
+		requireCapability : ${capability}
+		time : 30.0 secs
+	}
+}${cursor}</template>
+<template autoinsert="true" context="com.smr.activity.dsl.ActivityDiagram.Activity" deleted="false"
+	description="An activity that uses a capability and hands over to the next one"
+	enabled="true" id="com.smr.activity.templates.activity" name="activity">Activity ${name} {
+	description : "${what_it_does}"
+	requireCapability : ${capability}
+	nextActivity : ${next}
+	time : 30.0 secs
+}${cursor}</template>
+<template autoinsert="true" context="com.smr.activity.dsl.ActivityDiagram.Activity" deleted="false"
+	description="An activity that branches on an outcome"
+	enabled="true" id="com.smr.activity.templates.conditionalActivity" name="conditionalActivity">Activity ${name} {
+	description : "${what_it_does}"
+	requireCapability : ${capability}
+	conditions {
+		from ${outcome} =&gt; nextActivity : ${next}
+	}
+}${cursor}</template>
+</templates>

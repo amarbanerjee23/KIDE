@@ -1,0 +1,114 @@
+/*
+ * KIDE Welcome page.
+ * Palette: ink #141822 / #1F2430, blue #5284E2, amber #E2982E, slate #8A95A8.
+ */
+
+body {
+	margin: 0;
+	padding: 0 0 48px 0;
+	background: #141822;
+	color: #E6EAF2;
+	font-family: "Segoe UI", "Inter", "Cantarell", sans-serif;
+	font-size: 14px;
+	line-height: 1.55;
+}
+
+#page {
+	max-width: 960px;
+	margin: 0 auto;
+	padding: 0 32px;
+}
+
+#header {
+	padding: 56px 0 24px 0;
+	border-bottom: 1px solid #232A38;
+	margin-bottom: 8px;
+}
+
+#header img#logo {
+	width: 72px;
+	height: 72px;
+}
+
+#header #title {
+	display: block;
+	font-size: 42px;
+	font-weight: 700;
+	color: #FDFDFF;
+	margin: 12px 0 6px 0;
+}
+
+#header #subtitle {
+	display: block;
+	font-size: 16px;
+	color: #8A95A8;
+	max-width: 620px;
+}
+
+.section-heading,
+#start-heading, #tours-heading, #learn-heading {
+	display: block;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 1.4px;
+	text-transform: uppercase;
+	color: #5284E2;
+	margin: 32px 0 14px 0;
+}
+
+.card, .primary-card {
+	display: block;
+	background: #1F2430;
+	border: 1px solid #262E3D;
+	border-left: 3px solid #5284E2;
+	border-radius: 8px;
+	padding: 16px 20px;
+	margin-bottom: 12px;
+	text-decoration: none;
+	color: #FDFDFF;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.primary-card {
+	border-left-color: #E2982E;
+	background: #232B3A;
+	font-size: 18px;
+}
+
+.card:hover, .primary-card:hover {
+	background: #27303F;
+	border-color: #5284E2;
+	cursor: pointer;
+}
+
+.card p, .primary-card p,
+.card text, .primary-card text {
+	display: block;
+	margin: 6px 0 0 0;
+	font-size: 13px;
+	font-weight: 400;
+	color: #8A95A8;
+}
+
+.link {
+	display: block;
+	padding: 10px 0;
+	color: #7FA5EA;
+	text-decoration: none;
+	font-weight: 600;
+	border-bottom: 1px solid #1F2430;
+}
+
+.link:hover {
+	color: #FDFDFF;
+	cursor: pointer;
+}
+
+.link p, .link text {
+	display: block;
+	margin: 2px 0 0 0;
+	font-weight: 400;
+	font-size: 13px;
+	color: #8A95A8;
+}

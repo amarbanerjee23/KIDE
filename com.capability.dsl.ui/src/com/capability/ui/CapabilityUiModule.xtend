@@ -3,11 +3,32 @@
  */
 package com.capability.ui
 
+import com.capability.ui.highlighting.CapabilityHighlightingConfiguration
+import com.capability.ui.highlighting.CapabilitySemanticHighlightingCalculator
+import com.capability.ui.hover.CapabilityEObjectHoverProvider
 import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
+import org.eclipse.xtext.ui.editor.hover.IEObjectHoverProvider
+import org.eclipse.xtext.ui.editor.syntaxcoloring.IHighlightingConfiguration
+import org.eclipse.xtext.ui.editor.syntaxcoloring.ISemanticHighlightingCalculator
 
 /**
  * Use this class to register components to be used within the Eclipse IDE.
  */
 @FinalFieldsConstructor
 class CapabilityUiModule extends AbstractCapabilityUiModule {
+
+	/** Colours for capability names, interface items and structural blocks. */
+	def Class<? extends IHighlightingConfiguration> bindIHighlightingConfiguration() {
+		CapabilityHighlightingConfiguration
+	}
+
+	/** Applies those colours to the elements the parser recognised. */
+	def Class<? extends ISemanticHighlightingCalculator> bindISemanticHighlightingCalculator() {
+		CapabilitySemanticHighlightingCalculator
+	}
+
+	/** Plain-language explanations when hovering an element. */
+	def Class<? extends IEObjectHoverProvider> bindIEObjectHoverProvider() {
+		CapabilityEObjectHoverProvider
+	}
 }

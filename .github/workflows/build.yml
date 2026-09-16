@@ -1,0 +1,49 @@
+name: Build KIDE
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # the build timestamp comes from git history
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Cache the p2 target platform
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/.cache/tycho
+          key: tycho-${{ hashFiles('releng/com.kide.target/com.kide.target.target') }}
+          restore-keys: tycho-
+
+      - name: Build
+        run: mvn clean verify
+
+      - name: Upload update site
+        uses: actions/upload-artifact@v4
+        with:
+          name: kide-p2-repository
+          path: releng/com.kide.repository/target/repository
+          retention-days: 14
+
+      - name: Upload products
+        uses: actions/upload-artifact@v4
+        with:
+          name: kide-products
+          path: |
+            releng/com.kide.repository/target/products/*.zip
+            releng/com.kide.repository/target/products/*.tar.gz
+          retention-days: 14

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature id="com.kide.feature">
+      <category name="com.kide.category.tools"/>
+   </feature>
+   <feature id="com.kide.sdk.feature">
+      <category name="com.kide.category.sdk"/>
+   </feature>
+   <category-def name="com.kide.category.tools" label="KIDE Modelling Tools">
+      <description>
+         The KIDE languages, editors, diagrams and transformations. Install this.
+      </description>
+   </category-def>
+   <category-def name="com.kide.category.sdk" label="KIDE Language Development Kit">
+      <description>
+         Optional tooling for changing the KIDE grammars themselves.
+      </description>
+   </category-def>
+</site>

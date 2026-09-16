@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension id="kide" point="org.eclipse.core.runtime.products">
+      <product application="org.eclipse.ui.ide.workbench" name="%productName">
+         <property name="appName" value="KIDE Modelling Studio"/>
+         <property name="aboutText" value="%productBlurb"/>
+         <property name="aboutImage" value="icons/about.png"/>
+         <property name="windowImages"
+                   value="icons/kide16.png,icons/kide32.png,icons/kide48.png,icons/kide64.png,icons/kide128.png,icons/kide256.png"/>
+         <property name="startupForegroundColor" value="FDFDFF"/>
+         <property name="startupMessageRect" value="40,292,420,20"/>
+         <property name="startupProgressRect" value="0,326,500,4"/>
+         <property name="preferenceCustomization" value="plugin_customization.ini"/>
+         <property name="applicationCSSResources" value="platform:/plugin/com.kide.branding/icons/"/>
+         <property name="cssTheme" value="com.kide.branding.theme.light"/>
+      </product>
+   </extension>
+
+   <extension point="org.eclipse.ui.perspectives">
+      <perspective
+            class="com.kide.branding.KidePerspectiveFactory"
+            icon="icons/kide16.png"
+            id="com.kide.branding.perspective"
+            name="%perspectiveName"/>
+   </extension>
+
+   <extension point="org.eclipse.ui.newWizards">
+      <category id="com.kide.branding.wizards" name="%categoryName"/>
+      <wizard
+            category="com.kide.branding.wizards"
+            class="com.kide.branding.wizards.NewKideProjectWizard"
+            icon="icons/kide16.png"
+            id="com.kide.branding.wizards.newProject"
+            name="%newProjectWizardName"
+            project="true">
+         <description>%newProjectWizardDescription</description>
+      </wizard>
+   </extension>
+
+   <extension point="org.eclipse.ui.preferencePages">
+      <page
+            class="com.kide.branding.preferences.KidePreferencePage"
+            id="com.kide.branding.preferences"
+            name="%preferencePageName"/>
+   </extension>
+
+   <extension point="org.eclipse.e4.ui.css.swt.theme">
+      <theme
+            basestylesheeturi="css/kide-light.css"
+            id="com.kide.branding.theme.light"
+            label="%themeLightName"/>
+      <theme
+            basestylesheeturi="css/kide-dark.css"
+            id="com.kide.branding.theme.dark"
+            label="%themeDarkName"/>
+   </extension>
+
+</plugin>

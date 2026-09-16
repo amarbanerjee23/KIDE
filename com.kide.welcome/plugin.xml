@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension point="org.eclipse.ui.intro">
+      <intro class="org.eclipse.ui.intro.config.CustomizableIntroPart" id="com.kide.welcome.intro"/>
+      <introProductBinding introId="com.kide.welcome.intro" productId="com.kide.branding.kide"/>
+   </extension>
+
+   <extension point="org.eclipse.ui.intro.config">
+      <config content="intro/introContent.xml" id="com.kide.welcome.introConfig" introId="com.kide.welcome.intro">
+         <presentation home-page-id="root">
+            <implementation kind="html" style="intro/css/welcome.css"/>
+         </presentation>
+      </config>
+   </extension>
+
+   <extension point="org.eclipse.ui.cheatsheets.cheatSheetContent">
+      <category id="com.kide.welcome.tours" name="KIDE guided tours"/>
+      <cheatsheet
+            category="com.kide.welcome.tours"
+            contentFile="cheatsheets/tour-first-model.xml"
+            id="com.kide.welcome.tour.firstModel"
+            name="1 - Write your first capability model">
+         <description>Create a .cap file, use content assist and read the live validation feedback.</description>
+      </cheatsheet>
+      <cheatsheet
+            category="com.kide.welcome.tours"
+            contentFile="cheatsheets/tour-activity-to-mnc.xml"
+            id="com.kide.welcome.tour.activityToMnc"
+            name="2 - From activities to an MNC model">
+         <description>Describe an activity flow and run the activity2mnc transformation.</description>
+      </cheatsheet>
+      <cheatsheet
+            category="com.kide.welcome.tours"
+            contentFile="cheatsheets/tour-diagrams.xml"
+            id="com.kide.welcome.tour.diagrams"
+            name="3 - Open and read the Sirius diagrams">
+         <description>Open the example representations and learn the KIDE visual language.</description>
+      </cheatsheet>
+   </extension>
+
+</plugin>

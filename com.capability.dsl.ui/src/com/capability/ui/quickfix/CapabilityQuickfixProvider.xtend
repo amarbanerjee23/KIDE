@@ -3,22 +3,49 @@
  */
 package com.capability.ui.quickfix
 
+import com.capability.validation.CapabilityValidator
 import org.eclipse.xtext.ui.editor.quickfix.DefaultQuickfixProvider
+import org.eclipse.xtext.ui.editor.quickfix.Fix
+import org.eclipse.xtext.ui.editor.quickfix.IssueResolutionAcceptor
+import org.eclipse.xtext.validation.Issue
 
 /**
- * Custom quickfixes.
+ * One-click repairs for the problems the capability validator reports.
  *
- * See https://www.eclipse.org/Xtext/documentation/310_eclipse_support.html#quick-fixes
+ * Every item listed in a capability must exist in the component interface the
+ * capability is declared against. When it does not, the quickest honest fix is
+ * to drop the item, so that is what is offered here.
  */
 class CapabilityQuickfixProvider extends DefaultQuickfixProvider {
 
-//	@Fix(CapabilityValidator.INVALID_NAME)
-//	def capitalizeName(Issue issue, IssueResolutionAcceptor acceptor) {
-//		acceptor.accept(issue, 'Capitalize name', 'Capitalize the name.', 'upcase.png') [
-//			context |
-//			val xtextDocument = context.xtextDocument
-//			val firstLetter = xtextDocument.get(issue.offset, 1)
-//			xtextDocument.replace(issue.offset, 1, firstLetter.toUpperCase)
-//		]
-//	}
+	@Fix(CapabilityValidator.INVALID_CONTROL_CAPABILITIES_COMAND)
+	def removeUnknownCommand(Issue issue, IssueResolutionAcceptor acceptor) {
+		acceptor.removeIssueText(issue, 'Remove this command',
+			'The component interface does not offer this command, so remove it from the capability.')
+	}
+
+	@Fix(CapabilityValidator.INVALID_CONTROL_CAPABILITIES_EVENT)
+	def removeUnknownEvent(Issue issue, IssueResolutionAcceptor acceptor) {
+		acceptor.removeIssueText(issue, 'Remove this event',
+			'The component interface does not publish this event, so remove it from the capability.')
+	}
+
+	@Fix(CapabilityValidator.INVALID_CONTROL_CAPABILITIES_ALARM)
+	def removeUnknownAlarm(Issue issue, IssueResolutionAcceptor acceptor) {
+		acceptor.removeIssueText(issue, 'Remove this alarm',
+			'The component interface does not raise this alarm, so remove it from the capability.')
+	}
+
+	@Fix(CapabilityValidator.INVALID_CONTROL_CAPABILITIES_DATAPOINT)
+	def removeUnknownDataPoint(Issue issue, IssueResolutionAcceptor acceptor) {
+		acceptor.removeIssueText(issue, 'Remove this data point',
+			'The component interface does not expose this data point, so remove it from the capability.')
+	}
+
+	private def void removeIssueText(IssueResolutionAcceptor acceptor, Issue issue, String label,
+		String description) {
+		acceptor.accept(issue, label, description, null) [ context |
+			context.xtextDocument.replace(issue.offset, issue.length, '')
+		]
+	}
 }

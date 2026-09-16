@@ -3,17 +3,35 @@
  */
 package com.smr.activity.dsl.ui
 
-import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
+import com.smr.activity.dsl.ui.highlighting.ActivityDiagramHighlightingConfiguration
+import com.smr.activity.dsl.ui.highlighting.ActivityDiagramSemanticHighlightingCalculator
+import com.smr.activity.dsl.ui.hover.ActivityDiagramEObjectHoverProvider
 import org.eclipse.ui.plugin.AbstractUIPlugin
+import org.eclipse.xtext.ui.editor.hover.IEObjectHoverProvider
+import org.eclipse.xtext.ui.editor.syntaxcoloring.IHighlightingConfiguration
+import org.eclipse.xtext.ui.editor.syntaxcoloring.ISemanticHighlightingCalculator
 
 /**
  * Use this class to register components to be used within the Eclipse IDE.
  */
-
 class ActivityDiagramUiModule extends AbstractActivityDiagramUiModule {
-	
+
 	new(AbstractUIPlugin plugin) {
 		super(plugin)
 	}
-	
+
+	/** Colours for activity names, required capabilities and data parameters. */
+	def Class<? extends IHighlightingConfiguration> bindIHighlightingConfiguration() {
+		ActivityDiagramHighlightingConfiguration
+	}
+
+	/** Applies those colours to the elements the parser recognised. */
+	def Class<? extends ISemanticHighlightingCalculator> bindISemanticHighlightingCalculator() {
+		ActivityDiagramSemanticHighlightingCalculator
+	}
+
+	/** Plain-language explanations when hovering an activity. */
+	def Class<? extends IEObjectHoverProvider> bindIEObjectHoverProvider() {
+		ActivityDiagramEObjectHoverProvider
+	}
 }
