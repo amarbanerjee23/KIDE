@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature id="com.kide.languageserver.feature">
+      <category name="com.kide.category.languageserver"/>
+   </feature>
+   <category-def name="com.kide.category.languageserver" label="KIDE Language Server">
+      <description>
+         Headless Language Server Protocol runtime for the production KIDE DSLs.
+      </description>
+   </category-def>
+</site>
