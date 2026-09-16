@@ -9,7 +9,6 @@ import org.eclipse.xtext.nodemodel.util.NodeModelUtils;
 import org.eclipse.xtext.resource.XtextResource;
 import org.eclipse.xtext.ui.editor.syntaxcoloring.IHighlightedPositionAcceptor;
 import org.eclipse.xtext.ui.editor.syntaxcoloring.ISemanticHighlightingCalculator;
-import org.eclipse.xtext.util.CancelIndicator;
 
 import CapabilityDescription.Capability;
 import CapabilityDescription.ControlCapabilities;
@@ -18,20 +17,21 @@ import CapabilityDescription.CapabilitiesOutcome;
 /**
  * Highlights the elements that carry meaning while reading a capability:
  * the capability name, and the control capability / outcome blocks.
+ *
+ * This implementation deliberately uses the two-argument
+ * ISemanticHighlightingCalculator contract provided by the Xtext 2.25 target
+ * platform used by KIDE. Cancellation-aware highlighting was introduced through
+ * a newer API and must not leak into bundles that are compiled against 2.25.
  */
 public class CapabilitySemanticHighlightingCalculator implements ISemanticHighlightingCalculator {
 
 	@Override
-	public void provideHighlightingFor(XtextResource resource, IHighlightedPositionAcceptor acceptor,
-			CancelIndicator cancelIndicator) {
+	public void provideHighlightingFor(XtextResource resource, IHighlightedPositionAcceptor acceptor) {
 		if (resource == null || resource.getParseResult() == null) {
 			return;
 		}
 		Iterator<EObject> contents = resource.getAllContents();
 		while (contents.hasNext()) {
-			if (cancelIndicator != null && cancelIndicator.isCanceled()) {
-				return;
-			}
 			EObject element = contents.next();
 			if (element instanceof Capability) {
 				highlightFeature(element, "name", CapabilityHighlightingConfiguration.CAPABILITY_NAME_ID, acceptor);
