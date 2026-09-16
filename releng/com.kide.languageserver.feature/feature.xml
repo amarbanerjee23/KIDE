@@ -19,6 +19,14 @@
    <plugin id="com.mncml.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.operation.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.smr.activity.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+
+   <!-- Xtext 2.25 declares LSP4J optional because the same IDE bundle can be
+        used without an LSP server. KIDE's headless ServerModule uses it
+        unconditionally, so the product feature must make these runtime bundles
+        explicit instead of relying on optional dependency closure. -->
+   <plugin id="org.eclipse.lsp4j" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="org.eclipse.lsp4j.jsonrpc" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+
    <!-- Product configuration starts this bundle at level 1, so it must be part of
         the headless feature closure rather than being supplied incidentally by
         Eclipse UI/platform features. -->
