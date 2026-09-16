@@ -1,11 +1,12 @@
 package com.kide.enterprise.context.ui;
 
+import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
@@ -249,11 +250,7 @@ public final class EnterpriseContextPreferencePage extends PreferencePage implem
 
     private static Path projectPath(IProject project) {
         try {
-            if (project == null) {
-                return null;
-            }
-            IPath location = project.getLocation();
-            return location == null ? null : location.toFile().toPath().toAbsolutePath().normalize();
+            return project == null ? null : localFilePath(project.getLocationURI());
         } catch (RuntimeException e) {
             return null;
         }
@@ -262,8 +259,18 @@ public final class EnterpriseContextPreferencePage extends PreferencePage implem
     private static Path workspacePath() {
         try {
             IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-            IPath location = root.getLocation();
-            return location == null ? null : location.toFile().toPath().toAbsolutePath().normalize();
+            return localFilePath(root.getLocationURI());
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    private static Path localFilePath(URI location) {
+        if (location == null || !"file".equalsIgnoreCase(location.getScheme())) {
+            return null;
+        }
+        try {
+            return Paths.get(location).toAbsolutePath().normalize();
         } catch (RuntimeException e) {
             return null;
         }
