@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.Map;
 
@@ -63,7 +62,9 @@ public class EnterpriseContextStoreTest {
             assertEquals(first.workspace().id(), renamed.workspace().id());
 
             Path moved = root.resolve("project-moved");
-            Files.move(project, moved, StandardCopyOption.ATOMIC_MOVE);
+            // This test validates identity independence from filesystem paths, not
+            // whether the host filesystem implements atomic directory renames.
+            Files.move(project, moved);
             EnterpriseContext afterMove = ready(store.load(workspace, moved));
             assertEquals(first.organization().id(), afterMove.organization().id());
             assertEquals(first.portfolio().id(), afterMove.portfolio().id());
