@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Enterprise Context Tests
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.enterprise.context.tests
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Require-Bundle: com.kide.enterprise.context;bundle-version="1.0.0",
+ org.junit;bundle-version="[4.12.0,5.0.0)"
