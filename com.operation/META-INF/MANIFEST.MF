@@ -13,6 +13,5 @@ Export-Package: operationsDescription,
  operationsDescription.util
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.emf.ecore;visibility:=reexport,
- com.dml;visibility:=reexport,
- com.mncml;visibility:=reexport
+ com.dml;visibility:=reexport
 Bundle-ActivationPolicy: lazy
