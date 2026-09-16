@@ -7,5 +7,6 @@ Bundle-SymbolicName: com.kide.enterprise.configuration;singleton:=true
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Automatic-Module-Name: com.kide.enterprise.configuration
-Require-Bundle: org.eclipse.equinox.security
+Require-Bundle: org.eclipse.equinox.registry,
+ org.eclipse.equinox.security
 Export-Package: com.kide.enterprise.configuration
