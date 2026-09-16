@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?pde version="3.5"?>
 
-<product name="KIDE Modelling Studio" uid="com.kide.product" id="com.kide.branding.kide" application="org.eclipse.ui.ide.workbench" version="1.0.0.qualifier" type="features" includeLaunchers="true" autoIncludeRequirements="true">
+<product name="KIDE Modelling Studio" uid="com.kide.product" id="com.kide.branding.kide" application="org.eclipse.ui.ide.workbench" version="1.0.0.qualifier" type="features" includeLaunchers="true" includeJRE="true" autoIncludeRequirements="true">
 
    <configIni use="default"/>
 
@@ -48,6 +48,11 @@
       </win>
    </launcher>
 
+   <!--
+      The entries below are used by PDE launch configurations. The distributable
+      product runtime itself is supplied by includeJRE="true" and the pinned
+      JustJ repository in releng/com.kide.repository/pom.xml.
+   -->
    <vm>
       <linux include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17</linux>
       <macos include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17</macos>
