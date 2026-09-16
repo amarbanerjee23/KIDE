@@ -51,6 +51,11 @@ jobs:
           python3 scripts/prepare_desktop_release.py \
             --products releng/com.kide.repository/target/products
 
+      - name: Smoke-test packaged enterprise context runtime
+        run: |
+          python3 scripts/smoke_enterprise_context.py \
+            --products releng/com.kide.repository/target/products
+
       - name: Smoke-test headless multi-DSL language server
         run: |
           python3 scripts/smoke_language_server.py \
