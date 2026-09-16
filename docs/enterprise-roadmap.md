@@ -60,7 +60,7 @@ Every production candidate must eventually prove:
 | E20 | Connector and extension SDK | Stable versioned APIs for SCM, work management, security and organization extensions |
 | E21 | Enterprise qualification | Upgrade/failover/load/security/offline/compatibility qualification and release acceptance suite |
 
-## Completed baseline: E01
+## Completed baseline: E01-E02
 
 E01 established the non-negotiable distribution baseline:
 
@@ -73,9 +73,7 @@ E01 established the non-negotiable distribution baseline:
 - Release artifacts use stable customer-facing names and include SHA-256
   checksums plus a machine-readable release manifest.
 
-## Current phase: E02
-
-E02 makes the E01 bytes trustworthy and independently verifiable:
+E02 made those bytes trustworthy and independently verifiable:
 
 - every external GitHub Action is pinned to a full immutable commit SHA and CI
   rejects mutable action tags;
@@ -90,5 +88,26 @@ E02 makes the E01 bytes trustworthy and independently verifiable:
 - GitHub build-provenance attestations bind the published artifacts to the
   release workflow identity.
 
-E03 must preserve these controls and move enterprise configuration/secrets out
-of project/workspace files and into layered, reference-based configuration.
+## Current phase: E03
+
+E03 introduces one configuration/security contract for later enterprise features:
+
+- deterministic precedence is defaults → installation → user → workspace →
+  project, with provenance retained for every winning value;
+- sensitive configuration keys must contain `secret://` references rather than
+  credential literals;
+- `secret://secure/<alias>` stores encrypted values through Equinox secure
+  storage and `secret://env/<NAME>` supports externally provisioned runtime
+  credentials;
+- unknown secret providers and unavailable secret aliases fail closed;
+- normal configuration APIs never return resolved secret material;
+- resolved secrets are short-lived, redacted and wipe their internal character
+  arrays when closed;
+- a Tycho Eclipse test plug-in qualifies precedence, provenance, secret-literal
+  rejection, secret API separation and reference parsing;
+- the bundle is shipped in the desktop product while all E01/E02 build,
+  packaging and release controls remain mandatory.
+
+E04 must preserve these controls and add stable organization, portfolio, project
+and workspace identities/metadata without using filesystem paths or display names
+as security identities.
