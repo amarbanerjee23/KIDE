@@ -63,6 +63,9 @@
     <module>com.kide.enterprise.configuration</module>
     <module>com.kide.enterprise.configuration.ui</module>
     <module>com.kide.enterprise.configuration.tests</module>
+    <module>com.kide.enterprise.context</module>
+    <module>com.kide.enterprise.context.ui</module>
+    <module>com.kide.enterprise.context.tests</module>
     <module>releng</module>
   </modules>
 
