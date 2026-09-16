@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Properties;
 
 import org.junit.Test;
 
@@ -127,14 +128,17 @@ public class EnterpriseContextStoreTest {
             Path workspace = Files.createDirectories(root.resolve("workspace"));
             Path project = Files.createDirectories(root.resolve("project"));
             EnterpriseContextStore store = new EnterpriseContextStore();
-            EnterpriseContext original = ready(store.provision(workspace, project,
-                    "Org", "Portfolio", "Project", "Workspace"));
+            ready(store.provision(workspace, project, "Org", "Portfolio", "Project", "Workspace"));
 
             Path binding = workspace.resolve(EnterpriseContextStore.WORKSPACE_DESCRIPTOR);
-            String text = Files.readString(binding, StandardCharsets.UTF_8);
-            String wrongProject = "kide:project:00000000-0000-0000-0000-000000000001";
-            text = text.replace(original.project().id().value(), wrongProject);
-            Files.writeString(binding, text, StandardCharsets.UTF_8);
+            Properties properties = new Properties();
+            try (java.io.BufferedReader reader = Files.newBufferedReader(binding, StandardCharsets.UTF_8)) {
+                properties.load(reader);
+            }
+            properties.setProperty("project.id", "kide:project:00000000-0000-0000-0000-000000000001");
+            try (java.io.BufferedWriter writer = Files.newBufferedWriter(binding, StandardCharsets.UTF_8)) {
+                properties.store(writer, "E04 binding mismatch qualification");
+            }
 
             EnterpriseContextResult invalid = store.load(workspace, project);
             assertEquals(ContextStatus.INVALID, invalid.status());
