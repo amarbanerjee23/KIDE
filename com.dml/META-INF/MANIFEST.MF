@@ -11,7 +11,6 @@ Export-Package: dataModelPackage,
  dataModelPackage.impl,
  dataModelPackage.util
 Require-Bundle: org.eclipse.core.runtime,
- org.eclipse.emf.ecore;visibility:=reexport,
- com.mncml;visibility:=reexport
+ org.eclipse.emf.ecore;visibility:=reexport
 Bundle-ActivationPolicy: lazy
 Automatic-Module-Name: com.dml
