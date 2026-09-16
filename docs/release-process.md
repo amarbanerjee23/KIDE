@@ -1,6 +1,8 @@
 # Release process
 
-A release is a tag. Everything else is automated.
+A production release is a tag or an explicitly dispatched version. The trusted
+release workflow is fail-closed: if any required signing or notarisation
+credential is unavailable, no production release is published.
 
 ## Versioning
 
@@ -17,7 +19,8 @@ timestamp.
 
 ## Steps
 
-1. **Freeze.** Confirm the `Build KIDE` workflow is green on `main`.
+1. **Freeze.** Confirm the `Build KIDE` workflow is green on `main`. The build
+   also enforces immutable commit-SHA pins for every external GitHub Action.
 2. **Set versions.**
 
    ```bash
@@ -36,17 +39,25 @@ timestamp.
 
    Then actually start the product from
    `releng/com.kide.repository/target/products/` and run the smoke test.
-5. **Commit and tag.**
+5. **Confirm protected release credentials.** All E02 secrets in the table below
+   must be configured in GitHub before a production tag is pushed.
+6. **Commit and tag.**
 
    ```bash
    git commit -am "Release 1.1.0"
    git tag -a v1.1.0 -m "KIDE 1.1.0"
    git push && git push --tags
    ```
-6. **Watch the release workflow.** It builds, signs when signing secrets exist,
-   uploads archives with checksums and publishes the update site to GitHub Pages
-   under `/updates`.
-7. **Reopen development.** Set the next `-SNAPSHOT` version and add an empty
+7. **Watch the release workflow.** It signs Eclipse bundles, Authenticode-signs
+   the Windows launcher, Developer-ID-signs and notarises both macOS products,
+   staples the Apple tickets, recomputes evidence from the final bytes, emits a
+   CycloneDX SBOM, creates GitHub build-provenance attestations, publishes the
+   immutable release, and updates the p2 update site.
+8. **Verify the published evidence.** Check `SHA256SUMS.txt`,
+   `release-manifest.json`, and the CycloneDX SBOM against the downloaded files.
+   Verify GitHub artifact attestations with GitHub's attestation tooling before
+   mirroring artifacts to another repository.
+9. **Reopen development.** Set the next `-SNAPSHOT` version and add an empty
    *Unreleased* section.
 
 ## Smoke test before every release
@@ -76,12 +87,25 @@ decision, never a drive-by change:
 - Bump it in its own pull request, run the full smoke test, and note it in the
   changelog under *Changed*.
 
-## Signing
+## Protected release credentials
+
+The production workflow will not downgrade to an unsigned release. Store these
+as protected GitHub Actions secrets and restrict who can trigger the release
+environment.
 
 | Secret | Meaning |
 | --- | --- |
-| `KIDE_KEYSTORE_PATH` | path to the keystore on the runner |
-| `KIDE_KEY_ALIAS` | key alias |
-| `KIDE_KEYSTORE_PASSWORD` | keystore password |
+| `KIDE_JAR_KEYSTORE_BASE64` | base64-encoded Java signing keystore used by Maven jarsigner |
+| `KIDE_KEY_ALIAS` | Java signing key alias |
+| `KIDE_KEYSTORE_PASSWORD` | Java signing keystore password |
+| `WINDOWS_CERTIFICATE_BASE64` | base64-encoded Authenticode PFX/P12 certificate |
+| `WINDOWS_CERTIFICATE_PASSWORD` | Windows code-signing certificate password |
+| `APPLE_SIGNING_CERT_BASE64` | base64-encoded Developer ID Application P12 certificate |
+| `APPLE_SIGNING_CERT_PASSWORD` | Developer ID certificate password |
+| `APPLE_SIGNING_IDENTITY` | exact `Developer ID Application: ...` codesign identity |
+| `APPLE_ID` | Apple account used by `notarytool` |
+| `APPLE_APP_PASSWORD` | Apple app-specific password for notarisation |
+| `APPLE_TEAM_ID` | Apple Developer team identifier |
 
-Without them the release is still produced, clearly marked as unsigned.
+Certificate material is decoded only into runner-temporary storage. It is never
+written to the repository, workspace metadata, release archives, or logs.
