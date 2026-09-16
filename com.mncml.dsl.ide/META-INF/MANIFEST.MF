@@ -6,7 +6,8 @@ Bundle-Vendor: My Company
 Bundle-Version: 1.0.0.qualifier
 Bundle-SymbolicName: com.mncml.dsl.ide; singleton:=true
 Bundle-ActivationPolicy: lazy
-Require-Bundle: com.mncml,
+Require-Bundle: com.mncml.dsl,
+ com.mncml,
  org.eclipse.xtext.ide,
  org.eclipse.xtext.xbase.ide,
  org.antlr.runtime;bundle-version="[3.2.0,3.2.1)",
@@ -16,4 +17,3 @@ Export-Package: com.mncml.dsl.ide,
  com.mncml.dsl.ide.contentassist.antlr,
  com.mncml.dsl.ide.contentassist.antlr.internal
 Import-Package: com.mncml.dsl.services
-
