@@ -18,7 +18,11 @@ The registry is constructed explicitly from these generated `IdeSetup` classes b
 
 ## Runtime contract
 
-`com.kide.languageserver` is a headless Equinox application. The packaged launcher is `kide-languageserver` (`kide-languageserver.exe` on Windows). JSON-RPC/LSP uses standard input and standard output, which is the transport expected by a future Theia language client.
+`com.kide.languageserver` is a headless Equinox application. JSON-RPC/LSP uses standard input and standard output, which is the transport expected by a future Theia language client.
+
+The product still materializes the normal Eclipse native launchers, but the supported server/container entrypoint on Linux is `kide-languageserver-headless`. That wrapper starts Equinox directly through the packaged `org.eclipse.equinox.launcher` JAR using KIDE's embedded JustJ Java runtime. It deliberately bypasses the GTK native launcher, so it does not require X11, Wayland, Xvfb, or a desktop session. CI removes `DISPLAY` and `WAYLAND_DISPLAY` before starting it to enforce that contract.
+
+The native Windows launcher remains `kide-languageserver.exe`. Native launchers can still be used on interactive desktop hosts; automation on Linux should use the display-free wrapper.
 
 Xtext's server implementation owns document synchronization, diagnostics, workspace folders, completion/navigation services exposed by each language, and the LSP shutdown/exit lifecycle. KIDE adds deterministic multi-language registration and distribution packaging around that implementation.
 
@@ -26,10 +30,11 @@ Xtext's server implementation owns document synchronization, diagnostics, worksp
 
 Pull-request CI materializes the language-server product independently from the desktop KIDE product and then performs a protocol smoke test. The smoke test:
 
-1. starts the packaged Linux launcher;
-2. initializes it with a workspace folder;
-3. opens an intentionally invalid document for every production extension;
-4. requires non-empty diagnostics from every language provider; and
-5. performs a clean LSP `shutdown` / `exit` sequence.
+1. requires the packaged Linux `kide-languageserver-headless` wrapper to exist and be executable;
+2. removes X11/Wayland display variables and starts the server through its embedded Java runtime;
+3. initializes it with a workspace folder;
+4. opens an intentionally invalid document for every production extension;
+5. requires non-empty diagnostics from every language provider; and
+6. performs a clean LSP `shutdown` / `exit` sequence.
 
-This gate proves that the packaged product can serve every production DSL without Eclipse UI bundles. W03 will add deeper Eclipse-versus-LSP feature parity tests.
+This gate proves that the packaged product can serve every production DSL without Eclipse UI bundles or a graphical display. W03 will add deeper Eclipse-versus-LSP feature parity tests.
