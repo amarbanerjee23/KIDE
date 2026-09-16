@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 LANGUAGES = ("dml", "cap", "mncspec", "op", "activity")
+HEADLESS_LINUX_LAUNCHER = "kide-languageserver-headless"
 
 
 class SmokeFailure(RuntimeError):
@@ -48,6 +49,10 @@ class JsonRpcPeer:
                 break
             if predicate(message):
                 return message
+        if self.process.poll() is not None:
+            raise SmokeFailure(
+                f"language server exited with status {self.process.returncode} while waiting for {description}"
+            )
         raise SmokeFailure(f"timed out waiting for {description}")
 
     def _read_loop(self) -> None:
@@ -80,7 +85,7 @@ class JsonRpcPeer:
 def find_linux_launcher(products: Path) -> Path:
     candidates = [
         path
-        for path in products.rglob("kide-languageserver")
+        for path in products.rglob(HEADLESS_LINUX_LAUNCHER)
         if path.is_file()
         and "linux" in {part.lower() for part in path.parts}
         and os.access(path, os.X_OK)
@@ -88,7 +93,10 @@ def find_linux_launcher(products: Path) -> Path:
     ]
     if len(candidates) != 1:
         rendered = ", ".join(str(path) for path in candidates) or "none"
-        raise SmokeFailure(f"expected exactly one Linux language-server launcher, found: {rendered}")
+        raise SmokeFailure(
+            "expected exactly one executable display-free Linux language-server launcher "
+            f"named {HEADLESS_LINUX_LAUNCHER!r}, found: {rendered}"
+        )
     return candidates[0]
 
 
@@ -105,6 +113,11 @@ def run_smoke(products: Path) -> None:
     with tempfile.TemporaryDirectory(prefix="kide-lsp-") as temp_dir:
         workspace = Path(temp_dir).resolve()
         stderr_log = workspace / "server-stderr.log"
+        environment = os.environ.copy()
+        # This is intentional: the qualification must prove the packaged entrypoint
+        # is independent of X11/Wayland rather than inheriting a runner display.
+        environment.pop("DISPLAY", None)
+        environment.pop("WAYLAND_DISPLAY", None)
         with stderr_log.open("wb") as stderr_stream:
             process = subprocess.Popen(
                 [str(launcher)],
@@ -112,6 +125,7 @@ def run_smoke(products: Path) -> None:
                 stdout=subprocess.PIPE,
                 stderr=stderr_stream,
                 cwd=workspace,
+                env=environment,
             )
             peer = JsonRpcPeer(process)
             try:
