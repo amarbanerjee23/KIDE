@@ -6,6 +6,10 @@
    <configIni use="default"/>
 
    <launcherArgs>
+      <!-- The native Eclipse launcher otherwise attempts to initialise the GTK
+           splash path on Linux before the headless Equinox application starts. -->
+      <programArgs>-nosplash
+      </programArgs>
       <vmArgs>-Xms128m
 -Xmx1024m
 -XX:+UseG1GC
