@@ -1,5 +1,5 @@
 """
-Live Supervisory Controller Simulation & Hardware-in-the-Loop Gateway (PhD Requirements 31, 35, 37, 45).
+Live Supervisory Controller Simulation & Hardware-in-the-Loop Gateway (Enterprise Specifications 31, 35, 37, 45).
 Provides interactive state machine execution, real-time WebSocket telemetry streaming,
 HIL protocol driver bridging (Modbus-TCP, MQTT, OPC-UA), breakpoint debugging,
 and historical time-series telemetry buffering with automated threshold anomaly detection.

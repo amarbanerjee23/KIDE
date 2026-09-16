@@ -4,7 +4,7 @@ export interface CatalogItem {
   id: string;
   name: string;
   category: string;
-  thesis_reference: string;
+  specification_reference?: string;
   description: string;
   tags: string[];
   devices: string[];
@@ -21,7 +21,7 @@ export interface KnowledgeGraphNode {
   name: string;
   type: string;
   category: string;
-  thesis_reference?: string;
+  specification_reference?: string;
   source_file?: string;
   properties?: Record<string, any>;
 }
@@ -48,7 +48,7 @@ export interface CapabilityMatch {
   catalog_id: string;
   system_name: string;
   category: string;
-  thesis_reference: string;
+  specification_reference?: string;
   score: number;
   devices: string[];
   capabilities: Array<{
@@ -76,7 +76,7 @@ export interface StoreSummary {
     id: string;
     name: string;
     category: string;
-    thesis_reference: string;
+    specification_reference?: string;
     description: string;
     devices: string[];
     file_count: number;
@@ -88,7 +88,7 @@ export interface StoreEntity {
   name: string;
   type: string;
   category: string;
-  thesis_reference?: string;
+  specification_reference?: string;
   source_file?: string;
   properties?: Record<string, any>;
   content_preview?: string;

@@ -41,7 +41,7 @@ def _extract_parameters(item: Any) -> List[Dict[str, Any]]:
 
 def synthesize(activity_diagram: Dict[str, Any], kb: Optional[Dict[str, Any]] = None) -> SynthesizedBlocks:
     """
-    Faithfully implements the thesis synthesis algorithm from:
+    Faithfully implements the formal supervisory synthesis algorithm from:
     - GenerateMnCDesignFromActivityDiagram.xtend
     - MncProvider.xtend
     - ECREGeneratorUtils.xtend

@@ -97,7 +97,7 @@ class CustomGeneratorEngine:
         {
             "id": "mnc",
             "name": "MNC-ML Formal Spec",
-            "description": "Synthesized formal M&CML specification matching thesis grammar",
+            "description": "Synthesized formal M&CML specification matching KIDE metamodel grammar",
             "target_extension": ".mncspec",
             "builtin": True
         }
@@ -209,7 +209,7 @@ class CustomGeneratorEngine:
                 "name": "Python Controller Generator",
                 "language": "python",
                 "target_extension": ".py",
-                "thesis_module": "Chapter 7 & 8: Supervisory Controller Synthesis",
+                "specification_module": "Chapter 7 & 8: Supervisory Controller Synthesis",
                 "description": "Generates an asynchronous event-driven controller with OperatingState machine, command handlers, event bus, and telemetry logging.",
                 "template_source": '''# ==============================================================================
 # Python Controller Generator Template (Mirrors AbstractGenerator)
@@ -277,7 +277,7 @@ class {name}Controller:
                 "name": "ROS2 rclpy Node Generator",
                 "language": "python",
                 "target_extension": ".py",
-                "thesis_module": "Chapter 8.2: Robotic Systems Integration",
+                "specification_module": "Chapter 8.2: Robotic Systems Integration",
                 "description": "Generates a complete ROS2 Node utilizing rclpy, with publishers for events, service servers for commands, and subscription hooks for sensory equipment.",
                 "template_source": '''# ==============================================================================
 # ROS2 Node Generator Template (Mirrors ROS2Generator.xtend)
@@ -328,7 +328,7 @@ class {name}SupervisorNode(Node):
                 "name": "Java Controller Generator",
                 "language": "java",
                 "target_extension": ".java",
-                "thesis_module": "Eclipse src-gen/code/ Java Synthesis",
+                "specification_module": "Eclipse src-gen/code/ Java Synthesis",
                 "description": "Generates an enterprise Java supervisory controller class conforming to the original Eclipse Xtext generator output.",
                 "template_source": '''/* ==============================================================================
  * Java Controller Generator Template (Mirrors Eclipse Xtext src-gen)
@@ -354,7 +354,7 @@ public class JavaControllerGenerator {
                 "name": "PLC Structured Text Generator",
                 "language": "pascal",
                 "target_extension": ".st",
-                "thesis_module": "Industrial Automation & IEC 61131-3 Standard",
+                "specification_module": "Industrial Automation & IEC 61131-3 Standard",
                 "description": "Generates IEC 61131-3 compliant Structured Text FUNCTION_BLOCK for industrial PLCs (Siemens TIA Portal, Beckhoff TwinCAT, Rockwell Studio 5000).",
                 "template_source": '''(* ==============================================================================
  * IEC 61131-3 PLC Structured Text Generator Template
@@ -408,7 +408,7 @@ END_FUNCTION_BLOCK
                 "name": "Embedded C++17 Generator",
                 "language": "cpp",
                 "target_extension": ".hpp",
-                "thesis_module": "High-Performance Embedded Systems",
+                "specification_module": "High-Performance Embedded Systems",
                 "description": "Generates a header-only, zero-heap or thread-safe C++17 supervisory state machine for ESP32, STM32, FreeRTOS, or Linux edge devices.",
                 "template_source": '''// ==============================================================================
 // Embedded C++17 Class Generator Template
@@ -435,7 +435,7 @@ class CppSupervisorGenerator {
                 "name": "Custom Xtend / Python Generator Script",
                 "language": "python",
                 "target_extension": ".py",
-                "thesis_module": "Eclipse Xtext IGenerator2 & IFileSystemAccess2",
+                "specification_module": "Eclipse Xtext IGenerator2 & IFileSystemAccess2",
                 "description": "Write custom generator scripts to synthesize any custom target code, deployment configs, or documentation from the model.",
                 "template_source": DEFAULT_GENERATOR_TEMPLATE
             }

@@ -208,7 +208,7 @@ export const FileExplorer: React.FC = () => {
           <button
             onClick={() => setIsSeedModalOpen(true)}
             className="p-1 text-gray-400 hover:text-amber-400 hover:bg-gray-800 rounded transition-colors"
-            title="Load Thesis Examples"
+            title="Load Reference Templates"
           >
             <Sparkles size={15} />
           </button>
@@ -244,7 +244,7 @@ export const FileExplorer: React.FC = () => {
                 className="w-full text-xs py-1.5 justify-center text-amber-400 hover:text-amber-300 border border-amber-500/30"
                 onClick={() => setIsSeedModalOpen(true)}
               >
-                <Sparkles size={14} className="mr-1.5" /> Load Thesis Example
+                <Sparkles size={14} className="mr-1.5" /> Load Reference Architecture
               </Button>
             </div>
           </div>
@@ -350,7 +350,7 @@ export const FileExplorer: React.FC = () => {
               onChange={(e) => setSelectedTemplate(e.target.value)}
               className="w-full bg-[#161b22] border border-gray-700 text-gray-200 text-xs rounded px-3 py-2 outline-none focus:border-blue-500"
             >
-              <option value="standard">Standard Thesis Grammar Starter</option>
+              <option value="standard">Standard Metamodel Grammar Starter</option>
               <option value="cooling">Industrial Cooling System Template</option>
               <option value="assembly">Assembly Cell Supervisor Template</option>
             </select>
@@ -374,15 +374,15 @@ export const FileExplorer: React.FC = () => {
         </form>
       </Modal>
 
-      {/* Load Thesis Examples Modal */}
+      {/* Load Reference Examples Modal */}
       <Modal
         isOpen={isSeedModalOpen}
         onClose={() => setIsSeedModalOpen(false)}
-        title="Load Thesis Examples into Project"
+        title="Load Reference Examples into Project"
       >
         <div className="space-y-3">
           <p className="text-xs text-gray-400">
-            Select a verified example from the PhD thesis. This will load all associated DSL files (.activity, .dml, .op, .cap, .mnc) directly into this project workspace.
+            Select a verified industrial reference architecture. This will load all associated DSL files (.activity, .dml, .op, .cap, .mnc) directly into this project workspace.
           </p>
 
           <div className="space-y-2">

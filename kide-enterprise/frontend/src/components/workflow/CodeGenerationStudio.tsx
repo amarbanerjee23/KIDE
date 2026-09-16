@@ -216,7 +216,7 @@ export const CodeGenerationStudio: React.FC<Props> = () => {
         </div>
         <h3 className="text-lg font-bold text-gray-100 mb-2">No Synthesized Controller Yet</h3>
         <p className="text-xs text-gray-400 max-w-md mb-6 leading-relaxed">
-          The thesis compiler requires a synthesized supervisory MNC-ML model to generate executable controllers for Python, ROS2, PLC Structured Text, Java, and Embedded C++.
+          The KIDE synthesis engine requires a synthesized supervisory MNC-ML model to generate executable controllers for Python, ROS2, PLC Structured Text, Java, and Embedded C++.
         </p>
         <button
           onClick={() => setActiveView('statemachine')}
@@ -383,9 +383,9 @@ export const CodeGenerationStudio: React.FC<Props> = () => {
             </button>
           </div>
 
-          {viewMode === 'template' && templateMeta?.thesis_module && (
+          {viewMode === 'template' && templateMeta?.specification_module && (
             <span className="hidden md:inline-flex text-[11px] text-amber-300 font-mono bg-amber-950/40 px-2.5 py-0.5 rounded-full border border-amber-800/50">
-              Thesis Ref: {templateMeta.thesis_module}
+              Spec Ref: {templateMeta.specification_module}
             </span>
           )}
         </div>

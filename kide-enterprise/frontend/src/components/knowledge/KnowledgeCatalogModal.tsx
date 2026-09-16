@@ -120,7 +120,7 @@ export const KnowledgeCatalogModal: React.FC<KnowledgeCatalogModalProps> = ({
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 External World Knowledge Hub & Equipment Catalog
                 <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30 font-mono">
-                  PhD Thesis Ontologies
+                  Standard Metamodel Ontologies
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
@@ -229,7 +229,7 @@ export const KnowledgeCatalogModal: React.FC<KnowledgeCatalogModalProps> = ({
                       {selectedItem.category}
                     </span>
                     <span className="text-xs text-slate-500 font-mono">
-                      Thesis Ref: {selectedItem.thesis_reference}
+                      Spec Ref: {selectedItem.specification_reference}
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">{selectedItem.name}</h3>

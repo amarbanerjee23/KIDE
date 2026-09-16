@@ -395,7 +395,7 @@ export const ProjectExplorer: React.FC<ProjectExplorerProps> = ({ onOpenNewArtif
       {files.length === 0 && (
         <div className="p-4 text-center text-gray-500 text-xs">
           <p className="font-semibold text-gray-300 mb-1">No Artifacts Yet</p>
-          <p className="text-[11px] text-gray-500 mb-3">Create your first model or load a thesis template.</p>
+          <p className="text-[11px] text-gray-500 mb-3">Create your first model or load a reference template.</p>
           <button
             onClick={onOpenNewArtifactModal}
             className="w-full py-1.5 px-3 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-medium transition"

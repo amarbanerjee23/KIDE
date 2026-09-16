@@ -15,7 +15,7 @@ async def test_ai_providers_endpoint(client, test_user):
 async def test_ai_chat_and_provenance_flow(client, test_user):
     headers = {"Authorization": f"Bearer {test_user['access_token']}"}
 
-    # 1. Create a project from thesis cooling template
+    # 1. Create a project from reference cooling template
     proj_resp = await client.post(
         "/api/v1/projects/from-template",
         headers=headers,

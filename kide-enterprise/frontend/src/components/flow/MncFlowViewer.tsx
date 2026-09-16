@@ -41,7 +41,7 @@ export const MncFlowViewer: React.FC<Props> = ({ model, mode }) => {
     else if (mode === 'statemachine') setView('state');
   }, [mode]);
 
-  // Extract ALL states and transitions comprehensively from any thesis model representation
+  // Extract ALL states and transitions comprehensively from any formal supervisory model representation
   const { statesList, transitionsList } = useMemo(() => {
     const rawStatesSet = new Set<string>();
     const iface = (model?.interface_description || (model as any)?.systems?.[0] || {}) as any;
@@ -145,7 +145,7 @@ export const MncFlowViewer: React.FC<Props> = ({ model, mode }) => {
       });
     }
 
-    // Always guarantee INITIALIZED and READY states from thesis algorithm
+    // Always guarantee INITIALIZED and READY states from supervisory synthesis algorithm
     if (!rawStatesSet.has('INITIALIZED')) rawStatesSet.add('INITIALIZED');
     if (!rawStatesSet.has('READY')) rawStatesSet.add('READY');
 

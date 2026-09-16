@@ -35,7 +35,7 @@ async def test_global_knowledge_graph(client: AsyncClient, test_user):
     assert "datapoint" in all_types
     assert "parameter" in all_types
 
-    # Ensure all 7 thesis case studies and domains are represented
+    # Ensure core reference case studies and domains are represented
     node_names = [n["name"] for n in data["nodes"]]
     assert any("Boom Barrier" in name for name in node_names)
     assert any("Robotic" in name for name in node_names)
@@ -124,7 +124,7 @@ async def test_project_knowledge_graph_and_export(client: AsyncClient, test_user
     token = test_user["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    # 1. Create project from thesis template
+    # 1. Create project from reference template
     res_proj = await client.post("/api/v1/projects/from-template", json={
         "name": "GraphTestCooling",
         "template": "industrial_cooling"

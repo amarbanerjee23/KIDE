@@ -16,7 +16,7 @@ def _dedup_by_name(items: List[Any]) -> List[Dict[str, Any]]:
 
 def compose_mnc_model(diagram_name: str, blocks: SynthesizedBlocks) -> Dict[str, Any]:
     """
-    Composes the formal MNC-ML supervisory model according to the thesis specifications:
+    Composes the formal MNC-ML supervisory model according to the KIDE metamodel specifications:
     - Model <Name>
     - InterfaceDescription <Name>_Interface uses <Interfaces>
     - ControlNode <Name> implements interface <Name>_Interface

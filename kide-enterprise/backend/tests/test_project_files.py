@@ -22,7 +22,7 @@ async def test_templates_and_project_files(client: AsyncClient, test_user):
     res = await client.post("/api/v1/projects/from-template", json={
         "name": "Cooling System Test Project",
         "template": "industrial_cooling",
-        "description": "Created from thesis template"
+        "description": "Created from reference template"
     }, headers=headers)
     assert res.status_code == 200
     proj = res.json()

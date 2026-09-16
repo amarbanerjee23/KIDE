@@ -16,11 +16,11 @@ import {
 import { TransformResult } from '../types/models';
 
 
-const THESIS_EXAMPLES_INFO = [
+const REFERENCE_EXAMPLES_INFO = [
   {
     key: 'industrial_cooling',
     title: 'Industrial Cooling System',
-    badge: 'Thesis Synthesis Case Study',
+    badge: 'Synthesis Reference Architecture',
     description: 'Multi-activity cooling system with temperature thresholds, state transitions (STANDBY, NORMAL, EMERGENCY), commands, events, and alarms.',
     files: ['CoolingSystem.activity', 'CoolingSystem.json', 'CoolingData.dml', 'CoolingOps.op', 'CoolingCap.cap'],
     activitySample: `ActivityDiagram CoolingSystem
@@ -196,8 +196,8 @@ has activities {
   {
     key: 'assembly_supervisor',
     title: 'Assembly Cell Supervisor',
-    badge: 'Thesis Repo (Demo_ECRE.dml)',
-    description: 'Automotive assembly cell from thesis Section 5 integrating the repository Demo_ECRE.dml data model and AssemblyCell.mnc.',
+    badge: 'Standard Reference (Demo_ECRE.dml)',
+    description: 'Automotive assembly cell integrating Demo_ECRE.dml data model and AssemblyCell.mnc supervisory model.',
     files: ['AssemblySupervisor.activity', 'AssemblySupervisor.json', 'Demo_ECRE.dml', 'AssemblyCell.mnc'],
     activitySample: `ActivityDiagram AssemblySupervisor
 uses Objects [ boolean isValidTruck, int RFID_TAG_VALUE ]
@@ -308,7 +308,7 @@ const DashboardPage = () => {
     });
   };
 
-  const selectedExample = THESIS_EXAMPLES_INFO[selectedExampleIndex];
+  const selectedExample = REFERENCE_EXAMPLES_INFO[selectedExampleIndex];
 
   const handleQuickTransform = async () => {
     setTransformRunning(true);
@@ -521,10 +521,10 @@ const DashboardPage = () => {
             </div>
             <div className="bg-surface border border-accent p-5 rounded-xl">
               <div className="flex items-center justify-between">
-                <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Thesis Templates</h3>
+                <h3 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Reference Templates</h3>
                 <Sparkles className="text-amber-400 w-4 h-4" />
               </div>
-              <p className="text-3xl font-bold text-white mt-3">{THESIS_EXAMPLES_INFO.length}</p>
+              <p className="text-3xl font-bold text-white mt-3">{REFERENCE_EXAMPLES_INFO.length}</p>
             </div>
             <div className="bg-surface border border-accent p-5 rounded-xl">
               <div className="flex items-center justify-between">
@@ -550,7 +550,7 @@ const DashboardPage = () => {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="px-2.5 py-0.5 rounded-full bg-indigo-950/80 border border-indigo-600/40 text-indigo-300 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
                     <Network className="w-3.5 h-3.5 text-indigo-400" />
-                    Thesis Metamodel Ontology
+                    KIDE Metamodel Ontology
                   </span>
                   <span className="text-gray-400 text-xs font-mono">&bull; 19 Domains &bull; 69+ Physical Devices</span>
                 </div>
@@ -558,7 +558,7 @@ const DashboardPage = () => {
                   Pre-Available Industrial Knowledge Graph Studio
                 </h2>
                 <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
-                  Explore the complete property knowledge graph across 19 real-world industrial automation domains. Inspect fine-grained thesis ontology entities—Commands, Events, Alarms, DataPoints, Parameters, Interfaces, Capabilities, DataModels, and Supervisory Workflows—and 1-click import reusable building blocks into your projects.
+                  Explore the complete property knowledge graph across 19 real-world industrial automation domains. Inspect fine-grained metamodel ontology entities—Commands, Events, Alarms, DataPoints, Parameters, Interfaces, Capabilities, DataModels, and Supervisory Workflows—and 1-click import reusable building blocks into your projects.
                 </p>
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-gray-400">
                   <span className="px-2 py-0.5 rounded bg-gray-800/80 border border-gray-700/60 text-gray-300">
@@ -612,7 +612,7 @@ const DashboardPage = () => {
               </div>
             ) : (
               <div className="bg-surface border border-dashed border-accent rounded-lg p-12 text-center">
-                <p className="text-gray-400 mb-4">No projects yet. Get started by creating one or running a thesis example.</p>
+                <p className="text-gray-400 mb-4">No projects yet. Get started by creating one or running a reference template.</p>
                 <div className="flex justify-center gap-3">
                   <Button onClick={() => setIsNewProjectModalOpen(true)}>
                     <FolderPlus className="w-4 h-4 mr-2" /> Create First Project
@@ -624,7 +624,7 @@ const DashboardPage = () => {
                       setIsExampleModalOpen(true);
                     }}
                   >
-                    <Sparkles className="w-4 h-4 mr-2 text-emerald-400" /> Explore Thesis Examples
+                    <Sparkles className="w-4 h-4 mr-2 text-emerald-400" /> Explore Reference Templates
                   </Button>
                 </div>
               </div>
@@ -638,16 +638,16 @@ const DashboardPage = () => {
       <Modal
         isOpen={isExampleModalOpen}
         onClose={() => setIsExampleModalOpen(false)}
-        title="Try Thesis Synthesis & Transform"
+        title="Try Model Synthesis & Transform"
       >
         <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-1">
           <p className="text-xs text-gray-400">
-            Select one of the verified PhD thesis examples below to inspect the DSL, run live model transformation into supervisory MNC-ML, or load it into an editable workspace.
+            Select one of the verified reference templates below to inspect the DSL, run live model transformation into supervisory MNC-ML, or load it into an editable workspace.
           </p>
 
           {/* Example Selector Tabs */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {THESIS_EXAMPLES_INFO.map((ex, idx) => (
+            {REFERENCE_EXAMPLES_INFO.map((ex, idx) => (
               <button
                 key={ex.key}
                 type="button"
@@ -798,7 +798,7 @@ const DashboardPage = () => {
               onChange={e => setProjectTemplate(e.target.value)}
               className="w-full bg-[#161b22] border border-gray-700 text-gray-200 text-xs rounded px-3 py-2 outline-none focus:border-blue-500"
             >
-              <option value="industrial_cooling">Industrial Cooling System (Thesis Synthesis Case Study)</option>
+              <option value="industrial_cooling">Industrial Cooling System (Synthesis Reference Architecture)</option>
               <option value="pick_and_place">Pick & Place Robotic Cell (Multi-DSL)</option>
               <option value="chemical_reactor">Chemical Reactor Plant (State Machine & Alarms)</option>
               <option value="assembly_supervisor">Assembly Cell Supervisor (Demo_ECRE.dml)</option>

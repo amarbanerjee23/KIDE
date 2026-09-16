@@ -356,7 +356,7 @@ export const ProjectHeader: React.FC = () => {
                   <Network className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                   <div>
                     <div className="font-semibold">Knowledge Graph</div>
-                    <div className="text-[10px] text-gray-400">Explore connected thesis ontology</div>
+                    <div className="text-[10px] text-gray-400">Explore connected metamodel ontology</div>
                   </div>
                 </button>
               </div>

@@ -107,7 +107,7 @@ export const GraphInspector: React.FC = () => {
           <div className="flex items-center gap-1.5 text-blue-400 mb-1">
             <Network size={14} />
             <span className="text-xs font-bold uppercase tracking-wider text-gray-200">
-              {isGlobal ? 'Global Thesis Repository' : 'Project Knowledge Graph'}
+              {isGlobal ? 'Global Knowledge Store' : 'Project Knowledge Graph'}
             </span>
           </div>
           <div className="text-[11px] text-gray-400">

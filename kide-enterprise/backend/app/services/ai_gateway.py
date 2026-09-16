@@ -468,7 +468,7 @@ class AIGatewayService:
             if val_out.get("valid"):
                 reply = (
                     f"✓ **Project Validation Passed**\n\n"
-                    f"All {val_out.get('total_files_checked')} DSL files in `{project.name}` have been verified against thesis grammars (DML, Capability, Operation, Activity Diagram, MNC-ML). "
+                    f"All {val_out.get('total_files_checked')} DSL files in `{project.name}` have been verified against KIDE formal metamodel grammars (DML, Capability, Operation, Activity Diagram, MNC-ML). "
                     f"Zero syntax or structural errors found. The models are fully ready for formal supervisory synthesis."
                 )
             else:
@@ -498,7 +498,7 @@ class AIGatewayService:
                     f"- **Transitions Derived**: {synth_out.get('total_transitions')}\n"
                     f"- **Command Blocks**: {synth_out.get('command_blocks')}\n"
                     f"- **Event Blocks**: {synth_out.get('event_blocks')}\n\n"
-                    f"The formal supervisory controller has been verified against the thesis state transformation rules. "
+                    f"The formal supervisory controller has been verified against the formal state transformation rules. "
                     f"You can inspect the generated state machine in the **State Machine** viewer or run it in the **Live Simulator**."
                 )
             else:
@@ -685,7 +685,7 @@ class AIGatewayService:
                 f"Here are actions I can perform using deterministic engineering tools:\n"
                 f"- **Validate Models**: Run syntax and cross-reference validation across all DSL files.\n"
                 f"- **Synthesize Automata**: Formally derive operating states and supervisory state machines.\n"
-                f"- **Knowledge Hub Search**: Query devices, interfaces, and industrial capabilities from the thesis catalog.\n"
+                f"- **Knowledge Hub Search**: Query devices, interfaces, and industrial capabilities from the pre-available knowledge catalog.\n"
                 f"- **Propose Patches**: Generate and safely patch DML, Capability, and Activity workflows with interactive diff preview.\n\n"
                 f"What system would you like to model or inspect?"
             )

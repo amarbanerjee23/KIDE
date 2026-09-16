@@ -8,7 +8,7 @@ from app.services.semantic_validator import validate_project_semantics
 
 class SemanticReconfigurationService:
     """
-    Automated Semantic Reconfiguration Engine (Thesis Chapter 5).
+    Automated Semantic Reconfiguration Engine (KIDE Architecture Specification §5).
     Enables deterministic capability and device substitution across supervisory workflows.
     Generates unified diffs, performs safety verification, and checks that no
     deadlocks or dangling references are introduced.

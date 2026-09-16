@@ -1,5 +1,5 @@
 """
-Router for Live Controller Simulation, Hardware-in-the-Loop Gateway, and WebSockets (PhD Requirements 31, 35, 37, 45).
+Router for Live Controller Simulation, Hardware-in-the-Loop Gateway, and WebSockets (Enterprise Specifications 31, 35, 37, 45).
 """
 
 import asyncio
@@ -304,7 +304,7 @@ async def export_simulation_telemetry(
 
 
 # =============================================================================
-# Real-Time WebSocket Streaming Endpoint (PhD Requirement 31)
+# Real-Time WebSocket Streaming Endpoint (Enterprise Specification 31)
 # =============================================================================
 
 @router.websocket("/{project_id}/ws")

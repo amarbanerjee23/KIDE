@@ -1,6 +1,6 @@
 """
 Router for Knowledge Ingestion Pipeline, Document Extraction, Staged Artifacts,
-and Transactional Notifications (PhD Requirements 5, 24, 50).
+and Transactional Notifications (Enterprise Specifications 5, 24, 50).
 """
 
 import json
@@ -317,7 +317,7 @@ async def import_staged_to_project(
 
 
 # =============================================================================
-# Transactional Notifications Endpoints (PhD Requirement 50)
+# Transactional Notifications Endpoints (Enterprise Specification 50)
 # =============================================================================
 
 @router.get("/notifications", response_model=List[NotificationResponse])

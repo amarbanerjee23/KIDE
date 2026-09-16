@@ -5,7 +5,7 @@ from app.services.engineering_ir import compile_project_ir
 from app.services.semantic_validator import validate_project_semantics
 from app.schemas.engineering_ir import DiagnosticSeverity, SymbolType
 
-# Clean thesis test fixtures (adhering strictly to thesis Xtext grammars)
+# Clean reference test fixtures (adhering strictly to KIDE Xtext grammars)
 COOLING_DML = """
 Package Cooling
 DataModel TemperatureReading {

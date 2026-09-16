@@ -22,7 +22,7 @@ export interface GeneratorTemplateInfo {
   name: string;
   language: string;
   target_extension: string;
-  thesis_module: string;
+  specification_module?: string;
   description: string;
   template_source: string;
 }

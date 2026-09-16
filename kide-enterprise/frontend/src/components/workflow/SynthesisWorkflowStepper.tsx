@@ -43,7 +43,7 @@ export const SynthesisWorkflowStepper: React.FC = () => {
       icon: Database,
       completed: step1Complete,
       badge: `${dmlFiles.length} Schema${dmlFiles.length !== 1 ? 's' : ''}`,
-      desc: 'Define domain data structures, primitive parameters, and composite entities using DML (Thesis Section 3.3).'
+      desc: 'Define domain data structures, primitive parameters, and composite entities using DML (Metamodel Specification §3.3).'
     },
     {
       step: 2,
@@ -52,7 +52,7 @@ export const SynthesisWorkflowStepper: React.FC = () => {
       icon: Cpu,
       completed: step2Complete,
       badge: `${capFiles.length} Cap, ${opFiles.length} Op`,
-      desc: 'Declare device contracts, provided control capabilities, fireable commands, and low-level executable scripts (Thesis Section 4.1).'
+      desc: 'Declare device contracts, provided control capabilities, fireable commands, and low-level executable scripts (Metamodel Specification §4.1).'
     },
     {
       step: 3,
@@ -61,7 +61,7 @@ export const SynthesisWorkflowStepper: React.FC = () => {
       icon: Activity,
       completed: step3Complete,
       badge: `${actFiles.length} Diagram${actFiles.length !== 1 ? 's' : ''}`,
-      desc: 'Orchestrate multi-step supervisory process logic, event conditions, and capability bindings (Thesis Section 4.2).'
+      desc: 'Orchestrate multi-step supervisory process logic, event conditions, and capability bindings (Metamodel Specification §4.2).'
     },
     {
       step: 4,
@@ -70,7 +70,7 @@ export const SynthesisWorkflowStepper: React.FC = () => {
       icon: Layers,
       completed: step4Complete,
       badge: step4Complete ? 'Synthesized' : 'Ready',
-      desc: 'Automatically transform the activity workflow and device capabilities into a formal MNC-ML supervisory model (Thesis Chapter 5).'
+      desc: 'Automatically transform the activity workflow and device capabilities into a formal MNC-ML supervisory model (Supervisory Synthesis Engine).'
     },
     {
       step: 5,
@@ -190,7 +190,7 @@ export const SynthesisWorkflowStepper: React.FC = () => {
           <button
             onClick={() => setShowGuidance(!showGuidance)}
             className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-lg transition-colors"
-            title="Toggle Thesis Step Guidance"
+            title="Toggle Step Guidance"
           >
             <HelpCircle className="w-4 h-4" />
           </button>

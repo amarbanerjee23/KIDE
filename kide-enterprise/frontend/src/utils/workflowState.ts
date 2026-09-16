@@ -293,7 +293,7 @@ export function getPrimaryProjectAction(
       return {
         id: 'synthesize',
         label: 'Synthesize Model',
-        tooltip: 'Run thesis automated synthesis to derive supervisory state machine',
+        tooltip: 'Run automated synthesis to derive supervisory state machine',
         type: 'synthesize',
         variant: 'primary'
       };

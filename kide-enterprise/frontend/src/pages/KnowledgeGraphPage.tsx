@@ -35,7 +35,7 @@ export const KnowledgeGraphPage: React.FC = () => {
                   Knowledge Graph Studio
                 </h1>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-indigo-950/80 border border-indigo-700/60 text-indigo-300">
-                  Thesis Ontology Metamodel
+                  KIDE Metamodel Ontology
                 </span>
               </div>
               <p className="text-[11px] text-gray-400 hidden md:block">

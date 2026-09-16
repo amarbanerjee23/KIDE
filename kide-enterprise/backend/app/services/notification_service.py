@@ -1,5 +1,5 @@
 """
-Transactional Email & Notification Service (PhD Requirement 50).
+Transactional Email & Notification Service (Enterprise Specification 50).
 Handles transactional emails, event alerting, background task notifications,
 and persists an immutable delivery audit log in the database.
 Supports Mock/In-Memory log mode and SMTP delivery.

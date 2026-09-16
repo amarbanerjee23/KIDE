@@ -1,6 +1,6 @@
 """
 Knowledge Graph Service for KIDE Enterprise.
-Implements the thesis Knowledge Repository ontology and Property Knowledge Graph.
+Implements the KIDE Knowledge Repository ontology and Property Knowledge Graph.
 
 Structures:
 - Domain / Case Study Categories (Access Control, Robotics, Process, Chemical, Smart Building, Automotive, Water)
@@ -26,13 +26,13 @@ from ..parsers.mnc_parser import parse as parse_mnc
 
 
 class KnowledgeGraphService:
-    """Builds, queries, and exports the KIDE Thesis Knowledge Graph."""
+    """Builds, queries, and exports the KIDE Enterprise Knowledge Graph."""
 
     @classmethod
     def build_global_catalog_graph(cls) -> Dict[str, Any]:
         """
         Builds the global cross-domain Knowledge Repository graph from all 
-        pre-indexed equipment and ontology specifications in the thesis.
+        pre-indexed equipment and ontology specifications in the KIDE Knowledge Repository.
         """
         nodes: List[Dict[str, Any]] = []
         edges: List[Dict[str, Any]] = []
@@ -40,7 +40,7 @@ class KnowledgeGraphService:
 
         def add_node(node_id: str, name: str, node_type: str, category: str, 
                      properties: Optional[Dict[str, Any]] = None, 
-                     thesis_ref: Optional[str] = None):
+                     spec_ref: Optional[str] = None):
             if node_id in node_ids:
                 return
             node_ids.add(node_id)
@@ -49,7 +49,7 @@ class KnowledgeGraphService:
                 "name": name,
                 "type": node_type,
                 "category": category,
-                "thesis_reference": thesis_ref or "KIDE Knowledge Repository",
+                "specification_reference": spec_ref or "KIDE Knowledge Repository",
                 "properties": properties or {}
             })
 
@@ -79,7 +79,7 @@ class KnowledgeGraphService:
         # Process each catalog domain
         for item in EQUIPMENT_CATALOG:
             cat_id = f"cat_{item['id']}"
-            thesis_ref = item.get("thesis_reference", "Thesis Chapter 8")
+            spec_ref = item.get("specification_reference", "KIDE Specification Section 8")
             
             # Domain / System Node
             add_node(
@@ -92,7 +92,7 @@ class KnowledgeGraphService:
                     "tags": item.get("tags", []),
                     "raw_id": item["id"]
                 },
-                thesis_ref=thesis_ref
+                spec_ref=spec_ref
             )
             add_edge(root_id, cat_id, "CONTAINS_DOMAIN", "contains domain")
 
@@ -105,7 +105,7 @@ class KnowledgeGraphService:
                     "device",
                     "Physical Equipment",
                     {"parent_domain": item["name"]},
-                    thesis_ref=thesis_ref
+                    spec_ref=spec_ref
                 )
                 add_edge(cat_id, dev_id, "INCLUDES_EQUIPMENT", "includes equipment")
 
@@ -135,11 +135,11 @@ class KnowledgeGraphService:
                                         "primitives": dm.get("primitives", []),
                                         "composites": dm.get("composites", [])
                                     },
-                                    thesis_ref=thesis_ref
+                                    spec_ref=spec_ref
                                 )
                                 add_edge(cat_id, dm_id, "DEFINES_DATA_MODEL", "defines schema")
 
-                                # Fine-grained thesis ontology: Primitive Parameters / Fields
+                                # Fine-grained metamodel ontology: Primitive Parameters / Fields
                                 for prim in dm.get("primitives", []):
                                     pname = prim.get("name") if isinstance(prim, dict) else str(prim)
                                     ptype = prim.get("type") if isinstance(prim, dict) else "string"
@@ -151,7 +151,7 @@ class KnowledgeGraphService:
                                             "parameter",
                                             "Data Primitive / Field",
                                             {"data_type": ptype, "parent_model": dm_name, "parent_domain": item["name"]},
-                                            thesis_ref=thesis_ref
+                                            spec_ref=spec_ref
                                         )
                                         add_edge(dm_id, param_id, "HAS_FIELD", "has field")
                     except Exception:
@@ -195,7 +195,7 @@ class KnowledgeGraphService:
                                     "alarms": all_alms,
                                     "data_points": all_dps
                                 },
-                                thesis_ref=thesis_ref
+                                spec_ref=spec_ref
                             )
                             add_edge(cat_id, cap_id, "PROVIDES_CAPABILITY", "provides capability")
 
@@ -209,7 +209,7 @@ class KnowledgeGraphService:
                                     "interface",
                                     "Component Interface",
                                     {"binding_capability": cap_name, "parent_domain": item["name"]},
-                                    thesis_ref=thesis_ref
+                                    spec_ref=spec_ref
                                 )
                                 add_edge(cap_id, iface_id, "COMPATIBLE_WITH", "compatible with")
 
@@ -218,7 +218,7 @@ class KnowledgeGraphService:
                                 dev_id = f"dev_{item['id']}_{re.sub(r'[^a-zA-Z0-9_]', '_', dev_name.lower())}"
                                 add_edge(dev_id, cap_id, "IMPLEMENTS_CAPABILITY", "implements capability")
 
-                            # Fine-grained thesis ontology entities: Commands
+                            # Fine-grained metamodel ontology entities: Commands
                             for cmd in all_cmds:
                                 cname = cmd.get("name") if isinstance(cmd, dict) else str(cmd)
                                 if cname:
@@ -229,13 +229,13 @@ class KnowledgeGraphService:
                                         "command",
                                         "Fireable Command",
                                         {"parent_capability": cap_name, "parent_domain": item["name"], "parent_interface": iface_name},
-                                        thesis_ref=thesis_ref
+                                        spec_ref=spec_ref
                                     )
                                     add_edge(cap_id, cmd_id, "OFFERS_COMMAND", "offers command")
                                     if iface_id:
                                         add_edge(iface_id, cmd_id, "OFFERS_COMMAND", "offers command")
 
-                            # Fine-grained thesis ontology entities: Events
+                            # Fine-grained metamodel ontology entities: Events
                             for evt in all_evts:
                                 ename = evt.get("name") if isinstance(evt, dict) else str(evt)
                                 if ename:
@@ -246,13 +246,13 @@ class KnowledgeGraphService:
                                         "event",
                                         "Receivable Event",
                                         {"parent_capability": cap_name, "parent_domain": item["name"], "parent_interface": iface_name},
-                                        thesis_ref=thesis_ref
+                                        spec_ref=spec_ref
                                     )
                                     add_edge(cap_id, evt_id, "RECEIVES_EVENT", "receives event")
                                     if iface_id:
                                         add_edge(iface_id, evt_id, "RECEIVES_EVENT", "receives event")
 
-                            # Fine-grained thesis ontology entities: Alarms
+                            # Fine-grained metamodel ontology entities: Alarms
                             for alm in all_alms:
                                 aname = alm.get("name") if isinstance(alm, dict) else str(alm)
                                 if aname:
@@ -263,13 +263,13 @@ class KnowledgeGraphService:
                                         "alarm",
                                         "Raised Alarm",
                                         {"parent_capability": cap_name, "parent_domain": item["name"], "parent_interface": iface_name},
-                                        thesis_ref=thesis_ref
+                                        spec_ref=spec_ref
                                     )
                                     add_edge(cap_id, alm_id, "RAISES_ALARM", "raises alarm")
                                     if iface_id:
                                         add_edge(iface_id, alm_id, "RAISES_ALARM", "raises alarm")
 
-                            # Fine-grained thesis ontology entities: DataPoints
+                            # Fine-grained metamodel ontology entities: DataPoints
                             for dp in all_dps:
                                 dpname = dp.get("name") if isinstance(dp, dict) else str(dp)
                                 if dpname:
@@ -280,7 +280,7 @@ class KnowledgeGraphService:
                                         "datapoint",
                                         "Telemetry DataPoint",
                                         {"parent_capability": cap_name, "parent_domain": item["name"], "parent_interface": iface_name},
-                                        thesis_ref=thesis_ref
+                                        spec_ref=spec_ref
                                     )
                                     add_edge(cap_id, dp_id, "PROVIDES_DATAPOINT", "provides datapoint")
                                     if iface_id:
@@ -309,7 +309,7 @@ class KnowledgeGraphService:
                                         "output": outp,
                                         "script": op.get("executable_script", "")
                                     },
-                                    thesis_ref=thesis_ref
+                                    spec_ref=spec_ref
                                 )
                                 add_edge(cat_id, op_id, "OFFERS_OPERATION", "offers operation")
 
@@ -324,7 +324,7 @@ class KnowledgeGraphService:
                                             "parameter",
                                             "Operation Parameter",
                                             {"parent_operation": op_name, "direction": "input", "parent_domain": item["name"]},
-                                            thesis_ref=thesis_ref
+                                            spec_ref=spec_ref
                                         )
                                         add_edge(op_id, param_id, "HAS_PARAMETER", "has input parameter")
                                 
@@ -338,7 +338,7 @@ class KnowledgeGraphService:
                                             "parameter",
                                             "Operation Parameter",
                                             {"parent_operation": op_name, "direction": "output", "parent_domain": item["name"]},
-                                            thesis_ref=thesis_ref
+                                            spec_ref=spec_ref
                                         )
                                         add_edge(op_id, param_id, "HAS_PARAMETER", "has output parameter")
                     except Exception:
@@ -360,7 +360,7 @@ class KnowledgeGraphService:
                                     "parent_domain": item["name"],
                                     "activity_count": len(parsed.get("activities", []))
                                 },
-                                thesis_ref=thesis_ref
+                                spec_ref=spec_ref
                             )
                             add_edge(cat_id, diag_id, "DEFINES_WORKFLOW", "defines workflow")
 
@@ -392,7 +392,7 @@ class KnowledgeGraphService:
                                             "required_operation": req_op,
                                             "conditions": act.get("conditions", [])
                                         },
-                                        thesis_ref=thesis_ref
+                                        spec_ref=spec_ref
                                     )
                                     add_edge(diag_id, act_id, "CONTAINS_STEP", "contains step")
 
@@ -429,7 +429,7 @@ class KnowledgeGraphService:
                                     "interface",
                                     "Component Interface",
                                     {"parent_domain": item["name"]},
-                                    thesis_ref=thesis_ref
+                                    spec_ref=spec_ref
                                 )
                                 add_edge(cat_id, iface_id, "DEFINES_INTERFACE", "defines interface")
 
@@ -437,28 +437,28 @@ class KnowledgeGraphService:
                                     cname = cmd.get("name") if isinstance(cmd, dict) else str(cmd)
                                     if cname:
                                         cmd_id = f"cmd_{item['id']}_{iface_name}_{cname}"
-                                        add_node(cmd_id, cname, "command", "Interface Command", {"parent_interface": iface_name, "parent_domain": item["name"]}, thesis_ref=thesis_ref)
+                                        add_node(cmd_id, cname, "command", "Interface Command", {"parent_interface": iface_name, "parent_domain": item["name"]}, spec_ref=spec_ref)
                                         add_edge(iface_id, cmd_id, "OFFERS_COMMAND", "offers command")
 
                                 for evt in sys_item.get("events", []):
                                     ename = evt.get("name") if isinstance(evt, dict) else str(evt)
                                     if ename:
                                         evt_id = f"evt_{item['id']}_{iface_name}_{ename}"
-                                        add_node(evt_id, ename, "event", "Interface Event", {"parent_interface": iface_name, "parent_domain": item["name"]}, thesis_ref=thesis_ref)
+                                        add_node(evt_id, ename, "event", "Interface Event", {"parent_interface": iface_name, "parent_domain": item["name"]}, spec_ref=spec_ref)
                                         add_edge(iface_id, evt_id, "RECEIVES_EVENT", "receives event")
 
                                 for alm in sys_item.get("alarms", []):
                                     aname = alm.get("name") if isinstance(alm, dict) else str(alm)
                                     if aname:
                                         alm_id = f"alm_{item['id']}_{iface_name}_{aname}"
-                                        add_node(alm_id, aname, "alarm", "Interface Alarm", {"parent_interface": iface_name, "parent_domain": item["name"]}, thesis_ref=thesis_ref)
+                                        add_node(alm_id, aname, "alarm", "Interface Alarm", {"parent_interface": iface_name, "parent_domain": item["name"]}, spec_ref=spec_ref)
                                         add_edge(iface_id, alm_id, "RAISES_ALARM", "raises alarm")
 
                                 for dp in sys_item.get("data_points", []):
                                     dpname = dp.get("name") if isinstance(dp, dict) else str(dp)
                                     if dpname:
                                         dp_id = f"dp_{item['id']}_{iface_name}_{dpname}"
-                                        add_node(dp_id, dpname, "datapoint", "Interface DataPoint", {"parent_interface": iface_name, "parent_domain": item["name"]}, thesis_ref=thesis_ref)
+                                        add_node(dp_id, dpname, "datapoint", "Interface DataPoint", {"parent_interface": iface_name, "parent_domain": item["name"]}, spec_ref=spec_ref)
                                         add_edge(iface_id, dp_id, "PROVIDES_DATAPOINT", "provides datapoint")
                     except Exception:
                         pass
@@ -952,7 +952,7 @@ class KnowledgeGraphService:
                     "catalog_id": item["id"],
                     "system_name": item["name"],
                     "category": item.get("category", "Automation"),
-                    "thesis_reference": item.get("thesis_reference", ""),
+                    "specification_reference": item.get("specification_reference", ""),
                     "score": min(100, score + 20),
                     "devices": item.get("devices", []),
                     "capabilities": caps_list
@@ -965,20 +965,20 @@ class KnowledgeGraphService:
     def export_graph_to_rdf_turtle(cls, graph: Dict[str, Any]) -> str:
         """
         Serializes the Knowledge Graph into W3C RDF Turtle ontology syntax.
-        Conforms to Thesis semantic web specification.
+        Conforms to W3C Semantic Web and KIDE Metamodel specifications.
         """
         lines = [
             "@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .",
             "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .",
             "@prefix owl: <http://www.w3.org/2002/07/owl#> .",
             "@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .",
-            "@prefix kide: <http://kide.thesis/ontology#> .",
+            "@prefix kide: <http://kide-enterprise.org/ontology#> .",
             "",
             "kide:Ontology rdf:type owl:Ontology ;",
             '    rdfs:label "KIDE Supervisory Control Synthesis Metamodel Ontology" ;',
-            '    rdfs:comment "Formal Web Ontology Language (OWL) definition for model-driven engineering of industrial supervisory systems as described in the PhD thesis." .',
+            '    rdfs:comment "Formal Web Ontology Language (OWL) definition for model-driven engineering of industrial supervisory systems." .',
             "",
-            "# OWL Class Definitions as per Thesis Metamodel",
+            "# OWL Class Definitions as per KIDE Metamodel",
             "kide:Domain rdf:type owl:Class ; rdfs:label \"Domain\" .",
             "kide:Device rdf:type owl:Class ; rdfs:label \"Device\" .",
             "kide:Interface rdf:type owl:Class ; rdfs:label \"Interface\" .",
@@ -995,7 +995,7 @@ class KnowledgeGraphService:
             "kide:OperatingState rdf:type owl:Class ; rdfs:label \"OperatingState\" .",
             "kide:Supervisor rdf:type owl:Class ; rdfs:label \"Supervisor\" .",
             "",
-            "# OWL Object Properties as per Thesis Semantics",
+            "# OWL Object Properties as per KIDE Semantics",
             "kide:containsDomain rdf:type owl:ObjectProperty .",
             "kide:includesEquipment rdf:type owl:ObjectProperty .",
             "kide:definesDataModel rdf:type owl:ObjectProperty .",
@@ -1018,7 +1018,7 @@ class KnowledgeGraphService:
             "kide:hasState rdf:type owl:ObjectProperty .",
             "kide:transitionsTo rdf:type owl:ObjectProperty .",
             "",
-            f"# KIDE Thesis Knowledge Graph Export ({graph.get('scope', 'system')})",
+            f"# KIDE Enterprise Knowledge Graph Export ({graph.get('scope', 'system')})",
             f"# Total Entities: {len(graph.get('nodes', []))}, Total Predicates: {len(graph.get('edges', []))}",
             ""
         ]
@@ -1078,7 +1078,7 @@ class KnowledgeStoreService:
                 "id": cat["id"],
                 "name": cat["name"],
                 "category": cat["category"],
-                "thesis_reference": cat.get("thesis_reference", ""),
+                "specification_reference": cat.get("specification_reference", ""),
                 "description": cat.get("description", ""),
                 "devices": cat.get("devices", []),
                 "tags": cat.get("tags", []),
@@ -1143,7 +1143,7 @@ class KnowledgeStoreService:
                 "name": n["name"],
                 "type": n["type"],
                 "category": n.get("category", "General"),
-                "thesis_reference": n.get("thesis_reference", ""),
+                "specification_reference": n.get("specification_reference", ""),
                 "properties": n.get("properties", {}),
                 "source_file": source_filename,
                 "dsl_snippet": snippet

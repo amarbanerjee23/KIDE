@@ -301,7 +301,7 @@ export const xtextLinkProvider: monaco.languages.LinkProvider = {
  */
 const XTEXT_KEYWORD_DOCS: Record<string, string> = {
   // Activity DSL
-  ActivityDiagram: `### \`ActivityDiagram\`\n**Thesis Section 4.2: Supervisory Workflow Process**\nDefines an event-driven supervisory coordination process consisting of structured execution activities, context data models, and outcome-based transitions.`,
+  ActivityDiagram: `### \`ActivityDiagram\`\n**KIDE Specification §4.2: Supervisory Workflow Process**\nDefines an event-driven supervisory coordination process consisting of structured execution activities, context data models, and outcome-based transitions.`,
   Activity: `### \`Activity\`\n**Process Execution Node**\nRepresents a discrete step in the supervisory workflow. Can bind to a resource capability (\`requireCapability\`), invoke an operation (\`requireOperation\`), or embed a nested sub-process (\`childActivityDiagram\`).`,
   requireCapability: `### \`requireCapability\`\n**Equipment Capability Binding**\nBinds this activity to an equipment contract defined in a \`.cap\` specification. The activity invokes commands and monitors alarms/events exposed by the capability.`,
   requireOperation: `### \`requireOperation\`\n**Low-Level Operation Binding**\nDirectly executes an elementary device script or operation defined in an \`.op\` specification.`,
@@ -313,7 +313,7 @@ const XTEXT_KEYWORD_DOCS: Record<string, string> = {
   on: `### \`on context\`\nBinds the supervisory diagram to a DML domain data model for state and parameter typing.`,
 
   // Capability DSL
-  Capability: `### \`Capability\`\n**Thesis Section 4.1: Resource Capability Contract**\nEncapsulates equipment behavior, defining compatible component interfaces, fireable commands, receivable events, and raised alarms.`,
+  Capability: `### \`Capability\`\n**KIDE Specification §4.1: Resource Capability Contract**\nEncapsulates equipment behavior, defining compatible component interfaces, fireable commands, receivable events, and raised alarms.`,
   compatible: `### \`compatible component interface\`\nReferences the MNC-ML \`InterfaceDescription\` that this capability conforms to.`,
   providesControlCapabilities: `### \`providesControlCapabilities\`\nDeclares the fireable commands, receivable events, and raised alarms offered by this capability.`,
   providesOutcomes: `### \`providesOutcomes\`\nDeclares the response objects, events, and data points that this capability yields upon completion.`,
@@ -323,12 +323,12 @@ const XTEXT_KEYWORD_DOCS: Record<string, string> = {
   execute: `### \`execute\`\nContains the executable code or command dispatched to the underlying actuator or micro-controller.`,
 
   // DML DSL
-  DataModel: `### \`DataModel\`\n**Thesis Section 3.3: Data Modeling Language (DML)**\nFoundation schema defining structured domain entities with primitive attributes and composite sub-models.`,
+  DataModel: `### \`DataModel\`\n**KIDE Specification §3.3: Data Modeling Language (DML)**\nFoundation schema defining structured domain entities with primitive attributes and composite sub-models.`,
   primitives: `### \`primitives\`\nBlock containing primitive variables (\`int\`, \`float\`, \`boolean\`, \`string\`, \`object\`, \`date\`).`,
   composites: `### \`composites\`\nBlock referencing other \`DataModel\` entities to compose hierarchical structures.`,
 
   // MNC-ML
-  InterfaceDescription: `### \`InterfaceDescription\`\n**Thesis Chapter 5: Formal Supervisory Interface**\nSpecifies the complete control contract: commands, events, responses, alarms, data points, and lifecycle operating states.`,
+  InterfaceDescription: `### \`InterfaceDescription\`\n**KIDE Specification §5.0: Formal Supervisory Interface**\nSpecifies the complete control contract: commands, events, responses, alarms, data points, and lifecycle operating states.`,
   ControlNode: `### \`ControlNode\`\n**Hierarchical Supervisory Controller**\nImplements an \`InterfaceDescription\` using CommandResponseBlocks, EventBlocks, and AlarmBlocks to manage child devices.`,
   operatingStates: `### \`operatingStates\`\nFinite state machine utility declaring allowed operational states, \`startStates\`, and \`endStates\`.`,
   CommandResponseBlock: `### \`CommandResponseBlock\`\nDefines actions, validations, and response aggregations triggered when receiving a specific supervisory command.`,

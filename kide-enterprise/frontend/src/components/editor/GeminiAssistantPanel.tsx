@@ -58,7 +58,7 @@ export const GeminiAssistantPanel: React.FC<Props> = ({ onClose, triggerRef }) =
     {
       id: 'welcome',
       role: 'assistant',
-      content: `Hello! I am your **KIDE AI Engineering Copilot**.\n\nI am connected to project **"${projectName || 'Workspace'}"**${activeFile ? ` with active file \`${activeFile.name}\`` : ''}.\n\nI can validate your DSL models, synthesize supervisory automata, search the thesis Knowledge Hub, and propose deterministic patches with full provenance tracking.`
+      content: `Hello! I am your **KIDE AI Engineering Copilot**.\n\nI am connected to project **"${projectName || 'Workspace'}"**${activeFile ? ` with active file \`${activeFile.name}\`` : ''}.\n\nI can validate your DSL models, synthesize supervisory automata, search the industrial Knowledge Hub, and propose deterministic patches with full provenance tracking.`
     }
   ]);
 

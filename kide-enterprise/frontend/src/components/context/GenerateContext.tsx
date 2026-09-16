@@ -136,7 +136,7 @@ export const GenerateContext: React.FC = () => {
           <div className="p-4 text-center text-gray-500">
             <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1.5" />
             <p className="text-xs text-gray-300">All Generators Ready</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">Template definitions match thesis Chapter 5.3 specifications.</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">Template definitions match KIDE Metamodel Specification §5.3.</p>
           </div>
         )}
       </div>

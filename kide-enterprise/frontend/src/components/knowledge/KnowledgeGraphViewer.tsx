@@ -516,7 +516,7 @@ export const KnowledgeGraphViewer: React.FC = () => {
               className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold transition ${
                 graphScope === 'global' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-400 hover:text-white'
               }`}
-              title="Explore the global thesis equipment & ontology repository"
+              title="Explore the global industrial equipment & metamodel ontology repository"
             >
               <span>🌐 Knowledge Store</span>
             </button>
@@ -870,10 +870,10 @@ export const KnowledgeGraphViewer: React.FC = () => {
                     <span className="font-mono text-xs">{selectedGraphNode.source_file}</span>
                   </div>
                 )}
-                {selectedGraphNode.thesis_reference && (
+                {selectedGraphNode.specification_reference && (
                   <div className="flex items-start gap-2 text-gray-400 bg-gray-900/60 p-2 rounded-lg border border-gray-800">
                     <BookOpen className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
-                    <span className="text-[11px]">{selectedGraphNode.thesis_reference}</span>
+                    <span className="text-[11px]">{selectedGraphNode.specification_reference}</span>
                   </div>
                 )}
               </div>
@@ -1126,7 +1126,7 @@ export const KnowledgeGraphViewer: React.FC = () => {
 
                 {matchingResults.length === 0 && !isMatching && (
                   <div className="text-center py-8 text-gray-500 text-xs">
-                    Type an industrial requirement above to query the thesis Knowledge Graph.
+                    Type an industrial requirement above to query the Knowledge Graph.
                   </div>
                 )}
               </div>

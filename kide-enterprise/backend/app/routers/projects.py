@@ -13,7 +13,7 @@ from app.models.project import Project, ProjectFile
 from app.models.user import User
 from app.auth.dependencies import get_db, get_current_user, require_permission
 from app.auth.rbac import Permission
-from app.services.thesis_examples import get_template, list_templates
+from app.services.reference_examples import get_template, list_templates
 from app.services.audit import AuditService
 from app.services.entitlements import EntitlementsService
 

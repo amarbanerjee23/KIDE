@@ -223,7 +223,7 @@ export const KnowledgeIngestionModal: React.FC<KnowledgeIngestionModalProps> = (
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-white tracking-tight">Enterprise Knowledge Ingestion Pipeline</h2>
                 <span className="text-xs px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-semibold border border-sky-500/30">
-                  PhD Thesis Req 24 & 50
+                  Enterprise Ingestion (Req 24 & 50)
                 </span>
               </div>
               <p className="text-xs text-slate-400">
@@ -366,7 +366,7 @@ export const KnowledgeIngestionModal: React.FC<KnowledgeIngestionModalProps> = (
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-slate-800 text-[11px] text-slate-400">
-                    Engineered according to Section 8.1 & 8.2 of the doctoral thesis for continuous equipment discovery.
+                    Engineered according to Section 8.1 & 8.2 of the KIDE Architecture Specification for continuous equipment discovery.
                   </div>
                 </div>
               </div>
@@ -742,7 +742,7 @@ export const KnowledgeIngestionModal: React.FC<KnowledgeIngestionModalProps> = (
                 <div>
                   <h3 className="text-sm font-semibold text-white">Transactional Notification Audit Stream</h3>
                   <p className="text-xs text-slate-400">
-                    PhD Requirement 50: Lifecycle alerting for document extraction completion, staged entity approvals, and billing events
+                    Enterprise Notification Stream: Lifecycle alerting for document extraction completion, staged entity approvals, and billing events
                   </p>
                 </div>
                 <button

@@ -1,5 +1,5 @@
 """
-Ingestion Background Worker & Knowledge Staging Pipeline (PhD Requirements 5 & 24).
+Ingestion Background Worker & Knowledge Staging Pipeline (Enterprise Specifications 5 & 24).
 Orchestrates document extraction, staged entity lifecycle (draft -> approved -> promoted),
 and project workspace integration.
 """
@@ -195,7 +195,7 @@ class IngestionWorker:
             "id": catalog_entry_id,
             "name": artifact.name,
             "category": artifact.category,
-            "thesis_reference": f"Ingested from {artifact.protocol} datasheet (Artifact #{artifact.id})",
+            "specification_reference": f"Ingested from {artifact.protocol} datasheet (Artifact #{artifact.id})",
             "description": f"Extracted {artifact.protocol} industrial device specification with automated KIDE DSL synthesis.",
             "tags": [artifact.protocol, artifact.category, "Ingested", "Enterprise"],
             "devices": [artifact.name],

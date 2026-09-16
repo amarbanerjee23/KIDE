@@ -163,7 +163,7 @@ Drive_Ready,bool,flag,0,1,Inverter ready for operation
       id: `ingested_${stagedArtifact.id}_keyence_iv3`,
       name: stagedArtifact.name,
       category: stagedArtifact.category,
-      thesis_reference: `Ingested from ${stagedArtifact.protocol} datasheet (Artifact #${stagedArtifact.id})`,
+      specification_reference: `Ingested from ${stagedArtifact.protocol} datasheet (Artifact #${stagedArtifact.id})`,
       tags: [stagedArtifact.protocol, stagedArtifact.category, 'Ingested'],
       devices: [stagedArtifact.name],
       files: [
