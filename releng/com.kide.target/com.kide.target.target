@@ -4,8 +4,9 @@
   The single place where third-party versions are declared.
 
   Xtext is pinned at 2.25.0: it is the last release that still exports
-  org.apache.log4j, which the generated *.dsl.ui bundles import. Sirius 6.6 is
-  the compatible modeling stream used by the existing KIDE Sirius definitions.
+  org.apache.log4j, which the generated *.dsl.ui bundles import. Sirius stays on
+  the 6.6 maintenance line used by the existing KIDE Sirius definitions. The
+  6.6.1/2020-06 p2 variant is retained and contains complete p2 metadata.
   Moving any of these is a deliberate, tested change - see docs/release-process.md.
 -->
 <target name="KIDE Target Platform" sequenceNumber="1">
@@ -43,7 +44,7 @@
       <unit id="org.eclipse.sirius.runtime.aql.feature.group" version="0.0.0"/>
       <unit id="org.eclipse.sirius.specifier.feature.group" version="0.0.0"/>
       <unit id="org.eclipse.sirius.specifier.ide.ui.aql.feature.group" version="0.0.0"/>
-      <repository location="https://download.eclipse.org/sirius/updates/releases/6.6.0/"/>
+      <repository location="https://download.eclipse.org/sirius/updates/releases/6.6.1/2020-06/"/>
     </location>
 
     <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
