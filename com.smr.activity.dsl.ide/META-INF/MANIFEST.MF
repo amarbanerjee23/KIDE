@@ -14,6 +14,7 @@ Require-Bundle: com.smr.activity.dsl,
  com.dml.dsl;bundle-version="1.0.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.smr.activity.dsl.ide.contentassist.antlr,
- com.smr.activity.dsl.ide.contentassist.antlr.internal
+ com.smr.activity.dsl.ide.contentassist.antlr.internal,
+ com.smr.activity.dsl.ide.highlighting
 Automatic-Module-Name: com.smr.activity.dsl.ide
 
