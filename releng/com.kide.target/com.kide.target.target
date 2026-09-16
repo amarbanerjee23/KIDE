@@ -26,13 +26,17 @@
       <unit id="org.eclipse.acceleo.feature.group" version="0.0.0"/>
       <unit id="org.eclipse.uml2.sdk.feature.group" version="0.0.0"/>
       <unit id="org.eclipse.equinox.p2.user.ui.feature.group" version="0.0.0"/>
-      <!-- Xtext 2.25's server APIs require LSP4J at runtime but declare it
-           optional so non-LSP consumers are not forced to install it. KIDE's
-           headless language-server product uses those APIs directly, therefore
-           the compatible LSP4J pair is a pinned target-platform input. -->
+      <repository location="https://download.eclipse.org/releases/2021-12/"/>
+    </location>
+
+    <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+      <!-- Xtext 2.25 requires LSP4J in [0.9,0.11) for its LSP server APIs.
+           Those compatible 0.10.0 IUs are retained in the Eclipse 2021-03
+           repository rather than the newer 2021-12 composite. Keep the exact
+           qualified versions pinned so the headless runtime is reproducible. -->
       <unit id="org.eclipse.lsp4j" version="0.10.0.v20201105-1103"/>
       <unit id="org.eclipse.lsp4j.jsonrpc" version="0.10.0.v20201105-1103"/>
-      <repository location="https://download.eclipse.org/releases/2021-12/"/>
+      <repository location="https://download.eclipse.org/releases/2021-03/202103171000/"/>
     </location>
 
     <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
