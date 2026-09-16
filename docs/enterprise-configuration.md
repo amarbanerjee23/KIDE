@@ -45,6 +45,19 @@ Unknown providers fail closed. References cannot contain user information,
 passwords, query strings, fragments, ports, path traversal or multi-segment keys.
 Aliases are restricted to `A-Z`, `a-z`, `0-9`, `.`, `_` and `-`.
 
+## Provisioning encrypted aliases in Eclipse
+
+Open **Window → Preferences → KIDE Enterprise Secrets**. Enter an alias and the
+secret value, then choose **Save encrypted secret**. The value is passed to Equinox
+secure storage with encryption enabled and the password field is cleared immediately
+after provisioning. Project/workspace configuration should reference only the alias,
+for example `secret://secure/primary-provider`.
+
+The same page can remove an alias. It intentionally does not display existing secret
+values. For centrally managed credentials, operators can avoid local provisioning
+entirely and launch KIDE with an environment variable referenced through
+`secret://env/<NAME>`.
+
 ## API contract
 
 Use `EnterpriseConfiguration.system(projectRoot)` for normal Eclipse runtime use.
@@ -59,9 +72,9 @@ credential has been passed to the target client/API. Do not log, persist, cache,
 to exceptions, or convert secret values to application configuration.
 
 `SecureStorageSecretResolver.put(alias, char[])` and `remove(alias)` provide the
-provisioning primitive for future preference/administration UIs. Equinox secure
-storage itself accepts strings, so the resolver necessarily materializes a short-lived
-string at that boundary; KIDE does not retain it or expose it through snapshots.
+same provisioning primitive used by the preference page. Equinox secure storage
+itself accepts strings, so the resolver necessarily materializes a short-lived string
+at that boundary; KIDE does not retain it or expose it through snapshots.
 
 ## Failure behavior
 
