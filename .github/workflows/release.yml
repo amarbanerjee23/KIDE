@@ -10,23 +10,68 @@ on:
         required: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  validate-release:
+    name: Validate trusted-release credentials
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      KIDE_JAR_KEYSTORE_BASE64: ${{ secrets.KIDE_JAR_KEYSTORE_BASE64 }}
+      KIDE_KEY_ALIAS: ${{ secrets.KIDE_KEY_ALIAS }}
+      KIDE_KEYSTORE_PASSWORD: ${{ secrets.KIDE_KEYSTORE_PASSWORD }}
+      WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+      WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      APPLE_SIGNING_CERT_BASE64: ${{ secrets.APPLE_SIGNING_CERT_BASE64 }}
+      APPLE_SIGNING_CERT_PASSWORD: ${{ secrets.APPLE_SIGNING_CERT_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - name: Fail closed if any production signing credential is absent
+        shell: bash
+        run: |
+          missing=0
+          for name in \
+            KIDE_JAR_KEYSTORE_BASE64 KIDE_KEY_ALIAS KIDE_KEYSTORE_PASSWORD \
+            WINDOWS_CERTIFICATE_BASE64 WINDOWS_CERTIFICATE_PASSWORD \
+            APPLE_SIGNING_CERT_BASE64 APPLE_SIGNING_CERT_PASSWORD APPLE_SIGNING_IDENTITY \
+            APPLE_ID APPLE_APP_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Required trusted-release secret is missing: $name"
+              missing=1
+            fi
+          done
+          test "$missing" -eq 0
+
+  build-release:
+    name: Build signed-JAR release candidate
+    needs: validate-release
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      KIDE_JAR_KEYSTORE_BASE64: ${{ secrets.KIDE_JAR_KEYSTORE_BASE64 }}
+      KIDE_KEY_ALIAS: ${{ secrets.KIDE_KEY_ALIAS }}
+      KIDE_KEYSTORE_PASSWORD: ${{ secrets.KIDE_KEYSTORE_PASSWORD }}
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+      tag: ${{ steps.version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: '17'
           cache: maven
+
+      - name: Enforce immutable GitHub Actions pins
+        run: python3 scripts/verify_workflow_pins.py
 
       - name: Resolve release version
         id: version
@@ -42,26 +87,18 @@ jobs:
             exit 1
           fi
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Decide whether this build can be signed
-        id: signing
-        env:
-          KIDE_KEY_ALIAS: ${{ secrets.KIDE_KEY_ALIAS }}
-          KIDE_KEYSTORE_PATH: ${{ secrets.KIDE_KEYSTORE_PATH }}
+      - name: Materialize Java signing keystore
+        shell: bash
         run: |
-          if [ -n "$KIDE_KEY_ALIAS" ] && [ -n "$KIDE_KEYSTORE_PATH" ]; then
-            echo "profile=-Psign" >> "$GITHUB_OUTPUT"
-          else
-            echo "profile=" >> "$GITHUB_OUTPUT"
-            echo "::warning::No signing secrets configured - producing an unsigned release."
-          fi
+          printf '%s' "$KIDE_JAR_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/kide-release-keystore"
+          chmod 600 "$RUNNER_TEMP/kide-release-keystore"
 
-      - name: Build Eclipse product
+      - name: Build and cryptographically sign Eclipse bundles
         env:
-          KIDE_KEYSTORE: ${{ secrets.KIDE_KEYSTORE_PATH }}
-          KIDE_KEY_ALIAS: ${{ secrets.KIDE_KEY_ALIAS }}
-          KIDE_KEYSTORE_PASSWORD: ${{ secrets.KIDE_KEYSTORE_PASSWORD }}
-        run: mvn -B -ntp clean verify ${{ steps.signing.outputs.profile }}
+          KIDE_KEYSTORE: ${{ runner.temp }}/kide-release-keystore
+        run: mvn -B -ntp clean verify -Psign
 
       - name: Qualify and stage standalone desktop products
         run: |
@@ -74,42 +111,240 @@ jobs:
       - name: Add Eclipse update-site archive
         run: |
           (cd releng/com.kide.repository/target/repository && zip -qr "$GITHUB_WORKSPACE/dist/kide-p2-repository.zip" .)
-          (cd dist && sha256sum kide-p2-repository.zip >> SHA256SUMS.txt)
-          sort -k2 -o dist/SHA256SUMS.txt dist/SHA256SUMS.txt
-          cat dist/SHA256SUMS.txt
-          ls -lah dist
 
-      - name: Publish the release
-        uses: softprops/action-gh-release@v2
+      - name: Upload unsigned native release candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          files: dist/*
-          generate_release_notes: true
-          body: |
-            ## KIDE Modelling Studio
+          name: unsigned-release
+          path: dist
+          if-no-files-found: error
+          retention-days: 2
 
-            ### Standalone desktop application
-            Download the archive for your platform and unpack it. **No separate
-            Java installation is required**; every archive contains the tested
-            JustJ/Adoptium Java runtime used by KIDE.
+      - name: Upload p2 site for publication
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: p2-site
+          path: releng/com.kide.repository/target/repository
+          if-no-files-found: error
+          retention-days: 2
 
-            - Windows x64: run `kide.exe`
-            - Linux x64: run `./kide`
-            - macOS Intel / Apple silicon: open `KIDE.app`
+  sign-windows:
+    name: Authenticode sign Windows product
+    needs: build-release
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+      WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+    steps:
+      - name: Download release candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: unsigned-release
+          path: dist
 
-            Verify the download against `SHA256SUMS.txt`. The accompanying
-            `release-manifest.json` records the qualified launcher, embedded
-            runtime and digest for each platform artifact.
+      - name: Sign and verify Windows launcher
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ needs.build-release.outputs.version }}'
+          $archive = Join-Path $PWD "dist/KIDE-$version-windows-x86_64.zip"
+          $work = Join-Path $env:RUNNER_TEMP 'kide-windows'
+          $pfx = Join-Path $env:RUNNER_TEMP 'kide-signing.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64))
+          Expand-Archive -LiteralPath $archive -DestinationPath $work -Force
+          $launcher = Get-ChildItem -Path $work -Recurse -File -Filter 'kide.exe' |
+            Where-Object { $_.FullName -notmatch '[\\/]plugins[\\/]' } |
+            Select-Object -First 1
+          if (-not $launcher) { throw 'kide.exe was not found in the Windows release archive' }
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -File -Filter signtool.exe |
+            Where-Object { $_.FullName -match '[\\/]x64[\\/]signtool\.exe$' } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $signtool) { throw 'signtool.exe was not found on the runner' }
+          & $signtool.FullName sign /fd SHA256 /td SHA256 /tr http://timestamp.digicert.com /f $pfx /p $env:WINDOWS_CERTIFICATE_PASSWORD $launcher.FullName
+          if ($LASTEXITCODE -ne 0) { throw "signtool sign failed with exit code $LASTEXITCODE" }
+          & $signtool.FullName verify /pa /all /v $launcher.FullName
+          if ($LASTEXITCODE -ne 0) { throw "Authenticode verification failed with exit code $LASTEXITCODE" }
+          Remove-Item -LiteralPath $archive -Force
+          Compress-Archive -Path (Join-Path $work '*') -DestinationPath $archive -CompressionLevel Optimal
+          Remove-Item -LiteralPath $pfx -Force
 
-            ### Existing Eclipse installation
-            Help > Install New Software > Add > Archive, choose
-            `kide-p2-repository.zip`, then install *KIDE Modelling Tools*.
+      - name: Upload signed Windows archive
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: signed-windows
+          path: dist/KIDE-${{ needs.build-release.outputs.version }}-windows-x86_64.zip
+          if-no-files-found: error
+          retention-days: 2
 
-            See `docs/installation.md` for full instructions and platform notes.
+  sign-macos:
+    name: Developer ID sign and notarize macOS ${{ matrix.arch }}
+    needs: build-release
+    runs-on: macos-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
+    env:
+      APPLE_SIGNING_CERT_BASE64: ${{ secrets.APPLE_SIGNING_CERT_BASE64 }}
+      APPLE_SIGNING_CERT_PASSWORD: ${{ secrets.APPLE_SIGNING_CERT_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - name: Download release candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: unsigned-release
+          path: dist
 
-      - name: Publish the update site
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Import Developer ID certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          CERT="$RUNNER_TEMP/kide-signing.p12"
+          KEYCHAIN="$RUNNER_TEMP/kide-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          printf '%s' "$APPLE_SIGNING_CERT_BASE64" | base64 --decode > "$CERT"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$CERT" -k "$KEYCHAIN" -P "$APPLE_SIGNING_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN"
+          rm -f "$CERT"
+
+      - name: Sign, notarize, staple and verify macOS application
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION='${{ needs.build-release.outputs.version }}'
+          ARCH='${{ matrix.arch }}'
+          ARCHIVE="$GITHUB_WORKSPACE/dist/KIDE-$VERSION-macos-$ARCH.tar.gz"
+          WORK="$RUNNER_TEMP/kide-macos-$ARCH"
+          mkdir -p "$WORK"
+          tar -xzf "$ARCHIVE" -C "$WORK"
+          APP="$(find "$WORK" -type d -name 'KIDE.app' -print -quit)"
+          test -n "$APP"
+          codesign --force --deep --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          NOTARY_ZIP="$RUNNER_TEMP/KIDE-$ARCH-notarize.zip"
+          ditto -c -k --keepParent "$APP" "$NOTARY_ZIP"
+          xcrun notarytool submit "$NOTARY_ZIP" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+          xcrun stapler staple "$APP"
+          xcrun stapler validate "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          rm -f "$ARCHIVE" "$NOTARY_ZIP"
+          tar -czf "$ARCHIVE" -C "$WORK" .
+
+      - name: Upload signed and notarized macOS archive
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: signed-macos-${{ matrix.arch }}
+          path: dist/KIDE-${{ needs.build-release.outputs.version }}-macos-${{ matrix.arch }}.tar.gz
+          if-no-files-found: error
+          retention-days: 2
+
+  publish:
+    name: Attest and publish trusted release
+    needs: [build-release, sign-windows, sign-macos]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Download unsigned release set
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: unsigned-release
+          path: dist
+
+      - name: Download signed Windows archive
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: signed-windows
+          path: signed/windows
+
+      - name: Download signed macOS Intel archive
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: signed-macos-x86_64
+          path: signed/macos-x86_64
+
+      - name: Download signed macOS Apple silicon archive
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: signed-macos-aarch64
+          path: signed/macos-aarch64
+
+      - name: Replace unsigned native archives with verified signed bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION='${{ needs.build-release.outputs.version }}'
+          cp "signed/windows/KIDE-$VERSION-windows-x86_64.zip" "dist/KIDE-$VERSION-windows-x86_64.zip"
+          cp "signed/macos-x86_64/KIDE-$VERSION-macos-x86_64.tar.gz" "dist/KIDE-$VERSION-macos-x86_64.tar.gz"
+          cp "signed/macos-aarch64/KIDE-$VERSION-macos-aarch64.tar.gz" "dist/KIDE-$VERSION-macos-aarch64.tar.gz"
+
+      - name: Finalize checksums, manifest and CycloneDX SBOM
+        run: |
+          python3 scripts/finalize_release_evidence.py \
+            --dist dist \
+            --version '${{ needs.build-release.outputs.version }}' \
+            --windows-authenticode-verified \
+            --macos-notarization-verified
+
+      - name: Attest final release artifacts
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/KIDE-*
+            dist/kide-p2-repository.zip
+            dist/release-manifest.json
+            dist/SHA256SUMS.txt
+
+      - name: Refuse to replace an existing release
+        shell: bash
+        run: |
+          if gh release view '${{ needs.build-release.outputs.tag }}' >/dev/null 2>&1; then
+            echo "::error::Release ${{ needs.build-release.outputs.tag }} already exists; enterprise releases are immutable."
+            exit 1
+          fi
+
+      - name: Publish immutable GitHub release
+        shell: bash
+        run: |
+          gh release create '${{ needs.build-release.outputs.tag }}' dist/* \
+            --target "$GITHUB_SHA" \
+            --title "KIDE ${{ needs.build-release.outputs.version }}" \
+            --generate-notes \
+            --notes "Trusted KIDE desktop release. Windows is Authenticode signed; macOS Intel and Apple silicon are Developer ID signed, notarized and stapled. SHA256SUMS.txt, release-manifest.json, CycloneDX SBOM and GitHub build-provenance attestations accompany the binaries."
+
+      - name: Download p2 site
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: p2-site
+          path: p2-site
+
+      - name: Publish Eclipse update site
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453 # v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: releng/com.kide.repository/target/repository
+          publish_dir: p2-site
           destination_dir: updates
           keep_files: true
