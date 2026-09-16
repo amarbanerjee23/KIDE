@@ -37,10 +37,8 @@ Third-party components keep their own licences; see NOTICE.md in the source repo
    </features>
 
    <configurations>
-      <plugin id="org.apache.felix.scr" autoStart="true" startLevel="2"/>
       <plugin id="org.eclipse.core.runtime" autoStart="true" startLevel="0"/>
       <plugin id="org.eclipse.equinox.common" autoStart="true" startLevel="2"/>
-      <plugin id="org.eclipse.equinox.event" autoStart="true" startLevel="2"/>
       <plugin id="org.eclipse.equinox.simpleconfigurator" autoStart="true" startLevel="1"/>
       <property name="eclipse.buildId" value="1.0.0"/>
       <property name="eclipse.p2.profile" value="KIDE-Language-Server"/>
