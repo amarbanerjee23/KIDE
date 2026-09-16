@@ -60,9 +60,9 @@ Every production candidate must eventually prove:
 | E20 | Connector and extension SDK | Stable versioned APIs for SCM, work management, security and organization extensions |
 | E21 | Enterprise qualification | Upgrade/failover/load/security/offline/compatibility qualification and release acceptance suite |
 
-## Current phase: E01
+## Completed baseline: E01
 
-E01 establishes a non-negotiable distribution baseline:
+E01 established the non-negotiable distribution baseline:
 
 - Tycho materializes native Eclipse launchers for Windows x64, Linux x64,
   macOS Intel and macOS Apple silicon.
@@ -73,4 +73,22 @@ E01 establishes a non-negotiable distribution baseline:
 - Release artifacts use stable customer-facing names and include SHA-256
   checksums plus a machine-readable release manifest.
 
-E02 must build on this baseline rather than replacing it.
+## Current phase: E02
+
+E02 makes the E01 bytes trustworthy and independently verifiable:
+
+- every external GitHub Action is pinned to a full immutable commit SHA and CI
+  rejects mutable action tags;
+- the Java/Eclipse bundle signing keystore is required for production builds;
+- the Windows launcher must pass Authenticode signing and verification;
+- both macOS distributions must pass Developer ID signing, Apple notarisation,
+  ticket stapling and verification;
+- release publication fails closed when any signing credential is unavailable;
+- checksums and the release manifest are regenerated from the final signed and
+  notarised bytes, never from the unsigned staging archives;
+- a CycloneDX SBOM inventories the Eclipse plug-ins shipped in the final product;
+- GitHub build-provenance attestations bind the published artifacts to the
+  release workflow identity.
+
+E03 must preserve these controls and move enterprise configuration/secrets out
+of project/workspace files and into layered, reference-based configuration.
