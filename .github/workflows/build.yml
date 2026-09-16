@@ -7,9 +7,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
+    name: Eclipse Plug-ins and Portable Products
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,21 +34,30 @@ jobs:
           key: tycho-${{ hashFiles('releng/com.kide.target/com.kide.target.target') }}
           restore-keys: tycho-
 
-      - name: Build
-        run: mvn clean verify
+      - name: Build Eclipse plug-ins and desktop products
+        run: mvn -B -ntp clean verify
+
+      - name: Qualify standalone Windows, Linux and macOS products
+        run: |
+          python3 scripts/prepare_desktop_release.py \
+            --products releng/com.kide.repository/target/products
 
       - name: Upload update site
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: kide-p2-repository
           path: releng/com.kide.repository/target/repository
+          if-no-files-found: warn
           retention-days: 14
 
       - name: Upload products
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: kide-products
           path: |
             releng/com.kide.repository/target/products/*.zip
             releng/com.kide.repository/target/products/*.tar.gz
+          if-no-files-found: warn
           retention-days: 14

@@ -1,50 +1,74 @@
 # Installing KIDE
 
-Two ways in. Pick the first unless you already live in Eclipse.
+KIDE is distributed both as a self-contained desktop application and as an
+installable Eclipse update site. For most users, use the desktop application.
 
-## 1. The KIDE Modelling Studio (recommended)
+## 1. KIDE Modelling Studio (recommended)
 
-A complete application. Nothing else to install except Java.
+The desktop archives contain the Eclipse launcher, KIDE plug-ins and a pinned
+JustJ/Adoptium Java runtime. **A system-wide Java installation is not required.**
+Release CI rejects any desktop archive that is missing its native launcher or
+embedded runtime.
 
-| Platform | File |
-| --- | --- |
-| Windows x64 | `KIDE-1.0.0-win32.win32.x86_64.zip` |
-| Linux x64 | `KIDE-1.0.0-linux.gtk.x86_64.tar.gz` |
-| macOS Intel | `KIDE-1.0.0-macosx.cocoa.x86_64.tar.gz` |
-| macOS Apple silicon | `KIDE-1.0.0-macosx.cocoa.aarch64.tar.gz` |
+| Platform | Release file | Start KIDE |
+| --- | --- | --- |
+| Windows x64 | `KIDE-<version>-windows-x86_64.zip` | `kide.exe` |
+| Linux x64 | `KIDE-<version>-linux-x86_64.tar.gz` | `./kide` |
+| macOS Intel | `KIDE-<version>-macos-x86_64.tar.gz` | `KIDE.app` |
+| macOS Apple silicon | `KIDE-<version>-macos-aarch64.tar.gz` | `KIDE.app` |
 
 1. Download the archive for your platform from the
    [Releases page](https://github.com/amarbanerjee23/KIDE/releases).
-2. Check it: `sha256sum -c SHA256SUMS.txt`.
-3. Unpack it somewhere you can write to — not `C:\Program Files` unless you
-   intend to run as an administrator.
-4. Start `kide` (`kide.exe` on Windows, `KIDE.app` on macOS).
+2. Download `SHA256SUMS.txt` from the same release and verify the archive.
+3. Unpack the archive to a user-writable application directory.
+4. Start the native launcher shown above.
 
-The first start creates a workspace at `~/kide-workspace`. Use
-`kide -data /path/to/workspace` to choose another one.
+The first start creates a workspace at `~/kide-workspace`. Pass
+`-data /path/to/workspace` to use a different workspace.
 
-### Prerequisites
+### Download integrity
 
-- Java 11 or newer (17 recommended). `java -version` should print 11 or above.
-- 4 GB RAM minimum, 8 GB for large models.
-- 2 GB free disk space.
+Every release contains:
 
-If the launcher cannot find Java, point at it explicitly:
+- `SHA256SUMS.txt` with a SHA-256 digest for every standalone archive;
+- `release-manifest.json` recording the platform, launcher, bundled runtime and
+  artifact digest; and
+- `kide-p2-repository.zip` for existing Eclipse installations.
 
-```
-kide -vm /usr/lib/jvm/temurin-17/bin/java
-```
+Linux/macOS users can verify all downloaded files with:
 
-### macOS: unsigned builds
-
-Unless the release notes say the build is notarised, macOS refuses the first
-launch. Right-click **KIDE.app > Open** and confirm, or run:
-
-```
-xattr -dr com.apple.quarantine /Applications/KIDE.app
+```sh
+sha256sum -c SHA256SUMS.txt
 ```
 
-## 2. Into an existing Eclipse
+On Windows, PowerShell can verify an individual archive with:
+
+```powershell
+Get-FileHash .\KIDE-<version>-windows-x86_64.zip -Algorithm SHA256
+```
+
+Compare the result with the matching entry in `SHA256SUMS.txt`.
+
+### System requirements
+
+- Windows x64, Linux x64, macOS x64, or macOS Apple silicon as listed above.
+- 4 GB RAM minimum; 8 GB or more recommended for larger models/workspaces.
+- At least 2 GB free disk space plus workspace capacity.
+- No separately installed JDK/JRE is required for the standalone application.
+
+### macOS signing status
+
+KIDE's release pipeline distinguishes portable packaging from platform trust.
+A production macOS release should be Developer ID signed, notarised and stapled;
+Windows releases should be Authenticode signed. Until those credentials are
+configured, GitHub release notes identify builds as unsigned. Do not disable
+Gatekeeper globally to run KIDE.
+
+Native OS code signing/notarisation is tracked as a separate enterprise release
+gate because it requires organization-owned certificates and protected CI
+credentials; it is not emulated with repository secrets or self-signed keys.
+
+## 2. Install into an existing Eclipse
 
 Requires **Eclipse IDE for Java and DSL Developers** 2021-12 or newer with
 Sirius installed.
@@ -66,6 +90,6 @@ tours through the same files.
 
 ## Uninstalling
 
-Delete the unpacked folder, or use **Help > About > Installation Details >
-Uninstall…** for the plug-in install. Your workspace is a separate folder and is
-never deleted for you.
+Delete the unpacked application folder, or use **Help > About > Installation
+Details > Uninstall…** for the plug-in installation. The workspace is stored
+separately and is never deleted automatically.

@@ -15,6 +15,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,6 +27,21 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release version: $VERSION" >&2
+            exit 1
+          fi
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Decide whether this build can be signed
         id: signing
@@ -40,21 +56,28 @@ jobs:
             echo "::warning::No signing secrets configured - producing an unsigned release."
           fi
 
-      - name: Build
+      - name: Build Eclipse product
         env:
           KIDE_KEYSTORE: ${{ secrets.KIDE_KEYSTORE_PATH }}
           KIDE_KEY_ALIAS: ${{ secrets.KIDE_KEY_ALIAS }}
           KIDE_KEYSTORE_PASSWORD: ${{ secrets.KIDE_KEYSTORE_PASSWORD }}
-        run: mvn clean verify ${{ steps.signing.outputs.profile }}
+        run: mvn -B -ntp clean verify ${{ steps.signing.outputs.profile }}
 
-      - name: Collect artefacts
+      - name: Qualify and stage standalone desktop products
         run: |
-          mkdir -p dist
-          cp releng/com.kide.repository/target/products/*.zip dist/ 2>/dev/null || true
-          cp releng/com.kide.repository/target/products/*.tar.gz dist/ 2>/dev/null || true
+          rm -rf dist
+          python3 scripts/prepare_desktop_release.py \
+            --products releng/com.kide.repository/target/products \
+            --output dist \
+            --version "${{ steps.version.outputs.value }}"
+
+      - name: Add Eclipse update-site archive
+        run: |
           (cd releng/com.kide.repository/target/repository && zip -qr "$GITHUB_WORKSPACE/dist/kide-p2-repository.zip" .)
-          (cd dist && sha256sum * > SHA256SUMS.txt)
-          ls -la dist
+          (cd dist && sha256sum kide-p2-repository.zip >> SHA256SUMS.txt)
+          sort -k2 -o dist/SHA256SUMS.txt dist/SHA256SUMS.txt
+          cat dist/SHA256SUMS.txt
+          ls -lah dist
 
       - name: Publish the release
         uses: softprops/action-gh-release@v2
@@ -64,14 +87,24 @@ jobs:
           body: |
             ## KIDE Modelling Studio
 
-            **Desktop application** - download the archive for your platform,
-            unpack it and run `kide`. Java 11 or newer is required.
-            Verify with `sha256sum -c SHA256SUMS.txt`.
+            ### Standalone desktop application
+            Download the archive for your platform and unpack it. **No separate
+            Java installation is required**; every archive contains the tested
+            JustJ/Adoptium Java runtime used by KIDE.
 
-            **Existing Eclipse** - Help > Install New Software > Add > Archive,
-            choose `kide-p2-repository.zip`, then install *KIDE Modelling Tools*.
+            - Windows x64: run `kide.exe`
+            - Linux x64: run `./kide`
+            - macOS Intel / Apple silicon: open `KIDE.app`
 
-            See `docs/installation.md` for the full instructions.
+            Verify the download against `SHA256SUMS.txt`. The accompanying
+            `release-manifest.json` records the qualified launcher, embedded
+            runtime and digest for each platform artifact.
+
+            ### Existing Eclipse installation
+            Help > Install New Software > Add > Archive, choose
+            `kide-p2-repository.zip`, then install *KIDE Modelling Tools*.
+
+            See `docs/installation.md` for full instructions and platform notes.
 
       - name: Publish the update site
         uses: peaceiris/actions-gh-pages@v4

@@ -15,6 +15,15 @@
   <packaging>eclipse-repository</packaging>
   <name>KIDE Update Site and Product</name>
 
+  <properties>
+    <!--
+      Pin the runtime repository used by includeJRE="true" in kide.product.
+      A fixed JustJ release keeps desktop artefacts reproducible and prevents a
+      future Java release from silently changing a KIDE release build.
+    -->
+    <kide.justj.repository>https://download.eclipse.org/justj/jres/17/updates/release/17.0.20/</kide.justj.repository>
+  </properties>
+
   <build>
     <plugins>
       <plugin>
@@ -50,6 +59,7 @@
           </execution>
         </executions>
         <configuration>
+          <productRepository>${kide.justj.repository}</productRepository>
           <products>
             <product>
               <id>com.kide.product</id>

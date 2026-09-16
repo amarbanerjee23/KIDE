@@ -3,9 +3,7 @@
       id="com.kide.feature"
       label="KIDE Modelling Tools"
       version="1.0.0.qualifier"
-      provider-name="KIDE"
-      license-feature="org.eclipse.license"
-      license-feature-version="0.0.0">
+      provider-name="KIDE">
 
    <description url="https://github.com/amarbanerjee23/KIDE">
       Capability, activity, data and MNC modelling: textual languages with live
