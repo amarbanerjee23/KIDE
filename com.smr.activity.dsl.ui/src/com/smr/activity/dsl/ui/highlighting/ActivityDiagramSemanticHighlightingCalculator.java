@@ -9,27 +9,26 @@ import org.eclipse.xtext.nodemodel.util.NodeModelUtils;
 import org.eclipse.xtext.resource.XtextResource;
 import org.eclipse.xtext.ui.editor.syntaxcoloring.IHighlightedPositionAcceptor;
 import org.eclipse.xtext.ui.editor.syntaxcoloring.ISemanticHighlightingCalculator;
-import org.eclipse.xtext.util.CancelIndicator;
 
 import activityDiagramModel.Activity;
 import activityDiagramModel.ActivityDiagram;
 
 /**
  * Highlights activity names and the capability each activity requires.
+ *
+ * KIDE is built against Xtext 2.25, whose semantic-highlighting contract uses
+ * the two-argument provideHighlightingFor method. Cancellation-aware variants
+ * belong to newer Xtext APIs and must not be compiled into this bundle.
  */
 public class ActivityDiagramSemanticHighlightingCalculator implements ISemanticHighlightingCalculator {
 
 	@Override
-	public void provideHighlightingFor(XtextResource resource, IHighlightedPositionAcceptor acceptor,
-			CancelIndicator cancelIndicator) {
+	public void provideHighlightingFor(XtextResource resource, IHighlightedPositionAcceptor acceptor) {
 		if (resource == null || resource.getParseResult() == null) {
 			return;
 		}
 		Iterator<EObject> contents = resource.getAllContents();
 		while (contents.hasNext()) {
-			if (cancelIndicator != null && cancelIndicator.isCanceled()) {
-				return;
-			}
 			EObject element = contents.next();
 			if (element instanceof Activity || element instanceof ActivityDiagram) {
 				highlightFeature(element, "name", ActivityDiagramHighlightingConfiguration.ACTIVITY_NAME_ID, acceptor);
