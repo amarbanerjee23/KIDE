@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
-   <extension point="org.eclipse.core.runtime.applications">
-      <application id="selfcheck">
+   <extension id="selfcheck" point="org.eclipse.core.runtime.applications">
+      <application cardinality="singleton-global" thread="main" visible="false">
          <run class="com.kide.enterprise.context.EnterpriseContextSelfCheckApplication"/>
       </application>
    </extension>
