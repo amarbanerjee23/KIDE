@@ -1,0 +1,82 @@
+name: Release KIDE
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, for example 1.0.0
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Decide whether this build can be signed
+        id: signing
+        env:
+          KIDE_KEY_ALIAS: ${{ secrets.KIDE_KEY_ALIAS }}
+          KIDE_KEYSTORE_PATH: ${{ secrets.KIDE_KEYSTORE_PATH }}
+        run: |
+          if [ -n "$KIDE_KEY_ALIAS" ] && [ -n "$KIDE_KEYSTORE_PATH" ]; then
+            echo "profile=-Psign" >> "$GITHUB_OUTPUT"
+          else
+            echo "profile=" >> "$GITHUB_OUTPUT"
+            echo "::warning::No signing secrets configured - producing an unsigned release."
+          fi
+
+      - name: Build
+        env:
+          KIDE_KEYSTORE: ${{ secrets.KIDE_KEYSTORE_PATH }}
+          KIDE_KEY_ALIAS: ${{ secrets.KIDE_KEY_ALIAS }}
+          KIDE_KEYSTORE_PASSWORD: ${{ secrets.KIDE_KEYSTORE_PASSWORD }}
+        run: mvn clean verify ${{ steps.signing.outputs.profile }}
+
+      - name: Collect artefacts
+        run: |
+          mkdir -p dist
+          cp releng/com.kide.repository/target/products/*.zip dist/ 2>/dev/null || true
+          cp releng/com.kide.repository/target/products/*.tar.gz dist/ 2>/dev/null || true
+          (cd releng/com.kide.repository/target/repository && zip -qr "$GITHUB_WORKSPACE/dist/kide-p2-repository.zip" .)
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+          ls -la dist
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          body: |
+            ## KIDE Modelling Studio
+
+            **Desktop application** - download the archive for your platform,
+            unpack it and run `kide`. Java 11 or newer is required.
+            Verify with `sha256sum -c SHA256SUMS.txt`.
+
+            **Existing Eclipse** - Help > Install New Software > Add > Archive,
+            choose `kide-p2-repository.zip`, then install *KIDE Modelling Tools*.
+
+            See `docs/installation.md` for the full instructions.
+
+      - name: Publish the update site
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: releng/com.kide.repository/target/repository
+          destination_dir: updates
+          keep_files: true
