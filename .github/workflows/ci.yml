@@ -10,43 +10,6 @@ permissions:
   contents: read
 
 jobs:
-  eclipse-product-build:
-    name: Eclipse Product / Portable Desktop Qualification
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-          cache: maven
-
-      - name: Build Eclipse plug-ins and desktop products
-        run: mvn -B -ntp clean verify
-
-      - name: Qualify portable Windows, Linux and macOS archives
-        run: |
-          python3 scripts/prepare_desktop_release.py \
-            --products releng/com.kide.repository/target/products
-
-      - name: Upload qualified desktop products
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: kide-desktop-products
-          path: |
-            releng/com.kide.repository/target/products/*.zip
-            releng/com.kide.repository/target/products/*.tar.gz
-          if-no-files-found: warn
-          retention-days: 7
-
   backend-test:
     name: Backend Test Suite (Pytest)
     runs-on: ubuntu-latest
