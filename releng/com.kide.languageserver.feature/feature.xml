@@ -19,4 +19,8 @@
    <plugin id="com.mncml.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.operation.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.smr.activity.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <!-- Product configuration starts this bundle at level 1, so it must be part of
+        the headless feature closure rather than being supplied incidentally by
+        Eclipse UI/platform features. -->
+   <plugin id="org.eclipse.equinox.simpleconfigurator" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
 </feature>
