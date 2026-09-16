@@ -1,9 +1,0 @@
-{
-  "name": "kide-live-preview",
-  "version": "1.0.0",
-  "private": true,
-  "description": "Watches KIDE capability and activity models and shows the diagram in a browser as you type.",
-  "bin": { "kide-live-preview": "./server.js" },
-  "scripts": { "start": "node server.js" },
-  "license": "EPL-2.0"
-}
