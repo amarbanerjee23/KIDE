@@ -44,11 +44,25 @@ jobs:
         run: python3 scripts/verify_language_layering.py
 
       - name: Build Eclipse plug-ins and portable products
-        run: mvn -B -ntp clean verify
+        run: |
+          set +e
+          mvn -B -ntp clean verify
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "::group::Tycho/Equinox failure diagnostics"
+            find com.kide.enterprise.context.tests/target -type f \( -name '*.log' -o -name '.log' \) -print -exec sh -c 'echo "----- $1 -----"; cat "$1"' _ {} \; 2>/dev/null || true
+            echo "::endgroup::"
+          fi
+          exit "$status"
 
       - name: Qualify standalone Windows, Linux and macOS desktop products
         run: |
           python3 scripts/prepare_desktop_release.py \
+            --products releng/com.kide.repository/target/products
+
+      - name: Smoke-test packaged enterprise context runtime
+        run: |
+          python3 scripts/smoke_enterprise_context.py \
             --products releng/com.kide.repository/target/products
 
       - name: Smoke-test headless multi-DSL language server

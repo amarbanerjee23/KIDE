@@ -60,7 +60,7 @@ Every production candidate must eventually prove:
 | E20 | Connector and extension SDK | Stable versioned APIs for SCM, work management, security and organization extensions |
 | E21 | Enterprise qualification | Upgrade/failover/load/security/offline/compatibility qualification and release acceptance suite |
 
-## Completed baseline: E01-E02
+## Completed baseline: E01-E03
 
 E01 established the non-negotiable distribution baseline:
 
@@ -88,9 +88,7 @@ E02 made those bytes trustworthy and independently verifiable:
 - GitHub build-provenance attestations bind the published artifacts to the
   release workflow identity.
 
-## Current phase: E03
-
-E03 introduces one configuration/security contract for later enterprise features:
+E03 introduced the shared configuration/security contract:
 
 - deterministic precedence is defaults → installation → user → workspace →
   project, with provenance retained for every winning value;
@@ -99,15 +97,36 @@ E03 introduces one configuration/security contract for later enterprise features
 - `secret://secure/<alias>` stores encrypted values through Equinox secure
   storage and `secret://env/<NAME>` supports externally provisioned runtime
   credentials;
-- unknown secret providers and unavailable secret aliases fail closed;
 - normal configuration APIs never return resolved secret material;
 - resolved secrets are short-lived, redacted and wipe their internal character
-  arrays when closed;
-- a Tycho Eclipse test plug-in qualifies precedence, provenance, secret-literal
-  rejection, secret API separation and reference parsing;
-- the bundle is shipped in the desktop product while all E01/E02 build,
-  packaging and release controls remain mandatory.
+  arrays when closed; and
+- the Eclipse preferences UI provisions encrypted aliases without writing secret
+  material to project/workspace files.
 
-E04 must preserve these controls and add stable organization, portfolio, project
-and workspace identities/metadata without using filesystem paths or display names
-as security identities.
+## Current phase: E04
+
+E04 establishes stable organization → portfolio → project → workspace context:
+
+- canonical IDs are typed `kide:<scope>:<uuid>` values independent of paths and
+  display names;
+- organization/portfolio/project IDs travel with the project descriptor while
+  each Eclipse workspace receives its own stable workspace ID;
+- workspace bindings carry their organization/portfolio/project ancestry and
+  mismatches fail closed rather than silently rebinding;
+- each node carries a bounded descriptive metadata map for later governance,
+  policy and integration use;
+- malformed, missing, partial, oversized or unsupported metadata returns typed
+  diagnostics instead of uncaught workbench exceptions;
+- persistence rejects unsafe symbolic-link paths, performs atomic replacement
+  and rolls the project descriptor back when the paired workspace write fails;
+- the feature is lazy-loaded and does not parse enterprise context merely because
+  KIDE starts;
+- the Eclipse preference page provides explicit initialization/update without
+  changing IDs on rename; and
+- CI runs both Tycho E04 failure-path tests and a self-check from the actual
+  packaged Linux desktop product, rejecting non-zero exits and runtime
+  exception/error signatures.
+
+E05 must preserve E01-E04 controls and add an OIDC/SAML-ready principal abstraction,
+least-privilege RBAC and authorization decisions keyed to the stable E04 enterprise
+IDs rather than filesystem paths or display names.

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension point="org.eclipse.ui.preferencePages">
+      <page
+            id="com.kide.enterprise.context.ui.context"
+            name="KIDE Enterprise Context"
+            class="com.kide.enterprise.context.ui.EnterpriseContextPreferencePage">
+      </page>
+   </extension>
+</plugin>
