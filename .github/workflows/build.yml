@@ -52,6 +52,9 @@ jobs:
       - name: Verify shipped language product truth
         run: python3 scripts/verify_product_truth.py
 
+      - name: Verify LSP feature parity matrix
+        run: python3 scripts/verify_lsp_parity_matrix.py
+
       - name: Build Eclipse plug-ins and portable products
         run: |
           set +e
@@ -77,6 +80,11 @@ jobs:
       - name: Smoke-test headless multi-DSL language server
         run: |
           python3 scripts/smoke_language_server.py \
+            --products releng/com.kide.languageserver.repository/target/products
+
+      - name: Qualify packaged LSP feature parity
+        run: |
+          python3 scripts/qualify_lsp_parity.py \
             --products releng/com.kide.languageserver.repository/target/products
 
       - name: Upload update site

@@ -106,6 +106,11 @@ E04 established stable organization → portfolio → project → workspace cont
 
 ## Next execution point
 
-The next implementation sequence is **PR12**, not a direct E05 jump. PR12-PR16 first create a semantic golden corpus, full LSP parity tests, model migration framework and guarded Xtext/Eclipse/Java modernization. This is necessary because the web product will rely on the same semantics and Xtext 2.44 has removed the legacy Xtext-Web/GWT path.
+PR12 is complete and merged. The active stability sequence is **PR13 -> PR16**:
 
-After the modernization guardrails are green, PR17 onward implements the remaining enterprise phases together with the web, knowledge/synthesis, systems-engineering and final productization work described in the world-class roadmap.
+- PR13 freezes client-neutral LSP editor behavior across all five DSLs;
+- PR14 introduces explicit model/schema compatibility and safe migration;
+- PR15 makes generated Xtext artefacts reproducible and removes legacy coupling without changing semantics; and
+- PR16 upgrades Java/Eclipse/Xtext/Sirius only after those regression gates are green.
+
+Enterprise identity/authorization resumes at PR17 after the modernization guardrails are proven.
