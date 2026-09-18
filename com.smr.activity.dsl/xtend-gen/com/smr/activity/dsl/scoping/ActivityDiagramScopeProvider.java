@@ -12,6 +12,7 @@ import dataModelPackage.Parameter;
 import mncModel.AbstractInterfaceItems;
 import mncModel.AbstractOutcomeItems;
 import org.eclipse.emf.common.util.BasicEList;
+import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EReference;
 import org.eclipse.xtext.naming.IQualifiedNameProvider;
 import org.eclipse.xtext.naming.QualifiedName;
@@ -34,13 +35,21 @@ public class ActivityDiagramScopeProvider extends AbstractDeclarativeScopeProvid
   @Inject
   private ResourceDescriptionsProvider resourceDescriptionsProvider;
   
+  private QualifiedName simpleName(final EObject object) {
+    QualifiedName qualified = this.qualifiedNameProvider.getFullyQualifiedName(object);
+    if (qualified == null || qualified.getSegmentCount() == 0) {
+      return null;
+    }
+    return QualifiedName.create(qualified.getLastSegment());
+  }
+  
   public IScope scope_Outcome_outcomeParameter(final Outcome outcome, final EReference ref) {
     BasicEList<Parameter> _candidateParametersForOutcome = ActivityDiagramValidator.getCandidateParametersForOutcome(outcome);
     return Scopes.<Parameter>scopeFor(_candidateParametersForOutcome, 
       new Function<Parameter, QualifiedName>() {
         @Override
         public QualifiedName apply(final Parameter outcome) {
-          return ActivityDiagramScopeProvider.this.qualifiedNameProvider.getFullyQualifiedName(outcome);
+          return ActivityDiagramScopeProvider.this.simpleName(outcome);
         }
         
         @Override
@@ -57,7 +66,7 @@ public class ActivityDiagramScopeProvider extends AbstractDeclarativeScopeProvid
       new Function<AbstractOutcomeItems, QualifiedName>() {
         @Override
         public QualifiedName apply(final AbstractOutcomeItems outcome) {
-          return ActivityDiagramScopeProvider.this.qualifiedNameProvider.getFullyQualifiedName(outcome);
+          return ActivityDiagramScopeProvider.this.simpleName(outcome);
         }
         
         @Override
@@ -74,7 +83,7 @@ public class ActivityDiagramScopeProvider extends AbstractDeclarativeScopeProvid
       new Function<AbstractInterfaceItems, QualifiedName>() {
         @Override
         public QualifiedName apply(final AbstractInterfaceItems outcome) {
-          return ActivityDiagramScopeProvider.this.qualifiedNameProvider.getFullyQualifiedName(outcome);
+          return ActivityDiagramScopeProvider.this.simpleName(outcome);
         }
         
         @Override
