@@ -30,6 +30,7 @@
    <plugin id="com.kide.enterprise.configuration.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.kide.enterprise.context" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.kide.enterprise.context.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.kide.enterprise.migration" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
 
    <plugin id="com.capability" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.capability.dsl" download-size="0" install-size="0" version="0.0.0" unpack="false"/>

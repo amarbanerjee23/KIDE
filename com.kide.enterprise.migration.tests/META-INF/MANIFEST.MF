@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Project Schema Migration Tests
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.enterprise.migration.tests
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Require-Bundle: com.kide.enterprise.migration;bundle-version="1.0.0",
+ com.kide.enterprise.context;bundle-version="1.0.0",
+ org.junit;bundle-version="[4.12.0,5.0.0)"

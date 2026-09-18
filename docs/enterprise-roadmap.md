@@ -106,11 +106,8 @@ E04 established stable organization → portfolio → project → workspace cont
 
 ## Next execution point
 
-PR12 is complete and merged. The active stability sequence is **PR13 -> PR16**:
+PR12 and PR13 are merged. **PR14** is the active stability phase.
 
-- PR13 freezes client-neutral LSP editor behavior across all five DSLs;
-- PR14 introduces explicit model/schema compatibility and safe migration;
-- PR15 makes generated Xtext artefacts reproducible and removes legacy coupling without changing semantics; and
-- PR16 upgrades Java/Eclipse/Xtext/Sirius only after those regression gates are green.
+PR14 establishes explicit project/schema compatibility metadata, dry-run migration, backup-before-migrate, idempotence and forward-version rejection while preserving E04 stable IDs and leaving existing DSL model files untouched. It also carries the minimal correction required to compile the MNC resource-description export binding introduced after PR13.
 
-Enterprise identity/authorization resumes at PR17 after the modernization guardrails are proven.
+After PR14 is green, PR15 makes Xtext/generated artefacts reproducible and removes legacy coupling before PR16 changes Java/Eclipse/Xtext/Sirius versions.
