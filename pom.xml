@@ -67,6 +67,8 @@
     <module>com.kide.enterprise.context</module>
     <module>com.kide.enterprise.context.ui</module>
     <module>com.kide.enterprise.context.tests</module>
+    <module>com.kide.enterprise.migration</module>
+    <module>com.kide.enterprise.migration.tests</module>
     <module>releng</module>
   </modules>
 

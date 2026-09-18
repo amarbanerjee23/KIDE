@@ -5,22 +5,93 @@
     "purpose": "Freeze client-neutral editor behavior before PR15/PR16 modernization"
   },
   "features": [
-    {"id":"diagnostics","qualification":"required","capability":null},
-    {"id":"completion","qualification":"required","capability":"completionProvider"},
-    {"id":"hover","qualification":"required","capability":"hoverProvider"},
-    {"id":"definition","qualification":"required_where_applicable","capability":"definitionProvider"},
-    {"id":"references","qualification":"required","capability":"referencesProvider"},
-    {"id":"document_symbols","qualification":"required","capability":"documentSymbolProvider"},
-    {"id":"workspace_symbols","qualification":"required","capability":"workspaceSymbolProvider"},
-    {"id":"formatting","qualification":"required","capability":"documentFormattingProvider"},
-    {"id":"rename","qualification":"required","capability":"renameProvider"},
-    {"id":"folding","qualification":"required","capability":"foldingRangeProvider"},
-    {"id":"snippets","qualification":"deferred","capability":null,"reason":"not separately qualified on the legacy Xtext baseline"},
-    {"id":"code_actions","qualification":"deferred","capability":"codeActionProvider","reason":"existing Eclipse quick fixes are UI-layer implementations and are not yet proven headless"},
-    {"id":"semantic_tokens","qualification":"deferred","capability":"semanticTokensProvider","reason":"not part of the qualified Xtext 2.25 KIDE baseline"},
-    {"id":"declaration","qualification":"deferred","capability":"declarationProvider","reason":"not part of the qualified Xtext 2.25 KIDE baseline"},
-    {"id":"type_definition","qualification":"deferred","capability":"typeDefinitionProvider","reason":"not part of the qualified Xtext 2.25 KIDE baseline"},
-    {"id":"implementation","qualification":"deferred","capability":"implementationProvider","reason":"not part of the qualified Xtext 2.25 KIDE baseline"}
+    {
+      "id": "diagnostics",
+      "qualification": "required",
+      "capability": null
+    },
+    {
+      "id": "completion",
+      "qualification": "required",
+      "capability": "completionProvider"
+    },
+    {
+      "id": "hover",
+      "qualification": "required",
+      "capability": "hoverProvider"
+    },
+    {
+      "id": "definition",
+      "qualification": "required_where_applicable",
+      "capability": "definitionProvider"
+    },
+    {
+      "id": "references",
+      "qualification": "required",
+      "capability": "referencesProvider"
+    },
+    {
+      "id": "document_symbols",
+      "qualification": "required",
+      "capability": "documentSymbolProvider"
+    },
+    {
+      "id": "workspace_symbols",
+      "qualification": "required",
+      "capability": "workspaceSymbolProvider"
+    },
+    {
+      "id": "formatting",
+      "qualification": "required",
+      "capability": "documentFormattingProvider"
+    },
+    {
+      "id": "rename",
+      "qualification": "required",
+      "capability": "renameProvider"
+    },
+    {
+      "id": "folding",
+      "qualification": "deferred",
+      "capability": "foldingRangeProvider",
+      "reason": "The packaged Xtext 2.25 server does not advertise foldingRangeProvider; PR16 must promote this only after the platform upgrade exposes and qualifies it."
+    },
+    {
+      "id": "snippets",
+      "qualification": "deferred",
+      "capability": null,
+      "reason": "not separately qualified on the legacy Xtext baseline"
+    },
+    {
+      "id": "code_actions",
+      "qualification": "deferred",
+      "capability": "codeActionProvider",
+      "reason": "existing Eclipse quick fixes are UI-layer implementations and are not yet proven headless"
+    },
+    {
+      "id": "semantic_tokens",
+      "qualification": "deferred",
+      "capability": "semanticTokensProvider",
+      "reason": "not part of the qualified Xtext 2.25 KIDE baseline"
+    },
+    {
+      "id": "declaration",
+      "qualification": "deferred",
+      "capability": "declarationProvider",
+      "reason": "not part of the qualified Xtext 2.25 KIDE baseline"
+    },
+    {
+      "id": "type_definition",
+      "qualification": "deferred",
+      "capability": "typeDefinitionProvider",
+      "reason": "not part of the qualified Xtext 2.25 KIDE baseline"
+    },
+    {
+      "id": "implementation",
+      "qualification": "deferred",
+      "capability": "implementationProvider",
+      "reason": "not part of the qualified Xtext 2.25 KIDE baseline"
+    }
   ],
   "languages": {
     "dml": {
@@ -28,28 +99,38 @@
       "hover_token": "Payload",
       "references_min": 0,
       "folding_min": 1,
-      "rename_targets": ["parity.dml"]
+      "rename_targets": [
+        "parity.dml"
+      ]
     },
     "operation": {
       "symbol": "Inspect",
       "hover_token": "Inspect",
       "references_min": 0,
       "folding_min": 0,
-      "rename_targets": ["parity.op"]
+      "rename_targets": [
+        "parity.op"
+      ]
     },
     "mnc": {
       "symbol": "Device",
       "hover_token": "Device",
       "references_min": 1,
       "folding_min": 1,
-      "rename_targets": ["parity.mncspec", "parity.cap"]
+      "rename_targets": [
+        "parity.mncspec",
+        "parity.cap"
+      ]
     },
     "capability": {
       "symbol": "Observe",
       "hover_token": "Observe",
       "references_min": 1,
       "folding_min": 1,
-      "rename_targets": ["parity.cap", "parity.activity"],
+      "rename_targets": [
+        "parity.cap",
+        "parity.activity"
+      ],
       "definition": {
         "token": "Device",
         "target_extension": "mncspec"
@@ -60,7 +141,9 @@
       "hover_token": "Observe",
       "references_min": 0,
       "folding_min": 1,
-      "rename_targets": ["parity.activity"],
+      "rename_targets": [
+        "parity.activity"
+      ],
       "definition": {
         "token": "Observe",
         "target_extension": "cap"

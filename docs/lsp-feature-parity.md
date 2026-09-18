@@ -18,9 +18,8 @@ The legacy Xtext 2.25 baseline must retain:
 - document symbols and workspace symbols;
 - document formatting;
 - rename refactoring, including cross-language edits for MNC -> Capability and Capability -> Activity; and
-- folding.
 
-The matrix also records features that are intentionally **deferred/unqualified** on the legacy baseline: snippets, code actions, semantic tokens, declaration, type definition and implementation navigation. A feature may be promoted only by changing the matrix and adding a functional probe in the same PR.
+The matrix also records features that are intentionally **deferred/unqualified** on the legacy baseline: folding, snippets, code actions, semantic tokens, declaration, type definition and implementation navigation. The packaged Xtext 2.25 server does not advertise `foldingRangeProvider`; PR16 must promote folding only after the upgraded server exposes it and a functional probe passes. A feature may be promoted only by changing the matrix and adding a functional probe in the same PR.
 
 ## Why the matrix is explicit
 

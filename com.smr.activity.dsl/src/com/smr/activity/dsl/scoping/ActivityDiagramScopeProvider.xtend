@@ -33,13 +33,19 @@ class ActivityDiagramScopeProvider extends AbstractDeclarativeScopeProvider {
 	@Inject
 	ResourceDescriptionsProvider resourceDescriptionsProvider
 
+	private def QualifiedName simpleName(org.eclipse.emf.ecore.EObject object) {
+		val qualified = qualifiedNameProvider.getFullyQualifiedName(object)
+		if (qualified === null || qualified.segmentCount === 0) null
+		else QualifiedName.create(qualified.lastSegment)
+	}
+
 	def scope_Outcome_outcomeParameter(Outcome outcome, EReference ref) {
 		Scopes.scopeFor(
 			ActivityDiagramValidator::getCandidateParametersForOutcome(outcome),
 			new Function<Parameter, QualifiedName> {
 
 				override apply(Parameter outcome) {
-					qualifiedNameProvider.getFullyQualifiedName(outcome)
+					simpleName(outcome)
 				}
 
 				override equals(Object object) {
@@ -56,7 +62,7 @@ class ActivityDiagramScopeProvider extends AbstractDeclarativeScopeProvider {
 		ActivityDiagramValidator::getCandidateCapabilityOutcomes(outcome),
 			new Function<AbstractOutcomeItems, QualifiedName> {
 				override apply(AbstractOutcomeItems outcome) {
-					qualifiedNameProvider.getFullyQualifiedName(outcome)
+					simpleName(outcome)
 				}
 				override equals(Object object) {
 					throw new UnsupportedOperationException("TODO: auto-generated method stub")
@@ -73,7 +79,7 @@ class ActivityDiagramScopeProvider extends AbstractDeclarativeScopeProvider {
 			new Function<AbstractInterfaceItems, QualifiedName> {
 
 				override apply(AbstractInterfaceItems outcome) {
-					qualifiedNameProvider.getFullyQualifiedName(outcome)
+					simpleName(outcome)
 				}
 
 				override equals(Object object) {

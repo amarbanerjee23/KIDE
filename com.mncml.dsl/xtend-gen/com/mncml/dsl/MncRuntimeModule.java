@@ -30,7 +30,6 @@ public class MncRuntimeModule extends AbstractMncRuntimeModule {
     binder.<IScopeProvider>bind(IScopeProvider.class).annotatedWith(LinkingScopeProviderBinding.class).to(MncScopeProvider.class);
   }
   
-  @Override
   public Class<? extends IDefaultResourceDescriptionStrategy> bindIDefaultResourceDescriptionStrategy() {
     return MncResourceDescriptionStrategy.class;
   }

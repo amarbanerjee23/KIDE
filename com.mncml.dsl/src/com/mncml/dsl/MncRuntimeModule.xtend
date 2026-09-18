@@ -27,7 +27,7 @@ class MncRuntimeModule extends AbstractMncRuntimeModule  {
 		binder.bind(IScopeProvider).annotatedWith(LinkingScopeProviderBinding).to(MncScopeProvider);
 	}
 	
-	override Class<? extends IDefaultResourceDescriptionStrategy> bindIDefaultResourceDescriptionStrategy() {
+	def Class<? extends IDefaultResourceDescriptionStrategy> bindIDefaultResourceDescriptionStrategy() {
 		MncResourceDescriptionStrategy
 	}
 

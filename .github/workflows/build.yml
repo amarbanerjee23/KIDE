@@ -77,6 +77,11 @@ jobs:
           python3 scripts/smoke_enterprise_context.py \
             --products releng/com.kide.repository/target/products
 
+      - name: Smoke-test packaged project schema migration
+        run: |
+          python3 scripts/smoke_schema_migration.py \
+            --products releng/com.kide.repository/target/products
+
       - name: Smoke-test headless multi-DSL language server
         run: |
           python3 scripts/smoke_language_server.py \

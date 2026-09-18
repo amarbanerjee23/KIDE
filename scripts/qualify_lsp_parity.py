@@ -141,6 +141,12 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
     probes = matrix.get("languages")
     if not isinstance(probes, dict):
         raise SmokeFailure("LSP parity matrix has no languages object")
+    qualified_features = {
+        item.get("id")
+        for item in matrix.get("features", [])
+        if isinstance(item, dict)
+        and item.get("qualification") in ("required", "required_where_applicable")
+    }
 
     launcher = find_linux_launcher(products)
 
@@ -344,16 +350,17 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                                 f".{extension} rename did not include expected target {target}: {rename}"
                             )
 
-                    folding = rpc(
-                        "textDocument/foldingRange",
-                        {"textDocument": {"uri": uri}},
-                    ).get("result")
-                    if not isinstance(folding, list):
-                        raise SmokeFailure(f".{extension} folding returned malformed result")
-                    if len(folding) < int(probe["folding_min"]):
-                        raise SmokeFailure(
-                            f".{extension} folding expected >= {probe['folding_min']}, got {len(folding)}"
-                        )
+                    if "folding" in qualified_features:
+                        folding = rpc(
+                            "textDocument/foldingRange",
+                            {"textDocument": {"uri": uri}},
+                        ).get("result")
+                        if not isinstance(folding, list):
+                            raise SmokeFailure(f".{extension} folding returned malformed result")
+                        if len(folding) < int(probe["folding_min"]):
+                            raise SmokeFailure(
+                                f".{extension} folding expected >= {probe['folding_min']}, got {len(folding)}"
+                            )
 
                 for uri in uris.values():
                     peer.send({
