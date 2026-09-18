@@ -101,7 +101,14 @@
       "folding_min": 1,
       "rename_targets": [
         "parity.dml"
-      ]
+      ],
+      "completion": {
+        "text": "DataModel CompletionProbe {\n",
+        "position": {
+          "line": 1,
+          "character": 0
+        }
+      }
     },
     "operation": {
       "symbol": "Inspect",
