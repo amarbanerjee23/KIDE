@@ -185,6 +185,61 @@ def wait_for_diagnostics(peer: JsonRpcPeer, uri: str, description: str) -> list[
     return diagnostics
 
 
+def wait_for_clean_diagnostics(
+    peer: JsonRpcPeer,
+    uri: str,
+    description: str,
+    timeout: float = 25.0,
+) -> list[dict[str, Any]]:
+    """Accept transient linker diagnostics, but require a later clean build result."""
+    deadline = time.monotonic() + timeout
+    last_errors: list[dict[str, Any]] = []
+    while time.monotonic() < deadline:
+        remaining = max(0.01, deadline - time.monotonic())
+        try:
+            diagnostics = peer.wait_for(
+                lambda candidate: candidate.get("method") == "textDocument/publishDiagnostics"
+                and candidate.get("params", {}).get("uri") == uri,
+                remaining,
+                description,
+            ).get("params", {}).get("diagnostics")
+        except SmokeFailure as exc:
+            if last_errors:
+                raise SmokeFailure(
+                    f"{description} never reached a clean linked state; last errors: {last_errors}"
+                ) from exc
+            raise
+        if not isinstance(diagnostics, list):
+            raise SmokeFailure(f"{description} returned malformed diagnostics")
+        last_errors = [item for item in diagnostics if is_error(item)]
+        if not last_errors:
+            return diagnostics
+    raise SmokeFailure(
+        f"{description} never reached a clean linked state; last errors: {last_errors}"
+    )
+
+
+def change_document(peer: JsonRpcPeer, uri: str, text: str, version: int) -> None:
+    peer.send({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didChange",
+        "params": {
+            "textDocument": {"uri": uri, "version": version},
+            "contentChanges": [{"text": text}],
+        },
+    })
+
+
+def announce_workspace_files(peer: JsonRpcPeer, paths: list[Path]) -> None:
+    peer.send({
+        "jsonrpc": "2.0",
+        "method": "workspace/didChangeWatchedFiles",
+        "params": {
+            "changes": [{"uri": path.as_uri(), "type": 1} for path in paths]
+        },
+    })
+
+
 def is_error(diagnostic: dict[str, Any]) -> bool:
     # LSP severity 1 is Error. Xtext parser/linker errors are expected to carry it.
     return diagnostic.get("severity") == 1
@@ -235,9 +290,18 @@ def run_smoke(products: Path, registry_path: Path) -> None:
                     raise SmokeFailure("initialize returned no language-server capabilities")
                 peer.send({"jsonrpc": "2.0", "method": "initialized", "params": {}})
 
-                # Keep dependency documents open in registry order so Capability and Activity
-                # linking exercises the same shared Xtext workspace/index as real clients.
+                # A real editor exposes the workspace files before validating dependent
+                # documents. Explicitly announce them so Xtext's workspace index contains
+                # cross-file symbols before Capability/Activity validation is judged.
+                announce_workspace_files(
+                    peer, [valid_paths[language["extension"]] for language in languages]
+                )
+
+                # Open the complete valid model set first. Xtext may publish transient
+                # unresolved-link diagnostics while its incremental builder catches up;
+                # those are not accepted as the final result.
                 open_valid_uris: list[str] = []
+                valid_uri_by_extension: dict[str, str] = {}
                 for language in languages:
                     extension = language["extension"]
                     uri = open_document(
@@ -246,15 +310,18 @@ def run_smoke(products: Path, registry_path: Path) -> None:
                         language["language_id"],
                         language["valid_fixture_text"],
                     )
-                    diagnostics = wait_for_diagnostics(
-                        peer, uri, f"valid diagnostics for .{extension}"
-                    )
-                    errors = [item for item in diagnostics if is_error(item)]
-                    if errors:
-                        raise SmokeFailure(
-                            f"valid .{extension} golden fixture produced error diagnostics: {errors}"
-                        )
                     open_valid_uris.append(uri)
+                    valid_uri_by_extension[extension] = uri
+
+                # Revalidate each already-open document after every dependency is visible.
+                # A valid fixture must eventually publish an error-free linked state.
+                for language in languages:
+                    extension = language["extension"]
+                    uri = valid_uri_by_extension[extension]
+                    change_document(peer, uri, language["valid_fixture_text"], version=2)
+                    wait_for_clean_diagnostics(
+                        peer, uri, f"valid linked diagnostics for .{extension}"
+                    )
 
                 for language in languages:
                     extension = language["extension"]
