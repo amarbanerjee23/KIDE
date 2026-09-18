@@ -1,0 +1,7 @@
+ActivityDiagram GoldenWorkflow
+has activities {
+  Activity ObserveStep {
+    requireCapability : Observe { Start, Ready }
+    nextActivity : ObserveStep
+  }
+}

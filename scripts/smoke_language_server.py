@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Protocol smoke test for the packaged KIDE multi-DSL language server."""
+"""Golden-corpus protocol qualification for the packaged KIDE language server."""
 
 from __future__ import annotations
 
@@ -14,7 +14,6 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-LANGUAGES = ("dml", "cap", "mncspec", "op", "activity")
 HEADLESS_LINUX_LAUNCHER = "kide-languageserver-headless"
 
 
@@ -37,7 +36,12 @@ class JsonRpcPeer:
         self.process.stdin.write(frame)
         self.process.stdin.flush()
 
-    def wait_for(self, predicate: Callable[[dict[str, Any]], bool], timeout: float, description: str) -> dict[str, Any]:
+    def wait_for(
+        self,
+        predicate: Callable[[dict[str, Any]], bool],
+        timeout: float,
+        description: str,
+    ) -> dict[str, Any]:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             if self.reader_error is not None:
@@ -78,8 +82,36 @@ class JsonRpcPeer:
                 if len(payload) != length:
                     raise SmokeFailure("truncated JSON-RPC payload")
                 self.messages.put(json.loads(payload.decode("utf-8")))
-        except BaseException as exception:  # surfaced on the main smoke-test thread
+        except BaseException as exception:
             self.reader_error = exception
+
+
+def load_languages(registry_path: Path) -> list[dict[str, Any]]:
+    registry_path = registry_path.resolve()
+    try:
+        data = json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SmokeFailure(f"cannot load language registry {registry_path}: {exc}") from exc
+    languages = data.get("languages")
+    if data.get("schema_version") != 1 or not isinstance(languages, list) or not languages:
+        raise SmokeFailure("language registry is missing schema_version 1 or languages")
+    repo_root = registry_path.parent.parent
+    required = ("id", "extension", "language_id", "valid_fixture", "invalid_fixture")
+    result: list[dict[str, Any]] = []
+    for language in languages:
+        if not isinstance(language, dict) or any(field not in language for field in required):
+            raise SmokeFailure("language registry contains an incomplete entry")
+        entry = dict(language)
+        for kind in ("valid_fixture", "invalid_fixture"):
+            relative = Path(entry[kind])
+            if relative.is_absolute() or ".." in relative.parts:
+                raise SmokeFailure(f"unsafe {kind} path for .{entry['extension']}: {relative}")
+            path = repo_root / relative
+            if not path.is_file():
+                raise SmokeFailure(f"missing {kind} for .{entry['extension']}: {path}")
+            entry[kind + "_text"] = path.read_text(encoding="utf-8")
+        result.append(entry)
+    return result
 
 
 def find_linux_launcher(products: Path) -> Path:
@@ -100,24 +132,141 @@ def find_linux_launcher(products: Path) -> Path:
     return candidates[0]
 
 
-def request(peer: JsonRpcPeer, request_id: int, method: str, params: dict[str, Any], timeout: float = 20.0) -> dict[str, Any]:
+def request(
+    peer: JsonRpcPeer,
+    request_id: int,
+    method: str,
+    params: dict[str, Any],
+    timeout: float = 20.0,
+) -> dict[str, Any]:
     peer.send({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params})
-    response = peer.wait_for(lambda message: message.get("id") == request_id, timeout, f"response to {method}")
+    response = peer.wait_for(
+        lambda message: message.get("id") == request_id,
+        timeout,
+        f"response to {method}",
+    )
     if "error" in response:
         raise SmokeFailure(f"{method} failed: {response['error']}")
     return response
 
 
-def run_smoke(products: Path) -> None:
+def open_document(
+    peer: JsonRpcPeer,
+    path: Path,
+    language_id: str,
+    text: str,
+) -> str:
+    uri = path.as_uri()
+    peer.send({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didOpen",
+        "params": {
+            "textDocument": {
+                "uri": uri,
+                "languageId": language_id,
+                "version": 1,
+                "text": text,
+            }
+        },
+    })
+    return uri
+
+
+def wait_for_diagnostics(peer: JsonRpcPeer, uri: str, description: str) -> list[dict[str, Any]]:
+    message = peer.wait_for(
+        lambda candidate: candidate.get("method") == "textDocument/publishDiagnostics"
+        and candidate.get("params", {}).get("uri") == uri,
+        25.0,
+        description,
+    )
+    diagnostics = message.get("params", {}).get("diagnostics")
+    if not isinstance(diagnostics, list):
+        raise SmokeFailure(f"{description} returned malformed diagnostics")
+    return diagnostics
+
+
+def wait_for_clean_diagnostics(
+    peer: JsonRpcPeer,
+    uri: str,
+    description: str,
+    timeout: float = 25.0,
+) -> list[dict[str, Any]]:
+    """Accept transient linker diagnostics, but require a later clean build result."""
+    deadline = time.monotonic() + timeout
+    last_errors: list[dict[str, Any]] = []
+    while time.monotonic() < deadline:
+        remaining = max(0.01, deadline - time.monotonic())
+        try:
+            diagnostics = peer.wait_for(
+                lambda candidate: candidate.get("method") == "textDocument/publishDiagnostics"
+                and candidate.get("params", {}).get("uri") == uri,
+                remaining,
+                description,
+            ).get("params", {}).get("diagnostics")
+        except SmokeFailure as exc:
+            if last_errors:
+                raise SmokeFailure(
+                    f"{description} never reached a clean linked state; last errors: {last_errors}"
+                ) from exc
+            raise
+        if not isinstance(diagnostics, list):
+            raise SmokeFailure(f"{description} returned malformed diagnostics")
+        last_errors = [item for item in diagnostics if is_error(item)]
+        if not last_errors:
+            return diagnostics
+    raise SmokeFailure(
+        f"{description} never reached a clean linked state; last errors: {last_errors}"
+    )
+
+
+def change_document(peer: JsonRpcPeer, uri: str, text: str, version: int) -> None:
+    peer.send({
+        "jsonrpc": "2.0",
+        "method": "textDocument/didChange",
+        "params": {
+            "textDocument": {"uri": uri, "version": version},
+            "contentChanges": [{"text": text}],
+        },
+    })
+
+
+def announce_workspace_files(peer: JsonRpcPeer, paths: list[Path]) -> None:
+    peer.send({
+        "jsonrpc": "2.0",
+        "method": "workspace/didChangeWatchedFiles",
+        "params": {
+            "changes": [{"uri": path.as_uri(), "type": 1} for path in paths]
+        },
+    })
+
+
+def is_error(diagnostic: dict[str, Any]) -> bool:
+    # LSP severity 1 is Error. Xtext parser/linker errors are expected to carry it.
+    return diagnostic.get("severity") == 1
+
+
+def run_smoke(products: Path, registry_path: Path) -> None:
+    languages = load_languages(registry_path)
     launcher = find_linux_launcher(products)
+
     with tempfile.TemporaryDirectory(prefix="kide-lsp-") as temp_dir:
         workspace = Path(temp_dir).resolve()
+        valid_paths: dict[str, Path] = {}
+        invalid_paths: dict[str, Path] = {}
+        for language in languages:
+            extension = language["extension"]
+            valid = workspace / f"golden-valid.{extension}"
+            invalid = workspace / f"golden-invalid.{extension}"
+            valid.write_text(language["valid_fixture_text"], encoding="utf-8")
+            invalid.write_text(language["invalid_fixture_text"], encoding="utf-8")
+            valid_paths[extension] = valid
+            invalid_paths[extension] = invalid
+
         stderr_log = workspace / "server-stderr.log"
         environment = os.environ.copy()
-        # This is intentional: the qualification must prove the packaged entrypoint
-        # is independent of X11/Wayland rather than inheriting a runner display.
         environment.pop("DISPLAY", None)
         environment.pop("WAYLAND_DISPLAY", None)
+
         with stderr_log.open("wb") as stderr_stream:
             process = subprocess.Popen(
                 [str(launcher)],
@@ -134,37 +283,68 @@ def run_smoke(products: Path) -> None:
                     "processId": None,
                     "rootUri": root_uri,
                     "capabilities": {"workspace": {"workspaceFolders": True}},
-                    "workspaceFolders": [{"uri": root_uri, "name": "kide-smoke"}],
+                    "workspaceFolders": [{"uri": root_uri, "name": "kide-golden"}],
                 }, timeout=30.0)
                 capabilities = initialized.get("result", {}).get("capabilities")
                 if not isinstance(capabilities, dict) or not capabilities:
                     raise SmokeFailure("initialize returned no language-server capabilities")
-
                 peer.send({"jsonrpc": "2.0", "method": "initialized", "params": {}})
 
-                for index, extension in enumerate(LANGUAGES, start=1):
-                    source = workspace / f"invalid-{index}.{extension}"
-                    source.write_text("§\n", encoding="utf-8")
-                    uri = source.as_uri()
+                # A real editor exposes the workspace files before validating dependent
+                # documents. Explicitly announce them so Xtext's workspace index contains
+                # cross-file symbols before Capability/Activity validation is judged.
+                announce_workspace_files(
+                    peer, [valid_paths[language["extension"]] for language in languages]
+                )
+
+                # Open the complete valid model set first. Xtext may publish transient
+                # unresolved-link diagnostics while its incremental builder catches up;
+                # those are not accepted as the final result.
+                open_valid_uris: list[str] = []
+                valid_uri_by_extension: dict[str, str] = {}
+                for language in languages:
+                    extension = language["extension"]
+                    uri = open_document(
+                        peer,
+                        valid_paths[extension],
+                        language["language_id"],
+                        language["valid_fixture_text"],
+                    )
+                    open_valid_uris.append(uri)
+                    valid_uri_by_extension[extension] = uri
+
+                # Revalidate each already-open document after every dependency is visible.
+                # A valid fixture must eventually publish an error-free linked state.
+                for language in languages:
+                    extension = language["extension"]
+                    uri = valid_uri_by_extension[extension]
+                    change_document(peer, uri, language["valid_fixture_text"], version=2)
+                    wait_for_clean_diagnostics(
+                        peer, uri, f"valid linked diagnostics for .{extension}"
+                    )
+
+                for language in languages:
+                    extension = language["extension"]
+                    uri = open_document(
+                        peer,
+                        invalid_paths[extension],
+                        language["language_id"],
+                        language["invalid_fixture_text"],
+                    )
+                    diagnostics = wait_for_diagnostics(
+                        peer, uri, f"invalid diagnostics for .{extension}"
+                    )
+                    if not any(is_error(item) for item in diagnostics):
+                        raise SmokeFailure(
+                            f"invalid .{extension} golden fixture produced no error diagnostic: {diagnostics}"
+                        )
                     peer.send({
                         "jsonrpc": "2.0",
-                        "method": "textDocument/didOpen",
-                        "params": {
-                            "textDocument": {
-                                "uri": uri,
-                                "languageId": f"kide-{extension}",
-                                "version": 1,
-                                "text": "§\n",
-                            }
-                        },
+                        "method": "textDocument/didClose",
+                        "params": {"textDocument": {"uri": uri}},
                     })
-                    peer.wait_for(
-                        lambda message, expected=uri: message.get("method") == "textDocument/publishDiagnostics"
-                        and message.get("params", {}).get("uri") == expected
-                        and bool(message.get("params", {}).get("diagnostics")),
-                        20.0,
-                        f"non-empty diagnostics for .{extension}",
-                    )
+
+                for uri in open_valid_uris:
                     peer.send({
                         "jsonrpc": "2.0",
                         "method": "textDocument/didClose",
@@ -192,16 +372,21 @@ def run_smoke(products: Path) -> None:
                     print(details)
                 raise
 
-    print("KIDE language-server smoke test passed for: " + ", ".join(f".{ext}" for ext in LANGUAGES))
+    print(
+        "KIDE packaged LSP golden corpus passed for: "
+        + ", ".join(f".{language['extension']}" for language in languages)
+    )
 
 
 def main() -> int:
+    root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser()
     parser.add_argument("--products", type=Path, required=True)
+    parser.add_argument("--registry", type=Path, default=root / "product" / "languages.json")
     args = parser.parse_args()
     if not args.products.is_dir():
         raise SmokeFailure(f"products directory does not exist: {args.products}")
-    run_smoke(args.products.resolve())
+    run_smoke(args.products.resolve(), args.registry.resolve())
     return 0
 
 

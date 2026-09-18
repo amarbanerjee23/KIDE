@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "languages": [
+    {
+      "id": "dml",
+      "display_name": "Data Model Language",
+      "extension": "dml",
+      "language_id": "kide-dml",
+      "description": "primitive, composite and array data exchanged by engineered systems",
+      "grammar": "com.dml.dsl/src/com/dml/dsl/Dml.xtext",
+      "runtime_bundle": "com.dml.dsl",
+      "ide_bundle": "com.dml.dsl.ide",
+      "ui_bundle": "com.dml.dsl.ui",
+      "setup_class": "com.dml.dsl.ide.DmlIdeSetup",
+      "valid_fixture": "qualification/golden/languages/valid/golden.dml",
+      "invalid_fixture": "qualification/golden/languages/invalid/golden.dml"
+    },
+    {
+      "id": "operation",
+      "display_name": "Operation Language",
+      "extension": "op",
+      "language_id": "kide-op",
+      "description": "reusable executable operations and their typed inputs and outputs",
+      "grammar": "com.operation.dsl/src/com/operation/dsl/Operation.xtext",
+      "runtime_bundle": "com.operation.dsl",
+      "ide_bundle": "com.operation.dsl.ide",
+      "ui_bundle": "com.operation.dsl.ui",
+      "setup_class": "com.operation.dsl.ide.OperationIdeSetup",
+      "valid_fixture": "qualification/golden/languages/valid/golden.op",
+      "invalid_fixture": "qualification/golden/languages/invalid/golden.op"
+    },
+    {
+      "id": "mnc",
+      "display_name": "MNC Specification Language",
+      "extension": "mncspec",
+      "language_id": "kide-mncspec",
+      "description": "component interfaces, commands, events, alarms, responses and control nodes",
+      "grammar": "com.mncml.dsl/src/com/mncml/dsl/Mnc.xtext",
+      "runtime_bundle": "com.mncml.dsl",
+      "ide_bundle": "com.mncml.dsl.ide",
+      "ui_bundle": "com.mncml.dsl.ui",
+      "setup_class": "com.mncml.dsl.ide.MncIdeSetup",
+      "valid_fixture": "qualification/golden/languages/valid/golden.mncspec",
+      "invalid_fixture": "qualification/golden/languages/invalid/golden.mncspec"
+    },
+    {
+      "id": "capability",
+      "display_name": "Capability Language",
+      "extension": "cap",
+      "language_id": "kide-cap",
+      "description": "capabilities bound to component interfaces and their controllable outcomes",
+      "grammar": "com.capability.dsl/src/com/capability/Capability.xtext",
+      "runtime_bundle": "com.capability.dsl",
+      "ide_bundle": "com.capability.dsl.ide",
+      "ui_bundle": "com.capability.dsl.ui",
+      "setup_class": "com.capability.ide.CapabilityIdeSetup",
+      "valid_fixture": "qualification/golden/languages/valid/golden.cap",
+      "invalid_fixture": "qualification/golden/languages/invalid/golden.cap"
+    },
+    {
+      "id": "activity",
+      "display_name": "Activity Language",
+      "extension": "activity",
+      "language_id": "kide-activity",
+      "description": "supervisory workflows that consume capabilities and operations",
+      "grammar": "com.smr.activity.dsl/src/com/smr/activity/ActivityDsl.xtext",
+      "runtime_bundle": "com.smr.activity.dsl",
+      "ide_bundle": "com.smr.activity.dsl.ide",
+      "ui_bundle": "com.smr.activity.dsl.ui",
+      "setup_class": "com.smr.activity.dsl.ide.ActivityDiagramIdeSetup",
+      "valid_fixture": "qualification/golden/languages/valid/golden.activity",
+      "invalid_fixture": "qualification/golden/languages/invalid/golden.activity"
+    }
+  ]
+}
