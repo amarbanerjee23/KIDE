@@ -1,0 +1,6 @@
+Capability Observe compatible component interface Device {
+  providesControlCapabilities {
+    fireable commands : Start
+    receivable events : Ready
+  }
+}

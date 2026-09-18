@@ -17,8 +17,10 @@ embedded runtime.
 | macOS Intel | `KIDE-<version>-macos-x86_64.tar.gz` | `KIDE.app` |
 | macOS Apple silicon | `KIDE-<version>-macos-aarch64.tar.gz` | `KIDE.app` |
 
-1. Download the archive for your platform from the
-   [Releases page](https://github.com/amarbanerjee23/KIDE/releases).
+1. For a published production release, download the archive for your platform from the
+   [Releases page](https://github.com/amarbanerjee23/KIDE/releases). If no release is
+   listed yet, the repository has not reached a publishable signed release gate; do not
+   treat intermediate CI products as a supported customer release.
 2. Download `SHA256SUMS.txt` from the same release and verify the archive.
 3. Unpack the archive to a user-writable application directory.
 4. Start the native launcher shown above.
@@ -59,14 +61,11 @@ Compare the result with the matching entry in `SHA256SUMS.txt`.
 ### macOS signing status
 
 KIDE's release pipeline distinguishes portable packaging from platform trust.
-A production macOS release should be Developer ID signed, notarised and stapled;
-Windows releases should be Authenticode signed. Until those credentials are
-configured, GitHub release notes identify builds as unsigned. Do not disable
-Gatekeeper globally to run KIDE.
-
-Native OS code signing/notarisation is tracked as a separate enterprise release
-gate because it requires organization-owned certificates and protected CI
-credentials; it is not emulated with repository secrets or self-signed keys.
+Production macOS releases must be Developer ID signed, notarised and stapled;
+Windows releases must be Authenticode signed. The release workflow fails closed
+when required signing credentials or evidence are unavailable, so unsupported
+unsigned customer releases are not published. Do not disable Gatekeeper globally
+to run KIDE.
 
 ## 2. Install into an existing Eclipse
 

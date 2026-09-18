@@ -4,14 +4,17 @@ KIDE is a modelling studio for capability, activity, data and MNC models:
 textual languages with live validation, generated Sirius diagrams, and a
 transformation from activity models to MNC models.
 
-It is released as a standalone application for Windows, Linux and macOS, and as
-a p2 update site for existing Eclipse installations.
+KIDE is built as a self-contained application for Windows, Linux and macOS, and as
+a p2 update site for existing Eclipse installations. Signed public release artefacts
+are published only by the fail-closed release workflow once release credentials and
+evidence are available.
 
 ## Install
 
-Download the archive for your platform from the
-[Releases page](https://github.com/amarbanerjee23/KIDE/releases), unpack it and
-run `kide`. Java 11 or newer is the only prerequisite.
+When a production release is published, download the archive for your platform from
+the [Releases page](https://github.com/amarbanerjee23/KIDE/releases), unpack it and
+run `kide`. The standalone product includes its own pinned Java runtime; no separate
+JDK/JRE installation is required.
 
 Full instructions, including installing into an existing Eclipse:
 [`docs/installation.md`](docs/installation.md).
@@ -30,12 +33,15 @@ the transformation.
 
 ## The languages
 
+<!-- KIDE-LANGUAGES:START -->
 | Extension | Language | What you describe |
 | --- | --- | --- |
-| `.dml` | Data | the primitive values the system exchanges |
-| `.mncspec` | MNC specification | commands, events, alarms and responses of a component |
-| `.cap` | Capability | what a component can do, bound to an interface |
-| `.activity` | Activity | the flow of work that uses those capabilities |
+| `.dml` | Data Model Language | primitive, composite and array data exchanged by engineered systems |
+| `.op` | Operation Language | reusable executable operations and their typed inputs and outputs |
+| `.mncspec` | MNC Specification Language | component interfaces, commands, events, alarms, responses and control nodes |
+| `.cap` | Capability Language | capabilities bound to component interfaces and their controllable outcomes |
+| `.activity` | Activity Language | supervisory workflows that consume capabilities and operations |
+<!-- KIDE-LANGUAGES:END -->
 
 ## The KIDE visual language
 
@@ -82,7 +88,6 @@ manifests. Third-party versions are declared in exactly one place,
 | `docs/` | installation, user, administrator, architecture, release docs |
 | `demo/example-workspace` | the worked example the tours use |
 | `tools/kide-live-preview` | lightweight diagram preview outside Eclipse |
-| `kide-web-demo/` | browser demo of the modelling idea, no install |
 
 ## Documentation
 
@@ -97,8 +102,6 @@ manifests. Third-party versions are declared in exactly one place,
 
 - `com.system.knowledge.plugin` depends on NeoEMF, which is not in the target
   platform; it is research code and is not part of the release build.
-- `.mncspec` has no grammar in this repository, so those files open as plain text
-  and are not validated.
 
 ## Licence
 

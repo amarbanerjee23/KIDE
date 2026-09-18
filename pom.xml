@@ -54,6 +54,7 @@
     <module>com.smr.activity.dsl.ide</module>
     <module>com.smr.activity.dsl.ui</module>
     <module>com.smr.activity.activity2mnc</module>
+    <module>com.smr.activity.activity2mnc.tests</module>
     <module>com.model.domain.mnc.design</module>
     <module>com.model.domain.activity.design</module>
     <module>com.dsep.dsl.generator</module>

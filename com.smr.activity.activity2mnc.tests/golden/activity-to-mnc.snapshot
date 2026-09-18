@@ -1,0 +1,13 @@
+model.name=GoldenWorkflow
+systems.count=2
+interface.name=GoldenWorkflow
+interface.commands=INIT
+interface.events=Ready,Started,Stopped
+interface.alarms=Aborted
+interface.states=INITIALIZED,READY
+control.name=GoldenWorkflow
+control.interface=GoldenWorkflow
+control.commandBlocks.count=2
+control.eventBlocks.count=3
+control.alarmBlocks.count=1
+control.dataPointBlocks.count=0

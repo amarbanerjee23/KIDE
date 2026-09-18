@@ -1,0 +1,9 @@
+Model Golden
+InterfaceDescription Device {
+  commands {
+    Start[]
+  }
+  events {
+    Publish Ready[]
+  }
+}
