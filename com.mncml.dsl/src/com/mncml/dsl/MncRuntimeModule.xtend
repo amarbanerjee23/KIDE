@@ -5,11 +5,13 @@ package com.mncml.dsl
 
 import com.google.inject.Binder
 import com.mncml.dsl.scoping.MncScopeProvider
+import com.mncml.dsl.resource.MncResourceDescriptionStrategy
 import org.eclipse.xtext.linking.LinkingScopeProviderBinding
 import org.eclipse.xtext.scoping.IScopeProvider
 import org.eclipse.xtext.serializer.tokens.ICrossReferenceSerializer
 import com.mncml.dsl.serializer.MncCrossReferenceSerializer
 import org.eclipse.xtext.serializer.ISerializer
+import org.eclipse.xtext.resource.IDefaultResourceDescriptionStrategy
 import com.mncml.dsl.serializer.MncCustomSerializer
 
 /**
@@ -25,6 +27,10 @@ class MncRuntimeModule extends AbstractMncRuntimeModule  {
 		binder.bind(IScopeProvider).annotatedWith(LinkingScopeProviderBinding).to(MncScopeProvider);
 	}
 	
+	override Class<? extends IDefaultResourceDescriptionStrategy> bindIDefaultResourceDescriptionStrategy() {
+		MncResourceDescriptionStrategy
+	}
+
 	def Class<? extends ICrossReferenceSerializer> bindICrossReferenceSerializer() {
 		MncCrossReferenceSerializer
 	}
