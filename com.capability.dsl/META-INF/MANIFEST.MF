@@ -26,4 +26,3 @@ Export-Package: com.capability.parser.antlr,
  com.capability.scoping,
  com.capability,
  com.capability.generator
-Import-Package: org.apache.log4j

@@ -23,5 +23,4 @@ Export-Package: com.dml.dsl.generator,
  com.dml.dsl,
  com.dml.dsl.parser.antlr.internal,
  com.dml.dsl.parser.antlr
-Import-Package: org.apache.log4j
 Automatic-Module-Name: com.dml.dsl
