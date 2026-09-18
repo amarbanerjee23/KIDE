@@ -142,7 +142,11 @@ def verify() -> None:
         "com.capability.GenerateCapability",
         "com.smr.activity.GenerateActivityDsl",
     }
-    actual_modules = set(re.findall(r"component\s*=\s*@([A-Za-z0-9_.]+)", aggregate))
+    aggregate_without_line_comments = re.sub(r"(?m)^\s*//.*$", "", aggregate)
+    actual_modules = set(re.findall(
+        r"component\s*=\s*@([A-Za-z0-9_.]+)",
+        aggregate_without_line_comments,
+    ))
     require(actual_modules == expected_modules,
             f"aggregate MWE2 language set mismatch: {sorted(actual_modules)}")
 
