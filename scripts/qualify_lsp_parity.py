@@ -243,11 +243,26 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                     if not isinstance(probe, dict):
                         raise SmokeFailure(f"missing PR13 probes for {language_id}")
 
-                    # Completion must produce concrete proposals on a blank file.
+                    # Completion must produce concrete proposals in a grammar-valid
+                    # content-assist context. Most DSLs use blank root; DML supplies
+                    # an explicit incomplete DataModel context because its top-level
+                    # rule legally accepts the empty document.
+                    completion_probe = probe.get("completion", {})
+                    completion_text = completion_probe.get("text", "")
+                    completion_position = completion_probe.get(
+                        "position", {"line": 0, "character": 0}
+                    )
+                    if not isinstance(completion_text, str):
+                        raise SmokeFailure(f".{extension} completion probe text is malformed")
+                    if not isinstance(completion_position, dict):
+                        raise SmokeFailure(f".{extension} completion probe position is malformed")
                     completion_path = workspace / f"completion.{extension}"
-                    completion_path.write_text("", encoding="utf-8")
+                    completion_path.write_text(completion_text, encoding="utf-8")
                     completion_uri = open_document(
-                        peer, completion_path, language["language_id"], ""
+                        peer,
+                        completion_path,
+                        language["language_id"],
+                        completion_text,
                     )
                     # didOpen is asynchronous. Wait until Xtext has built the
                     # temporary document before asking for content assist.
@@ -260,7 +275,7 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                         "textDocument/completion",
                         {
                             "textDocument": {"uri": completion_uri},
-                            "position": {"line": 0, "character": 0},
+                            "position": completion_position,
                         },
                     ).get("result")
                     if not completion_items(completion):
