@@ -21,6 +21,7 @@ from smoke_language_server import (
     open_document,
     request,
     wait_for_clean_diagnostics,
+    wait_for_diagnostics,
 )
 
 
@@ -247,6 +248,13 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                     completion_path.write_text("", encoding="utf-8")
                     completion_uri = open_document(
                         peer, completion_path, language["language_id"], ""
+                    )
+                    # didOpen is asynchronous. Wait until Xtext has built the
+                    # temporary document before asking for content assist.
+                    wait_for_diagnostics(
+                        peer,
+                        completion_uri,
+                        f"completion document diagnostics for .{extension}",
                     )
                     completion = rpc(
                         "textDocument/completion",
