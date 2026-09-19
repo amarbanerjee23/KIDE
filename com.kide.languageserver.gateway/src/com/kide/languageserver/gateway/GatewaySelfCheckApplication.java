@@ -147,7 +147,7 @@ public final class GatewaySelfCheckApplication implements IApplication {
 
     private static void runFullLanguageQualification(URI endpoint, Path project) throws Exception {
         ProbeListener listener = new ProbeListener();
-        WebSocket socket = connect(endpoint, listener);
+        WebSocket socket = connectBrowser(endpoint, listener);
         try {
             socket.sendText(initialize(1, project), true).join();
             requireMessage(listener, message -> hasId(message, 1), "initialize response");
@@ -204,6 +204,15 @@ public final class GatewaySelfCheckApplication implements IApplication {
         return HttpClient.newHttpClient().newWebSocketBuilder()
                 .connectTimeout(Duration.ofSeconds(8))
                 .header("Authorization", "Bearer pr22-self-check")
+                .buildAsync(endpoint, listener)
+                .get(10, TimeUnit.SECONDS);
+    }
+
+    private static WebSocket connectBrowser(URI endpoint, ProbeListener listener) throws Exception {
+        String credential = BrowserWebSocketCredential.encodeBearerProtocol("pr22-self-check");
+        return HttpClient.newHttpClient().newWebSocketBuilder()
+                .connectTimeout(Duration.ofSeconds(8))
+                .subprotocols(BrowserWebSocketCredential.LSP_PROTOCOL, credential)
                 .buildAsync(endpoint, listener)
                 .get(10, TimeUnit.SECONDS);
     }
