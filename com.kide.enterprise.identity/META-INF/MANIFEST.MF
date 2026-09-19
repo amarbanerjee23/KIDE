@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Enterprise Identity
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.enterprise.identity;singleton:=true
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Automatic-Module-Name: com.kide.enterprise.identity
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.equinox.app
+Export-Package: com.kide.enterprise.identity
