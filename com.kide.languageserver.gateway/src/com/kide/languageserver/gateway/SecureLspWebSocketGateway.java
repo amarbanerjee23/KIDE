@@ -4,14 +4,16 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Objects;
 
-import org.eclipse.jetty.server.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeHandler;
 
+import com.kide.enterprise.authorization.AccessDeniedException;
 import com.kide.enterprise.authorization.ServerAuthorizationGate;
 import com.kide.enterprise.context.EnterpriseContext;
 import com.kide.enterprise.identity.AuthenticatedSession;
+import com.kide.enterprise.identity.AuthenticationException;
 
 public final class SecureLspWebSocketGateway implements AutoCloseable {
     private final GatewayConfig config;
@@ -70,9 +72,19 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                             authorization.requireWebSocketWorkspaceAccess(session, enterpriseContext);
                             authorization.requireLspWorkspaceAccess(session, enterpriseContext);
                             return new GatewayWebSocketEndpoint(config, session, clock);
-                        } catch (RuntimeException failure) {
+                        } catch (AuthenticationException failure) {
                             if (session != null) session.close();
                             response.setStatus(401);
+                            callback.succeeded();
+                            return null;
+                        } catch (AccessDeniedException | IllegalArgumentException failure) {
+                            if (session != null) session.close();
+                            response.setStatus(403);
+                            callback.succeeded();
+                            return null;
+                        } catch (RuntimeException failure) {
+                            if (session != null) session.close();
+                            response.setStatus(500);
                             callback.succeeded();
                             return null;
                         }
