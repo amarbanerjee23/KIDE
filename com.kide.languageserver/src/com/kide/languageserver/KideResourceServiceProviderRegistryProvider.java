@@ -86,16 +86,20 @@ public final class KideResourceServiceProviderRegistryProvider
             throw new IllegalStateException("Required KIDE language bundle is not installed: "
                     + language.bundleId);
         }
+        String effectiveSetupClass = "dml".equals(language.extension)
+                ? "com.dml.dsl.ide.KideDmlIdeSetup"
+                : language.setupClass;
         try {
-            Class<?> setupType = bundle.loadClass(language.setupClass);
+            Class<?> setupType = bundle.loadClass(effectiveSetupClass);
             Object setup = setupType.getDeclaredConstructor().newInstance();
             if (!(setup instanceof ISetup)) {
-                throw new IllegalStateException(language.setupClass + " does not implement org.eclipse.xtext.ISetup");
+                throw new IllegalStateException(effectiveSetupClass
+                        + " does not implement org.eclipse.xtext.ISetup");
             }
             return (ISetup) setup;
         } catch (ReflectiveOperationException exception) {
-            throw new IllegalStateException("Cannot instantiate KIDE Xtext setup " + language.setupClass,
-                    exception);
+            throw new IllegalStateException("Cannot instantiate KIDE Xtext setup "
+                    + effectiveSetupClass, exception);
         }
     }
 

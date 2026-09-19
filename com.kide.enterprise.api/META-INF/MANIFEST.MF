@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Enterprise API Contracts
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.enterprise.api;singleton:=true
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Automatic-Module-Name: com.kide.enterprise.api
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.equinox.app,
+ com.kide.enterprise.authorization;bundle-version="1.0.0"
+Export-Package: com.kide.enterprise.api

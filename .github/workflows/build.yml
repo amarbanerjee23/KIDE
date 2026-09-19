@@ -103,6 +103,11 @@ jobs:
           python3 scripts/smoke_audit.py \
             --products releng/com.kide.repository/target/products
 
+      - name: Smoke-test packaged API contract runtime
+        run: |
+          python3 scripts/smoke_api_contract.py \
+            --products releng/com.kide.repository/target/products
+
       - name: Smoke-test headless multi-DSL language server
         run: |
           python3 scripts/smoke_language_server.py \
