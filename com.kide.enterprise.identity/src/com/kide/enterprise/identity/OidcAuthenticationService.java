@@ -26,7 +26,10 @@ public final class OidcAuthenticationService {
         String state = randomHex(24);
         String nonce = randomHex(24);
         char[] verifier = base64Url(randomBytes(48)).toCharArray();
-        byte[] verifierBytes = new String(verifier).getBytes(StandardCharsets.US_ASCII);
+        byte[] verifierBytes = new byte[verifier.length];
+        for (int i = 0; i < verifier.length; i++) {
+            verifierBytes[i] = (byte) verifier[i];
+        }
         String challenge;
         try {
             challenge = base64Url(sha256(verifierBytes));
@@ -164,7 +167,10 @@ public final class OidcAuthenticationService {
     }
 
     private static AuthenticationException safe(String message, RuntimeException cause) {
-        return new AuthenticationException(message, cause);
+        // Transport failures may contain provider diagnostics or credential fragments.
+        // Keep them out of the exception chain exposed to callers/loggers.
+        Objects.requireNonNull(cause, "cause");
+        return new AuthenticationException(message);
     }
 
     private static String required(String value) {
