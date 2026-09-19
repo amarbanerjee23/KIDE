@@ -98,6 +98,14 @@ def verify() -> None:
         require("java-version: '17'" not in text, f"JDK 17 remains in {workflow.relative_to(ROOT)}")
         require("java-version: '21'" in text, f"JDK 21 missing from {workflow.relative_to(ROOT)}")
 
+    activity_demo_sources = (
+        ROOT / "com.smr.activity.activity2mnc" / "src" / "com" / "smr" / "activity" / "activity2mnc" / "handlers" / "Demo.xtend",
+        ROOT / "com.smr.activity.activity2mnc" / "xtend-gen" / "com" / "smr" / "activity" / "activity2mnc" / "handlers" / "Demo.java",
+    )
+    for source in activity_demo_sources:
+        require("javax.inject.Inject" not in read(source),
+                f"legacy javax.inject annotation remains: {source.relative_to(ROOT)}")
+
     print("PR16 CURRENT PLATFORM CONTRACT OK")
 
 
