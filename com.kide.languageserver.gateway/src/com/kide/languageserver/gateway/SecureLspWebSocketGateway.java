@@ -64,8 +64,12 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
 
                         AuthenticatedSession session = null;
                         try {
+                            String authorizationHeader =
+                                    BrowserWebSocketCredential.authorizationHeader(
+                                            request.getHeaders().get("Authorization"),
+                                            request.getSubProtocols());
                             session = authenticator.authenticateAuthorizationHeader(
-                                    request.getHeaders().get("Authorization"));
+                                    authorizationHeader);
                             String workspaceId = queryParameter(
                                     request.getHttpURI().getQuery(), "workspaceId");
                             EnterpriseContext enterpriseContext = workspaces.resolve(workspaceId)
@@ -75,6 +79,10 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                             }
                             authorization.requireWebSocketWorkspaceAccess(session, enterpriseContext);
                             authorization.requireLspWorkspaceAccess(session, enterpriseContext);
+                            if (request.hasSubProtocol(BrowserWebSocketCredential.LSP_PROTOCOL)) {
+                                response.setAcceptedSubProtocol(
+                                        BrowserWebSocketCredential.LSP_PROTOCOL);
+                            }
                             return new GatewayWebSocketEndpoint(config, session, clock);
                         } catch (AuthenticationException failure) {
                             if (session != null) session.close();
