@@ -88,6 +88,11 @@ jobs:
           python3 scripts/smoke_schema_migration.py \
             --products releng/com.kide.repository/target/products
 
+      - name: Smoke-test packaged principal identity runtime
+        run: |
+          python3 scripts/smoke_identity.py \
+            --products releng/com.kide.repository/target/products
+
       - name: Smoke-test headless multi-DSL language server
         run: |
           python3 scripts/smoke_language_server.py \
