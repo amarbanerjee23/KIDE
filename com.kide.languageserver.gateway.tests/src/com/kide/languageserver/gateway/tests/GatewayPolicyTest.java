@@ -15,6 +15,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import com.kide.languageserver.gateway.BrowserWebSocketCredential;
 import com.kide.languageserver.gateway.GatewayConfig;
 import com.kide.languageserver.gateway.GatewayMessagePolicy;
 import com.kide.languageserver.gateway.LspMessageFraming;
@@ -75,6 +76,30 @@ public class GatewayPolicyTest {
             assertTrue(config.toString().contains("[REDACTED]"));
             assertTrue(!config.toString().contains("secret"));
         }
+    }
+
+    @Test
+    public void browserSubprotocolCredentialRoundTripsWithoutEchoProtocol() {
+        String encoded = BrowserWebSocketCredential.encodeBearerProtocol("opaque-token.value");
+        assertTrue(encoded.startsWith("kide.bearer."));
+        assertEquals(
+                "Bearer opaque-token.value",
+                BrowserWebSocketCredential.authorizationHeader(
+                        null,
+                        java.util.List.of(BrowserWebSocketCredential.LSP_PROTOCOL, encoded)));
+        assertEquals(
+                "Bearer header-token",
+                BrowserWebSocketCredential.authorizationHeader(
+                        "Bearer header-token",
+                        java.util.List.of(BrowserWebSocketCredential.LSP_PROTOCOL, encoded)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> BrowserWebSocketCredential.authorizationHeader(
+                        null,
+                        java.util.List.of(
+                                BrowserWebSocketCredential.LSP_PROTOCOL,
+                                encoded,
+                                BrowserWebSocketCredential.encodeBearerProtocol("second"))));
     }
 
     @Test
