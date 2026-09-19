@@ -1,7 +1,8 @@
 package com.kide.languageserver.gateway;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
-import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -48,12 +49,14 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                     container.setMaxTextMessageSize(config.maxTextMessageBytes());
                     container.setIdleTimeout(config.idleTimeout());
                     container.addMapping("/lsp", (request, response, callback) -> {
-                        if (!originAllowed(request.getOrigin())) {
+                        if (!originAllowed(request.getHeaders().get("Origin"))) {
                             response.setStatus(403);
                             callback.succeeded();
                             return null;
                         }
-                        if (!secureEnough(request.isSecure(), request.getHeader("X-Forwarded-Proto"))) {
+                        if (!secureEnough(
+                                "https".equalsIgnoreCase(request.getHttpURI().getScheme()),
+                                request.getHeaders().get("X-Forwarded-Proto"))) {
                             response.setStatus(400);
                             callback.succeeded();
                             return null;
@@ -62,8 +65,9 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                         AuthenticatedSession session = null;
                         try {
                             session = authenticator.authenticateAuthorizationHeader(
-                                    request.getHeader("Authorization"));
-                            String workspaceId = first(request.getParameterMap().get("workspaceId"));
+                                    request.getHeaders().get("Authorization"));
+                            String workspaceId = queryParameter(
+                                    request.getHttpURI().getQuery(), "workspaceId");
                             EnterpriseContext enterpriseContext = workspaces.resolve(workspaceId)
                                     .orElseThrow(() -> new IllegalArgumentException("workspace not found"));
                             if (!enterpriseContext.workspace().id().value().equals(workspaceId)) {
@@ -133,14 +137,26 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                 && "https".equalsIgnoreCase(forwardedProto.trim());
     }
 
-    private static String first(List<String> values) {
-        if (values == null || values.size() != 1) {
-            throw new IllegalArgumentException("exactly one workspaceId is required");
+    private static String queryParameter(String rawQuery, String expectedName) {
+        if (rawQuery == null || rawQuery.isBlank()) {
+            throw new IllegalArgumentException(expectedName + " is required");
         }
-        String value = values.get(0);
-        if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("workspaceId is required");
+        String found = null;
+        for (String pair : rawQuery.split("&")) {
+            int equals = pair.indexOf('=');
+            String rawName = equals < 0 ? pair : pair.substring(0, equals);
+            String rawValue = equals < 0 ? "" : pair.substring(equals + 1);
+            String name = URLDecoder.decode(rawName, StandardCharsets.UTF_8);
+            if (!expectedName.equals(name)) continue;
+            if (found != null) {
+                throw new IllegalArgumentException(
+                        "exactly one " + expectedName + " is required");
+            }
+            found = URLDecoder.decode(rawValue, StandardCharsets.UTF_8);
         }
-        return value.trim();
+        if (found == null || found.isBlank() || found.length() > 256) {
+            throw new IllegalArgumentException(expectedName + " is required");
+        }
+        return found.trim();
     }
 }
