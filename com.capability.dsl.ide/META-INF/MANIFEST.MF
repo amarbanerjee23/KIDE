@@ -12,7 +12,7 @@ Require-Bundle: com.capability.dsl,
  org.eclipse.xtext.xbase.ide,
  org.antlr.runtime;bundle-version="[3.2.0,3.2.1)",
  com.dml.dsl;bundle-version="1.0.0"
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: com.capability.ide.contentassist.antlr.internal,
  com.capability.ide.contentassist.antlr,
  com.capability.ide.highlighting

@@ -6,7 +6,7 @@ Bundle-SymbolicName: com.kide.branding;singleton:=true
 Bundle-Version: 1.0.0.qualifier
 Bundle-Activator: com.kide.branding.KideBrandingPlugin
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-Localization: plugin
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.resources,
