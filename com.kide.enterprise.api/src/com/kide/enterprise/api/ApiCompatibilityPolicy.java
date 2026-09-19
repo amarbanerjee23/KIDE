@@ -1,6 +1,7 @@
 package com.kide.enterprise.api;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,17 +38,23 @@ public final class ApiCompatibilityPolicy {
                 issues.add("removed schema: " + entry.getKey());
                 continue;
             }
+
             ApiSchema old = entry.getValue();
-            if (!next.requiredFields().containsAll(old.requiredFields())) {
-                Set<String> removed = new java.util.HashSet<>(old.requiredFields());
-                removed.removeAll(next.requiredFields());
-                issues.add("removed required fields from " + entry.getKey() + ": " + removed);
+            Set<String> oldFields = new HashSet<>(old.requiredFields());
+            oldFields.addAll(old.optionalFields());
+            Set<String> nextFields = new HashSet<>(next.requiredFields());
+            nextFields.addAll(next.optionalFields());
+
+            Set<String> removedFields = new HashSet<>(oldFields);
+            removedFields.removeAll(nextFields);
+            if (!removedFields.isEmpty()) {
+                issues.add("removed fields from " + entry.getKey() + ": " + removedFields);
             }
-            Set<String> newlyRequired = new java.util.HashSet<>(next.requiredFields());
+
+            Set<String> newlyRequired = new HashSet<>(next.requiredFields());
             newlyRequired.removeAll(old.requiredFields());
-            newlyRequired.removeAll(old.optionalFields());
             if (!newlyRequired.isEmpty()) {
-                issues.add("added required fields to " + entry.getKey() + ": " + newlyRequired);
+                issues.add("new required fields in " + entry.getKey() + ": " + newlyRequired);
             }
         }
         return List.copyOf(issues);
