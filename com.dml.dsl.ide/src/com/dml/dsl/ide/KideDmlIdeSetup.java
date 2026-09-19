@@ -2,6 +2,8 @@ package com.dml.dsl.ide;
 
 import org.eclipse.xtext.ide.editor.contentassist.IdeContentProposalProvider;
 import org.eclipse.xtext.ide.server.contentassist.ContentAssistService;
+import org.eclipse.xtext.ide.server.symbol.DocumentSymbolMapper;
+import org.eclipse.xtext.ide.server.symbol.DocumentSymbolService;
 import org.eclipse.xtext.util.Modules2;
 
 import com.dml.dsl.DmlRuntimeModule;
@@ -29,6 +31,10 @@ public final class KideDmlIdeSetup extends DmlStandaloneSetup {
                         .to(KideDmlIdeContentProposalProvider.class);
                 bind(ContentAssistService.class)
                         .to(KideDmlContentAssistService.class);
+                bind(DocumentSymbolMapper.DocumentSymbolNameProvider.class)
+                        .to(KideDmlDocumentSymbolNameProvider.class);
+                bind(DocumentSymbolService.class)
+                        .to(KideDmlDocumentSymbolService.class);
             }
         };
         return Guice.createInjector(Modules.override(generated).with(kideCompatibility));
