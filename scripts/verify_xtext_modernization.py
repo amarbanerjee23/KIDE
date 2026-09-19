@@ -70,15 +70,19 @@ def verify() -> None:
     require(contract_ids == registry_ids, "generation contract language set differs from product truth")
 
     baseline = contract.get("baseline", {})
-    require(baseline.get("xtext") == "2.25.0", "PR15 must keep Xtext 2.25.0")
-    require(baseline.get("java") == 11, "PR15 must keep Java 11")
-    require(baseline.get("tycho") == "4.0.8", "PR15 must keep Tycho 4.0.8")
+    require(baseline.get("xtext") == "2.44.0", "current Xtext baseline must be 2.44.0")
+    require(baseline.get("java") == 21, "current Java baseline must be 21")
+    require(baseline.get("tycho") == "5.0.4", "current Tycho baseline must be 5.0.4")
+    require(baseline.get("eclipse") == "2026-09", "current Eclipse baseline must be 2026-09")
+    require(baseline.get("sirius") == "7.6.1", "current Sirius baseline must be 7.6.1")
 
     target = read(TARGET)
-    require("2.25.0.v20210301-1429" in target, "PR15 Xtext target pin changed")
+    require("releases/2026-09/" in target, "current Eclipse target pin changed")
+    require("xtext/updates/releases/2.44.0/" in target, "current Xtext target pin changed")
+    require("sirius/updates/releases/7.6.1/" in target, "current Sirius target pin changed")
     pom = read(POM)
-    require("<tycho.version>4.0.8</tycho.version>" in pom, "PR15 Tycho baseline changed")
-    require("<maven.compiler.release>11</maven.compiler.release>" in pom, "PR15 Java baseline changed")
+    require("<tycho.version>5.0.4</tycho.version>" in pom, "current Tycho baseline changed")
+    require("<maven.compiler.release>21</maven.compiler.release>" in pom, "current Java baseline changed")
 
     forbidden_generation_tokens = (
         'encoding = "windows-1252"',
