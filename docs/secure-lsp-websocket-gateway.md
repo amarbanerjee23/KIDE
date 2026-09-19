@@ -39,10 +39,20 @@ Required environment settings:
 - `KIDE_OIDC_ISSUER`
 - `KIDE_OIDC_AUDIENCE`
 
-The gateway requires `Authorization: Bearer ...`. Introspection must return an
-active token, the configured issuer and audience, a subject, and a future expiry.
-The access token exists only in the authentication session and is zeroized through
-the PR17 token container when the WebSocket closes.
+Native/service clients may authenticate with `Authorization: Bearer ...`.
+
+Browser WebSocket APIs cannot set arbitrary Authorization headers. Direct browser
+clients therefore request the public subprotocol `kide.lsp.v1` plus a credential
+subprotocol `kide.bearer.<base64url(access-token)>`. The server decodes the
+credential for the same introspection path but negotiates only `kide.lsp.v1`
+back to the browser; the credential value is never placed in the WebSocket URL or
+echoed as the negotiated protocol. Reverse proxies must treat
+`Sec-WebSocket-Protocol` as sensitive request metadata and must not log its raw
+value.
+
+Introspection must return an active token, the configured issuer and audience, a
+subject, and a future expiry. The access token exists only in the authentication
+session and is zeroized through the PR17 token container when the WebSocket closes.
 
 KIDE does not implement custom JWT signature parsing in this gateway. Provider-side
 introspection remains the trust boundary.
@@ -103,7 +113,7 @@ The headless KIDE product executes
 
 1. provisions a real E04 context and PR18 role binding;
 2. proves an unauthenticated WebSocket upgrade is denied;
-3. opens an authenticated WebSocket;
+3. opens an authenticated browser-style WebSocket using the credential subprotocol;
 4. performs LSP initialize;
 5. opens and changes documents for DML, Operation, MNC, Capability and Activity;
 6. requires diagnostics for every opened language;
