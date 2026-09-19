@@ -3,11 +3,11 @@
 <!--
   The single place where third-party versions are declared.
 
-  Xtext is pinned at 2.25.0: it is the last release that still exports
-  org.apache.log4j, which the generated *.dsl.ui bundles import. Sirius stays on
-  the 6.6 maintenance line used by the existing KIDE Sirius definitions. The
-  6.6.1/2020-06 p2 variant is retained and contains complete p2 metadata.
-  Moving any of these is a deliberate, tested change - see docs/release-process.md.
+  Xtext remains pinned at 2.25.0 for PR15 so language behavior is modernized
+  independently from the platform jump. KIDE-owned runtime/UI bundles no longer
+  depend directly on Log4j 1 and legacy Xtext-Web generation is disabled.
+  Sirius stays on the 6.6 maintenance line used by the existing KIDE Sirius
+  definitions. PR16 performs the deliberate Java/Eclipse/Xtext/Sirius upgrade.
 -->
 <target name="KIDE Target Platform" sequenceNumber="1">
   <locations>

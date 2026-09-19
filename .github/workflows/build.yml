@@ -55,6 +55,9 @@ jobs:
       - name: Verify LSP feature parity matrix
         run: python3 scripts/verify_lsp_parity_matrix.py
 
+      - name: Verify Xtext modernization contract
+        run: python3 scripts/verify_xtext_modernization.py
+
       - name: Build Eclipse plug-ins and portable products
         run: |
           set +e

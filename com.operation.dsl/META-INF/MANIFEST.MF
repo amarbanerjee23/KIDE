@@ -25,4 +25,3 @@ Export-Package: com.operation.dsl.scoping,
  com.operation.dsl.parser.antlr,
  com.operation.dsl.validation,
  com.operation.dsl.services
-Import-Package: org.apache.log4j

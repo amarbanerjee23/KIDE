@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "baseline": {
+    "xtext": "2.25.0",
+    "java": 11,
+    "tycho": "4.0.8",
+    "purpose": "PR15 freezes deterministic generation inputs before PR16 changes the platform"
+  },
+  "rules": {
+    "encoding": "UTF-8",
+    "line_delimiter": "LF",
+    "generated_roots": [
+      "src-gen",
+      "xtend-gen"
+    ],
+    "handwritten_root": "src",
+    "legacy_xtext_web_generation": false,
+    "direct_log4j_1_dependency": false,
+    "tracked_eclipse_bin_outputs": false
+  },
+  "languages": [
+    {
+      "id": "dml",
+      "runtime_bundle": "com.dml.dsl",
+      "ide_bundle": "com.dml.dsl.ide",
+      "ui_bundle": "com.dml.dsl.ui",
+      "workflow": "com.dml.dsl/src/com/dml/dsl/GenerateDml.mwe2",
+      "handwritten_ui_activator": "com.dml.dsl.ui/src/com/dml/dsl/ui/internal/DslActivator.java",
+      "forbidden_generated_ui_activator": "com.dml.dsl.ui/src-gen/com/dml/dsl/ui/internal/DslActivator.java"
+    },
+    {
+      "id": "operation",
+      "runtime_bundle": "com.operation.dsl",
+      "ide_bundle": "com.operation.dsl.ide",
+      "ui_bundle": "com.operation.dsl.ui",
+      "workflow": "com.operation.dsl/src/com/operation/dsl/GenerateOperation.mwe2",
+      "handwritten_ui_activator": "com.operation.dsl.ui/src/com/operation/dsl/ui/internal/DslActivator.java",
+      "forbidden_generated_ui_activator": "com.operation.dsl.ui/src-gen/com/operation/dsl/ui/internal/DslActivator.java"
+    },
+    {
+      "id": "mnc",
+      "runtime_bundle": "com.mncml.dsl",
+      "ide_bundle": "com.mncml.dsl.ide",
+      "ui_bundle": "com.mncml.dsl.ui",
+      "workflow": "com.mncml.dsl/src/com/mncml/dsl/GenerateMnc.mwe2",
+      "handwritten_ui_activator": "com.mncml.dsl.ui/src/com/mncml/dsl/ui/internal/DslActivator.java",
+      "forbidden_generated_ui_activator": "com.mncml.dsl.ui/src-gen/com/mncml/dsl/ui/internal/DslActivator.java"
+    },
+    {
+      "id": "capability",
+      "runtime_bundle": "com.capability.dsl",
+      "ide_bundle": "com.capability.dsl.ide",
+      "ui_bundle": "com.capability.dsl.ui",
+      "workflow": "com.capability.dsl/src/com/capability/GenerateCapability.mwe2",
+      "handwritten_ui_activator": "com.capability.dsl.ui/src/com/capability/dsl/ui/internal/DslActivator.java",
+      "forbidden_generated_ui_activator": "com.capability.dsl.ui/src-gen/com/capability/dsl/ui/internal/DslActivator.java"
+    },
+    {
+      "id": "activity",
+      "runtime_bundle": "com.smr.activity.dsl",
+      "ide_bundle": "com.smr.activity.dsl.ide",
+      "ui_bundle": "com.smr.activity.dsl.ui",
+      "workflow": "com.smr.activity.dsl/src/com/smr/activity/GenerateActivityDsl.mwe2",
+      "handwritten_ui_activator": "com.smr.activity.dsl.ui/src/com/smr/activity/dsl/ui/internal/DslActivator.java",
+      "forbidden_generated_ui_activator": "com.smr.activity.dsl.ui/src-gen/com/smr/activity/dsl/ui/internal/DslActivator.java"
+    }
+  ]
+}

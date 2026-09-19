@@ -24,5 +24,4 @@ Export-Package: com.smr.activity.dsl.formatting2,
  com.smr.activity.dsl.serializer,
  com.smr.activity.dsl.parser.antlr.internal,
  com.smr.activity.dsl.generator
-Import-Package: org.apache.log4j
 Automatic-Module-Name: com.smr.activity.dsl

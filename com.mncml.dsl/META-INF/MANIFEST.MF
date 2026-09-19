@@ -45,5 +45,4 @@ Export-Package: com.mncml.dsl,
    org.eclipse.xtext.service,
    org.eclipse.xtext",
  com.mncml.dsl.validation
-Import-Package: com.mncml.dsl,
- org.apache.log4j
+Import-Package: com.mncml.dsl
