@@ -69,6 +69,8 @@
     <module>com.kide.enterprise.context.tests</module>
     <module>com.kide.enterprise.identity</module>
     <module>com.kide.enterprise.identity.tests</module>
+    <module>com.kide.enterprise.authorization</module>
+    <module>com.kide.enterprise.authorization.tests</module>
     <module>com.kide.enterprise.migration</module>
     <module>com.kide.enterprise.migration.tests</module>
     <module>releng</module>

@@ -1,0 +1,18 @@
+package com.kide.enterprise.authorization;
+
+public enum Permission {
+    CONTEXT_READ,
+    PROJECT_READ,
+    MODEL_READ,
+    MODEL_WRITE,
+    MODEL_VALIDATE,
+    MODEL_SYNTHESIZE,
+    WORKSPACE_OPEN,
+    WORKSPACE_WRITE,
+    LSP_CONNECT,
+    API_ACCESS,
+    EVIDENCE_READ,
+    EVIDENCE_WRITE,
+    AUTHORIZATION_MANAGE,
+    AUDIT_READ
+}
