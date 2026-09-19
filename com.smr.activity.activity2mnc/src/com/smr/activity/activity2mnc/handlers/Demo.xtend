@@ -1,6 +1,6 @@
 package com.smr.activity.activity2mnc.handlers
 
-import javax.inject.Inject
+import com.google.inject.Inject
 import org.eclipse.xtext.testing.util.ParseHelper
 import mncModel.Model
 import com.mncml.dsl.MncStandaloneSetup
