@@ -1,0 +1,23 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Secure LSP WebSocket Gateway
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.languageserver.gateway;singleton:=true
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Automatic-Module-Name: com.kide.languageserver.gateway
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.equinox.app,
+ org.eclipse.xtext.ide,
+ com.google.inject,
+ com.google.gson,
+ org.eclipse.jetty.server;bundle-version="[12.1.12,13.0.0)",
+ org.eclipse.jetty.websocket.api;bundle-version="[12.1.12,13.0.0)",
+ org.eclipse.jetty.websocket.server;bundle-version="[12.1.12,13.0.0)",
+ com.kide.languageserver;bundle-version="1.0.0",
+ com.kide.enterprise.context;bundle-version="1.0.0",
+ com.kide.enterprise.identity;bundle-version="1.0.0",
+ com.kide.enterprise.authorization;bundle-version="1.0.0",
+ com.kide.enterprise.audit;bundle-version="1.0.0"
+Export-Package: com.kide.languageserver.gateway
