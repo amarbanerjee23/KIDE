@@ -5,7 +5,7 @@ Bundle-Vendor: KIDE
 Bundle-Version: 1.0.0.qualifier
 Bundle-SymbolicName: com.kide.enterprise.context;singleton:=true
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Automatic-Module-Name: com.kide.enterprise.context
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.equinox.app

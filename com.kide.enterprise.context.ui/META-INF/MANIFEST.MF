@@ -5,7 +5,7 @@ Bundle-Vendor: KIDE
 Bundle-Version: 1.0.0.qualifier
 Bundle-SymbolicName: com.kide.enterprise.context.ui;singleton:=true
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: com.kide.enterprise.context;bundle-version="1.0.0",
  org.eclipse.core.resources,
  org.eclipse.ui
