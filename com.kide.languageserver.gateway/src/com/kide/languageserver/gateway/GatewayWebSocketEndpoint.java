@@ -1,7 +1,6 @@
 package com.kide.languageserver.gateway;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -15,7 +14,7 @@ import com.kide.enterprise.identity.AuthenticatedSession;
 final class GatewayWebSocketEndpoint implements Session.Listener {
     private final GatewayConfig config;
     private final AuthenticatedSession authenticatedSession;
-    private final MessageRateLimiter rateLimiter;
+    private final GatewayMessagePolicy messagePolicy;
     private final AtomicBoolean closed = new AtomicBoolean();
 
     private volatile Session webSocket;
@@ -27,7 +26,8 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
             Clock clock) {
         this.config = Objects.requireNonNull(config, "config");
         this.authenticatedSession = Objects.requireNonNull(authenticatedSession, "authenticatedSession");
-        this.rateLimiter = new MessageRateLimiter(config.maxMessagesPerMinute(), clock);
+        this.messagePolicy = new GatewayMessagePolicy(
+                config.maxTextMessageBytes(), config.maxMessagesPerMinute(), clock);
     }
 
     @Override
@@ -67,11 +67,12 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
         Session socket = webSocket;
         if (socket == null) return;
 
-        if (message.getBytes(StandardCharsets.UTF_8).length > config.maxTextMessageBytes()) {
+        GatewayMessagePolicy.Decision decision = messagePolicy.evaluate(message);
+        if (decision == GatewayMessagePolicy.Decision.MESSAGE_TOO_LARGE) {
             closeSocket(StatusCode.MESSAGE_TOO_LARGE, "message exceeds configured limit");
             return;
         }
-        if (!rateLimiter.tryAcquire()) {
+        if (decision == GatewayMessagePolicy.Decision.RATE_LIMITED) {
             closeSocket(StatusCode.POLICY_VIOLATION, "message rate limit exceeded");
             return;
         }
