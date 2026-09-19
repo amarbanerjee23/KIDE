@@ -8,4 +8,8 @@ package com.dml.dsl.ide
  * Use this class to register ide components.
  */
 class DmlIdeModule extends AbstractDmlIdeModule {
+    def Class<? extends org.eclipse.xtext.ide.editor.contentassist.IdeContentProposalProvider>
+        bindIdeContentProposalProvider() {
+        DmlIdeContentProposalProvider
+    }
 }
