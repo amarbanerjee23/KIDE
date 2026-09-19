@@ -14,6 +14,7 @@ import java.util.UUID;
 import org.junit.Test;
 
 import com.kide.enterprise.api.ApiCompatibilityPolicy;
+import com.kide.enterprise.api.ApiFieldType;
 import com.kide.enterprise.api.ApiContractRegistry;
 import com.kide.enterprise.api.ApiErrorCode;
 import com.kide.enterprise.api.ApiErrorEnvelope;
@@ -117,18 +118,27 @@ public class ApiContractTest {
     @Test
     public void optionalFieldAdditionIsCompatibleButRemovalOrRequiredPromotionIsBreaking() {
         Map<String, ApiSchema> previous = Map.of(
-                "Project", new ApiSchema("Project", Set.of("id"), Set.of("description")));
+                "Project", new ApiSchema("Project",
+                        Map.of("id", ApiFieldType.STRING, "description", ApiFieldType.STRING),
+                        Set.of("id")));
 
         Map<String, ApiSchema> optionalAddition = Map.of(
-                "Project", new ApiSchema("Project", Set.of("id"), Set.of("description", "owner")));
+                "Project", new ApiSchema("Project",
+                        Map.of("id", ApiFieldType.STRING, "description", ApiFieldType.STRING,
+                                "owner", ApiFieldType.STRING),
+                        Set.of("id")));
         assertTrue(ApiCompatibilityPolicy.compareSchemas(previous, optionalAddition).isEmpty());
 
         Map<String, ApiSchema> removedField = Map.of(
-                "Project", new ApiSchema("Project", Set.of("id"), Set.of()));
+                "Project", new ApiSchema("Project",
+                        Map.of("id", ApiFieldType.STRING),
+                        Set.of("id")));
         assertFalse(ApiCompatibilityPolicy.compareSchemas(previous, removedField).isEmpty());
 
         Map<String, ApiSchema> optionalBecameRequired = Map.of(
-                "Project", new ApiSchema("Project", Set.of("id", "description"), Set.of()));
+                "Project", new ApiSchema("Project",
+                        Map.of("id", ApiFieldType.STRING, "description", ApiFieldType.STRING),
+                        Set.of("id", "description")));
         assertFalse(ApiCompatibilityPolicy.compareSchemas(previous, optionalBecameRequired).isEmpty());
     }
 
