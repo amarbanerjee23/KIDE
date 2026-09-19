@@ -75,6 +75,8 @@
     <module>com.kide.enterprise.audit.tests</module>
     <module>com.kide.enterprise.api</module>
     <module>com.kide.enterprise.api.tests</module>
+    <module>com.kide.enterprise.modelrepo</module>
+    <module>com.kide.enterprise.modelrepo.tests</module>
     <module>com.kide.enterprise.migration</module>
     <module>com.kide.enterprise.migration.tests</module>
     <module>releng</module>
