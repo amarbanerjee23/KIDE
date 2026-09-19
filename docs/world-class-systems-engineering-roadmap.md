@@ -1,6 +1,6 @@
 # KIDE World-Class Systems Engineering Product Roadmap
 
-Status: implementation plan after merged PR18 (least-privilege authorization), 2026-09-19.
+Status: implementation plan after merged PR19 (audit and engineering event model), 2026-09-19.
 
 This document is the authoritative implementation plan for evolving KIDE from a research-backed Eclipse modelling product into a world-class, enterprise-grade systems engineering platform with first-class desktop and web clients.
 
