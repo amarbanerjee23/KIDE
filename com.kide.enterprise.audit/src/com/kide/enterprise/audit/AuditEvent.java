@@ -40,7 +40,7 @@ public record AuditEvent(
         Objects.requireNonNull(correlationId, "correlationId");
         projectId = AuditRedactor.sanitize(projectId, "projectId", 128);
         projectRevision = AuditRedactor.sanitize(projectRevision, "projectRevision", 128);
-        attributes = Map.copyOf(attributes == null ? Map.of() : attributes);
+        attributes = AuditRedactor.redact(attributes);
         previousHash = requiredHash(previousHash, "previousHash");
         hash = requiredHash(hash, "hash");
     }
