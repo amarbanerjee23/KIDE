@@ -79,6 +79,8 @@ def verify() -> None:
         text = read(manifest)
         require("JavaSE-11" not in text,
                 f"legacy JavaSE-11 BREE remains: {manifest.relative_to(ROOT)}")
+        require("org.eclipse.xtext.generator;bundle-version" not in text,
+                f"deprecated Xtext generator bundle dependency remains: {manifest.relative_to(ROOT)}")
         if "Bundle-RequiredExecutionEnvironment:" in text:
             require("Bundle-RequiredExecutionEnvironment: JavaSE-21" in text,
                     f"bundle BREE is not JavaSE-21: {manifest.relative_to(ROOT)}")
