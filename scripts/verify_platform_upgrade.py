@@ -48,6 +48,9 @@ def verify() -> None:
         "https://download.eclipse.org/modeling/tmf/xtext/updates/releases/2.44.0/",
         "https://download.eclipse.org/sirius/updates/releases/7.6.1/2025-09/",
         "https://download.eclipse.org/tools/orbit/simrel/maven-osgi/2026-09/",
+        "https://download.eclipse.org/lsp4j/updates/releases/1.0.0",
+        "org.eclipse.lsp4j",
+        "org.eclipse.lsp4j.jsonrpc",
         "org.apache.commons.commons-io",
         "JavaSE-21",
     )
