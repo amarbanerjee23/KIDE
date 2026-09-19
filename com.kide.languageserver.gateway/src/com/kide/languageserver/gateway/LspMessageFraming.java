@@ -1,6 +1,5 @@
 package com.kide.languageserver.gateway;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,7 +23,7 @@ public final class LspMessageFraming {
     }
 
     public static String readJson(InputStream raw, int maxBodyBytes) throws IOException {
-        InputStream in = raw instanceof BufferedInputStream ? raw : new BufferedInputStream(raw);
+        InputStream in = raw;
         int contentLength = -1;
         int headerBytes = 0;
         while (true) {
