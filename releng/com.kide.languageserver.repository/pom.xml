@@ -16,7 +16,7 @@
   <name>KIDE Language Server Repository and Product</name>
 
   <properties>
-    <kide.justj.repository>https://download.eclipse.org/justj/jres/17/updates/release/17.0.20/</kide.justj.repository>
+    <kide.justj.repository>https://download.eclipse.org/justj/jres/21/updates/release/21.0.12.v20260826-1216/</kide.justj.repository>
   </properties>
 
   <build>
