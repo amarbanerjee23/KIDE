@@ -7,12 +7,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-final class LspMessageFraming {
+public final class LspMessageFraming {
     private static final int MAX_HEADER_BYTES = 8192;
 
     private LspMessageFraming() { }
 
-    static void writeJson(OutputStream out, String json) throws IOException {
+    public static void writeJson(OutputStream out, String json) throws IOException {
         byte[] body = json.getBytes(StandardCharsets.UTF_8);
         byte[] header = ("Content-Length: " + body.length + "\r\n\r\n")
                 .getBytes(StandardCharsets.US_ASCII);
@@ -23,7 +23,7 @@ final class LspMessageFraming {
         }
     }
 
-    static String readJson(InputStream raw, int maxBodyBytes) throws IOException {
+    public static String readJson(InputStream raw, int maxBodyBytes) throws IOException {
         InputStream in = raw instanceof BufferedInputStream ? raw : new BufferedInputStream(raw);
         int contentLength = -1;
         int headerBytes = 0;
