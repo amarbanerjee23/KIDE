@@ -14,6 +14,7 @@
    </license>
 
    <plugin id="com.kide.languageserver" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.kide.languageserver.gateway" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.dml.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.capability.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.mncml.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
