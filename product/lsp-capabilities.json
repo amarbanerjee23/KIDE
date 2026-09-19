@@ -103,10 +103,10 @@
         "parity.dml"
       ],
       "completion": {
-        "text": "DataModel CompletionProbe {\n",
+        "text": "DataModel CompletionProbe {\n  primitives { ",
         "position": {
           "line": 1,
-          "character": 0
+          "character": 15
         }
       }
     },
