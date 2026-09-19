@@ -48,6 +48,9 @@ def verify() -> None:
         "https://download.eclipse.org/modeling/tmf/xtext/updates/releases/2.44.0/",
         "https://download.eclipse.org/sirius/updates/releases/7.6.1/2025-09/",
         "https://download.eclipse.org/tools/orbit/simrel/maven-osgi/2026-09/",
+        "https://download.eclipse.org/lsp4j/updates/releases/1.0.0",
+        "org.eclipse.lsp4j",
+        "org.eclipse.lsp4j.jsonrpc",
         "org.apache.commons.commons-io",
         "JavaSE-21",
     )
@@ -79,6 +82,10 @@ def verify() -> None:
         text = read(manifest)
         require("JavaSE-11" not in text,
                 f"legacy JavaSE-11 BREE remains: {manifest.relative_to(ROOT)}")
+        require("org.eclipse.xtext.generator;bundle-version" not in text,
+                f"deprecated Xtext generator bundle dependency remains: {manifest.relative_to(ROOT)}")
+        require("org.eclipse.osgi.services;bundle-version" not in text,
+                f"obsolete Eclipse OSGi services bundle dependency remains: {manifest.relative_to(ROOT)}")
         if "Bundle-RequiredExecutionEnvironment:" in text:
             require("Bundle-RequiredExecutionEnvironment: JavaSE-21" in text,
                     f"bundle BREE is not JavaSE-21: {manifest.relative_to(ROOT)}")
@@ -95,6 +102,41 @@ def verify() -> None:
         text = read(workflow)
         require("java-version: '17'" not in text, f"JDK 17 remains in {workflow.relative_to(ROOT)}")
         require("java-version: '21'" in text, f"JDK 21 missing from {workflow.relative_to(ROOT)}")
+
+    justj_repository = "https://download.eclipse.org/justj/jres/21/updates/release/21.0.12.v20260826-1216/"
+    repository_poms = (
+        ROOT / "releng" / "com.kide.repository" / "pom.xml",
+        ROOT / "releng" / "com.kide.languageserver.repository" / "pom.xml",
+    )
+    for repository_pom in repository_poms:
+        repository_text = read(repository_pom)
+        require(justj_repository in repository_text,
+                f"pinned Java 21 JustJ repository missing: {repository_pom.relative_to(ROOT)}")
+        require("/justj/jres/17/" not in repository_text,
+                f"legacy Java 17 JustJ repository remains: {repository_pom.relative_to(ROOT)}")
+
+    products = (
+        ROOT / "releng" / "com.kide.repository" / "kide.product",
+        ROOT / "releng" / "com.kide.languageserver.repository" / "kide-language-server.product",
+    )
+    for product in products:
+        product_text = read(product)
+        require("-Dosgi.requiredJavaVersion=21" in product_text,
+                f"Java 21 runtime requirement missing: {product.relative_to(ROOT)}")
+        require("JavaSE-21" in product_text,
+                f"JavaSE-21 VM declaration missing: {product.relative_to(ROOT)}")
+        require("-Dosgi.requiredJavaVersion=11" not in product_text,
+                f"legacy Java 11 runtime requirement remains: {product.relative_to(ROOT)}")
+        require("JavaSE-17" not in product_text,
+                f"legacy JavaSE-17 VM declaration remains: {product.relative_to(ROOT)}")
+
+    activity_demo_sources = (
+        ROOT / "com.smr.activity.activity2mnc" / "src" / "com" / "smr" / "activity" / "activity2mnc" / "handlers" / "Demo.xtend",
+        ROOT / "com.smr.activity.activity2mnc" / "xtend-gen" / "com" / "smr" / "activity" / "activity2mnc" / "handlers" / "Demo.java",
+    )
+    for source in activity_demo_sources:
+        require("javax.inject.Inject" not in read(source),
+                f"legacy javax.inject annotation remains: {source.relative_to(ROOT)}")
 
     print("PR16 CURRENT PLATFORM CONTRACT OK")
 

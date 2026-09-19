@@ -14,8 +14,7 @@ Require-Bundle: com.mncml,
  org.eclipse.xtext.xbase.lib;bundle-version="2.14.0",
  org.eclipse.xtext.util,
  org.eclipse.xtend.lib;bundle-version="2.14.0",
- org.antlr.runtime;bundle-version="[3.2.0,3.2.1)",
- org.eclipse.xtext.generator;bundle-version="2.15.0"
+ org.antlr.runtime;bundle-version="[3.2.0,3.2.1)"
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: com.mncml.dsl,
  com.mncml.dsl.formatting2;uses:="com.dml.dsl.formatting2,mncModel,org.eclipse.xtext.formatting2",

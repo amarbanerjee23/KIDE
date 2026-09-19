@@ -2,7 +2,7 @@ package com.smr.activity.activity2mnc.handlers;
 
 import com.google.inject.Injector;
 import com.mncml.dsl.MncStandaloneSetup;
-import javax.inject.Inject;
+import com.google.inject.Inject;
 import mncModel.Model;
 import org.eclipse.xtext.testing.util.ParseHelper;
 import org.eclipse.xtext.xbase.lib.Exceptions;

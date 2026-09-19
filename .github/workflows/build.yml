@@ -98,6 +98,11 @@ jobs:
           python3 scripts/smoke_authorization.py \
             --products releng/com.kide.repository/target/products
 
+      - name: Smoke-test packaged audit runtime
+        run: |
+          python3 scripts/smoke_audit.py \
+            --products releng/com.kide.repository/target/products
+
       - name: Smoke-test headless multi-DSL language server
         run: |
           python3 scripts/smoke_language_server.py \

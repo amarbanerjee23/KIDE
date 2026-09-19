@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Enterprise Audit
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.enterprise.audit;singleton:=true
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Automatic-Module-Name: com.kide.enterprise.audit
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.equinox.app,
+ com.kide.enterprise.context;bundle-version="1.0.0",
+ com.kide.enterprise.identity;bundle-version="1.0.0"
+Export-Package: com.kide.enterprise.audit
