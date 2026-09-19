@@ -1,6 +1,7 @@
 package com.dml.dsl.ide;
 
 import org.eclipse.xtext.ide.editor.contentassist.IdeContentProposalProvider;
+import org.eclipse.xtext.ide.server.contentassist.ContentAssistService;
 import org.eclipse.xtext.util.Modules2;
 
 import com.dml.dsl.DmlRuntimeModule;
@@ -26,6 +27,8 @@ public final class KideDmlIdeSetup extends DmlStandaloneSetup {
             protected void configure() {
                 bind(IdeContentProposalProvider.class)
                         .to(KideDmlIdeContentProposalProvider.class);
+                bind(ContentAssistService.class)
+                        .to(KideDmlContentAssistService.class);
             }
         };
         return Guice.createInjector(Modules.override(generated).with(kideCompatibility));
