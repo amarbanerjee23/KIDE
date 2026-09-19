@@ -74,7 +74,13 @@ public final class OpenApiV1 {
             List<String> fields = schema.allFieldsSorted();
             for (int j = 0; j < fields.size(); j++) {
                 String field = fields.get(j);
-                json.append("\"").append(escape(field)).append("\": {\"type\": \"string\"}");
+                ApiFieldType type = schema.fields().get(field);
+                json.append("\"").append(escape(field)).append("\": {\"type\": \"")
+                        .append(type.openApiType()).append("\"");
+                if (type == ApiFieldType.ARRAY) {
+                    json.append(", \"items\": {}");
+                }
+                json.append("}");
                 if (j + 1 < fields.size()) json.append(',');
             }
             json.append("}");
