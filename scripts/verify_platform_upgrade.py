@@ -47,6 +47,8 @@ def verify() -> None:
         "https://download.eclipse.org/releases/2026-09/",
         "https://download.eclipse.org/modeling/tmf/xtext/updates/releases/2.44.0/",
         "https://download.eclipse.org/sirius/updates/releases/7.6.1/2025-09/",
+        "https://download.eclipse.org/tools/orbit/simrel/maven-osgi/2026-09/",
+        "org.apache.commons.commons-io",
         "JavaSE-21",
     )
     for token in required_target_tokens:
@@ -60,6 +62,7 @@ def verify() -> None:
         "0.10.0.v20201105-1103",
         "JavaSE-11",
         "R20211213173813",
+        '<unit id="org.apache.commons.io"',
     )
     for token in forbidden_target_tokens:
         require(token not in target, f"legacy target dependency remains: {token}")
@@ -79,6 +82,14 @@ def verify() -> None:
         if "Bundle-RequiredExecutionEnvironment:" in text:
             require("Bundle-RequiredExecutionEnvironment: JavaSE-21" in text,
                     f"bundle BREE is not JavaSE-21: {manifest.relative_to(ROOT)}")
+
+    for row in contract.get("languages", []):
+        build = ROOT / row["runtime_bundle"] / "build.properties"
+        build_text = read(build)
+        require("additional.bundles = org.eclipse.xtext.xtext.generator.dependencies" in build_text,
+                f"legacy Xtext generator dependency list remains: {build.relative_to(ROOT)}")
+        require("org.apache.commons.logging" not in build_text,
+                f"legacy Commons Logging generator dependency remains: {build.relative_to(ROOT)}")
 
     for workflow in WORKFLOWS:
         text = read(workflow)
