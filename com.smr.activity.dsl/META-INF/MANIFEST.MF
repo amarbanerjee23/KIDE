@@ -14,7 +14,7 @@ Require-Bundle: com.smr.activity,
  org.eclipse.xtext.util,
  org.eclipse.xtend.lib;bundle-version="2.13.0",
  com.dml.dsl;bundle-version="1.0.0"
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: com.smr.activity.dsl.formatting2,
  com.smr.activity.dsl.scoping,
  com.smr.activity.dsl.parser.antlr,

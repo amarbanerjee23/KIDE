@@ -4,7 +4,7 @@ Bundle-Name: KIDE Activity to MNC Golden Tests
 Bundle-Vendor: KIDE
 Bundle-Version: 1.0.0.qualifier
 Bundle-SymbolicName: com.smr.activity.activity2mnc.tests
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: com.smr.activity.activity2mnc;bundle-version="1.0.0",
  com.smr.activity;bundle-version="1.0.0",
  com.mncml;bundle-version="1.0.0",
