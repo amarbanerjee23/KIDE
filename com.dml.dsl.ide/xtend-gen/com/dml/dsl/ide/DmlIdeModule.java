@@ -4,15 +4,10 @@
 package com.dml.dsl.ide;
 
 import com.dml.dsl.ide.AbstractDmlIdeModule;
-import com.dml.dsl.ide.DmlIdeContentProposalProvider;
-import org.eclipse.xtext.ide.editor.contentassist.IdeContentProposalProvider;
 
 /**
  * Use this class to register ide components.
  */
 @SuppressWarnings("all")
 public class DmlIdeModule extends AbstractDmlIdeModule {
-  public Class<? extends IdeContentProposalProvider> bindIdeContentProposalProvider() {
-    return DmlIdeContentProposalProvider.class;
-  }
 }
