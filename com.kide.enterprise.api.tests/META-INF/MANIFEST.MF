@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Enterprise API Contract Tests
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.enterprise.api.tests
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Require-Bundle: com.kide.enterprise.api;bundle-version="1.0.0",
+ com.kide.enterprise.authorization;bundle-version="1.0.0",
+ org.junit;bundle-version="[4.12.0,5.0.0)"
