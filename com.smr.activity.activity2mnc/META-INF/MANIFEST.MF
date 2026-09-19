@@ -18,7 +18,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.xtext.builder,
  com.smr.activity,
  org.eclipse.ui.ide,
- org.apache.commons.io,
+ org.apache.commons.commons-io,
  com.smr.activity.dsl.ui;bundle-version="1.0.0",
  com.mncml.dsl;bundle-version="1.0.0",
  com.mncml.dsl.ui;bundle-version="1.0.0",
@@ -42,7 +42,7 @@ Require-Bundle: org.eclipse.ui,
  org.eclipse.compare;bundle-version="3.7.300",
  org.eclipse.emf.compare.rcp;bundle-version="2.5.2",
  org.eclipse.emf.compare.edit;bundle-version="4.3.1"
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: com.smr.activity.activity2mnc.handlers,
  com.smr.activity.activity2mnc.methods
 Automatic-Module-Name: com.smr.activity.activity2mnc

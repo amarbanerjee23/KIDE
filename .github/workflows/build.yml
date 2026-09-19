@@ -26,11 +26,11 @@ jobs:
         with:
           fetch-depth: 0 # the build timestamp comes from git history
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
           cache: maven
 
       - name: Cache the p2 target platform
@@ -57,6 +57,9 @@ jobs:
 
       - name: Verify Xtext modernization contract
         run: python3 scripts/verify_xtext_modernization.py
+
+      - name: Verify PR16 current platform contract
+        run: python3 scripts/verify_platform_upgrade.py
 
       - name: Build Eclipse plug-ins and portable products
         run: |

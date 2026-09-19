@@ -1,10 +1,12 @@
 {
   "schema_version": 1,
   "baseline": {
-    "xtext": "2.25.0",
-    "java": 11,
-    "tycho": "4.0.8",
-    "purpose": "PR15 freezes deterministic generation inputs before PR16 changes the platform"
+    "xtext": "2.44.0",
+    "java": 21,
+    "tycho": "5.0.4",
+    "eclipse": "2026-09",
+    "sirius": "7.6.1",
+    "purpose": "PR16 current platform baseline; generated semantic bytes remain guarded separately"
   },
   "rules": {
     "encoding": "UTF-8",

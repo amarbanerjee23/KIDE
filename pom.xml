@@ -21,8 +21,8 @@
   </licenses>
 
   <properties>
-    <tycho.version>4.0.8</tycho.version>
-    <maven.compiler.release>11</maven.compiler.release>
+    <tycho.version>5.0.4</tycho.version>
+    <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <tycho.compiler.failOnWarning>false</tycho.compiler.failOnWarning>
   </properties>
@@ -99,7 +99,7 @@
             <environment><os>macosx</os><ws>cocoa</ws><arch>x86_64</arch></environment>
             <environment><os>macosx</os><ws>cocoa</ws><arch>aarch64</arch></environment>
           </environments>
-          <executionEnvironment>JavaSE-11</executionEnvironment>
+          <executionEnvironment>JavaSE-21</executionEnvironment>
           <pomDependencies>consider</pomDependencies>
         </configuration>
       </plugin>
@@ -128,7 +128,7 @@
         <artifactId>tycho-compiler-plugin</artifactId>
         <version>${tycho.version}</version>
         <configuration>
-          <!-- Source level comes from each bundle's BREE (JavaSE-11). -->
+          <!-- Source level comes from each bundle's BREE (JavaSE-21). -->
           <encoding>UTF-8</encoding>
         </configuration>
       </plugin>

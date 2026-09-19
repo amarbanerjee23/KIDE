@@ -39,6 +39,6 @@ Require-Bundle: org.eclipse.ui,
  com.smr.activity.dsl.ui;bundle-version="1.0.0",
  com.smr.activity;bundle-version="1.0.0", 
  com.model.domain.mnc.design
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
 Automatic-Module-Name: com.model.domain.activity.design

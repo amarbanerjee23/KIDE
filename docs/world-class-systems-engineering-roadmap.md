@@ -1,6 +1,6 @@
 # KIDE World-Class Systems Engineering Product Roadmap
 
-Status: implementation plan after merged PR14 (schema compatibility baseline), 2026-09-18.
+Status: implementation plan after merged PR15 (Xtext modernization preparation), 2026-09-19.
 
 This document is the authoritative implementation plan for evolving KIDE from a research-backed Eclipse modelling product into a world-class, enterprise-grade systems engineering platform with first-class desktop and web clients.
 
