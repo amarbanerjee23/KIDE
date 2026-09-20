@@ -106,17 +106,17 @@ E04 established stable organization → portfolio → project → workspace cont
 
 ## Next execution point
 
-PR22 through PR28 are merged. PR28 restored the secure WebSocket gateway lifecycle
-and the packaged gateway/API checks are green, but the exact-head build still failed
-packaged LSP rename parity.
+PR22 through PR28 are merged. PR28 removed the process-exit race from embedded
+WebSocket LSP sessions, but complete qualification subsequently reproduced the
+rename NPE.
 
-**PR29 is active as the final rename-registry stabilization PR.** The remaining
-failure is not a global server-injector problem: generated language setups populate
-Xtext's global resource-service registry, and dependent setup calls can replace an
-IDE provider with a runtime-only provider. PR29 retains the final IDE providers and
-publishes those rename-capable providers into both the KIDE server registry and
-Xtext's global registry after all setup side effects complete.
+**PR29 is active as a Draft stabilization PR.** Older generated setup calls can
+downgrade Xtext's global resource-service registry for transitive dependencies.
+PR29 republishes the final IDE-aware providers after all setup side effects,
+requires rename support through both local and global registries, and reuses one
+process-wide registry provider across embedded sessions to prevent repeated
+global-registration churn.
 
-PR30 starts the separate React/TypeScript web workspace only after PR29 is fully
-green across desktop packaging, enterprise runtime, ordinary LSP, secure WebSocket,
-HTTP API and packaged LSP parity qualification.
+PR30 starts the separate React/TypeScript web workspace only after PR29's exact
+head is fully green across desktop packaging, enterprise runtime, ordinary LSP,
+secure WebSocket, HTTP API and LSP parity qualification.
