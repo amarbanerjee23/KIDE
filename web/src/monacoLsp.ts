@@ -349,7 +349,7 @@ export class MonacoLspController {
         message: diagnostic.message,
         severity: markerSeverity(diagnostic.severity),
         source: diagnostic.source ?? "KIDE",
-        code: diagnostic.code
+        code: diagnostic.code === undefined ? undefined : String(diagnostic.code)
       }))
     );
   }
@@ -407,7 +407,8 @@ function toMonacoWorkspaceEdit(edit: WorkspaceEdit): monaco.languages.WorkspaceE
         textEdit: {
           range: toRange(change.range),
           text: change.newText
-        }
+        },
+        versionId: undefined
       });
     }
   }
@@ -431,7 +432,8 @@ function toDocumentSymbol(
       detail: symbol.containerName ?? "",
       kind: symbolKind(symbol.kind),
       range: toRange(symbol.location.range),
-      selectionRange: toRange(symbol.location.range)
+      selectionRange: toRange(symbol.location.range),
+      tags: []
     };
   }
   return {
@@ -440,7 +442,8 @@ function toDocumentSymbol(
     kind: symbolKind(symbol.kind),
     range: toRange(symbol.range),
     selectionRange: toRange(symbol.selectionRange),
-    children: symbol.children?.map(toDocumentSymbol)
+    children: symbol.children?.map(toDocumentSymbol),
+    tags: []
   };
 }
 
