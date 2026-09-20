@@ -22,7 +22,7 @@ qualified and documented once.
 | PR | Consolidated scope | Clubbed former roadmap work | Merge gate |
 | --- | --- | --- | --- |
 | **PR26** | Shared enterprise HTTP service runtime | Missing prerequisite between former PR20-22 and web work | Secure `/api/v1` runtime, shared OIDC introspection, RBAC, audit, revision-safe model access, structured unavailable states, packaged headless self-check |
-| **PR27** | PR26 HTTP runtime stabilization | Post-merge qualification correction | Declare the direct Jetty HTTP OSGi dependency required by the PR26 server; restore strict Tycho/package qualification without weakening compiler or CI gates |
+| **PR27** | Post-merge runtime stabilization | PR26 HTTP OSGi correction + PR25 LSP rename regression | Declare the direct Jetty HTTP dependency and restore rename at the per-language resource-service boundary; remove the invalid server-global rename binding; restore strict packaged qualification without weakening CI gates |
 | **PR28** | Web engineering workspace foundation | Former PR23 + PR25 | React/TypeScript shell, Monaco base, API client, project open/import/export, autosave/revision/conflict UX, browser build/E2E |
 | **PR29** | Browser textual-language production parity | Former PR24 | Monaco language client, TextMate + semantic tokens, completion/hover/navigation/references/actions/format/rename using PR13 contracts |
 | **PR30** | GLSP graphical modelling and parity | Former PR26 + PR27 + PR28 | One EMF-backed GLSP mapping supports read/edit/undo/validation and semantic parity with Sirius |
@@ -63,6 +63,13 @@ post-merge Tycho run exposed one strict OSGi dependency defect: the new HTTP
 runtime directly consumes Jetty HTTP header/URI APIs without declaring
 `org.eclipse.jetty.http` in its bundle manifest.
 
-**PR27 is the active stabilization PR.** It contains only that dependency repair
-plus this numbering correction. The full packaged build and PR26 HTTP self-check
-must be green before PR28 begins the separate React/TypeScript web workspace.
+**PR27 is the active stabilization PR.** During review of the previous main
+failure, a second pre-existing regression was traced to PR25: rename was bound in
+the global server injector even though Xtext resolves `IRenameStrategy2` from
+each language's resource service provider. PR27 therefore also restores the
+standard rename strategy at that language boundary and removes the invalid global
+binding.
+
+The full packaged build, ordinary LSP smoke, secure WebSocket smoke, PR26 HTTP
+self-check and LSP parity qualification must all be green before PR28 begins the
+separate React/TypeScript web workspace.
