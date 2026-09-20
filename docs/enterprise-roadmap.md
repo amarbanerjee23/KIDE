@@ -111,12 +111,18 @@ per-language rename compatibility, but it was merged before the exact-head full
 build finished. The post-merge build then failed the secure WebSocket packaged
 qualification.
 
-**PR28 is active as a strict gateway stabilization PR.** The failure is a lifecycle
-race in embedded Xtext sessions: Xtext's default shutdown/exit handler calls
-`System.exit`, so a valid client `shutdown` + `exit` can terminate the shared
-gateway JVM before reconnect qualification and the success marker. PR28 binds the
-no-op shutdown/exit handler explicitly for in-process sessions so exit remains
-session-local, while preserving all security, authorization and LSP gates.
+**PR28 is active as a strict runtime stabilization PR.** The gateway failure is
+a lifecycle race in embedded Xtext sessions: Xtext's default shutdown/exit handler
+calls `System.exit`, so a valid client `shutdown` + `exit` can terminate the
+shared gateway JVM before reconnect qualification. PR28 binds the no-op handler
+explicitly for in-process sessions.
+
+The same full run also proved PR27's rename correction was incomplete. Older
+generated setups can overwrite Xtext's global language registry with runtime-only
+providers for transitive dependencies; `RenameService2` is language-injector
+scoped and consults that global registry. PR28 therefore republishes the final
+IDE-aware providers after every generated setup completes and fails startup if
+either the local or global provider lacks rename support.
 
 PR29 starts the separate React/TypeScript web workspace only after PR28's exact
 head is fully green across desktop packaging, enterprise runtime, ordinary LSP,
