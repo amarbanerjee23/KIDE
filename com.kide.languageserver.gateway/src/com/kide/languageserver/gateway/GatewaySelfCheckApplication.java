@@ -76,7 +76,7 @@ public final class GatewaySelfCheckApplication implements IApplication {
             };
 
             InMemoryGatewayWorkspaceCatalog catalog = new InMemoryGatewayWorkspaceCatalog();
-            catalog.register(context);
+            catalog.register(new GatewayWorkspaceBinding(context, project));
 
             RoleBinding engineerBinding = RoleBinding.allow(
                     principal.id(), Role.ENGINEER, context.project().id());
@@ -111,6 +111,8 @@ public final class GatewaySelfCheckApplication implements IApplication {
 
             runPrivilegeRevocationQualification(
                     endpoint, project, policyStore, engineerBinding);
+            Path outsideProject = Files.createDirectories(root.resolve("outside-project"));
+            runPathIsolationQualification(endpoint, outsideProject);
             runFullLanguageQualification(endpoint, project);
             runReconnectQualification(endpoint, project);
 
@@ -175,6 +177,31 @@ public final class GatewaySelfCheckApplication implements IApplication {
             if (!closedByServer) {
                 try {
                     socket.sendClose(WebSocket.NORMAL_CLOSURE, "revocation cleanup").join();
+                } catch (RuntimeException ignored) {
+                    // The server may already have closed the socket.
+                }
+            }
+        }
+    }
+
+    private static void runPathIsolationQualification(
+            URI endpoint,
+            Path outsideProject) throws Exception {
+        ProbeListener listener = new ProbeListener();
+        WebSocket socket = connect(endpoint, listener);
+        boolean closedByServer = false;
+        try {
+            socket.sendText(initialize(30, outsideProject), true).join();
+            Integer closeCode = listener.closeCodes.poll(10, TimeUnit.SECONDS);
+            if (closeCode == null || closeCode.intValue() != 1008) {
+                throw new IllegalStateException(
+                        "outside-project LSP root was not rejected with policy violation");
+            }
+            closedByServer = true;
+        } finally {
+            if (!closedByServer) {
+                try {
+                    socket.sendClose(WebSocket.NORMAL_CLOSURE, "path isolation cleanup").join();
                 } catch (RuntimeException ignored) {
                     // The server may already have closed the socket.
                 }
