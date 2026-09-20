@@ -9,5 +9,8 @@ export default defineConfig({
   },
   server: {
     strictPort: true
+  },
+  test: {
+    include: ["tests/**/*.test.ts"]
   }
 });
