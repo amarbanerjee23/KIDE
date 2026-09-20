@@ -78,14 +78,13 @@ public final class GatewaySelfCheckApplication implements IApplication {
             InMemoryGatewayWorkspaceCatalog catalog = new InMemoryGatewayWorkspaceCatalog();
             catalog.register(context);
 
+            RoleBinding engineerBinding = RoleBinding.allow(
+                    principal.id(), Role.ENGINEER, context.project().id());
+            InMemoryAuthorizationPolicyStore policyStore =
+                    new InMemoryAuthorizationPolicyStore(List.of(engineerBinding));
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
                     new AuthorizationEnforcer(
-                            new AuthorizationService(
-                                    new InMemoryAuthorizationPolicyStore(List.of(
-                                            RoleBinding.allow(
-                                                    principal.id(),
-                                                    Role.ENGINEER,
-                                                    context.project().id()))))));
+                            new AuthorizationService(policyStore)));
 
             GatewayConfig config = new GatewayConfig(
                     "127.0.0.1",
@@ -110,6 +109,8 @@ public final class GatewaySelfCheckApplication implements IApplication {
                 return fail("unauthorized WebSocket upgrade was accepted");
             }
 
+            runPrivilegeRevocationQualification(
+                    endpoint, project, policyStore, engineerBinding);
             runFullLanguageQualification(endpoint, project);
             runReconnectQualification(endpoint, project);
 
@@ -142,6 +143,38 @@ public final class GatewaySelfCheckApplication implements IApplication {
             return false;
         } catch (Exception expected) {
             return true;
+        }
+    }
+
+    private static void runPrivilegeRevocationQualification(
+            URI endpoint,
+            Path project,
+            InMemoryAuthorizationPolicyStore policyStore,
+            RoleBinding engineerBinding) throws Exception {
+        ProbeListener listener = new ProbeListener();
+        WebSocket socket = connect(endpoint, listener);
+        boolean closedByServer = false;
+        try {
+            socket.sendText(initialize(20, project), true).join();
+            requireMessage(listener, message -> hasId(message, 20), "revocation initialize response");
+
+            policyStore.replace(0, List.of());
+            socket.sendText(notification("initialized", new JsonObject()), true).join();
+            int closeCode = listener.closeCodes.poll(10, TimeUnit.SECONDS);
+            if (closeCode != 1008) {
+                throw new IllegalStateException(
+                        "privilege revocation did not close WebSocket with policy violation");
+            }
+            closedByServer = true;
+        } finally {
+            policyStore.replace(1, List.of(engineerBinding));
+            if (!closedByServer) {
+                try {
+                    socket.sendClose(WebSocket.NORMAL_CLOSURE, "revocation cleanup").join();
+                } catch (RuntimeException ignored) {
+                    // The server may already have closed the socket.
+                }
+            }
         }
     }
 
@@ -325,6 +358,7 @@ public final class GatewaySelfCheckApplication implements IApplication {
 
     private static final class ProbeListener implements WebSocket.Listener {
         private final BlockingQueue<String> messages = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Integer> closeCodes = new LinkedBlockingQueue<>();
         private final StringBuilder partial = new StringBuilder();
         private volatile Throwable failure;
 
@@ -341,6 +375,12 @@ public final class GatewaySelfCheckApplication implements IApplication {
                 partial.setLength(0);
             }
             webSocket.request(1);
+            return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+            closeCodes.offer(statusCode);
             return CompletableFuture.completedFuture(null);
         }
 
