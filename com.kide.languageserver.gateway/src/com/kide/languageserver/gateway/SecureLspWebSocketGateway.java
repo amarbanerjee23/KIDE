@@ -1,5 +1,7 @@
 package com.kide.languageserver.gateway;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -55,8 +57,9 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                             return null;
                         }
                         if (!secureEnough(
-                                "https".equalsIgnoreCase(request.getHttpURI().getScheme()),
-                                request.getHeaders().get("X-Forwarded-Proto"))) {
+                                request.getConnectionMetaData().isSecure(),
+                                request.getHeaders().get("X-Forwarded-Proto"),
+                                request.getConnectionMetaData().getRemoteSocketAddress())) {
                             response.setStatus(400);
                             callback.succeeded();
                             return null;
@@ -139,12 +142,27 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
         return origin != null && config.allowedOrigins().contains(origin);
     }
 
-    private boolean secureEnough(boolean directSecure, String forwardedProto) {
+    private boolean secureEnough(
+            boolean directSecure,
+            String forwardedProto,
+            SocketAddress remoteAddress) {
         if (!config.requireSecureTransport()) return true;
         if (directSecure) return true;
-        return config.trustForwardedProto()
-                && forwardedProto != null
-                && "https".equalsIgnoreCase(forwardedProto.trim());
+        if (!config.trustForwardedProto()
+                || forwardedProto == null
+                || !"https".equalsIgnoreCase(forwardedProto.trim())) {
+            return false;
+        }
+        return trustedProxy(remoteAddress);
+    }
+
+    private boolean trustedProxy(SocketAddress remoteAddress) {
+        if (!(remoteAddress instanceof InetSocketAddress inet)) return false;
+        if (inet.getAddress() != null
+                && config.trustedProxyAddresses().contains(inet.getAddress().getHostAddress())) {
+            return true;
+        }
+        return config.trustedProxyAddresses().contains(inet.getHostString());
     }
 
     private static String queryParameter(String rawQuery, String expectedName) {
