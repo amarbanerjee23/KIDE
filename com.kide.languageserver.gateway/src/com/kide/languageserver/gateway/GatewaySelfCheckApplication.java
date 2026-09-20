@@ -50,6 +50,7 @@ public final class GatewaySelfCheckApplication implements IApplication {
     public Object start(IApplicationContext applicationContext) {
         Path root = null;
         SecureLspWebSocketGateway gateway = null;
+        String stage = "bootstrap";
         try {
             root = Files.createTempDirectory("kide-pr22-gateway-");
             Path workspace = Files.createDirectories(root.resolve("workspace"));
@@ -108,22 +109,29 @@ public final class GatewaySelfCheckApplication implements IApplication {
                     + "/lsp?workspaceId="
                     + URLEncoder.encode(context.workspace().id().value(), StandardCharsets.UTF_8));
 
+            stage = "unauthorized-handshake";
             if (!unauthorizedHandshakeIsDenied(endpoint)) {
                 return fail("unauthorized WebSocket upgrade was accepted");
             }
 
+            stage = "privilege-revocation";
             runPrivilegeRevocationQualification(
                     endpoint, project, policyStore, engineerBinding);
             Path outsideProject = Files.createDirectories(root.resolve("outside-project"));
+            stage = "path-isolation";
             runPathIsolationQualification(endpoint, outsideProject);
+            stage = "binary-rejection";
             runBinaryRejectionQualification(endpoint);
+            stage = "five-language-lsp";
             runFullLanguageQualification(endpoint, project);
+            stage = "reconnect";
             runReconnectQualification(endpoint, project);
 
             System.out.println("KIDE PR22 SECURE LSP WEBSOCKET SELF-CHECK OK");
             return IApplication.EXIT_OK;
         } catch (Exception e) {
-            return fail("guarded self-check failure: " + e.getClass().getSimpleName());
+            return fail("guarded self-check failure at " + stage
+                    + ": " + rootCauseType(e));
         } finally {
             if (gateway != null) {
                 try {
@@ -392,6 +400,16 @@ public final class GatewaySelfCheckApplication implements IApplication {
             if (listener.failure != null) throw new IllegalStateException(description, listener.failure);
         }
         throw new IllegalStateException("Timed out waiting for " + description);
+    }
+
+    private static String rootCauseType(Throwable failure) {
+        Throwable current = failure;
+        int depth = 0;
+        while (current.getCause() != null && current.getCause() != current && depth++ < 12) {
+            current = current.getCause();
+        }
+        String simple = current.getClass().getSimpleName();
+        return simple == null || simple.isBlank() ? current.getClass().getName() : simple;
     }
 
     private static Integer fail(String message) {
