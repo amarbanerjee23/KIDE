@@ -1,0 +1,67 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
+  background: #f3f5f8;
+  font-synthesis: none;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 960px; min-height: 100vh; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: 0.5; }
+.app-shell { min-height: 100vh; display: grid; grid-template-rows: auto auto auto 1fr; }
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 28px; background: #111827; color: white;
+}
+.topbar h1 { margin: 2px 0 0; font-size: 24px; }
+.eyebrow { margin: 0; font-size: 11px; letter-spacing: .18em; color: #a7b4c8; }
+.subtitle { margin: 5px 0 0; color: #cbd5e1; font-size: 13px; }
+.service-state { border: 1px solid #475569; border-radius: 999px; padding: 7px 12px; font-size: 12px; }
+.connection-panel {
+  display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(190px, 1fr) auto auto auto;
+  gap: 10px; align-items: end; padding: 14px 20px; background: white; border-bottom: 1px solid #d8dee9;
+}
+label { display: grid; gap: 5px; font-size: 12px; font-weight: 650; }
+input { width: 100%; border: 1px solid #b8c1cf; border-radius: 6px; padding: 8px 10px; background: white; color: #172033; }
+button, .import-button {
+  border: 1px solid #9aa7b8; border-radius: 6px; padding: 8px 12px; background: white; color: #172033; font-weight: 650;
+}
+.connection-panel > button:first-of-type { background: #1f4f8a; color: white; border-color: #1f4f8a; }
+.import-button { display: block; position: relative; overflow: hidden; text-align: center; }
+.import-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.notice { padding: 9px 20px; background: #eef5ff; border-bottom: 1px solid #cadcf5; font-size: 13px; }
+.conflict {
+  display: flex; align-items: center; gap: 12px; padding: 10px 20px;
+  background: #fff5e8; border-bottom: 1px solid #e8c78d; font-size: 13px;
+}
+.conflict span { flex: 1; }
+.workspace { min-height: 0; display: grid; grid-template-columns: 310px 1fr; }
+.sidebar { overflow: auto; padding: 16px; background: #f8fafc; border-right: 1px solid #d8dee9; }
+.sidebar h2 { font-size: 13px; margin: 4px 0 10px; text-transform: uppercase; letter-spacing: .08em; }
+.sidebar h3 { margin: 0 0 8px; font-size: 15px; }
+.muted { color: #64748b; font-size: 12px; line-height: 1.5; }
+.project-list, .file-list { list-style: none; margin: 0 0 20px; padding: 0; display: grid; gap: 5px; }
+.project-list li { display: flex; align-items: center; gap: 8px; }
+.project-list li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.project-list button { padding: 5px 9px; }
+.model-loader { margin: 14px 0 22px; padding: 12px; border: 1px solid #d8dee9; border-radius: 8px; background: white; display: grid; gap: 9px; }
+.file-list button {
+  width: 100%; border: 0; background: transparent; display: flex; justify-content: space-between;
+  padding: 7px 8px; text-align: left; font-weight: 500;
+}
+.file-list button.selected { background: #e4edf8; color: #143b68; }
+.editor-panel { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto 1fr; background: white; }
+.editor-toolbar {
+  display: flex; justify-content: space-between; align-items: center; min-height: 46px;
+  padding: 8px 14px; border-bottom: 1px solid #d8dee9;
+}
+.editor-toolbar > div { display: flex; align-items: baseline; gap: 10px; }
+.editor-toolbar span { font-size: 12px; color: #64748b; }
+.save-state { text-transform: uppercase; letter-spacing: .06em; }
+.state-conflict, .state-error { color: #9a3412 !important; font-weight: 700; }
+.editor-host { width: 100%; height: 100%; min-height: 560px; }
+.empty-state { display: grid; place-items: center; color: #64748b; padding: 40px; }
+@media (max-width: 1100px) {
+  .connection-panel { grid-template-columns: 1fr 1fr auto; }
+}
