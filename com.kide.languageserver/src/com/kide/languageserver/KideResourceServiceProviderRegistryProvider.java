@@ -7,9 +7,15 @@ import java.util.Map;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.xtext.ISetup;
+import org.eclipse.xtext.ide.refactoring.IRenameStrategy2;
+import org.eclipse.xtext.parser.IEncodingProvider;
 import org.eclipse.xtext.resource.FileExtensionProvider;
+import org.eclipse.xtext.resource.IContainer;
+import org.eclipse.xtext.resource.IResourceDescription;
 import org.eclipse.xtext.resource.IResourceServiceProvider;
+import org.eclipse.xtext.resource.IResourceServiceProviderExtension;
 import org.eclipse.xtext.resource.impl.ResourceServiceProviderRegistryImpl;
+import org.eclipse.xtext.validation.IResourceValidator;
 import org.osgi.framework.Bundle;
 
 import com.google.inject.Injector;
@@ -53,12 +59,17 @@ public final class KideResourceServiceProviderRegistryProvider
 
         for (LanguageSetup language : LANGUAGES) {
             Injector injector = instantiate(language).createInjectorAndDoEMFRegistration();
-            IResourceServiceProvider serviceProvider = injector.getInstance(IResourceServiceProvider.class);
+            IResourceServiceProvider serviceProvider =
+                    renameCompatible(injector, injector.getInstance(IResourceServiceProvider.class));
             FileExtensionProvider extensionProvider = injector.getInstance(FileExtensionProvider.class);
 
             if (!extensionProvider.getFileExtensions().contains(language.extension)) {
                 throw new IllegalStateException("KIDE language " + language.setupClass
                         + " does not advertise expected extension '." + language.extension + "'");
+            }
+            if (serviceProvider.get(IRenameStrategy2.class) == null) {
+                throw new IllegalStateException("KIDE language " + language.setupClass
+                        + " has no LSP rename strategy");
             }
 
             for (String extension : extensionProvider.getFileExtensions()) {
@@ -78,6 +89,17 @@ public final class KideResourceServiceProviderRegistryProvider
             }
         }
         return result;
+    }
+
+    private static IResourceServiceProvider renameCompatible(
+            Injector injector,
+            IResourceServiceProvider delegate) {
+        IRenameStrategy2 renameStrategy = delegate.get(IRenameStrategy2.class);
+        if (renameStrategy != null) return delegate;
+
+        IRenameStrategy2.DefaultImpl fallback = new IRenameStrategy2.DefaultImpl();
+        injector.injectMembers(fallback);
+        return new RenameCompatibleResourceServiceProvider(delegate, fallback);
     }
 
     private ISetup instantiate(LanguageSetup language) {
@@ -100,6 +122,68 @@ public final class KideResourceServiceProviderRegistryProvider
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Cannot instantiate KIDE Xtext setup "
                     + effectiveSetupClass, exception);
+        }
+    }
+
+    /**
+     * Xtext 2.44's rename service resolves IRenameStrategy2 from the language
+     * resource service provider, not from the global server injector. KIDE still
+     * ships some generated IDE modules from older Xtext generations, so this
+     * compatibility wrapper supplies the standard strategy only when the
+     * language provider cannot expose its generated binding.
+     */
+    private static final class RenameCompatibleResourceServiceProvider
+            implements IResourceServiceProvider, IResourceServiceProviderExtension {
+
+        private final IResourceServiceProvider delegate;
+        private final IRenameStrategy2 renameStrategy;
+
+        private RenameCompatibleResourceServiceProvider(
+                IResourceServiceProvider delegate,
+                IRenameStrategy2 renameStrategy) {
+            this.delegate = delegate;
+            this.renameStrategy = renameStrategy;
+        }
+
+        @Override
+        public IResourceValidator getResourceValidator() {
+            return delegate.getResourceValidator();
+        }
+
+        @Override
+        public IResourceDescription.Manager getResourceDescriptionManager() {
+            return delegate.getResourceDescriptionManager();
+        }
+
+        @Override
+        public IContainer.Manager getContainerManager() {
+            return delegate.getContainerManager();
+        }
+
+        @Override
+        public boolean canHandle(URI uri) {
+            return delegate.canHandle(uri);
+        }
+
+        @Override
+        public IEncodingProvider getEncodingProvider() {
+            return delegate.getEncodingProvider();
+        }
+
+        @Override
+        public <T> T get(Class<T> type) {
+            if (IRenameStrategy2.class.equals(type)) {
+                return type.cast(renameStrategy);
+            }
+            return delegate.get(type);
+        }
+
+        @Override
+        public boolean isSource(URI uri) {
+            if (delegate instanceof IResourceServiceProviderExtension extension) {
+                return extension.isSource(uri);
+            }
+            return !uri.isArchive();
         }
     }
 
