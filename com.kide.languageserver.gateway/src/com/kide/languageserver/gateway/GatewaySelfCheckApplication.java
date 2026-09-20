@@ -154,20 +154,24 @@ public final class GatewaySelfCheckApplication implements IApplication {
         ProbeListener listener = new ProbeListener();
         WebSocket socket = connect(endpoint, listener);
         boolean closedByServer = false;
+        boolean policyRevoked = false;
         try {
             socket.sendText(initialize(20, project), true).join();
             requireMessage(listener, message -> hasId(message, 20), "revocation initialize response");
 
             policyStore.replace(0, List.of());
+            policyRevoked = true;
             socket.sendText(notification("initialized", new JsonObject()), true).join();
-            int closeCode = listener.closeCodes.poll(10, TimeUnit.SECONDS);
-            if (closeCode != 1008) {
+            Integer closeCode = listener.closeCodes.poll(10, TimeUnit.SECONDS);
+            if (closeCode == null || closeCode.intValue() != 1008) {
                 throw new IllegalStateException(
                         "privilege revocation did not close WebSocket with policy violation");
             }
             closedByServer = true;
         } finally {
-            policyStore.replace(1, List.of(engineerBinding));
+            if (policyRevoked) {
+                policyStore.replace(1, List.of(engineerBinding));
+            }
             if (!closedByServer) {
                 try {
                     socket.sendClose(WebSocket.NORMAL_CLOSURE, "revocation cleanup").join();
