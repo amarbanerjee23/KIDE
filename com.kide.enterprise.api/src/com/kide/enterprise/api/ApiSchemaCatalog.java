@@ -18,7 +18,7 @@ public final class ApiSchemaCatalog {
         add(schemas, schema("ProjectCreateRequest",
                 Map.of("displayName", s(), "portfolioId", s()), Set.of("displayName")));
         add(schemas, schema("Project",
-                Map.of("id", s(), "displayName", s(), "revision", s(), "portfolioId", s()),
+                Map.of("id", s(), "displayName", s(), "revision", s(), "portfolioId", s(), "workspaceId", s()),
                 Set.of("id", "displayName", "revision")));
         add(schemas, schema("ProjectList",
                 Map.of("items", a(), "nextCursor", s()), Set.of("items")));

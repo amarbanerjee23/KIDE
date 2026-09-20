@@ -28,6 +28,7 @@ export interface Project {
   displayName: string;
   revision: string;
   portfolioId?: string;
+  workspaceId?: string;
 }
 
 export interface ProjectList {
