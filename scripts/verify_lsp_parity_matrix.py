@@ -98,6 +98,9 @@ def verify(root: Path) -> list[str]:
 
         definition = probe.get("definition")
         if definition is not None:
+            occurrence = definition.get("occurrence", 1) if isinstance(definition, dict) else 1
+            if not isinstance(occurrence, int) or isinstance(occurrence, bool) or occurrence < 1:
+                errors.append(f"{language_id} definition occurrence must be a positive integer")
             if not isinstance(definition, dict):
                 errors.append(f"{language_id} definition probe must be an object")
             else:
