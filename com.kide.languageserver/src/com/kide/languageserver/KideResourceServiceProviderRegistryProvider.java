@@ -9,7 +9,6 @@ import org.eclipse.emf.common.util.URI;
 import org.eclipse.xtext.ISetup;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.xtext.ide.refactoring.IRenameStrategy2;
-import org.eclipse.xtext.ide.server.Document;
 import org.eclipse.xtext.ide.server.symbol.DocumentSymbolService;
 import org.eclipse.xtext.ide.server.symbol.HierarchicalDocumentSymbolService;
 import org.eclipse.xtext.naming.QualifiedName;
