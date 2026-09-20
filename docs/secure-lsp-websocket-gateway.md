@@ -70,8 +70,11 @@ Role bindings are explicit:
 
 Every scope ID must belong to the configured E04 lineage. Before the HTTP upgrade
 is accepted, the server applies both PR18 WebSocket-workspace and LSP-workspace
-authorization gates. Missing authentication, unknown workspace, cross-context
-scope IDs and missing permissions fail closed.
+authorization gates. The same authorization gates are re-evaluated for every
+inbound WebSocket/LSP message, so a policy revision or role revocation takes
+effect on an already-open session rather than waiting for reconnect/token expiry.
+Missing authentication, unknown workspace, cross-context scope IDs and missing
+permissions fail closed.
 
 ## Transport security and reverse proxies
 
@@ -89,6 +92,19 @@ bind is loopback. It is rejected on non-loopback binds.
 `KIDE_GATEWAY_ALLOWED_ORIGINS` may contain a comma-separated origin allowlist.
 An empty allowlist does not add an origin restriction; production browser
 deployments should set it explicitly.
+
+## Project filesystem boundary
+
+The selected E04 workspace is bound at gateway startup to one canonical project
+root. Before any JSON-RPC payload is forwarded to Xtext, KIDE recursively checks
+LSP URI/path fields such as `rootUri`, `rootPath`, `textDocument.uri`,
+workspace-folder URIs and rename target URIs.
+
+Only `file:` URIs resolving inside the authorized project are accepted. The
+boundary normalizes paths and resolves the nearest existing ancestor with
+`toRealPath()`, so lexical `..` traversal, sibling projects, external paths,
+non-file URI schemes and symlink escapes are rejected before the language server
+can access them.
 
 ## Resource controls
 
@@ -114,13 +130,15 @@ The headless KIDE product executes
 1. provisions a real E04 context and PR18 role binding;
 2. proves an unauthenticated WebSocket upgrade is denied;
 3. opens an authenticated browser-style WebSocket using the credential subprotocol;
-4. performs LSP initialize;
-5. opens and changes documents for DML, Operation, MNC, Capability and Activity;
-6. requires diagnostics for every opened language;
-7. forwards a `$/cancelRequest` notification;
-8. performs LSP shutdown/exit;
-9. reconnects and repeats initialize/shutdown; and
-10. shuts down the Jetty gateway and all in-process LSP sessions.
+4. proves revoking the live role binding closes the already-open socket;
+5. proves an LSP initialize rooted outside the authorized project is rejected;
+6. performs LSP initialize;
+7. opens and changes documents for DML, Operation, MNC, Capability and Activity;
+8. requires diagnostics for every opened language;
+9. forwards a `$/cancelRequest` notification;
+10. performs LSP shutdown/exit;
+11. reconnects and repeats initialize/shutdown; and
+12. shuts down the Jetty gateway and all in-process LSP sessions.
 
 This packaged test runs from the customer-consumable headless product, not from a
 source-only test harness.
