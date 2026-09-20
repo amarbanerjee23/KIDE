@@ -20,6 +20,7 @@ import org.junit.Test;
 import com.kide.languageserver.gateway.BrowserWebSocketCredential;
 import com.kide.languageserver.gateway.GatewayConfig;
 import com.kide.languageserver.gateway.GatewayMessagePolicy;
+import com.kide.languageserver.gateway.GatewaySessionQuota;
 import com.kide.languageserver.gateway.LspMessageFraming;
 import com.kide.languageserver.gateway.LspWorkspaceBoundary;
 import com.kide.languageserver.gateway.OidcIntrospectionConfig;
@@ -163,6 +164,7 @@ public class GatewayPolicyTest {
                         Duration.ofMinutes(5),
                         1024 * 1024,
                         2400,
+                        128,
                         true,
                         true,
                         Set.of(),
@@ -174,6 +176,7 @@ public class GatewayPolicyTest {
                 Duration.ofMinutes(5),
                 1024 * 1024,
                 2400,
+                128,
                 true,
                 true,
                 Set.of("127.0.0.1"),
@@ -182,11 +185,35 @@ public class GatewayPolicyTest {
     }
 
     @Test
+    public void sessionQuotaIsBoundedAndLeaseReleaseIsIdempotent() {
+        GatewaySessionQuota quota = new GatewaySessionQuota(2);
+        GatewaySessionQuota.Lease first = quota.tryAcquire();
+        GatewaySessionQuota.Lease second = quota.tryAcquire();
+        assertTrue(first != null);
+        assertTrue(second != null);
+        assertEquals(2, quota.activeSessions());
+        assertTrue(quota.tryAcquire() == null);
+
+        first.close();
+        first.close();
+        assertEquals(1, quota.activeSessions());
+
+        GatewaySessionQuota.Lease replacement = quota.tryAcquire();
+        assertTrue(replacement != null);
+        assertEquals(2, quota.activeSessions());
+
+        second.close();
+        replacement.close();
+        assertEquals(0, quota.activeSessions());
+    }
+
+    @Test
     public void secureGatewayDefaultsAreBounded() {
         GatewayConfig config = GatewayConfig.secureDefault(8443);
         assertTrue(config.requireSecureTransport());
         assertTrue(config.loopbackBind());
         assertEquals(1024 * 1024, config.maxTextMessageBytes());
+        assertEquals(128, config.maxConcurrentSessions());
         assertEquals(Set.of(), config.allowedOrigins());
     }
 }
