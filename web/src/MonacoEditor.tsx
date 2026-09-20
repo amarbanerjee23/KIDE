@@ -17,7 +17,7 @@ interface Props {
 
 export function MonacoEditor({ value, path, readOnly = false, onChange }: Props) {
   const host = useRef<HTMLDivElement>(null);
-  const editor = useRef<monaco.editor.IStandaloneCodeEditor>();
+  const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>(undefined);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
