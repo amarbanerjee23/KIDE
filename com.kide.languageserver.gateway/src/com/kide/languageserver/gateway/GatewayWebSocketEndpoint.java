@@ -20,6 +20,7 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
     private final ServerAuthorizationGate authorization;
     private final EnterpriseContext enterpriseContext;
     private final LspWorkspaceBoundary workspaceBoundary;
+    private final GatewaySessionQuota.Lease sessionLease;
     private final GatewayMessagePolicy messagePolicy;
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -31,6 +32,7 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
             AuthenticatedSession authenticatedSession,
             ServerAuthorizationGate authorization,
             GatewayWorkspaceBinding workspaceBinding,
+            GatewaySessionQuota.Lease sessionLease,
             Clock clock) {
         this.config = Objects.requireNonNull(config, "config");
         this.authenticatedSession = Objects.requireNonNull(authenticatedSession, "authenticatedSession");
@@ -39,6 +41,7 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
                 Objects.requireNonNull(workspaceBinding, "workspaceBinding");
         this.enterpriseContext = binding.context();
         this.workspaceBoundary = new LspWorkspaceBoundary(binding);
+        this.sessionLease = Objects.requireNonNull(sessionLease, "sessionLease");
         this.messagePolicy = new GatewayMessagePolicy(
                 config.maxTextMessageBytes(), config.maxMessagesPerMinute(), clock);
     }
@@ -130,6 +133,7 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
         InProcessLspSession current = lsp;
         if (current != null) current.close();
         authenticatedSession.close();
+        sessionLease.close();
         Session socket = webSocket;
         if (socket != null && socket.isOpen()) {
             socket.close(statusCode, reason, Callback.NOOP);
@@ -141,5 +145,6 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
         InProcessLspSession current = lsp;
         if (current != null) current.close();
         authenticatedSession.close();
+        sessionLease.close();
     }
 }
