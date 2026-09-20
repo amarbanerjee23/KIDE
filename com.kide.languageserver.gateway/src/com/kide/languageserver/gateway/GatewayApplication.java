@@ -50,6 +50,7 @@ public final class GatewayApplication implements IApplication {
                     Duration.ofSeconds(integer(env, "KIDE_GATEWAY_IDLE_SECONDS", 300)),
                     integer(env, "KIDE_GATEWAY_MAX_MESSAGE_BYTES", 1024 * 1024),
                     integer(env, "KIDE_GATEWAY_MAX_MESSAGES_PER_MINUTE", 2400),
+                    integer(env, "KIDE_GATEWAY_MAX_SESSIONS", 128),
                     !allowInsecureLoopback,
                     trustForwarded,
                     csv(env.get("KIDE_GATEWAY_TRUSTED_PROXY_ADDRESSES")),
