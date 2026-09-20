@@ -60,21 +60,14 @@ The grouping follows shared code boundaries rather than feature labels:
 
 ## Current execution point
 
-PR22 through PR28 are merged. PR28 makes embedded gateway LSP exit session-local,
-but the complete packaged qualification subsequently reproduced the rename NPE.
+PR22 through PR29 are merged. PR29 restored deterministic Xtext rename and symbol
+parity across the packaged five-language LSP while preserving the desktop product.
 
-The remaining defect is isolated to Xtext's global resource-service registry.
-Older generated standalone setups perform transitive registration side effects;
-for example a later DSL setup can invoke DML standalone setup and overwrite the
-IDE-aware DML provider with a runtime-only provider. `RenameService2` is created
-from a language injector and resolves `IResourceServiceProvider.Registry.INSTANCE`,
-so the earlier server-local compatibility wrapper could not guarantee rename.
+**PR30 is the active implementation PR.** It creates a separate React/TypeScript
+browser workspace over the existing enterprise HTTP boundary, adds a locally
+bundled Monaco editor foundation, bounded canonical-project ZIP import/export,
+revision-aware autosave/conflict handling, and browser build/unit/E2E gates.
 
-**PR29 is the active stabilization PR and remains Draft until fully green.**
-It retains the final IDE-aware providers, republishes them only after all generated
-setup side effects complete, validates rename support through both local and global
-lookups, and shares one process-wide registry provider so each WebSocket session
-does not replay global registration side effects.
-
-PR30 begins the separate React/TypeScript web workspace only after PR29's exact
-head passes every packaged desktop, enterprise, LSP, WebSocket, HTTP and parity gate.
+PR30 does not duplicate KIDE language semantics in TypeScript. Browser textual
+language intelligence remains owned by the existing Xtext LSP and is connected in
+PR31; graphical editing remains owned by the EMF/GLSP work in PR32.

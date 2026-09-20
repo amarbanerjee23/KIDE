@@ -163,3 +163,34 @@ jobs:
             releng/com.kide.languageserver.repository/target/products/*.tar.gz
           if-no-files-found: warn
           retention-days: 14
+
+
+  web:
+    name: Browser workspace foundation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Verify Node runtime
+        run: node --version && npm --version
+
+      - name: Install exact web dependencies
+        working-directory: web
+        run: npm install --no-audit --no-fund
+
+      - name: Test browser workspace contracts
+        working-directory: web
+        run: npm run test
+
+      - name: Build browser workspace
+        working-directory: web
+        run: npm run build
+
+      - name: Install Chromium for browser qualification
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: Qualify browser workspace
+        working-directory: web
+        run: npm run test:e2e
