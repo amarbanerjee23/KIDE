@@ -118,6 +118,11 @@ jobs:
           python3 scripts/smoke_language_server.py \
             --products releng/com.kide.languageserver.repository/target/products
 
+      - name: Smoke-test secure LSP WebSocket gateway
+        run: |
+          python3 scripts/smoke_lsp_websocket_gateway.py \
+            --products releng/com.kide.languageserver.repository/target/products
+
       - name: Qualify packaged LSP feature parity
         run: |
           python3 scripts/qualify_lsp_parity.py \
