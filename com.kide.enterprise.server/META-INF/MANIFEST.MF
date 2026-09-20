@@ -1,0 +1,22 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Enterprise HTTP Service Runtime
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.enterprise.server;singleton:=true
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Automatic-Module-Name: com.kide.enterprise.server
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.equinox.app,
+ com.google.gson,
+ org.eclipse.jetty.server;bundle-version="[12.1.12,13.0.0)",
+ org.eclipse.jetty.io;bundle-version="[12.1.12,13.0.0)",
+ org.eclipse.jetty.util;bundle-version="[12.1.12,13.0.0)",
+ com.kide.enterprise.api;bundle-version="1.0.0",
+ com.kide.enterprise.modelrepo;bundle-version="1.0.0",
+ com.kide.enterprise.context;bundle-version="1.0.0",
+ com.kide.enterprise.identity;bundle-version="1.0.0",
+ com.kide.enterprise.authorization;bundle-version="1.0.0",
+ com.kide.enterprise.audit;bundle-version="1.0.0"
+Export-Package: com.kide.enterprise.server

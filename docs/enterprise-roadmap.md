@@ -1,10 +1,10 @@
 # KIDE Enterprise Roadmap
 
 This roadmap records the enterprise capability sequence established through E01-E21.
-It is now governed together with the broader product plan in
-[`world-class-systems-engineering-roadmap.md`](world-class-systems-engineering-roadmap.md).
-That document is authoritative for implementation PR numbers, desktop/web parity,
-thesis-flow requirements, test cases and GA acceptance.
+The current implementation numbering and consolidation decisions are authoritative in
+[`consolidated-release-plan.md`](consolidated-release-plan.md). The broader capability
+requirements, desktop/web parity, thesis-flow requirements and GA acceptance remain
+defined in [`world-class-systems-engineering-roadmap.md`](world-class-systems-engineering-roadmap.md).
 
 KIDE has two first-class product clients: the Eclipse desktop product and the web product.
 They must share the same language/model/knowledge/synthesis semantics. Browser textual
@@ -106,8 +106,10 @@ E04 established stable organization → portfolio → project → workspace cont
 
 ## Next execution point
 
-PR12 and PR13 are merged. **PR14** is the active stability phase.
+PR22 and stabilization PR23-PR25 are merged. **PR26 is active.**
 
-PR14 establishes explicit project/schema compatibility metadata, dry-run migration, backup-before-migrate, idempotence and forward-version rejection while preserving E04 stable IDs and leaving existing DSL model files untouched. It also carries the minimal correction required to compile the MNC resource-description export binding introduced after PR13.
-
-After PR14 is green, PR15 makes Xtext/generated artefacts reproducible and removes legacy coupling before PR16 changes Java/Eclipse/Xtext/Sirius versions.
+PR26 adds the missing production HTTP service boundary for the existing `/api/v1`
+contract, sharing identity/RBAC/audit/model-revision semantics with the existing
+desktop/headless core. It is packaged only in the headless service product, not the
+Eclipse desktop feature. After PR26 is green and merged, PR27 starts the separate
+React/TypeScript web workspace against these real services.

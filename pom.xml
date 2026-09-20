@@ -63,6 +63,7 @@
     <module>com.kide.languageserver</module>
     <module>com.kide.languageserver.gateway</module>
     <module>com.kide.languageserver.gateway.tests</module>
+    <module>com.kide.enterprise.server</module>
     <module>com.kide.enterprise.configuration</module>
     <module>com.kide.enterprise.configuration.ui</module>
     <module>com.kide.enterprise.configuration.tests</module>

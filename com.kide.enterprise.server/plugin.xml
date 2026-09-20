@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+  <extension id="application" point="org.eclipse.core.runtime.applications">
+    <application cardinality="singleton-global" thread="main" visible="false">
+      <run class="com.kide.enterprise.server.EnterpriseApiApplication"/>
+    </application>
+  </extension>
+  <extension id="selfcheck" point="org.eclipse.core.runtime.applications">
+    <application cardinality="singleton-global" thread="main" visible="false">
+      <run class="com.kide.enterprise.server.EnterpriseApiSelfCheckApplication"/>
+    </application>
+  </extension>
+</plugin>
