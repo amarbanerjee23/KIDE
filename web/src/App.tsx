@@ -35,7 +35,7 @@ export default function App() {
   const [saveState, setSaveState] = useState<SaveState>("clean");
   const [notice, setNotice] = useState("");
   const [conflict, setConflict] = useState<string>();
-  const autosave = useRef<AutosaveCoordinator>();
+  const autosave = useRef<AutosaveCoordinator | undefined>(undefined);
 
   const selected = entries.find((entry) => entry.path === selectedPath);
   const editorText = selected ? editableText(selected) : null;
@@ -114,17 +114,16 @@ export default function App() {
         onState: setSaveState,
         onSaved(model) {
           setEntries((current) =>
-            current.map((candidate) =>
-              candidate.path === entry.path
-                ? {
-                    ...candidate,
-                    bytes: new TextEncoder().encode(model.content),
-                    etag: model.etag,
-                    revision: model.revision,
-                    dirty: false
-                  }
-                : candidate
-            )
+            current.map((candidate) => {
+              if (candidate.path !== entry.path) return candidate;
+              const currentText = editableText(candidate);
+              return {
+                ...candidate,
+                etag: model.etag,
+                revision: model.revision,
+                dirty: currentText !== model.content
+              };
+            })
           );
         },
         onConflict(error) {
