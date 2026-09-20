@@ -82,6 +82,11 @@ def verify(root: Path) -> list[str]:
         for field in ("symbol", "hover_token", "references_min", "folding_min", "rename_targets"):
             if field not in probe:
                 errors.append(f"{language_id} LSP probe missing {field}")
+        for field in ("document_symbol", "workspace_symbol"):
+            value = probe.get(field)
+            if value is not None and (not isinstance(value, str) or not value):
+                errors.append(f"{language_id} {field} must be a non-empty string when present")
+
         rename_targets = probe.get("rename_targets")
         if not isinstance(rename_targets, list) or not rename_targets:
             errors.append(f"{language_id} rename_targets must be a non-empty list")
@@ -93,6 +98,9 @@ def verify(root: Path) -> list[str]:
 
         definition = probe.get("definition")
         if definition is not None:
+            occurrence = definition.get("occurrence", 1) if isinstance(definition, dict) else 1
+            if not isinstance(occurrence, int) or isinstance(occurrence, bool) or occurrence < 1:
+                errors.append(f"{language_id} definition occurrence must be a positive integer")
             if not isinstance(definition, dict):
                 errors.append(f"{language_id} definition probe must be an object")
             else:

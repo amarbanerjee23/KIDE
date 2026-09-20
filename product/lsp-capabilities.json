@@ -174,7 +174,8 @@
       ],
       "definition": {
         "token": "Observe",
-        "target_extension": "cap"
+        "target_extension": "cap",
+        "occurrence": 2
       },
       "completion": {
         "text": "ActivityDiagram CompletionProbe has activities { Activity Step {\n",
