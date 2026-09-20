@@ -81,10 +81,40 @@ public final class KideResourceServiceProviderRegistryProvider
             }
         }
 
+        // Some older generated standalone setups register transitive language
+        // dependencies as a side effect. For example Capability setup invokes
+        // DML standalone setup, which can overwrite the global DML entry with a
+        // runtime-only provider after KIDE already registered the IDE-aware one.
+        // Xtext RenameService2 is created from a language injector and therefore
+        // resolves its registry through Registry.INSTANCE, not only through this
+        // server-local registry. Publish the final IDE-aware providers globally
+        // after every generated setup has finished, so transitive registrations
+        // cannot downgrade rename/IDE services.
+        synchronized (IResourceServiceProvider.Registry.INSTANCE) {
+            Map<String, Object> globalExtensions =
+                    IResourceServiceProvider.Registry.INSTANCE.getExtensionToFactoryMap();
+            for (LanguageSetup language : LANGUAGES) {
+                Object provider = extensions.get(language.extension);
+                if (!(provider instanceof IResourceServiceProvider)) {
+                    throw new IllegalStateException("KIDE language provider missing for '."
+                            + language.extension + "'");
+                }
+                globalExtensions.put(language.extension, provider);
+            }
+        }
+
         for (LanguageSetup language : LANGUAGES) {
             URI probe = URI.createURI("memory:/probe." + language.extension);
-            if (result.getResourceServiceProvider(probe) == null) {
+            IResourceServiceProvider local = result.getResourceServiceProvider(probe);
+            IResourceServiceProvider global =
+                    IResourceServiceProvider.Registry.INSTANCE.getResourceServiceProvider(probe);
+            if (local == null || global == null) {
                 throw new IllegalStateException("KIDE language provider missing for '."
+                        + language.extension + "'");
+            }
+            if (local.get(IRenameStrategy2.class) == null
+                    || global.get(IRenameStrategy2.class) == null) {
+                throw new IllegalStateException("KIDE language rename provider missing for '."
                         + language.extension + "'");
             }
         }
