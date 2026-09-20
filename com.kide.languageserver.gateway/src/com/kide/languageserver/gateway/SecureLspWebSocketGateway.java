@@ -1,5 +1,7 @@
 package com.kide.languageserver.gateway;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -22,6 +24,7 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
     private final GatewayWorkspaceCatalog workspaces;
     private final ServerAuthorizationGate authorization;
     private final Clock clock;
+    private final GatewaySessionQuota sessionQuota;
     private final Server server;
     private final ServerConnector connector;
 
@@ -36,6 +39,7 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
         this.workspaces = Objects.requireNonNull(workspaces, "workspaces");
         this.authorization = Objects.requireNonNull(authorization, "authorization");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.sessionQuota = new GatewaySessionQuota(config.maxConcurrentSessions());
 
         this.server = new Server();
         this.connector = new ServerConnector(server);
@@ -55,8 +59,9 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                             return null;
                         }
                         if (!secureEnough(
-                                "https".equalsIgnoreCase(request.getHttpURI().getScheme()),
-                                request.getHeaders().get("X-Forwarded-Proto"))) {
+                                request.getConnectionMetaData().isSecure(),
+                                request.getHeaders().get("X-Forwarded-Proto"),
+                                request.getConnectionMetaData().getRemoteSocketAddress())) {
                             response.setStatus(400);
                             callback.succeeded();
                             return null;
@@ -72,18 +77,32 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                                     authorizationHeader);
                             String workspaceId = queryParameter(
                                     request.getHttpURI().getQuery(), "workspaceId");
-                            EnterpriseContext enterpriseContext = workspaces.resolve(workspaceId)
+                            GatewayWorkspaceBinding workspaceBinding = workspaces.resolve(workspaceId)
                                     .orElseThrow(() -> new IllegalArgumentException("workspace not found"));
+                            EnterpriseContext enterpriseContext = workspaceBinding.context();
                             if (!enterpriseContext.workspace().id().value().equals(workspaceId)) {
                                 throw new IllegalArgumentException("workspace identity mismatch");
                             }
                             authorization.requireWebSocketWorkspaceAccess(session, enterpriseContext);
                             authorization.requireLspWorkspaceAccess(session, enterpriseContext);
-                            if (request.hasSubProtocol(BrowserWebSocketCredential.LSP_PROTOCOL)) {
-                                response.setAcceptedSubProtocol(
-                                        BrowserWebSocketCredential.LSP_PROTOCOL);
+                            GatewaySessionQuota.Lease lease = sessionQuota.tryAcquire();
+                            if (lease == null) {
+                                session.close();
+                                response.setStatus(429);
+                                callback.succeeded();
+                                return null;
                             }
-                            return new GatewayWebSocketEndpoint(config, session, clock);
+                            try {
+                                if (request.hasSubProtocol(BrowserWebSocketCredential.LSP_PROTOCOL)) {
+                                    response.setAcceptedSubProtocol(
+                                            BrowserWebSocketCredential.LSP_PROTOCOL);
+                                }
+                                return new GatewayWebSocketEndpoint(
+                                        config, session, authorization, workspaceBinding, lease, clock);
+                            } catch (RuntimeException failure) {
+                                lease.close();
+                                throw failure;
+                            }
                         } catch (AuthenticationException failure) {
                             if (session != null) session.close();
                             response.setStatus(401);
@@ -137,12 +156,27 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
         return origin != null && config.allowedOrigins().contains(origin);
     }
 
-    private boolean secureEnough(boolean directSecure, String forwardedProto) {
+    private boolean secureEnough(
+            boolean directSecure,
+            String forwardedProto,
+            SocketAddress remoteAddress) {
         if (!config.requireSecureTransport()) return true;
         if (directSecure) return true;
-        return config.trustForwardedProto()
-                && forwardedProto != null
-                && "https".equalsIgnoreCase(forwardedProto.trim());
+        if (!config.trustForwardedProto()
+                || forwardedProto == null
+                || !"https".equalsIgnoreCase(forwardedProto.trim())) {
+            return false;
+        }
+        return trustedProxy(remoteAddress);
+    }
+
+    private boolean trustedProxy(SocketAddress remoteAddress) {
+        if (!(remoteAddress instanceof InetSocketAddress inet)) return false;
+        if (inet.getAddress() != null
+                && config.trustedProxyAddresses().contains(inet.getAddress().getHostAddress())) {
+            return true;
+        }
+        return config.trustedProxyAddresses().contains(inet.getHostString());
     }
 
     private static String queryParameter(String rawQuery, String expectedName) {

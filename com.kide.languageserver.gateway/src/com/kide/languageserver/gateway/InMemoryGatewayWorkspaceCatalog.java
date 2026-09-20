@@ -5,19 +5,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.kide.enterprise.context.EnterpriseContext;
-
 public final class InMemoryGatewayWorkspaceCatalog implements GatewayWorkspaceCatalog {
-    private final Map<String, EnterpriseContext> contexts = new ConcurrentHashMap<>();
+    private final Map<String, GatewayWorkspaceBinding> bindings = new ConcurrentHashMap<>();
 
-    public void register(EnterpriseContext context) {
-        Objects.requireNonNull(context, "context");
-        contexts.put(context.workspace().id().value(), context);
+    public void register(GatewayWorkspaceBinding binding) {
+        Objects.requireNonNull(binding, "binding");
+        bindings.put(binding.context().workspace().id().value(), binding);
     }
 
     @Override
-    public Optional<EnterpriseContext> resolve(String workspaceId) {
+    public Optional<GatewayWorkspaceBinding> resolve(String workspaceId) {
         if (workspaceId == null || workspaceId.isBlank()) return Optional.empty();
-        return Optional.ofNullable(contexts.get(workspaceId.trim()));
+        return Optional.ofNullable(bindings.get(workspaceId.trim()));
     }
 }

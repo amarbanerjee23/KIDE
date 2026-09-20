@@ -50,13 +50,16 @@ public final class GatewayApplication implements IApplication {
                     Duration.ofSeconds(integer(env, "KIDE_GATEWAY_IDLE_SECONDS", 300)),
                     integer(env, "KIDE_GATEWAY_MAX_MESSAGE_BYTES", 1024 * 1024),
                     integer(env, "KIDE_GATEWAY_MAX_MESSAGES_PER_MINUTE", 2400),
+                    integer(env, "KIDE_GATEWAY_MAX_SESSIONS", 128),
                     !allowInsecureLoopback,
                     trustForwarded,
+                    csv(env.get("KIDE_GATEWAY_TRUSTED_PROXY_ADDRESSES")),
                     csv(env.get("KIDE_GATEWAY_ALLOWED_ORIGINS")));
 
-            EnterpriseContext enterpriseContext = loadContext(env);
+            GatewayWorkspaceBinding workspaceBinding = loadContext(env);
+            EnterpriseContext enterpriseContext = workspaceBinding.context();
             InMemoryGatewayWorkspaceCatalog catalog = new InMemoryGatewayWorkspaceCatalog();
-            catalog.register(enterpriseContext);
+            catalog.register(workspaceBinding);
 
             List<RoleBinding> bindings = parseBindings(
                     required(env, "KIDE_GATEWAY_ROLE_BINDINGS"),
@@ -117,14 +120,14 @@ public final class GatewayApplication implements IApplication {
         closeConfig();
     }
 
-    private static EnterpriseContext loadContext(Map<String, String> env) {
+    private static GatewayWorkspaceBinding loadContext(Map<String, String> env) {
         Path workspace = Path.of(required(env, "KIDE_GATEWAY_WORKSPACE_ROOT"));
         Path project = Path.of(required(env, "KIDE_GATEWAY_PROJECT_ROOT"));
         EnterpriseContextResult result = new EnterpriseContextStore().load(workspace, project);
         if (!result.isReady()) {
             throw new IllegalStateException("Gateway enterprise context is not ready: " + result.summary());
         }
-        return result.context().orElseThrow();
+        return new GatewayWorkspaceBinding(result.context().orElseThrow(), project);
     }
 
     private static List<RoleBinding> parseBindings(String raw, EnterpriseContext context) {

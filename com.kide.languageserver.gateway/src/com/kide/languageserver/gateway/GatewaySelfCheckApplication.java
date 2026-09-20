@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -76,16 +77,15 @@ public final class GatewaySelfCheckApplication implements IApplication {
             };
 
             InMemoryGatewayWorkspaceCatalog catalog = new InMemoryGatewayWorkspaceCatalog();
-            catalog.register(context);
+            catalog.register(new GatewayWorkspaceBinding(context, project));
 
+            RoleBinding engineerBinding = RoleBinding.allow(
+                    principal.id(), Role.ENGINEER, context.project().id());
+            InMemoryAuthorizationPolicyStore policyStore =
+                    new InMemoryAuthorizationPolicyStore(List.of(engineerBinding));
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
                     new AuthorizationEnforcer(
-                            new AuthorizationService(
-                                    new InMemoryAuthorizationPolicyStore(List.of(
-                                            RoleBinding.allow(
-                                                    principal.id(),
-                                                    Role.ENGINEER,
-                                                    context.project().id()))))));
+                            new AuthorizationService(policyStore)));
 
             GatewayConfig config = new GatewayConfig(
                     "127.0.0.1",
@@ -93,8 +93,10 @@ public final class GatewaySelfCheckApplication implements IApplication {
                     Duration.ofSeconds(30),
                     1024 * 1024,
                     5000,
+                    8,
                     false,
                     false,
+                    Set.of(),
                     Set.of());
 
             gateway = new SecureLspWebSocketGateway(
@@ -110,6 +112,11 @@ public final class GatewaySelfCheckApplication implements IApplication {
                 return fail("unauthorized WebSocket upgrade was accepted");
             }
 
+            runPrivilegeRevocationQualification(
+                    endpoint, project, policyStore, engineerBinding);
+            Path outsideProject = Files.createDirectories(root.resolve("outside-project"));
+            runPathIsolationQualification(endpoint, outsideProject);
+            runBinaryRejectionQualification(endpoint);
             runFullLanguageQualification(endpoint, project);
             runReconnectQualification(endpoint, project);
 
@@ -142,6 +149,90 @@ public final class GatewaySelfCheckApplication implements IApplication {
             return false;
         } catch (Exception expected) {
             return true;
+        }
+    }
+
+    private static void runPrivilegeRevocationQualification(
+            URI endpoint,
+            Path project,
+            InMemoryAuthorizationPolicyStore policyStore,
+            RoleBinding engineerBinding) throws Exception {
+        ProbeListener listener = new ProbeListener();
+        WebSocket socket = connect(endpoint, listener);
+        boolean closedByServer = false;
+        boolean policyRevoked = false;
+        try {
+            socket.sendText(initialize(20, project), true).join();
+            requireMessage(listener, message -> hasId(message, 20), "revocation initialize response");
+
+            policyStore.replace(0, List.of());
+            policyRevoked = true;
+            socket.sendText(notification("initialized", new JsonObject()), true).join();
+            Integer closeCode = listener.closeCodes.poll(10, TimeUnit.SECONDS);
+            if (closeCode == null || closeCode.intValue() != 1008) {
+                throw new IllegalStateException(
+                        "privilege revocation did not close WebSocket with policy violation");
+            }
+            closedByServer = true;
+        } finally {
+            if (policyRevoked) {
+                policyStore.replace(1, List.of(engineerBinding));
+            }
+            if (!closedByServer) {
+                try {
+                    socket.sendClose(WebSocket.NORMAL_CLOSURE, "revocation cleanup").join();
+                } catch (RuntimeException ignored) {
+                    // The server may already have closed the socket.
+                }
+            }
+        }
+    }
+
+    private static void runPathIsolationQualification(
+            URI endpoint,
+            Path outsideProject) throws Exception {
+        ProbeListener listener = new ProbeListener();
+        WebSocket socket = connect(endpoint, listener);
+        boolean closedByServer = false;
+        try {
+            socket.sendText(initialize(30, outsideProject), true).join();
+            Integer closeCode = listener.closeCodes.poll(10, TimeUnit.SECONDS);
+            if (closeCode == null || closeCode.intValue() != 1008) {
+                throw new IllegalStateException(
+                        "outside-project LSP root was not rejected with policy violation");
+            }
+            closedByServer = true;
+        } finally {
+            if (!closedByServer) {
+                try {
+                    socket.sendClose(WebSocket.NORMAL_CLOSURE, "path isolation cleanup").join();
+                } catch (RuntimeException ignored) {
+                    // The server may already have closed the socket.
+                }
+            }
+        }
+    }
+
+    private static void runBinaryRejectionQualification(URI endpoint) throws Exception {
+        ProbeListener listener = new ProbeListener();
+        WebSocket socket = connect(endpoint, listener);
+        boolean closedByServer = false;
+        try {
+            socket.sendBinary(ByteBuffer.wrap(new byte[] { 1, 2, 3 }), true).join();
+            Integer closeCode = listener.closeCodes.poll(10, TimeUnit.SECONDS);
+            if (closeCode == null || closeCode.intValue() != 1003) {
+                throw new IllegalStateException(
+                        "binary WebSocket message was not rejected with unsupported-data close");
+            }
+            closedByServer = true;
+        } finally {
+            if (!closedByServer) {
+                try {
+                    socket.sendClose(WebSocket.NORMAL_CLOSURE, "binary cleanup").join();
+                } catch (RuntimeException ignored) {
+                    // The server may already have closed the socket.
+                }
+            }
         }
     }
 
@@ -325,6 +416,7 @@ public final class GatewaySelfCheckApplication implements IApplication {
 
     private static final class ProbeListener implements WebSocket.Listener {
         private final BlockingQueue<String> messages = new LinkedBlockingQueue<>();
+        private final BlockingQueue<Integer> closeCodes = new LinkedBlockingQueue<>();
         private final StringBuilder partial = new StringBuilder();
         private volatile Throwable failure;
 
@@ -341,6 +433,12 @@ public final class GatewaySelfCheckApplication implements IApplication {
                 partial.setLength(0);
             }
             webSocket.request(1);
+            return CompletableFuture.completedFuture(null);
+        }
+
+        @Override
+        public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+            closeCodes.offer(statusCode);
             return CompletableFuture.completedFuture(null);
         }
 

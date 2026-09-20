@@ -1,6 +1,7 @@
 package com.kide.languageserver.gateway;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Clock;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -9,11 +10,17 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 
+import com.kide.enterprise.authorization.ServerAuthorizationGate;
+import com.kide.enterprise.context.EnterpriseContext;
 import com.kide.enterprise.identity.AuthenticatedSession;
 
 final class GatewayWebSocketEndpoint implements Session.Listener {
     private final GatewayConfig config;
     private final AuthenticatedSession authenticatedSession;
+    private final ServerAuthorizationGate authorization;
+    private final EnterpriseContext enterpriseContext;
+    private final LspWorkspaceBoundary workspaceBoundary;
+    private final GatewaySessionQuota.Lease sessionLease;
     private final GatewayMessagePolicy messagePolicy;
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -23,9 +30,18 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
     GatewayWebSocketEndpoint(
             GatewayConfig config,
             AuthenticatedSession authenticatedSession,
+            ServerAuthorizationGate authorization,
+            GatewayWorkspaceBinding workspaceBinding,
+            GatewaySessionQuota.Lease sessionLease,
             Clock clock) {
         this.config = Objects.requireNonNull(config, "config");
         this.authenticatedSession = Objects.requireNonNull(authenticatedSession, "authenticatedSession");
+        this.authorization = Objects.requireNonNull(authorization, "authorization");
+        GatewayWorkspaceBinding binding =
+                Objects.requireNonNull(workspaceBinding, "workspaceBinding");
+        this.enterpriseContext = binding.context();
+        this.workspaceBoundary = new LspWorkspaceBoundary(binding);
+        this.sessionLease = Objects.requireNonNull(sessionLease, "sessionLease");
         this.messagePolicy = new GatewayMessagePolicy(
                 config.maxTextMessageBytes(), config.maxMessagesPerMinute(), clock);
     }
@@ -78,6 +94,11 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
         }
         try {
             authenticatedSession.requireActive();
+            authorization.requireWebSocketWorkspaceAccess(
+                    authenticatedSession, enterpriseContext);
+            authorization.requireLspWorkspaceAccess(
+                    authenticatedSession, enterpriseContext);
+            workspaceBoundary.requireWithinProject(message);
             InProcessLspSession current = lsp;
             if (current == null || current.isClosed()) {
                 closeSocket(StatusCode.SERVER_ERROR, "language server session is unavailable");
@@ -88,6 +109,12 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
         } catch (RuntimeException | IOException e) {
             closeSocket(StatusCode.POLICY_VIOLATION, "session is no longer authorized");
         }
+    }
+
+    @Override
+    public void onWebSocketBinary(ByteBuffer payload, Callback callback) {
+        callback.succeed();
+        closeSocket(StatusCode.BAD_DATA, "binary WebSocket messages are not supported");
     }
 
     @Override
@@ -106,6 +133,7 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
         InProcessLspSession current = lsp;
         if (current != null) current.close();
         authenticatedSession.close();
+        sessionLease.close();
         Session socket = webSocket;
         if (socket != null && socket.isOpen()) {
             socket.close(statusCode, reason, Callback.NOOP);
@@ -117,5 +145,6 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
         InProcessLspSession current = lsp;
         if (current != null) current.close();
         authenticatedSession.close();
+        sessionLease.close();
     }
 }

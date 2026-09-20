@@ -32,7 +32,7 @@ def find_linux_launcher(products: Path) -> Path:
         raise SmokeFailure(
             f"expected exactly one packaged Linux gateway launcher, found: {rendered}"
         )
-    return candidates[0]
+    return candidates[0].resolve()
 
 
 def run_selfcheck(launcher: Path) -> None:
