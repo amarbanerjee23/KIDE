@@ -24,6 +24,7 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
     private final GatewayWorkspaceCatalog workspaces;
     private final ServerAuthorizationGate authorization;
     private final Clock clock;
+    private final GatewaySessionQuota sessionQuota;
     private final Server server;
     private final ServerConnector connector;
 
@@ -38,6 +39,7 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
         this.workspaces = Objects.requireNonNull(workspaces, "workspaces");
         this.authorization = Objects.requireNonNull(authorization, "authorization");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.sessionQuota = new GatewaySessionQuota(config.maxConcurrentSessions());
 
         this.server = new Server();
         this.connector = new ServerConnector(server);
@@ -83,12 +85,24 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                             }
                             authorization.requireWebSocketWorkspaceAccess(session, enterpriseContext);
                             authorization.requireLspWorkspaceAccess(session, enterpriseContext);
-                            if (request.hasSubProtocol(BrowserWebSocketCredential.LSP_PROTOCOL)) {
-                                response.setAcceptedSubProtocol(
-                                        BrowserWebSocketCredential.LSP_PROTOCOL);
+                            GatewaySessionQuota.Lease lease = sessionQuota.tryAcquire();
+                            if (lease == null) {
+                                session.close();
+                                response.setStatus(429);
+                                callback.succeeded();
+                                return null;
                             }
-                            return new GatewayWebSocketEndpoint(
-                                    config, session, authorization, workspaceBinding, clock);
+                            try {
+                                if (request.hasSubProtocol(BrowserWebSocketCredential.LSP_PROTOCOL)) {
+                                    response.setAcceptedSubProtocol(
+                                            BrowserWebSocketCredential.LSP_PROTOCOL);
+                                }
+                                return new GatewayWebSocketEndpoint(
+                                        config, session, authorization, workspaceBinding, lease, clock);
+                            } catch (RuntimeException failure) {
+                                lease.close();
+                                throw failure;
+                            }
                         } catch (AuthenticationException failure) {
                             if (session != null) session.close();
                             response.setStatus(401);
