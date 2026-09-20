@@ -56,7 +56,16 @@ public final class KideResourceServiceProviderRegistryProvider
     private IResourceServiceProvider.Registry createRegistry() {
         ResourceServiceProviderRegistryImpl result = new ResourceServiceProviderRegistryImpl();
         Map<String, Object> extensions = result.getExtensionToFactoryMap();
+        Map<String, IResourceServiceProvider> productionProviders = new java.util.LinkedHashMap<>();
 
+        /*
+         * Each generated standalone setup writes into Xtext's global registry.
+         * Several KIDE languages also initialize dependent languages (for
+         * example Capability initializes DML), so a later setup can overwrite
+         * an earlier IDE provider with a runtime-only provider. Build every
+         * language injector first, retain the final IDE providers, then publish
+         * them to both registries in one deterministic pass.
+         */
         for (LanguageSetup language : LANGUAGES) {
             Injector injector = instantiate(language).createInjectorAndDoEMFRegistration();
             IResourceServiceProvider serviceProvider =
@@ -73,18 +82,34 @@ public final class KideResourceServiceProviderRegistryProvider
             }
 
             for (String extension : extensionProvider.getFileExtensions()) {
-                Object previous = extensions.put(extension, serviceProvider);
+                IResourceServiceProvider previous =
+                        productionProviders.put(extension, serviceProvider);
                 if (previous != null && previous != serviceProvider) {
-                    throw new IllegalStateException("Duplicate Xtext language registration for extension '."
-                            + extension + "'");
+                    throw new IllegalStateException(
+                            "Duplicate Xtext language registration for extension '." + extension + "'");
                 }
             }
         }
 
+        Map<String, Object> globalExtensions =
+                IResourceServiceProvider.Registry.INSTANCE.getExtensionToFactoryMap();
+        for (Map.Entry<String, IResourceServiceProvider> entry : productionProviders.entrySet()) {
+            extensions.put(entry.getKey(), entry.getValue());
+            globalExtensions.put(entry.getKey(), entry.getValue());
+        }
+
         for (LanguageSetup language : LANGUAGES) {
             URI probe = URI.createURI("memory:/probe." + language.extension);
-            if (result.getResourceServiceProvider(probe) == null) {
+            IResourceServiceProvider local = result.getResourceServiceProvider(probe);
+            IResourceServiceProvider global =
+                    IResourceServiceProvider.Registry.INSTANCE.getResourceServiceProvider(probe);
+            if (local == null || global == null) {
                 throw new IllegalStateException("KIDE language provider missing for '."
+                        + language.extension + "'");
+            }
+            if (local.get(IRenameStrategy2.class) == null
+                    || global.get(IRenameStrategy2.class) == null) {
+                throw new IllegalStateException("KIDE rename provider missing for '."
                         + language.extension + "'");
             }
         }
