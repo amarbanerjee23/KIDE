@@ -115,10 +115,13 @@ Defaults:
 
 - maximum WebSocket text message: 1 MiB;
 - idle timeout: 5 minutes;
-- message rate: 2400/minute per session.
+- message rate: 2400/minute per session; and
+- concurrent authenticated LSP sessions: 128 (`KIDE_GATEWAY_MAX_SESSIONS`).
 
-All are bounded and configurable. Oversized messages close with WebSocket 1009;
-rate violations close with 1008. The LSP transport is text-only; binary WebSocket
+All are bounded and configurable. A connection above the server-wide session
+quota is rejected during the HTTP upgrade with 429 before an Xtext runtime is
+created. Oversized messages close with WebSocket 1009; rate violations close with
+1008. The LSP transport is text-only; binary WebSocket
 messages are explicitly completed and closed with RFC 6455 code 1003 rather than
 being left unread. The gateway uses Jetty's own message-size and idle controls in
 addition to KIDE's explicit policy.
