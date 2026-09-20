@@ -72,8 +72,9 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                                     authorizationHeader);
                             String workspaceId = queryParameter(
                                     request.getHttpURI().getQuery(), "workspaceId");
-                            EnterpriseContext enterpriseContext = workspaces.resolve(workspaceId)
+                            GatewayWorkspaceBinding workspaceBinding = workspaces.resolve(workspaceId)
                                     .orElseThrow(() -> new IllegalArgumentException("workspace not found"));
+                            EnterpriseContext enterpriseContext = workspaceBinding.context();
                             if (!enterpriseContext.workspace().id().value().equals(workspaceId)) {
                                 throw new IllegalArgumentException("workspace identity mismatch");
                             }
@@ -84,7 +85,7 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                                         BrowserWebSocketCredential.LSP_PROTOCOL);
                             }
                             return new GatewayWebSocketEndpoint(
-                                    config, session, authorization, enterpriseContext, clock);
+                                    config, session, authorization, workspaceBinding, clock);
                         } catch (AuthenticationException failure) {
                             if (session != null) session.close();
                             response.setStatus(401);
