@@ -1,0 +1,146 @@
+package com.kide.glsp;
+
+import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.resource.Resource;
+import org.eclipse.emf.ecore.resource.ResourceSet;
+import org.eclipse.emf.ecore.util.EcoreUtil;
+import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
+import org.eclipse.glsp.server.actions.SaveModelAction;
+import org.eclipse.glsp.server.emf.model.notation.Diagram;
+import org.eclipse.glsp.server.emf.model.notation.NotationFactory;
+import org.eclipse.glsp.server.emf.model.notation.NotationPackage;
+import org.eclipse.glsp.server.emf.model.notation.SemanticElementReference;
+import org.eclipse.glsp.server.emf.notation.EMFNotationSourceModelStorage;
+import org.eclipse.glsp.server.features.core.model.RequestModelAction;
+import org.eclipse.glsp.server.types.GLSPServerException;
+import org.eclipse.glsp.server.utils.ClientOptionsUtil;
+
+import com.google.inject.Inject;
+import com.kide.enterprise.modelrepo.ModelPath;
+import com.kide.enterprise.modelrepo.ModelSnapshot;
+import com.kide.enterprise.modelrepo.ModelTransaction;
+import com.kide.languageserver.KideResourceServiceProviderRegistryProvider;
+
+public final class KideXtextNotationSourceModelStorage extends EMFNotationSourceModelStorage {
+    private static final String MISSING_ETAG = "0".repeat(64);
+
+    @Inject
+    protected KideGlspWorkspace workspace;
+
+    private final Map<URI, String> loadedEtags = new HashMap<>();
+
+    @Override
+    protected ResourceSet setupResourceSet(ResourceSet resourceSet) {
+        new KideResourceServiceProviderRegistryProvider().get();
+        activityDiagramModel.ActivityDiagramModelPackage.eINSTANCE.eClass();
+        mncModel.MncModelPackage.eINSTANCE.eClass();
+        NotationPackage.eINSTANCE.eClass();
+
+        ResourceSet result = super.setupResourceSet(resourceSet);
+        copyGlobalFactory(result, "activity");
+        copyGlobalFactory(result, "mncspec");
+        result.getResourceFactoryRegistry().getExtensionToFactoryMap()
+                .put("notation", new XMIResourceFactoryImpl());
+        return result;
+    }
+
+    private static void copyGlobalFactory(ResourceSet resourceSet, String extension) {
+        Object factory = Resource.Factory.Registry.INSTANCE
+                .getExtensionToFactoryMap().get(extension);
+        if (factory == null) {
+            throw new GLSPServerException(
+                    "No production Xtext resource factory for ." + extension);
+        }
+        resourceSet.getResourceFactoryRegistry().getExtensionToFactoryMap()
+                .put(extension, factory);
+    }
+
+    @Override
+    protected void loadSemanticModel(
+            ResourceSet resourceSet, URI sourceURI, RequestModelAction action) {
+        Path source = workspace.requireProjectPath(sourceURI.toFileString());
+        ModelPath modelPath = workspace.modelPath(source);
+        ModelSnapshot snapshot = workspace.repository().read(modelPath)
+                .orElseThrow(() -> new GLSPServerException(
+                        "Graphical source model does not exist: " + modelPath.value()));
+        loadedEtags.put(sourceURI, snapshot.revision().etag());
+        super.loadSemanticModel(resourceSet, sourceURI, action);
+    }
+
+    @Override
+    protected void loadNotationModel(
+            ResourceSet resourceSet, URI sourceURI, RequestModelAction action) {
+        URI notationURI = deriveNotationModelURI(sourceURI);
+        Path notationPath = workspace.requireProjectPath(notationURI.toFileString());
+        if (Files.exists(notationPath)) {
+            workspace.repository().read(workspace.modelPath(notationPath))
+                    .ifPresent(snapshot -> loadedEtags.put(
+                            notationURI, snapshot.revision().etag()));
+            super.loadNotationModel(resourceSet, sourceURI, action);
+            return;
+        }
+
+        Resource resource = resourceSet.createResource(notationURI);
+        Diagram diagram = NotationFactory.eINSTANCE.createDiagram();
+        diagram.setDiagramType(
+                ClientOptionsUtil.getDiagramType(action.getOptions()).orElse(""));
+        EObject semantic = modelState.getSemanticModel();
+        SemanticElementReference reference =
+                NotationFactory.eINSTANCE.createSemanticElementReference();
+        reference.setResolvedSemanticElement(semantic);
+        reference.setElementId(EcoreUtil.getURI(semantic).fragment());
+        diagram.setSemanticElement(reference);
+        resource.getContents().add(diagram);
+        modelState.setNotationModel(diagram);
+        loadedEtags.put(notationURI, MISSING_ETAG);
+    }
+
+    @Override
+    public void saveSourceModel(SaveModelAction action) {
+        ResourceSet resourceSet = modelState.getResourceSet();
+        if (resourceSet == null) {
+            throw new GLSPServerException("No graphical source model is loaded");
+        }
+
+        try (ModelTransaction tx = workspace.repository().beginTransaction()) {
+            Map<URI, byte[]> serialized = new HashMap<>();
+            for (Resource resource : resourceSet.getResources()) {
+                URI uri = resource.getURI();
+                if (uri == null || !uri.isFile()) continue;
+                Path path = workspace.requireProjectPath(uri.toFileString());
+                ModelPath modelPath = workspace.modelPath(path);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                resource.save(out, Map.of());
+                byte[] bytes = out.toByteArray();
+                serialized.put(uri, bytes);
+                tx.write(modelPath, bytes,
+                        loadedEtags.getOrDefault(uri, MISSING_ETAG));
+            }
+            tx.commit();
+
+            for (URI uri : serialized.keySet()) {
+                Path path = workspace.requireProjectPath(uri.toFileString());
+                ModelSnapshot snapshot = workspace.repository()
+                        .read(workspace.modelPath(path)).orElseThrow();
+                loadedEtags.put(uri, snapshot.revision().etag());
+                Resource resource = resourceSet.getResource(uri, false);
+                if (resource != null) resource.setModified(false);
+            }
+        } catch (com.kide.enterprise.modelrepo.RevisionConflictException conflict) {
+            throw new GLSPServerException(
+                    "Graphical save rejected because the project revision changed",
+                    conflict);
+        } catch (Exception failure) {
+            if (failure instanceof GLSPServerException glsp) throw glsp;
+            throw new GLSPServerException(
+                    "Could not persist graphical model transaction", failure);
+        }
+    }
+}

@@ -6,6 +6,7 @@ import java.util.List;
 
 public final class BrowserWebSocketCredential {
     public static final String LSP_PROTOCOL = "kide.lsp.v1";
+    public static final String GLSP_PROTOCOL = "kide.glsp.v1";
     private static final String BEARER_PREFIX = "kide.bearer.";
     private static final int MAX_PROTOCOL_CREDENTIAL_CHARS = 24_000;
 
@@ -14,10 +15,20 @@ public final class BrowserWebSocketCredential {
     public static String authorizationHeader(
             String explicitAuthorizationHeader,
             List<String> requestedSubProtocols) {
+        return authorizationHeader(
+                explicitAuthorizationHeader, requestedSubProtocols, LSP_PROTOCOL);
+    }
+
+    public static String authorizationHeader(
+            String explicitAuthorizationHeader,
+            List<String> requestedSubProtocols,
+            String requiredProtocol) {
         if (explicitAuthorizationHeader != null && !explicitAuthorizationHeader.isBlank()) {
             return explicitAuthorizationHeader;
         }
-        if (requestedSubProtocols == null || !requestedSubProtocols.contains(LSP_PROTOCOL)) {
+        if (requiredProtocol == null || requiredProtocol.isBlank()
+                || requestedSubProtocols == null
+                || !requestedSubProtocols.contains(requiredProtocol)) {
             return null;
         }
 
@@ -25,7 +36,8 @@ public final class BrowserWebSocketCredential {
         for (String protocol : requestedSubProtocols) {
             if (protocol == null || !protocol.startsWith(BEARER_PREFIX)) continue;
             if (encoded != null) {
-                throw new IllegalArgumentException("multiple browser bearer credentials are not allowed");
+                throw new IllegalArgumentException(
+                        "multiple browser bearer credentials are not allowed");
             }
             encoded = protocol.substring(BEARER_PREFIX.length());
         }
@@ -37,7 +49,8 @@ public final class BrowserWebSocketCredential {
         try {
             byte[] decoded = Base64.getUrlDecoder().decode(encoded);
             if (decoded.length == 0 || decoded.length > 16_384) {
-                throw new IllegalArgumentException("browser bearer credential length is invalid");
+                throw new IllegalArgumentException(
+                        "browser bearer credential length is invalid");
             }
             String token = new String(decoded, StandardCharsets.UTF_8);
             java.util.Arrays.fill(decoded, (byte) 0);

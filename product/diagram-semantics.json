@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "glsp_version": "2.8.0",
+  "diagrams": [
+    {
+      "id": "kide-activity-diagram",
+      "extension": "activity",
+      "sirius_source": "com.model.domain.activity.design/description/activity.odesign",
+      "concepts": [
+        {
+          "id": "kide:activity",
+          "emf_class": "activityDiagramModel.Activity",
+          "sirius_mapping": "Activity",
+          "editable": true
+        },
+        {
+          "id": "kide:activity-next",
+          "emf_feature": "activityDiagramModel.Activity.nextActivity",
+          "editable": true
+        }
+      ]
+    },
+    {
+      "id": "kide-mnc-diagram",
+      "extension": "mncspec",
+      "sirius_source": "com.model.domain.mnc.design/description/mnc.odesign",
+      "concepts": [
+        {
+          "id": "kide:mnc-interface",
+          "emf_class": "mncModel.InterfaceDescription",
+          "sirius_mapping": "InterfaceDescription",
+          "editable": true
+        },
+        {
+          "id": "kide:mnc-control-node",
+          "emf_class": "mncModel.ControlNode",
+          "sirius_mapping": "ControlNode",
+          "editable": true
+        },
+        {
+          "id": "kide:mnc-uses",
+          "emf_feature": "mncModel.InterfaceDescription.uses",
+          "editable": true
+        },
+        {
+          "id": "kide:mnc-implements",
+          "emf_feature": "mncModel.ControlNode.interfaceDescription",
+          "editable": true
+        },
+        {
+          "id": "kide:mnc-child",
+          "emf_feature": "mncModel.ControlNode.childNodes",
+          "editable": true
+        }
+      ]
+    }
+  ],
+  "invariants": [
+    "Textual Xtext/EMF files remain canonical semantic source.",
+    "Sirius desktop and GLSP web consume the same generated EMF model packages.",
+    "GLSP semantic saves use PR21 optimistic revision transactions.",
+    "Notation sidecars contain layout only and never replace semantic project files."
+  ]
+}
