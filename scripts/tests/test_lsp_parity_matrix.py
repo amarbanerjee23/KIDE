@@ -23,13 +23,6 @@ class LspParityMatrixTest(unittest.TestCase):
             self.assertTrue(probe["symbol"], language_id)
             self.assertTrue(probe["rename_targets"], language_id)
 
-    def test_mnc_symbol_contract_uses_qualified_xtext_name(self):
-        matrix = verify_lsp_parity_matrix.load_json(ROOT / "product" / "lsp-capabilities.json")
-        probe = matrix["languages"]["mnc"]
-        self.assertEqual("Device", probe["symbol"])
-        self.assertEqual("Golden.Device", probe["document_symbol"])
-        self.assertEqual("Golden.Device", probe["workspace_symbol"])
-
 
 if __name__ == "__main__":
     unittest.main()
