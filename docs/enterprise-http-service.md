@@ -35,7 +35,8 @@ core:
 
 - `GET /api/v1/health`;
 - deterministic OpenAPI publication at `GET /api/v1/openapi.json`;
-- project listing and project read for the configured E04 context;
+- project listing and project read for the configured E04 context, including the
+  stable E04 workspace ID needed to select the authorized LSP workspace;
 - revision-safe model read/write through PR21 `ModelRepository`; and
 - PR19 audit events for successful project/model operations.
 

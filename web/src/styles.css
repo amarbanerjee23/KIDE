@@ -17,9 +17,11 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .topbar h1 { margin: 2px 0 0; font-size: 24px; }
 .eyebrow { margin: 0; font-size: 11px; letter-spacing: .18em; color: #a7b4c8; }
 .subtitle { margin: 5px 0 0; color: #cbd5e1; font-size: 13px; }
+.status-stack { display: grid; gap: 6px; justify-items: end; }
 .service-state { border: 1px solid #475569; border-radius: 999px; padding: 7px 12px; font-size: 12px; }
+.lsp-state { color: #dbeafe; }
 .connection-panel {
-  display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(190px, 1fr) auto auto auto;
+  display: grid; grid-template-columns: minmax(190px, 1.2fr) minmax(190px, 1.2fr) minmax(180px, 1fr) auto auto auto;
   gap: 10px; align-items: end; padding: 14px 20px; background: white; border-bottom: 1px solid #d8dee9;
 }
 label { display: grid; gap: 5px; font-size: 12px; font-weight: 650; }
@@ -65,3 +67,9 @@ button, .import-button {
 @media (max-width: 1100px) {
   .connection-panel { grid-template-columns: 1fr 1fr auto; }
 }
+
+.symbol-search { margin: 14px 0 22px; padding: 12px; border: 1px solid #d8dee9; border-radius: 8px; background: white; display: grid; gap: 8px; }
+.symbol-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 180px; overflow: auto; }
+.symbol-list button { width: 100%; display: grid; gap: 2px; text-align: left; padding: 7px 8px; border: 0; background: transparent; }
+.symbol-list button:hover { background: #eef3f8; }
+.symbol-list span { font-size: 11px; color: #64748b; }
