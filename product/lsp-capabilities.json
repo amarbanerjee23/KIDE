@@ -141,9 +141,7 @@
           "line": 2,
           "character": 0
         }
-      },
-      "document_symbol": "Golden.Device",
-      "workspace_symbol": "Golden.Device"
+      }
     },
     "capability": {
       "symbol": "Observe",
