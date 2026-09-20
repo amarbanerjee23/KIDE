@@ -94,6 +94,7 @@ public final class GatewaySelfCheckApplication implements IApplication {
                     5000,
                     false,
                     false,
+                    Set.of(),
                     Set.of());
 
             gateway = new SecureLspWebSocketGateway(
