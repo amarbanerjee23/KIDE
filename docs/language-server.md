@@ -22,7 +22,7 @@ The registry is constructed explicitly from these generated `IdeSetup` classes b
 
 The product still materializes the normal Eclipse native launchers, but the supported server/container entrypoint on Linux is `kide-languageserver-headless`. That wrapper starts Equinox directly through the packaged `org.eclipse.equinox.launcher` JAR using KIDE's embedded JustJ Java runtime. It deliberately bypasses the GTK native launcher, so it does not require X11, Wayland, Xvfb, or a desktop session. CI removes `DISPLAY` and `WAYLAND_DISPLAY` before starting it to enforce that contract.
 
-The native Windows launcher remains `kide-languageserver.exe`. Native launchers can still be used on interactive desktop hosts; automation on Linux should use the display-free wrapper.
+The native Windows launcher remains `kide-languageserver.exe`. Native launchers can still be used on interactive desktop hosts; automation on Linux should use the display-free wrapper. With no explicit application argument the wrapper starts `com.kide.languageserver.application`. When an explicit `-application` is supplied, the wrapper preserves it instead of prepending the default; packaged gateway/API self-checks and future headless service applications therefore execute through the same embedded-JRE entrypoint.
 
 Xtext's server implementation owns document synchronization, diagnostics, workspace folders, completion/navigation services exposed by each language, and the LSP shutdown/exit lifecycle. KIDE adds deterministic multi-language registration and distribution packaging around that implementation.
 
