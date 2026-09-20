@@ -7,6 +7,8 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -19,6 +21,7 @@ import com.kide.languageserver.gateway.BrowserWebSocketCredential;
 import com.kide.languageserver.gateway.GatewayConfig;
 import com.kide.languageserver.gateway.GatewayMessagePolicy;
 import com.kide.languageserver.gateway.LspMessageFraming;
+import com.kide.languageserver.gateway.LspWorkspaceBoundary;
 import com.kide.languageserver.gateway.OidcIntrospectionConfig;
 
 public class GatewayPolicyTest {
@@ -100,6 +103,54 @@ public class GatewayPolicyTest {
                                 BrowserWebSocketCredential.LSP_PROTOCOL,
                                 encoded,
                                 BrowserWebSocketCredential.encodeBearerProtocol("second"))));
+    }
+
+    @Test
+    public void workspaceBoundaryRejectsOutsideAndSymlinkEscapes() throws Exception {
+        Path root = Files.createTempDirectory("kide-pr22-boundary-");
+        try {
+            Path project = Files.createDirectories(root.resolve("project"));
+            Path outside = Files.createDirectories(root.resolve("outside"));
+            Path valid = project.resolve("new-model.dml");
+            LspWorkspaceBoundary boundary = new LspWorkspaceBoundary(project);
+
+            boundary.requireWithinProject(
+                    "{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/didOpen\","
+                    + "\"params\":{\"textDocument\":{\"uri\":\""
+                    + valid.toUri() + "\"}}}");
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> boundary.requireWithinProject(
+                            "{\"jsonrpc\":\"2.0\",\"method\":\"initialize\","
+                            + "\"params\":{\"rootUri\":\""
+                            + outside.toUri() + "\"}}}"));
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> boundary.requireWithinProject(
+                            "{\"jsonrpc\":\"2.0\",\"method\":\"initialize\","
+                            + "\"params\":{\"rootUri\":\"untitled:outside\"}}"));
+
+            Path link = project.resolve("escape");
+            Files.createSymbolicLink(link, outside);
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> boundary.requireWithinProject(
+                            "{\"jsonrpc\":\"2.0\",\"method\":\"textDocument/didOpen\","
+                            + "\"params\":{\"textDocument\":{\"uri\":\""
+                            + link.resolve("secret.dml").toUri() + "\"}}}"));
+        } finally {
+            try (java.util.stream.Stream<Path> stream = Files.walk(root)) {
+                stream.sorted(java.util.Comparator.reverseOrder()).forEach(path -> {
+                    try {
+                        Files.deleteIfExists(path);
+                    } catch (java.io.IOException ignored) {
+                        // Test cleanup only.
+                    }
+                });
+            }
+        }
     }
 
     @Test
