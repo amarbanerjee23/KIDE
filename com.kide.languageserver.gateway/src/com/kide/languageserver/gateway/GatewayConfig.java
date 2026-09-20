@@ -12,6 +12,7 @@ public record GatewayConfig(
         int maxMessagesPerMinute,
         boolean requireSecureTransport,
         boolean trustForwardedProto,
+        Set<String> trustedProxyAddresses,
         Set<String> allowedOrigins) {
 
     public GatewayConfig {
@@ -28,13 +29,19 @@ public record GatewayConfig(
         if (maxMessagesPerMinute < 1 || maxMessagesPerMinute > 100_000) {
             throw new IllegalArgumentException("maxMessagesPerMinute out of supported range");
         }
+        trustedProxyAddresses = trustedProxyAddresses == null
+                ? Set.of() : Set.copyOf(trustedProxyAddresses);
+        if (trustForwardedProto && trustedProxyAddresses.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "trustedProxyAddresses is required when forwarded proto is trusted");
+        }
         allowedOrigins = allowedOrigins == null ? Set.of() : Set.copyOf(allowedOrigins);
     }
 
     public static GatewayConfig secureDefault(int port) {
         return new GatewayConfig(
                 "127.0.0.1", port, Duration.ofMinutes(5),
-                1024 * 1024, 2400, true, false, Set.of());
+                1024 * 1024, 2400, true, false, Set.of(), Set.of());
     }
 
     public boolean loopbackBind() {
