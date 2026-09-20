@@ -269,7 +269,7 @@ def run_smoke(products: Path, registry_path: Path) -> None:
 
         with stderr_log.open("wb") as stderr_stream:
             process = subprocess.Popen(
-                [str(launcher)],
+                [str(launcher), "-consoleLog"],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=stderr_stream,
