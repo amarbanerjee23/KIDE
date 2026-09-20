@@ -93,6 +93,7 @@ public final class GatewaySelfCheckApplication implements IApplication {
                     Duration.ofSeconds(30),
                     1024 * 1024,
                     5000,
+                    8,
                     false,
                     false,
                     Set.of(),
