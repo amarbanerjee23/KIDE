@@ -130,6 +130,12 @@ The LSP runtime is in-process and per-session; no operating-system child languag
 server process is spawned, so closing a WebSocket cannot leave an orphan LS
 process. Session streams and threads are explicitly closed/interrupted.
 
+Because Xtext's standalone shutdown/exit handler calls `System.exit`, gateway
+sessions override that handler with Xtext's no-op in-process implementation.
+An ordinary LSP `shutdown` / `exit` sequence therefore ends only the WebSocket
+session lifecycle and cannot terminate the shared gateway JVM. The standalone
+stdio language-server application keeps the normal process-exit behavior.
+
 ## Packaged qualification
 
 The headless KIDE product executes
