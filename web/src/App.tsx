@@ -48,6 +48,8 @@ export default function App() {
   const entriesRef = useRef<WorkspaceEntry[]>([]);
   entriesRef.current = entries;
   const [selectedPath, setSelectedPath] = useState<string>();
+  const selectedPathRef = useRef<string | undefined>(undefined);
+  selectedPathRef.current = selectedPath;
   const [modelId, setModelId] = useState("selfcheck.dml");
   const [saveState, setSaveState] = useState<SaveState>("clean");
   const [notice, setNotice] = useState("");
@@ -57,15 +59,15 @@ export default function App() {
   const [revealRange, setRevealRange] = useState<monaco.Range>();
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
-  const lspClient = useRef<KideLspClient>();
-  const lspController = useRef<MonacoLspController>();
+  const lspClient = useRef<KideLspClient | undefined>(undefined);
+  const lspController = useRef<MonacoLspController | undefined>(undefined);
   const workspaceChange = useRef<(path: string, value: string) => void>(() => {});
   const workspace = useMemo(
     () => new MonacoWorkspace((path, value) => workspaceChange.current(path, value)),
     []
   );
 
-  const selected = entries.find((entry) => entry.path === selectedPath);
+  const selected = entries.find((entry) => entry.path === selectedPathRef.current);
   const editorText = selected ? editableText(selected) : null;
 
   workspaceChange.current = (path, value) => {
@@ -96,7 +98,7 @@ export default function App() {
       setNotice(error instanceof Error ? error.message : "Syntax highlighting could not initialize.");
     });
     return () => {
-      disposeLanguageServices();
+      void disposeLanguageServices();
       disposeAutosaves();
       workspace.dispose();
     };
@@ -234,7 +236,7 @@ export default function App() {
         ),
       {
         onState(state) {
-          if (entry.path === selectedPath) setSaveState(state);
+          if (entry.path === selectedPathRef.current) setSaveState(state);
         },
         onSaved(model) {
           updateEntries((current) =>
@@ -258,7 +260,7 @@ export default function App() {
           } catch {
             // Conflict remains fail-safe without browser draft persistence.
           }
-          if (entry.path === selectedPath) {
+          if (entry.path === selectedPathRef.current) {
             setSaveState("conflict");
             setConflict(
               `Server revision changed. Autosave stopped without overwriting it. Request ${error.requestId ?? "unknown"}.`
@@ -266,7 +268,7 @@ export default function App() {
           }
         },
         onError(error) {
-          if (entry.path === selectedPath) setSaveState("error");
+          if (entry.path === selectedPathRef.current) setSaveState("error");
           setNotice(error.message);
         }
       }
@@ -552,7 +554,7 @@ export default function App() {
             {entries.map((entry) => (
               <li key={entry.path}>
                 <button
-                  className={entry.path === selectedPath ? "selected" : ""}
+                  className={entry.path === selectedPathRef.current ? "selected" : ""}
                   onClick={() => selectEntry(entry)}
                 >
                   <span>{entry.path}</span>
