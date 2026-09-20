@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import * as monaco from "monaco-editor";
 import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+import type { MonacoLspController } from "./monacoLsp";
+import type { MonacoWorkspace } from "./monacoWorkspace";
 
 (self as unknown as {
   MonacoEnvironment?: { getWorker(): Worker };
@@ -11,23 +13,27 @@ import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 interface Props {
   value: string;
   path: string;
+  workspace: MonacoWorkspace;
+  lsp?: MonacoLspController;
   readOnly?: boolean;
-  onChange(value: string): void;
+  revealRange?: monaco.Range;
 }
 
-export function MonacoEditor({ value, path, readOnly = false, onChange }: Props) {
+export function MonacoEditor({
+  value,
+  path,
+  workspace,
+  lsp,
+  readOnly = false,
+  revealRange
+}: Props) {
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>(undefined);
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
 
   useEffect(() => {
     if (!host.current) return;
-    const model = monaco.editor.createModel(
-      value,
-      "plaintext",
-      monaco.Uri.parse(`file:///${path}`)
-    );
+    const model = workspace.ensure(path, value);
+    const attachment = lsp?.attachModel(model);
     const instance = monaco.editor.create(host.current, {
       model,
       automaticLayout: true,
@@ -36,24 +42,30 @@ export function MonacoEditor({ value, path, readOnly = false, onChange }: Props)
       fontSize: 14,
       tabSize: 2,
       wordWrap: "on",
-      scrollBeyondLastLine: false
-    });
-    const subscription = instance.onDidChangeModelContent(() => {
-      onChangeRef.current(instance.getValue());
+      scrollBeyondLastLine: false,
+      quickSuggestions: true,
+      suggestOnTriggerCharacters: true,
+      folding: true
     });
     editor.current = instance;
     return () => {
-      subscription.dispose();
+      attachment?.dispose();
       instance.dispose();
-      model.dispose();
       editor.current = undefined;
     };
-  }, [path, readOnly]);
+  }, [path, readOnly, workspace, lsp]);
+
+  useEffect(() => {
+    workspace.sync(path, value);
+  }, [path, value, workspace]);
 
   useEffect(() => {
     const instance = editor.current;
-    if (instance && instance.getValue() !== value) instance.setValue(value);
-  }, [value]);
+    if (!instance || !revealRange) return;
+    instance.setSelection(revealRange);
+    instance.revealRangeInCenter(revealRange);
+    instance.focus();
+  }, [revealRange]);
 
   return <div className="editor-host" data-testid="monaco-editor" ref={host} />;
 }

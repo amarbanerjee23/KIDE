@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import type * as monaco from "monaco-editor";
 import { KideApiClient, ApiClientError } from "./api";
 import {
   editableText,
@@ -9,14 +10,22 @@ import {
   withText
 } from "./archive";
 import { AutosaveCoordinator } from "./autosave";
+import { pathFromWorkspaceUri } from "./languageAssets";
+import { KideLspClient, type SymbolInformation } from "./lspClient";
 import { MonacoEditor } from "./MonacoEditor";
+import { MonacoLspController } from "./monacoLsp";
+import { MonacoWorkspace } from "./monacoWorkspace";
+import { ensureTextMateLanguageSupport } from "./textmate";
 import type { Model, Project, SaveState, WorkspaceEntry } from "./types";
 
 const SERVICE_ORIGIN =
   import.meta.env.VITE_KIDE_API_ORIGIN ?? window.location.origin;
+const GATEWAY_ORIGIN =
+  import.meta.env.VITE_KIDE_LSP_ORIGIN ?? SERVICE_ORIGIN;
 
 export default function App() {
   const [serviceOrigin, setServiceOrigin] = useState(SERVICE_ORIGIN);
+  const [gatewayOrigin, setGatewayOrigin] = useState(GATEWAY_ORIGIN);
   const [token, setToken] = useState("");
   const tokenRef = useRef("");
   tokenRef.current = token;
@@ -25,22 +34,75 @@ export default function App() {
     () => new KideApiClient(serviceOrigin, () => tokenRef.current),
     [serviceOrigin]
   );
+  const clientRef = useRef(client);
+  clientRef.current = client;
 
   const [serviceStatus, setServiceStatus] = useState("Not connected");
+  const [lspStatus, setLspStatus] = useState("Not connected");
   const [projects, setProjects] = useState<Project[]>([]);
   const [project, setProject] = useState<Project>();
+  const projectRef = useRef<Project | undefined>(undefined);
+  projectRef.current = project;
+
   const [entries, setEntries] = useState<WorkspaceEntry[]>([]);
+  const entriesRef = useRef<WorkspaceEntry[]>([]);
+  entriesRef.current = entries;
   const [selectedPath, setSelectedPath] = useState<string>();
+  const selectedPathRef = useRef<string | undefined>(undefined);
+  selectedPathRef.current = selectedPath;
   const [modelId, setModelId] = useState("selfcheck.dml");
   const [saveState, setSaveState] = useState<SaveState>("clean");
   const [notice, setNotice] = useState("");
   const [conflict, setConflict] = useState<string>();
-  const autosave = useRef<AutosaveCoordinator | undefined>(undefined);
+  const [symbolQuery, setSymbolQuery] = useState("");
+  const [symbols, setSymbols] = useState<SymbolInformation[]>([]);
+  const [revealRange, setRevealRange] = useState<monaco.Range>();
 
-  const selected = entries.find((entry) => entry.path === selectedPath);
+  const autosaves = useRef(new Map<string, AutosaveCoordinator>());
+  const lspClient = useRef<KideLspClient | undefined>(undefined);
+  const lspController = useRef<MonacoLspController | undefined>(undefined);
+  const workspaceChange = useRef<(path: string, value: string) => void>(() => {});
+  const workspace = useMemo(
+    () => new MonacoWorkspace((path, value) => workspaceChange.current(path, value)),
+    []
+  );
+
+  const selected = entries.find((entry) => entry.path === selectedPathRef.current);
   const editorText = selected ? editableText(selected) : null;
 
-  useEffect(() => () => autosave.current?.dispose(), []);
+  workspaceChange.current = (path, value) => {
+    const current = entriesRef.current.find((entry) => entry.path === path);
+    if (!current) return;
+
+    updateEntries((items) =>
+      items.map((entry) =>
+        entry.path === path ? withText(entry, value) : entry
+      )
+    );
+
+    if (current.source === "remote") {
+      ensureAutosave(current).update(value);
+    } else {
+      try {
+        sessionStorage.setItem(`kide:draft:${path}`, value);
+        if (path === selectedPath) setSaveState("saved");
+      } catch {
+        if (path === selectedPath) setSaveState("error");
+        setNotice("Browser draft storage is unavailable; export the project to retain this edit.");
+      }
+    }
+  };
+
+  useEffect(() => {
+    void ensureTextMateLanguageSupport().catch((error) => {
+      setNotice(error instanceof Error ? error.message : "Syntax highlighting could not initialize.");
+    });
+    return () => {
+      void disposeLanguageServices();
+      disposeAutosaves();
+      workspace.dispose();
+    };
+  }, [workspace]);
 
   async function connect() {
     setNotice("");
@@ -60,31 +122,68 @@ export default function App() {
     setConflict(undefined);
     try {
       const opened = await client.getProject(item.id);
-      autosave.current?.dispose();
-      autosave.current = undefined;
-      setProject(opened);
-      setEntries([]);
-      setSelectedPath(undefined);
-      setSaveState("clean");
+      await resetProjectWorkspace();
+      setProjectState(opened);
       setNotice(`Opened server project ${opened.displayName}.`);
+      await connectLanguageServices(opened);
     } catch (error) {
       showError(error);
     }
   }
 
+  async function connectLanguageServices(opened = projectRef.current) {
+    if (!opened) return;
+    await disposeLanguageServices();
+    if (!opened.workspaceId) {
+      setLspStatus("Unavailable · workspace ID missing");
+      return;
+    }
+    const accessToken = tokenRef.current.trim();
+    if (!accessToken) {
+      setLspStatus("Unavailable · access token required");
+      return;
+    }
+
+    setLspStatus("Connecting…");
+    try {
+      const connection = new KideLspClient(
+        gatewayOrigin,
+        accessToken,
+        opened.workspaceId
+      );
+      await connection.connect();
+      const controller = new MonacoLspController(
+        connection,
+        workspace,
+        { ensureDocument: ensureLspDocument }
+      );
+      lspClient.current = connection;
+      lspController.current = controller;
+      setLspStatus("Connected · Xtext LSP");
+      setSymbols([]);
+    } catch (error) {
+      setLspStatus("Connection failed");
+      showError(error);
+    }
+  }
+
   async function loadModel() {
-    if (!project) return;
+    if (!projectRef.current) return;
     await loadSpecificModel(modelId.trim(), true);
   }
 
   async function loadSpecificModel(id: string, announce = false) {
-    if (!project || !id) return;
+    const currentProject = projectRef.current;
+    if (!currentProject || !id) return;
     setConflict(undefined);
     try {
-      const model = await client.getModel(project.id, id);
-      const entry = remoteEntry(project.id, model);
-      setEntries((current) => upsert(current, entry));
-      selectRemote(entry);
+      const model = await clientRef.current.getModel(currentProject.id, id);
+      const entry = remoteEntry(currentProject.id, model);
+      replaceRemoteEntry(entry);
+      workspace.ensure(entry.path, model.content);
+      setSelectedPath(entry.path);
+      setRevealRange(undefined);
+      setSaveState("clean");
       if (announce) {
         setNotice(`Loaded ${model.id} at revision ${model.revision}.`);
       }
@@ -93,17 +192,42 @@ export default function App() {
     }
   }
 
-  function selectRemote(entry: WorkspaceEntry) {
-    setSelectedPath(entry.path);
-    setSaveState("clean");
-    setConflict(undefined);
-    autosave.current?.dispose();
-    if (entry.source !== "remote" || !entry.projectId || !entry.etag) return;
+  async function ensureLspDocument(uri: string) {
+    const path = pathFromWorkspaceUri(uri);
+    const existingModel = workspace.get(path);
+    if (existingModel) return existingModel;
 
-    autosave.current = new AutosaveCoordinator(
+    const existingEntry = entriesRef.current.find((entry) => entry.path === path);
+    if (existingEntry) {
+      const text = editableText(existingEntry);
+      return text === null ? undefined : workspace.ensure(path, text);
+    }
+
+    const currentProject = projectRef.current;
+    if (!currentProject) return undefined;
+    const model = await clientRef.current.getModel(currentProject.id, path);
+    const entry = remoteEntry(currentProject.id, model);
+    replaceRemoteEntry(entry);
+    return workspace.ensure(path, model.content);
+  }
+
+  function replaceRemoteEntry(entry: WorkspaceEntry) {
+    autosaves.current.get(entry.path)?.dispose();
+    autosaves.current.delete(entry.path);
+    updateEntries((current) => upsert(current, entry));
+  }
+
+  function ensureAutosave(entry: WorkspaceEntry): AutosaveCoordinator {
+    const existing = autosaves.current.get(entry.path);
+    if (existing) return existing;
+    if (!entry.projectId || !entry.etag) {
+      throw new Error("Remote model is missing revision metadata.");
+    }
+
+    const coordinator = new AutosaveCoordinator(
       entry.etag,
       (content, expectedEtag) =>
-        client.writeModel(
+        clientRef.current.writeModel(
           entry.projectId!,
           entry.path,
           content,
@@ -111,77 +235,67 @@ export default function App() {
           entry.mediaType
         ),
       {
-        onState: setSaveState,
+        onState(state) {
+          if (entry.path === selectedPathRef.current) setSaveState(state);
+        },
         onSaved(model) {
-          setEntries((current) =>
+          updateEntries((current) =>
             current.map((candidate) => {
               if (candidate.path !== entry.path) return candidate;
-              const currentText = editableText(candidate);
               return {
                 ...candidate,
                 etag: model.etag,
                 revision: model.revision,
-                dirty: currentText !== model.content
+                dirty: workspace.text(entry.path) !== model.content
               };
             })
           );
         },
-        onConflict(error) {
-          setConflict(
-            `Server revision changed. Autosave stopped without overwriting it. Request ${error.requestId ?? "unknown"}.`
-          );
+        onConflict(error, localContent) {
+          try {
+            sessionStorage.setItem(
+              `kide:conflict:${entry.projectId}:${entry.path}`,
+              localContent
+            );
+          } catch {
+            // Conflict remains fail-safe without browser draft persistence.
+          }
+          if (entry.path === selectedPathRef.current) {
+            setSaveState("conflict");
+            setConflict(
+              `Server revision changed. Autosave stopped without overwriting it. Request ${error.requestId ?? "unknown"}.`
+            );
+          }
         },
         onError(error) {
+          if (entry.path === selectedPathRef.current) setSaveState("error");
           setNotice(error.message);
         }
       }
     );
+    autosaves.current.set(entry.path, coordinator);
+    return coordinator;
   }
 
   function selectEntry(entry: WorkspaceEntry) {
-    autosave.current?.dispose();
-    autosave.current = undefined;
-    if (entry.source === "remote") {
-      selectRemote(entry);
-      return;
-    }
     setSelectedPath(entry.path);
-    setSaveState("clean");
+    setRevealRange(undefined);
+    setSaveState(entry.dirty ? "pending" : "clean");
     setConflict(undefined);
   }
 
-  function editSelected(value: string) {
-    if (!selected) return;
-    setEntries((current) =>
-      current.map((entry) =>
-        entry.path === selected.path ? withText(entry, value) : entry
-      )
-    );
-
-    if (selected.source === "remote") {
-      autosave.current?.update(value);
-    } else {
-      try {
-        sessionStorage.setItem(`kide:draft:${selected.path}`, value);
-        setSaveState("saved");
-      } catch {
-        setSaveState("error");
-        setNotice("Browser draft storage is unavailable; export the project to retain this edit.");
-      }
-    }
-  }
-
   async function reloadConflict() {
-    if (!project || !selected || selected.source !== "remote") return;
-    const localDraft = editableText(selected);
-    if (localDraft !== null) {
+    const currentProject = projectRef.current;
+    if (!currentProject || !selected || selected.source !== "remote") return;
+    const localDraft = workspace.text(selected.path) ?? editableText(selected);
+    if (localDraft !== null && localDraft !== undefined) {
       try {
         sessionStorage.setItem(
-          `kide:conflict:${project.id}:${selected.path}`,
+          `kide:conflict:${currentProject.id}:${selected.path}`,
           localDraft
         );
       } catch {
-        // Reload stays safe even when browser draft storage is unavailable.
+        // Server reload remains safe without session storage.
       }
     }
     await loadSpecificModel(selected.path);
@@ -198,16 +312,16 @@ export default function App() {
       const imported = importProjectArchive(
         new Uint8Array(await file.arrayBuffer())
       );
-      autosave.current?.dispose();
-      autosave.current = undefined;
-      setProject(undefined);
+      await resetProjectWorkspace();
+      setProjectState(undefined);
       setProjects([]);
-      setEntries(imported);
+      updateEntries(() => imported);
       const firstEditable = imported.find(
         (entry) => editableText(entry) !== null
       );
       setSelectedPath(firstEditable?.path);
       setSaveState("clean");
+      setLspStatus("Unavailable · local archive");
       setNotice(
         `Imported ${imported.length} canonical project files locally. No server project was created.`
       );
@@ -217,16 +331,83 @@ export default function App() {
   }
 
   function exportArchive() {
-    if (!entries.length) return;
-    const bytes = exportProjectArchive(entries);
+    if (!entriesRef.current.length) return;
+    const materialized = entriesRef.current.map((entry) => {
+      const current = workspace.text(entry.path);
+      return current === undefined ? entry : withText(entry, current);
+    });
+    const bytes = exportProjectArchive(materialized);
     const blob = new Blob([bytes as BlobPart], { type: "application/zip" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `${safeName(project?.displayName ?? "kide-project")}.zip`;
+    anchor.download = `${safeName(projectRef.current?.displayName ?? "kide-project")}.zip`;
     anchor.click();
     URL.revokeObjectURL(url);
     setNotice("Exported current project files as a ZIP archive.");
+  }
+
+  async function searchSymbols() {
+    const controller = lspController.current;
+    if (!controller) return;
+    try {
+      setSymbols(await controller.workspaceSymbols(symbolQuery));
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function openSymbol(symbol: SymbolInformation) {
+    const controller = lspController.current;
+    if (!controller) return;
+    try {
+      const target = await controller.revealLocation(symbol.location);
+      if (!target) return;
+      setSelectedPath(target.path);
+      setRevealRange(target.range);
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function resetProjectWorkspace() {
+    await disposeLanguageServices();
+    disposeAutosaves();
+    workspace.dispose();
+    updateEntries(() => []);
+    setSelectedPath(undefined);
+    setRevealRange(undefined);
+    setSymbols([]);
+    setSaveState("clean");
+  }
+
+  async function disposeLanguageServices() {
+    lspController.current?.dispose();
+    lspController.current = undefined;
+    const connection = lspClient.current;
+    lspClient.current = undefined;
+    if (connection) await connection.dispose();
+    setLspStatus("Not connected");
+  }
+
+  function disposeAutosaves() {
+    for (const coordinator of autosaves.current.values()) coordinator.dispose();
+    autosaves.current.clear();
+  }
+
+  function updateEntries(
+    update: (current: WorkspaceEntry[]) => WorkspaceEntry[]
+  ) {
+    setEntries((current) => {
+      const next = update(current);
+      entriesRef.current = next;
+      return next;
+    });
+  }
+
+  function setProjectState(next: Project | undefined) {
+    projectRef.current = next;
+    setProject(next);
   }
 
   function showError(error: unknown) {
@@ -248,16 +429,27 @@ export default function App() {
             Separate browser client · shared enterprise API · shared Xtext semantics
           </p>
         </div>
-        <div className="service-state" aria-live="polite">{serviceStatus}</div>
+        <div className="status-stack">
+          <div className="service-state" aria-live="polite">{serviceStatus}</div>
+          <div className="service-state lsp-state" aria-live="polite">{lspStatus}</div>
+        </div>
       </header>
 
       <section className="connection-panel" aria-label="Service connection">
         <label>
-          Service origin
+          API origin
           <input
-            aria-label="Service origin"
+            aria-label="API origin"
             value={serviceOrigin}
             onChange={(event) => setServiceOrigin(event.target.value)}
+          />
+        </label>
+        <label>
+          LSP gateway origin
+          <input
+            aria-label="LSP gateway origin"
+            value={gatewayOrigin}
+            onChange={(event) => setGatewayOrigin(event.target.value)}
           />
         </label>
         <label>
@@ -271,7 +463,7 @@ export default function App() {
             placeholder="Held in memory only"
           />
         </label>
-        <button onClick={() => void connect()}>Connect</button>
+        <button onClick={() => void connect()}>Connect API</button>
         <label className="import-button">
           Import project ZIP
           <input
@@ -313,8 +505,11 @@ export default function App() {
             <div className="model-loader">
               <h3>{project.displayName}</h3>
               <p className="muted">
-                Model indexing arrives in a later server phase. Open a known model ID without duplicating repository semantics in the browser.
+                Textual intelligence is served by the shared Xtext LSP. Model indexing remains a later server phase, so a known model ID is still used here.
               </p>
+              <button onClick={() => void connectLanguageServices()}>
+                Reconnect language services
+              </button>
               <label>
                 Model ID
                 <input
@@ -329,12 +524,37 @@ export default function App() {
             </div>
           )}
 
+          {lspController.current && (
+            <div className="symbol-search">
+              <h2>Workspace symbols</h2>
+              <label>
+                Symbol query
+                <input
+                  aria-label="Symbol query"
+                  value={symbolQuery}
+                  onChange={(event) => setSymbolQuery(event.target.value)}
+                />
+              </label>
+              <button onClick={() => void searchSymbols()}>Search symbols</button>
+              <ul className="symbol-list">
+                {symbols.map((symbol, index) => (
+                  <li key={symbol.name + index}>
+                    <button onClick={() => void openSymbol(symbol)}>
+                      <strong>{symbol.name}</strong>
+                      <span>{symbol.containerName ?? ""}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <h2>Files</h2>
           <ul className="file-list">
             {entries.map((entry) => (
               <li key={entry.path}>
                 <button
-                  className={entry.path === selectedPath ? "selected" : ""}
+                  className={entry.path === selectedPathRef.current ? "selected" : ""}
                   onClick={() => selectEntry(entry)}
                 >
                   <span>{entry.path}</span>
@@ -365,7 +585,9 @@ export default function App() {
             <MonacoEditor
               path={selected.path}
               value={editorText}
-              onChange={editSelected}
+              workspace={workspace}
+              lsp={lspController.current}
+              revealRange={revealRange}
             />
           )}
         </section>

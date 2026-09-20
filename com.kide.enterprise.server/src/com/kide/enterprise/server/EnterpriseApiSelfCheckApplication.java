@@ -106,8 +106,12 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     base.resolve("/api/v1/projects/" + context.project().id().value()),
                     "GET", "Bearer pr26-self-check", null);
             requireStatus(projectResponse, 200);
-            if (!context.project().id().value().equals(json(projectResponse).get("id").getAsString())) {
+            JsonObject projectJson = json(projectResponse);
+            if (!context.project().id().value().equals(projectJson.get("id").getAsString())) {
                 throw new AssertionError("project identity mismatch");
+            }
+            if (!context.workspace().id().value().equals(projectJson.get("workspaceId").getAsString())) {
+                throw new AssertionError("workspace identity missing from browser project contract");
             }
 
             String modelUri = "/api/v1/projects/" + context.project().id().value()

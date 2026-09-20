@@ -60,14 +60,19 @@ The grouping follows shared code boundaries rather than feature labels:
 
 ## Current execution point
 
-PR22 through PR29 are merged. PR29 restored deterministic Xtext rename and symbol
-parity across the packaged five-language LSP while preserving the desktop product.
+PR22 through PR30 are merged and green on main. PR30 established the separate
+React/TypeScript browser workspace without changing Eclipse desktop semantics.
 
-**PR30 is the active implementation PR.** It creates a separate React/TypeScript
-browser workspace over the existing enterprise HTTP boundary, adds a locally
-bundled Monaco editor foundation, bounded canonical-project ZIP import/export,
-revision-aware autosave/conflict handling, and browser build/unit/E2E gates.
+**PR31 is the active implementation PR.** It connects Monaco to the existing
+authenticated Xtext WebSocket gateway, virtualizes browser project URIs without
+exposing server filesystem paths, generates TextMate lexical assets from the
+production Xtext grammars, and maps the PR13 language-service contract into Monaco.
 
-PR30 does not duplicate KIDE language semantics in TypeScript. Browser textual
-language intelligence remains owned by the existing Xtext LSP and is connected in
-PR31; graphical editing remains owned by the EMF/GLSP work in PR32.
+Required server capabilities remain governed by `product/lsp-capabilities.json`.
+The browser consumes completion, hover, navigation, references, symbols,
+formatting and rename from Xtext, and conditionally consumes folding, code actions
+and semantic tokens when those capabilities are advertised. It does not fabricate
+browser-only language semantics for deferred server capabilities.
+
+PR32 follows only after PR31 passes browser protocol/E2E qualification together
+with every existing packaged desktop, enterprise, gateway and LSP parity gate.

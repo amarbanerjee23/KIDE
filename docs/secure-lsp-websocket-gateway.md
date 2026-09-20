@@ -27,6 +27,19 @@ between WebSocket messages and the `Content-Length` framing expected by Xtext's
 existing LSP runtime. No parser, validator, completion, navigation or other DSL
 semantics are reimplemented in the transport.
 
+### Browser workspace URIs
+
+PR31 adds a browser-safe URI virtualization boundary. Browser clients use
+`kide-workspace:/<project-relative-path>` and never need the service host's
+filesystem path. Before forwarding a message to Xtext, the gateway maps the
+virtual URI onto the already-authorized project root and then runs the same
+canonical path/symlink checks described below. Responses, diagnostics, locations
+and workspace-edit URI keys are mapped back to `kide-workspace:` before they
+cross the WebSocket.
+
+Native clients may continue to use authorized `file:` URIs. Virtual URI
+translation does not broaden the workspace boundary.
+
 ## Authentication
 
 Production gateway startup uses OAuth 2/OIDC token introspection over HTTPS.

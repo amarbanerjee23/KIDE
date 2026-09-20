@@ -53,6 +53,10 @@ Within v1, the following are treated as breaking changes:
 Adding a new operation, adding a new schema, or adding an optional field is
 compatible. Breaking contract changes require a new API version.
 
+PR31 adds optional `workspaceId` to the `Project` response. It is the stable E04
+workspace identity used by authorized clients to select the corresponding LSP
+gateway workspace. It is not a filesystem path or authentication credential.
+
 ## OpenAPI
 
 `OpenApiV1.generateJson()` produces a deterministic OpenAPI 3.1 document from the

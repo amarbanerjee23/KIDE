@@ -343,6 +343,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
         project.addProperty("displayName", context.project().displayName());
         project.addProperty("revision", "1");
         project.addProperty("portfolioId", context.portfolio().id().value());
+        project.addProperty("workspaceId", context.workspace().id().value());
         return project;
     }
 

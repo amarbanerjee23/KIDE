@@ -175,6 +175,9 @@ jobs:
       - name: Verify Node runtime
         run: node --version && npm --version
 
+      - name: Verify generated web language assets
+        run: python3 scripts/generate_web_language_assets.py --check
+
       - name: Install exact web dependencies
         working-directory: web
         run: npm install --no-audit --no-fund

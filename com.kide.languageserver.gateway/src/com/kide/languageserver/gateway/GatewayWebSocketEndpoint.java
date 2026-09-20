@@ -20,6 +20,7 @@ public final class GatewayWebSocketEndpoint implements Session.Listener {
     private final ServerAuthorizationGate authorization;
     private final EnterpriseContext enterpriseContext;
     private final LspWorkspaceBoundary workspaceBoundary;
+    private final LspWorkspaceUriMapper workspaceUris;
     private final GatewaySessionQuota.Lease sessionLease;
     private final GatewayMessagePolicy messagePolicy;
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -41,6 +42,7 @@ public final class GatewayWebSocketEndpoint implements Session.Listener {
                 Objects.requireNonNull(workspaceBinding, "workspaceBinding");
         this.enterpriseContext = binding.context();
         this.workspaceBoundary = new LspWorkspaceBoundary(binding);
+        this.workspaceUris = new LspWorkspaceUriMapper(binding);
         this.sessionLease = Objects.requireNonNull(sessionLease, "sessionLease");
         this.messagePolicy = new GatewayMessagePolicy(
                 config.maxTextMessageBytes(), config.maxMessagesPerMinute(), clock);
@@ -60,7 +62,7 @@ public final class GatewayWebSocketEndpoint implements Session.Listener {
                             Session socket = webSocket;
                             if (socket == null || !socket.isOpen() || closed.get()) return;
                             Callback.Completable callback = new Callback.Completable();
-                            socket.sendText(json, callback);
+                            socket.sendText(workspaceUris.toClient(json), callback);
                             callback.join();
                         }
 
@@ -98,13 +100,14 @@ public final class GatewayWebSocketEndpoint implements Session.Listener {
                     authenticatedSession, enterpriseContext);
             authorization.requireLspWorkspaceAccess(
                     authenticatedSession, enterpriseContext);
-            workspaceBoundary.requireWithinProject(message);
+            String translated = workspaceUris.toServer(message);
+            workspaceBoundary.requireWithinProject(translated);
             InProcessLspSession current = lsp;
             if (current == null || current.isClosed()) {
                 closeSocket(StatusCode.SERVER_ERROR, "language server session is unavailable");
                 return;
             }
-            current.receive(message);
+            current.receive(translated);
             socket.demand();
         } catch (RuntimeException | IOException e) {
             closeSocket(StatusCode.POLICY_VIOLATION, "session is no longer authorized");
