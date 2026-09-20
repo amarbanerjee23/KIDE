@@ -53,21 +53,21 @@ Every production candidate must eventually prove:
 | E04 | Organization/project/workspace model | Stable organization → portfolio → project → workspace identities and metadata | Completed |
 | E05 | Identity and authorization | OIDC-ready identity abstraction and least-privilege authorization | PR17-PR18 |
 | E06 | Audit and engineering event model | Append-oriented actor/action/resource/outcome evidence with correlation IDs | PR19 |
-| E07 | Service/API boundary | Versioned contracts between clients and shared enterprise services | PR20-PR21, PR26-PR27 |
-| E08 | Model gateway | Governed provider/model routing, classification, quotas, redaction and retention controls | PR40 |
-| E09 | Knowledge fabric | Project/enterprise knowledge graph, semantic retrieval, lineage and source authority | PR32-PR33 |
-| E10 | AI context and provenance | Exact source/context/model/tool provenance for generated engineering changes | PR40 |
-| E11 | Policy as code | Organization/project policies enforced in clients, services and CI with explainable decisions | PR40 |
-| E12 | Agent/tool execution | Capability registry, sandbox/bounds, timeouts, cancellation and auditable tool calls | PR40 |
-| E13 | Human approvals | Risk-tiered approval gates for engineering and production-affecting actions | PR40 |
-| E14 | Git/PR lifecycle | Traceable branches, commits, reviews and evidence links | PR39 |
-| E15 | Security evidence | SAST/SCA/secrets/IaC/container inputs, SBOMs, vulnerability evidence | PR41 |
-| E16 | Sustainability evidence | Resource/carbon measurement, regression budgets and C3-ECO-aligned evidence | PR41 |
-| E17 | Workflow execution | Durable/sandboxed execution, retries, idempotency and recovery | PR38, PR40 and PR42 |
-| E18 | Observability/support | Structured diagnostics, health checks, tracing and privacy-safe support bundles | PR41 |
-| E19 | Shared-service deployment | HA/on-prem/air-gap deployment model used by desktop and web | PR42 |
-| E20 | Connector and extension SDK | Stable versioned APIs for SCM, ALM/PLM, simulation, security and organization extensions | PR39 |
-| E21 | Enterprise qualification | Upgrade/failover/load/security/offline/compatibility qualification and release acceptance | PR44 |
+| E07 | Service/API boundary | Versioned contracts between clients and shared enterprise services | PR20-PR21, PR26-PR28 |
+| E08 | Model gateway | Governed provider/model routing, classification, quotas, redaction and retention controls | PR41 |
+| E09 | Knowledge fabric | Project/enterprise knowledge graph, semantic retrieval, lineage and source authority | PR33-PR34 |
+| E10 | AI context and provenance | Exact source/context/model/tool provenance for generated engineering changes | PR41 |
+| E11 | Policy as code | Organization/project policies enforced in clients, services and CI with explainable decisions | PR41 |
+| E12 | Agent/tool execution | Capability registry, sandbox/bounds, timeouts, cancellation and auditable tool calls | PR41 |
+| E13 | Human approvals | Risk-tiered approval gates for engineering and production-affecting actions | PR41 |
+| E14 | Git/PR lifecycle | Traceable branches, commits, reviews and evidence links | PR40 |
+| E15 | Security evidence | SAST/SCA/secrets/IaC/container inputs, SBOMs, vulnerability evidence | PR42 |
+| E16 | Sustainability evidence | Resource/carbon measurement, regression budgets and C3-ECO-aligned evidence | PR42 |
+| E17 | Workflow execution | Durable/sandboxed execution, retries, idempotency and recovery | PR39, PR41 and PR43 |
+| E18 | Observability/support | Structured diagnostics, health checks, tracing and privacy-safe support bundles | PR42 |
+| E19 | Shared-service deployment | HA/on-prem/air-gap deployment model used by desktop and web | PR43 |
+| E20 | Connector and extension SDK | Stable versioned APIs for SCM, ALM/PLM, simulation, security and organization extensions | PR40 |
+| E21 | Enterprise qualification | Upgrade/failover/load/security/offline/compatibility qualification and release acceptance | PR45 |
 
 ## Completed baseline: E01-E04
 
@@ -106,16 +106,18 @@ E04 established stable organization → portfolio → project → workspace cont
 
 ## Next execution point
 
-PR22 and stabilization PR23-PR25 are merged. PR26 is merged, but the first
-post-merge packaged build failed because the new HTTP runtime omitted a direct
-`org.eclipse.jetty.http` OSGi dependency.
+PR22 through PR27 are merged. PR27 restored the Jetty HTTP OSGi dependency and
+per-language rename compatibility, but it was merged before the exact-head full
+build finished. The post-merge build then failed the secure WebSocket packaged
+qualification.
 
-**PR27 is active as a strict post-merge stabilization PR.** It restores the
-missing Jetty HTTP bundle dependency and also corrects the PR25 rename regression:
-Xtext resolves `IRenameStrategy2` from each language resource service provider,
-not from the global server injector. PR27 fixes that boundary without relaxing
-compiler restrictions or skipping qualification.
+**PR28 is active as a strict gateway stabilization PR.** The failure is a lifecycle
+race in embedded Xtext sessions: Xtext's default shutdown/exit handler calls
+`System.exit`, so a valid client `shutdown` + `exit` can terminate the shared
+gateway JVM before reconnect qualification and the success marker. PR28 binds the
+no-op shutdown/exit handler explicitly for in-process sessions so exit remains
+session-local, while preserving all security, authorization and LSP gates.
 
-PR28 starts the separate React/TypeScript web workspace only after the packaged
-build, ordinary LSP smoke, secure WebSocket smoke, PR26 HTTP self-check and LSP
-parity qualification are all green.
+PR29 starts the separate React/TypeScript web workspace only after PR28's exact
+head is fully green across desktop packaging, enterprise runtime, ordinary LSP,
+secure WebSocket, HTTP API and LSP parity qualification.
