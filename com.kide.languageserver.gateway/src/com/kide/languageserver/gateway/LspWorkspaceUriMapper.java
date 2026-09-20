@@ -26,6 +26,7 @@ public final class LspWorkspaceUriMapper {
 
     private final Path projectRoot;
     private final Path projectRootReal;
+    private volatile boolean virtualClient;
 
     public LspWorkspaceUriMapper(GatewayWorkspaceBinding binding) {
         GatewayWorkspaceBinding required =
@@ -100,12 +101,13 @@ public final class LspWorkspaceUriMapper {
 
         if (inbound) {
             if (SCHEME.equalsIgnoreCase(uri.getScheme())) {
+                virtualClient = true;
                 return browserUriToFile(uri).toUri().toString();
             }
             return raw;
         }
 
-        if ("file".equalsIgnoreCase(uri.getScheme())) {
+        if (virtualClient && "file".equalsIgnoreCase(uri.getScheme())) {
             return fileUriToBrowser(uri);
         }
         return raw;
