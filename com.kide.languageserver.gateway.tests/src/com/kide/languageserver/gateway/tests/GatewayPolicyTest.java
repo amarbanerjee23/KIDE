@@ -154,6 +154,34 @@ public class GatewayPolicyTest {
     }
 
     @Test
+    public void forwardedProtoTrustRequiresExplicitProxyAddresses() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GatewayConfig(
+                        "127.0.0.1",
+                        8443,
+                        Duration.ofMinutes(5),
+                        1024 * 1024,
+                        2400,
+                        true,
+                        true,
+                        Set.of(),
+                        Set.of()));
+
+        GatewayConfig trusted = new GatewayConfig(
+                "127.0.0.1",
+                8443,
+                Duration.ofMinutes(5),
+                1024 * 1024,
+                2400,
+                true,
+                true,
+                Set.of("127.0.0.1"),
+                Set.of());
+        assertEquals(Set.of("127.0.0.1"), trusted.trustedProxyAddresses());
+    }
+
+    @Test
     public void secureGatewayDefaultsAreBounded() {
         GatewayConfig config = GatewayConfig.secureDefault(8443);
         assertTrue(config.requireSecureTransport());
