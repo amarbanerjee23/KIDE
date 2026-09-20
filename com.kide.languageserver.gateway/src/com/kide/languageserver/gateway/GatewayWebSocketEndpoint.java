@@ -1,6 +1,7 @@
 package com.kide.languageserver.gateway;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.Clock;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -105,6 +106,12 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
         } catch (RuntimeException | IOException e) {
             closeSocket(StatusCode.POLICY_VIOLATION, "session is no longer authorized");
         }
+    }
+
+    @Override
+    public void onWebSocketBinary(ByteBuffer payload, Callback callback) {
+        callback.succeed();
+        closeSocket(StatusCode.BAD_DATA, "binary WebSocket messages are not supported");
     }
 
     @Override
