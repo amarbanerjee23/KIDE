@@ -66,12 +66,17 @@ run, exposed a deterministic WebSocket gateway defect: an embedded Xtext LSP
 session processed a valid `shutdown` + `exit` using Xtext's default handler,
 which calls `System.exit` and can terminate the shared gateway JVM.
 
-**PR28 is the active post-merge stabilization PR.** It binds
+**PR28 is the active post-merge stabilization PR.** It fixes two independently
+exposed runtime defects. First, it binds
 `ILanguageServerShutdownAndExitHandler.NullImpl` explicitly for in-process
-gateway sessions and retains deterministic stage evidence in the packaged
-self-check. This makes client exit session-local instead of process-wide.
+gateway sessions so client exit is session-local instead of process-wide.
+Second, it restores the final IDE-aware language providers into Xtext's global
+registry after all generated setups complete. This is required because older
+generated setups can re-register transitive dependencies (notably DML) with a
+runtime-only provider, while `RenameService2` resolves its registry from the
+language injector/global registry rather than only the server-local registry.
 
 PR29 begins the separate React/TypeScript web workspace only after PR28's exact
 head passes the full Tycho build, standalone desktop packaging, all enterprise
 runtime self-checks, ordinary multi-DSL LSP smoke, secure WebSocket qualification,
-PR26 HTTP self-check and LSP feature parity.
+PR26 HTTP self-check and LSP feature parity including rename.
