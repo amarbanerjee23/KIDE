@@ -1,16 +1,13 @@
 #!/bin/sh
-# Start the KIDE LSP through Equinox's Java launcher, bypassing the GTK native
-# launcher so the server works on CI agents, containers and remote hosts with
-# no X11/Wayland display.
+# Start KIDE headless applications through Equinox's Java launcher, bypassing
+# the GTK native launcher so CI/server workloads do not need X11/Wayland.
 set -eu
 
 BASE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 # JustJ publishes more than one Linux runtime flavour (for example `minimal`
-# and `full.stripped`). The product decides which flavour is materialized, so
-# the headless wrapper must bind to the packaged Linux x86_64 runtime rather
-# than hard-code one JustJ flavour. Deliberately do not fall back to system Java:
-# the standalone server contract requires its embedded runtime.
+# and `full.stripped`). Bind to the packaged runtime and never fall back to
+# system Java: the standalone service contract requires its embedded runtime.
 JAVA=""
 for candidate in "$BASE_DIR"/plugins/org.eclipse.justj.openjdk.hotspot.jre.*.linux.x86_64_*/jre/bin/java; do
   if [ -x "$candidate" ]; then
@@ -19,7 +16,7 @@ for candidate in "$BASE_DIR"/plugins/org.eclipse.justj.openjdk.hotspot.jre.*.lin
   fi
 done
 if [ -z "$JAVA" ]; then
-  echo "KIDE language server: bundled JustJ Linux x86_64 Java runtime was not found" >&2
+  echo "KIDE headless runtime: bundled JustJ Linux x86_64 Java runtime was not found" >&2
   exit 70
 fi
 
@@ -31,15 +28,39 @@ for candidate in "$BASE_DIR"/plugins/org.eclipse.equinox.launcher_*.jar; do
   fi
 done
 if [ -z "$EQUINOX_LAUNCHER" ]; then
-  echo "KIDE language server: Equinox launcher JAR was not found" >&2
+  echo "KIDE headless runtime: Equinox launcher JAR was not found" >&2
   exit 70
+fi
+
+# Normal invocation starts the language server. Packaged qualification and
+# service entrypoints may supply their own -application value (for example the
+# secure gateway/API self-checks). Never prepend the default application when an
+# explicit application was requested: Equinox uses the first occurrence.
+HAS_APPLICATION=false
+for argument in "$@"; do
+  if [ "$argument" = "-application" ]; then
+    HAS_APPLICATION=true
+    break
+  fi
+done
+
+if [ "$HAS_APPLICATION" = "true" ]; then
+  exec "$JAVA" \
+    -Xms128m \
+    -Xmx1024m \
+    -XX:+UseG1GC \
+    -Dosgi.requiredJavaVersion=21 \
+    -jar "$EQUINOX_LAUNCHER" \
+    -configuration "$BASE_DIR/configuration" \
+    -nosplash \
+    "$@"
 fi
 
 exec "$JAVA" \
   -Xms128m \
   -Xmx1024m \
   -XX:+UseG1GC \
-  -Dosgi.requiredJavaVersion=11 \
+  -Dosgi.requiredJavaVersion=21 \
   -jar "$EQUINOX_LAUNCHER" \
   -configuration "$BASE_DIR/configuration" \
   -nosplash \
