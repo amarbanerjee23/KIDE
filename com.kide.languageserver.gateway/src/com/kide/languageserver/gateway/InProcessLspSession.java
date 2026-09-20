@@ -7,10 +7,14 @@ import java.io.PipedOutputStream;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.xtext.ide.server.ILanguageServerShutdownAndExitHandler;
 import org.eclipse.xtext.ide.server.LaunchArgs;
 import org.eclipse.xtext.ide.server.ServerLauncher;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Module;
+import com.google.inject.util.Modules;
 import com.kide.languageserver.KideServerModules;
 
 final class InProcessLspSession implements Closeable {
@@ -45,7 +49,15 @@ final class InProcessLspSession implements Closeable {
 
         serverThread = new Thread(() -> {
             try {
-                ServerLauncher launcher = Guice.createInjector(KideServerModules.create())
+                Module inProcessModule = Modules.override(KideServerModules.create())
+                        .with(new AbstractModule() {
+                            @Override
+                            protected void configure() {
+                                bind(ILanguageServerShutdownAndExitHandler.class)
+                                        .to(ILanguageServerShutdownAndExitHandler.NullImpl.class);
+                            }
+                        });
+                ServerLauncher launcher = Guice.createInjector(inProcessModule)
                         .getInstance(ServerLauncher.class);
                 LaunchArgs args = new LaunchArgs();
                 args.setIn(serverInput);
