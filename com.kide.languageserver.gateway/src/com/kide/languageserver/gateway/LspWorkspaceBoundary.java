@@ -19,9 +19,21 @@ public final class LspWorkspaceBoundary {
     private final Path projectRoot;
     private final Path projectRootReal;
 
+    public LspWorkspaceBoundary(Path projectRoot) {
+        this.projectRoot = java.util.Objects.requireNonNull(projectRoot, "projectRoot")
+                .toAbsolutePath().normalize();
+        try {
+            if (!Files.isDirectory(this.projectRoot)) {
+                throw new IllegalArgumentException("projectRoot must be an existing directory");
+            }
+            this.projectRootReal = this.projectRoot.toRealPath();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("projectRoot cannot be canonicalized", e);
+        }
+    }
+
     public LspWorkspaceBoundary(GatewayWorkspaceBinding binding) {
-        this.projectRoot = binding.projectRoot();
-        this.projectRootReal = binding.projectRootReal();
+        this(java.util.Objects.requireNonNull(binding, "binding").projectRoot());
     }
 
     public void requireWithinProject(String jsonRpcMessage) {
