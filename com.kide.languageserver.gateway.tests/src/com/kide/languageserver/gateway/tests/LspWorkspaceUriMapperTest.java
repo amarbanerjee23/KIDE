@@ -53,6 +53,36 @@ public class LspWorkspaceUriMapperTest {
     }
 
     @Test
+    public void nativeFileUriSessionsKeepNativeUris() throws Exception {
+        Path root = Files.createTempDirectory("kide-pr31-uri-native-");
+        try {
+            Path workspace = Files.createDirectories(root.resolve("workspace"));
+            Path project = Files.createDirectories(root.resolve("project"));
+            Path model = Files.writeString(project.resolve("native.dml"), "DataModel Native {}");
+            EnterpriseContextResult provisioned = new EnterpriseContextStore().provision(
+                    workspace, project, "Org", "Portfolio", "Project", "Workspace");
+            LspWorkspaceUriMapper mapper = new LspWorkspaceUriMapper(
+                    new GatewayWorkspaceBinding(provisioned.context().orElseThrow(), project));
+
+            String inbound = "{\"jsonrpc\":\"2.0\",\"params\":{\"rootUri\":\""
+                    + project.toUri() + "\"}}";
+            assertTrue(mapper.toServer(inbound).contains(project.toUri().toString()));
+
+            String outbound = "{\"jsonrpc\":\"2.0\",\"params\":{\"uri\":\""
+                    + model.toUri() + "\"}}";
+            String nativeResult = mapper.toClient(outbound);
+            assertTrue(nativeResult.contains(model.toUri().toString()));
+            assertFalse(nativeResult.contains("kide-workspace:"));
+        } finally {
+            try (var stream = Files.walk(root)) {
+                stream.sorted(java.util.Comparator.reverseOrder()).forEach(path -> {
+                    try { Files.deleteIfExists(path); } catch (java.io.IOException ignored) { }
+                });
+            }
+        }
+    }
+
+    @Test
     public void traversalAndOutsideServerUrisFailClosed() throws Exception {
         Path root = Files.createTempDirectory("kide-pr31-uri-deny-");
         try {
