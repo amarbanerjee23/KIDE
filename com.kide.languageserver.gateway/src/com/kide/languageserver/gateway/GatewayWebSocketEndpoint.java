@@ -18,6 +18,7 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
     private final AuthenticatedSession authenticatedSession;
     private final ServerAuthorizationGate authorization;
     private final EnterpriseContext enterpriseContext;
+    private final LspWorkspaceBoundary workspaceBoundary;
     private final GatewayMessagePolicy messagePolicy;
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -28,12 +29,15 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
             GatewayConfig config,
             AuthenticatedSession authenticatedSession,
             ServerAuthorizationGate authorization,
-            EnterpriseContext enterpriseContext,
+            GatewayWorkspaceBinding workspaceBinding,
             Clock clock) {
         this.config = Objects.requireNonNull(config, "config");
         this.authenticatedSession = Objects.requireNonNull(authenticatedSession, "authenticatedSession");
         this.authorization = Objects.requireNonNull(authorization, "authorization");
-        this.enterpriseContext = Objects.requireNonNull(enterpriseContext, "enterpriseContext");
+        GatewayWorkspaceBinding binding =
+                Objects.requireNonNull(workspaceBinding, "workspaceBinding");
+        this.enterpriseContext = binding.context();
+        this.workspaceBoundary = new LspWorkspaceBoundary(binding);
         this.messagePolicy = new GatewayMessagePolicy(
                 config.maxTextMessageBytes(), config.maxMessagesPerMinute(), clock);
     }
@@ -90,6 +94,7 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
                     authenticatedSession, enterpriseContext);
             authorization.requireLspWorkspaceAccess(
                     authenticatedSession, enterpriseContext);
+            workspaceBoundary.requireWithinProject(message);
             InProcessLspSession current = lsp;
             if (current == null || current.isClosed()) {
                 closeSocket(StatusCode.SERVER_ERROR, "language server session is unavailable");
