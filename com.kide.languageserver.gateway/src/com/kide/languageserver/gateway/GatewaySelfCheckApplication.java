@@ -110,24 +110,31 @@ public final class GatewaySelfCheckApplication implements IApplication {
                     + URLEncoder.encode(context.workspace().id().value(), StandardCharsets.UTF_8));
 
             stage = "unauthorized-handshake";
+            stage(stage);
             if (!unauthorizedHandshakeIsDenied(endpoint)) {
                 return fail("unauthorized WebSocket upgrade was accepted");
             }
 
             stage = "privilege-revocation";
+            stage(stage);
             runPrivilegeRevocationQualification(
                     endpoint, project, policyStore, engineerBinding);
             Path outsideProject = Files.createDirectories(root.resolve("outside-project"));
             stage = "path-isolation";
+            stage(stage);
             runPathIsolationQualification(endpoint, outsideProject);
             stage = "binary-rejection";
+            stage(stage);
             runBinaryRejectionQualification(endpoint);
             stage = "five-language-lsp";
+            stage(stage);
             runFullLanguageQualification(endpoint, project);
             stage = "reconnect";
+            stage(stage);
             runReconnectQualification(endpoint, project);
 
             System.out.println("KIDE PR22 SECURE LSP WEBSOCKET SELF-CHECK OK");
+            System.out.flush();
             return IApplication.EXIT_OK;
         } catch (Exception e) {
             return fail("guarded self-check failure at " + stage
@@ -423,8 +430,14 @@ public final class GatewaySelfCheckApplication implements IApplication {
         return simple == null || simple.isBlank() ? last.getClass().getName() : simple;
     }
 
+    private static void stage(String stage) {
+        System.out.println("KIDE PR22 SELF-CHECK STAGE: " + stage);
+        System.out.flush();
+    }
+
     private static Integer fail(String message) {
         System.err.println("KIDE PR22 SECURE LSP WEBSOCKET SELF-CHECK FAILED: " + message);
+        System.err.flush();
         return Integer.valueOf(2);
     }
 
