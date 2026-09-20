@@ -110,7 +110,12 @@ PR22 and stabilization PR23-PR25 are merged. PR26 is merged, but the first
 post-merge packaged build failed because the new HTTP runtime omitted a direct
 `org.eclipse.jetty.http` OSGi dependency.
 
-**PR27 is active as a strict PR26 stabilization PR.** It restores the missing
-bundle dependency without relaxing compiler access restrictions or skipping any
-qualification. PR28 starts the separate React/TypeScript web workspace only after
-the packaged build and PR26 HTTP self-check are green.
+**PR27 is active as a strict post-merge stabilization PR.** It restores the
+missing Jetty HTTP bundle dependency and also corrects the PR25 rename regression:
+Xtext resolves `IRenameStrategy2` from each language resource service provider,
+not from the global server injector. PR27 fixes that boundary without relaxing
+compiler restrictions or skipping qualification.
+
+PR28 starts the separate React/TypeScript web workspace only after the packaged
+build, ordinary LSP smoke, secure WebSocket smoke, PR26 HTTP self-check and LSP
+parity qualification are all green.
