@@ -137,7 +137,7 @@ function grammarFor(asset: LanguageAsset): IRawGrammar {
       }
     }
   };
-  return raw as IRawGrammar;
+  return raw as unknown as IRawGrammar;
 }
 
 function tokenClass(scopes: string[]): string {
