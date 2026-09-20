@@ -14,7 +14,7 @@ import com.kide.enterprise.authorization.ServerAuthorizationGate;
 import com.kide.enterprise.context.EnterpriseContext;
 import com.kide.enterprise.identity.AuthenticatedSession;
 
-final class GatewayWebSocketEndpoint implements Session.Listener {
+public final class GatewayWebSocketEndpoint implements Session.Listener {
     private final GatewayConfig config;
     private final AuthenticatedSession authenticatedSession;
     private final ServerAuthorizationGate authorization;
