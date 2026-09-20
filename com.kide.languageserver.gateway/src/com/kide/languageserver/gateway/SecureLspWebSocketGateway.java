@@ -83,7 +83,8 @@ public final class SecureLspWebSocketGateway implements AutoCloseable {
                                 response.setAcceptedSubProtocol(
                                         BrowserWebSocketCredential.LSP_PROTOCOL);
                             }
-                            return new GatewayWebSocketEndpoint(config, session, clock);
+                            return new GatewayWebSocketEndpoint(
+                                    config, session, authorization, enterpriseContext, clock);
                         } catch (AuthenticationException failure) {
                             if (session != null) session.close();
                             response.setStatus(401);
