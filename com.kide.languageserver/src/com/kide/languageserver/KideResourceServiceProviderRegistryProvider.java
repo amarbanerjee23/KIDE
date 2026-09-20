@@ -7,14 +7,21 @@ import java.util.Map;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.xtext.ISetup;
+import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.xtext.ide.refactoring.IRenameStrategy2;
+import org.eclipse.xtext.ide.server.Document;
+import org.eclipse.xtext.ide.server.symbol.DocumentSymbolService;
+import org.eclipse.xtext.ide.server.symbol.HierarchicalDocumentSymbolService;
+import org.eclipse.xtext.naming.QualifiedName;
 import org.eclipse.xtext.parser.IEncodingProvider;
 import org.eclipse.xtext.resource.FileExtensionProvider;
 import org.eclipse.xtext.resource.IContainer;
 import org.eclipse.xtext.resource.IResourceDescription;
 import org.eclipse.xtext.resource.IResourceServiceProvider;
 import org.eclipse.xtext.resource.IResourceServiceProviderExtension;
+import org.eclipse.xtext.resource.XtextResource;
 import org.eclipse.xtext.resource.impl.ResourceServiceProviderRegistryImpl;
+import org.eclipse.xtext.util.CancelIndicator;
 import org.eclipse.xtext.validation.IResourceValidator;
 import org.osgi.framework.Bundle;
 
@@ -120,11 +127,22 @@ public final class KideResourceServiceProviderRegistryProvider
             Injector injector,
             IResourceServiceProvider delegate) {
         IRenameStrategy2 renameStrategy = delegate.get(IRenameStrategy2.class);
-        if (renameStrategy != null) return delegate;
+        if (renameStrategy == null) {
+            IRenameStrategy2.DefaultImpl fallback = new IRenameStrategy2.DefaultImpl();
+            injector.injectMembers(fallback);
+            renameStrategy = fallback;
+        }
 
-        IRenameStrategy2.DefaultImpl fallback = new IRenameStrategy2.DefaultImpl();
-        injector.injectMembers(fallback);
-        return new RenameCompatibleResourceServiceProvider(delegate, fallback);
+        SimpleNameDocumentSymbolService documentSymbols =
+                new SimpleNameDocumentSymbolService();
+        injector.injectMembers(documentSymbols);
+
+        SimpleNameHierarchicalDocumentSymbolService hierarchicalSymbols =
+                new SimpleNameHierarchicalDocumentSymbolService();
+        injector.injectMembers(hierarchicalSymbols);
+
+        return new RenameCompatibleResourceServiceProvider(
+                delegate, renameStrategy, documentSymbols, hierarchicalSymbols);
     }
 
     private ISetup instantiate(LanguageSetup language) {
@@ -162,12 +180,18 @@ public final class KideResourceServiceProviderRegistryProvider
 
         private final IResourceServiceProvider delegate;
         private final IRenameStrategy2 renameStrategy;
+        private final DocumentSymbolService documentSymbols;
+        private final HierarchicalDocumentSymbolService hierarchicalSymbols;
 
         private RenameCompatibleResourceServiceProvider(
                 IResourceServiceProvider delegate,
-                IRenameStrategy2 renameStrategy) {
+                IRenameStrategy2 renameStrategy,
+                DocumentSymbolService documentSymbols,
+                HierarchicalDocumentSymbolService hierarchicalSymbols) {
             this.delegate = delegate;
             this.renameStrategy = renameStrategy;
+            this.documentSymbols = documentSymbols;
+            this.hierarchicalSymbols = hierarchicalSymbols;
         }
 
         @Override
@@ -200,6 +224,12 @@ public final class KideResourceServiceProviderRegistryProvider
             if (IRenameStrategy2.class.equals(type)) {
                 return type.cast(renameStrategy);
             }
+            if (DocumentSymbolService.class.equals(type)) {
+                return type.cast(documentSymbols);
+            }
+            if (HierarchicalDocumentSymbolService.class.equals(type)) {
+                return type.cast(hierarchicalSymbols);
+            }
             return delegate.get(type);
         }
 
@@ -209,6 +239,49 @@ public final class KideResourceServiceProviderRegistryProvider
                 return extension.isSource(uri);
             }
             return !uri.isArchive();
+        }
+    }
+
+    /**
+     * The pre-modernization KIDE clients expose simple symbol labels even when
+     * model scoping uses qualified names. Keep that display contract at the
+     * LSP boundary without changing model identity or linking semantics.
+     */
+    private static final class SimpleNameDocumentSymbolService
+            extends DocumentSymbolService {
+        @Override
+        protected String getSymbolName(QualifiedName qualifiedName) {
+            return qualifiedName == null ? null : qualifiedName.getLastSegment();
+        }
+    }
+
+    private static final class SimpleNameHierarchicalDocumentSymbolService
+            extends HierarchicalDocumentSymbolService {
+        @Override
+        public List<DocumentSymbol> getSymbols(
+                XtextResource resource,
+                CancelIndicator cancelIndicator) {
+            List<DocumentSymbol> symbols = super.getSymbols(resource, cancelIndicator);
+            for (DocumentSymbol symbol : symbols) {
+                simplify(symbol);
+            }
+            return symbols;
+        }
+
+        private static void simplify(DocumentSymbol symbol) {
+            String name = symbol.getName();
+            if (name != null) {
+                int separator = name.lastIndexOf('.');
+                if (separator >= 0 && separator + 1 < name.length()) {
+                    symbol.setName(name.substring(separator + 1));
+                }
+            }
+            List<DocumentSymbol> children = symbol.getChildren();
+            if (children != null) {
+                for (DocumentSymbol child : children) {
+                    simplify(child);
+                }
+            }
         }
     }
 
