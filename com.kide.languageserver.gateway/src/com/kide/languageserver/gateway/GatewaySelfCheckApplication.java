@@ -5,6 +5,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -114,6 +115,7 @@ public final class GatewaySelfCheckApplication implements IApplication {
                     endpoint, project, policyStore, engineerBinding);
             Path outsideProject = Files.createDirectories(root.resolve("outside-project"));
             runPathIsolationQualification(endpoint, outsideProject);
+            runBinaryRejectionQualification(endpoint);
             runFullLanguageQualification(endpoint, project);
             runReconnectQualification(endpoint, project);
 
@@ -203,6 +205,29 @@ public final class GatewaySelfCheckApplication implements IApplication {
             if (!closedByServer) {
                 try {
                     socket.sendClose(WebSocket.NORMAL_CLOSURE, "path isolation cleanup").join();
+                } catch (RuntimeException ignored) {
+                    // The server may already have closed the socket.
+                }
+            }
+        }
+    }
+
+    private static void runBinaryRejectionQualification(URI endpoint) throws Exception {
+        ProbeListener listener = new ProbeListener();
+        WebSocket socket = connect(endpoint, listener);
+        boolean closedByServer = false;
+        try {
+            socket.sendBinary(ByteBuffer.wrap(new byte[] { 1, 2, 3 }), true).join();
+            Integer closeCode = listener.closeCodes.poll(10, TimeUnit.SECONDS);
+            if (closeCode == null || closeCode.intValue() != 1003) {
+                throw new IllegalStateException(
+                        "binary WebSocket message was not rejected with unsupported-data close");
+            }
+            closedByServer = true;
+        } finally {
+            if (!closedByServer) {
+                try {
+                    socket.sendClose(WebSocket.NORMAL_CLOSURE, "binary cleanup").join();
                 } catch (RuntimeException ignored) {
                     // The server may already have closed the socket.
                 }
