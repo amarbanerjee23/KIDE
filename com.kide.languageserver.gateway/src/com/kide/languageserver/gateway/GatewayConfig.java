@@ -10,6 +10,7 @@ public record GatewayConfig(
         Duration idleTimeout,
         int maxTextMessageBytes,
         int maxMessagesPerMinute,
+        int maxConcurrentSessions,
         boolean requireSecureTransport,
         boolean trustForwardedProto,
         Set<String> trustedProxyAddresses,
@@ -29,6 +30,9 @@ public record GatewayConfig(
         if (maxMessagesPerMinute < 1 || maxMessagesPerMinute > 100_000) {
             throw new IllegalArgumentException("maxMessagesPerMinute out of supported range");
         }
+        if (maxConcurrentSessions < 1 || maxConcurrentSessions > 10_000) {
+            throw new IllegalArgumentException("maxConcurrentSessions out of supported range");
+        }
         trustedProxyAddresses = trustedProxyAddresses == null
                 ? Set.of() : Set.copyOf(trustedProxyAddresses);
         if (trustForwardedProto && trustedProxyAddresses.isEmpty()) {
@@ -41,7 +45,7 @@ public record GatewayConfig(
     public static GatewayConfig secureDefault(int port) {
         return new GatewayConfig(
                 "127.0.0.1", port, Duration.ofMinutes(5),
-                1024 * 1024, 2400, true, false, Set.of(), Set.of());
+                1024 * 1024, 2400, 128, true, false, Set.of(), Set.of());
     }
 
     public boolean loopbackBind() {
