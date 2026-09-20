@@ -330,17 +330,25 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                         "textDocument/documentSymbol",
                         {"textDocument": {"uri": uri}},
                     ).get("result")
-                    if probe["symbol"] not in symbol_names(document_symbols):
+                    expected_document_symbol = probe.get(
+                        "document_symbol", probe["symbol"]
+                    )
+                    if expected_document_symbol not in symbol_names(document_symbols):
                         raise SmokeFailure(
-                            f".{extension} document symbols missing {probe['symbol']!r}: {document_symbols}"
+                            f".{extension} document symbols missing "
+                            f"{expected_document_symbol!r}: {document_symbols}"
                         )
 
                     workspace_symbols = rpc(
                         "workspace/symbol", {"query": probe["symbol"]}
                     ).get("result")
-                    if probe["symbol"] not in symbol_names(workspace_symbols):
+                    expected_workspace_symbol = probe.get(
+                        "workspace_symbol", probe["symbol"]
+                    )
+                    if expected_workspace_symbol not in symbol_names(workspace_symbols):
                         raise SmokeFailure(
-                            f".{extension} workspace symbols missing {probe['symbol']!r}: {workspace_symbols}"
+                            f".{extension} workspace symbols missing "
+                            f"{expected_workspace_symbol!r}: {workspace_symbols}"
                         )
 
                     formatting = rpc(
