@@ -1,6 +1,5 @@
 package com.kide.languageserver;
 
-import org.eclipse.xtext.ide.refactoring.IRenameStrategy2;
 import org.eclipse.xtext.ide.server.ServerModule;
 import org.eclipse.xtext.resource.IResourceServiceProvider;
 
@@ -21,7 +20,6 @@ public final class KideServerModules {
             @Override
             protected void configure() {
                 bind(IResourceServiceProvider.Registry.class).toProvider(registryProvider);
-                bind(IRenameStrategy2.class).to(IRenameStrategy2.DefaultImpl.class);
             }
         });
     }
