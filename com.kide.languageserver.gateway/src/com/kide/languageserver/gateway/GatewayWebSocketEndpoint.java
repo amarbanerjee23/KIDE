@@ -9,11 +9,15 @@ import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 
+import com.kide.enterprise.authorization.ServerAuthorizationGate;
+import com.kide.enterprise.context.EnterpriseContext;
 import com.kide.enterprise.identity.AuthenticatedSession;
 
 final class GatewayWebSocketEndpoint implements Session.Listener {
     private final GatewayConfig config;
     private final AuthenticatedSession authenticatedSession;
+    private final ServerAuthorizationGate authorization;
+    private final EnterpriseContext enterpriseContext;
     private final GatewayMessagePolicy messagePolicy;
     private final AtomicBoolean closed = new AtomicBoolean();
 
@@ -23,9 +27,13 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
     GatewayWebSocketEndpoint(
             GatewayConfig config,
             AuthenticatedSession authenticatedSession,
+            ServerAuthorizationGate authorization,
+            EnterpriseContext enterpriseContext,
             Clock clock) {
         this.config = Objects.requireNonNull(config, "config");
         this.authenticatedSession = Objects.requireNonNull(authenticatedSession, "authenticatedSession");
+        this.authorization = Objects.requireNonNull(authorization, "authorization");
+        this.enterpriseContext = Objects.requireNonNull(enterpriseContext, "enterpriseContext");
         this.messagePolicy = new GatewayMessagePolicy(
                 config.maxTextMessageBytes(), config.maxMessagesPerMinute(), clock);
     }
@@ -78,6 +86,10 @@ final class GatewayWebSocketEndpoint implements Session.Listener {
         }
         try {
             authenticatedSession.requireActive();
+            authorization.requireWebSocketWorkspaceAccess(
+                    authenticatedSession, enterpriseContext);
+            authorization.requireLspWorkspaceAccess(
+                    authenticatedSession, enterpriseContext);
             InProcessLspSession current = lsp;
             if (current == null || current.isClosed()) {
                 closeSocket(StatusCode.SERVER_ERROR, "language server session is unavailable");
