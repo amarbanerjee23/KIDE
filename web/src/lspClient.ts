@@ -146,12 +146,12 @@ export class KideLspClient {
     this.socket = socket;
 
     await new Promise<void>((resolve, reject) => {
-      const timer = window.setTimeout(
+      const timer = globalThis.setTimeout(
         () => reject(new Error("Language service connection timed out.")),
         10_000
       );
       socket.addEventListener("open", () => {
-        window.clearTimeout(timer);
+        globalThis.clearTimeout(timer);
         if (socket.protocol && socket.protocol !== "kide.lsp.v1") {
           reject(new Error("Language service negotiated an unexpected WebSocket protocol."));
           return;
@@ -159,7 +159,7 @@ export class KideLspClient {
         resolve();
       }, { once: true });
       socket.addEventListener("error", () => {
-        window.clearTimeout(timer);
+        globalThis.clearTimeout(timer);
         reject(new Error("Language service WebSocket could not be opened."));
       }, { once: true });
     });
@@ -309,7 +309,6 @@ export class KideLspClient {
 
   async dispose(): Promise<void> {
     const socket = this.socket;
-    this.socket = undefined;
     if (!socket) return;
     if (socket.readyState === WebSocket.OPEN) {
       try {
@@ -320,6 +319,7 @@ export class KideLspClient {
       }
       socket.close(1000, "KIDE web language client closed");
     }
+    this.socket = undefined;
     this.connected = false;
     this.rejectPending(new Error("Language service client disposed."));
   }
@@ -328,7 +328,7 @@ export class KideLspClient {
     const socket = this.requireSocket();
     const id = this.nextId++;
     return new Promise<T>((resolve, reject) => {
-      const timer = window.setTimeout(() => {
+      const timer = globalThis.setTimeout(() => {
         this.pending.delete(id);
         reject(new Error(`Language service request timed out: ${method}`));
       }, 15_000);
@@ -375,7 +375,7 @@ export class KideLspClient {
       const pending = this.pending.get(message.id);
       if (!pending) return;
       this.pending.delete(message.id);
-      window.clearTimeout(pending.timer);
+      globalThis.clearTimeout(pending.timer);
       if (message.error && typeof message.error === "object") {
         const error = message.error as { message?: string; code?: number };
         pending.reject(new Error(
@@ -454,7 +454,7 @@ export class KideLspClient {
 
   private rejectPending(error: Error): void {
     for (const pending of this.pending.values()) {
-      window.clearTimeout(pending.timer);
+      globalThis.clearTimeout(pending.timer);
       pending.reject(error);
     }
     this.pending.clear();
