@@ -81,9 +81,12 @@ permissions fail closed.
 Secure transport is required by default.
 
 For TLS terminated at a trusted reverse proxy, set
-`KIDE_GATEWAY_TRUST_FORWARDED_PROTO=true` and configure the proxy to overwrite,
-not append or pass through, `X-Forwarded-Proto`. The request is accepted only
-when the trusted value is `https`.
+`KIDE_GATEWAY_TRUST_FORWARDED_PROTO=true` and configure
+`KIDE_GATEWAY_TRUSTED_PROXY_ADDRESSES` as a comma-separated list of the proxy
+peer IP addresses permitted to assert transport security. Forwarded-proto trust
+is rejected at startup if this allowlist is empty. The proxy must overwrite, not
+append or pass through, `X-Forwarded-Proto`. The request is accepted only when
+the immediate peer is allowlisted and the trusted value is `https`.
 
 For local development/self-check only,
 `KIDE_GATEWAY_ALLOW_INSECURE_LOOPBACK=true` is accepted only when the gateway
@@ -115,8 +118,10 @@ Defaults:
 - message rate: 2400/minute per session.
 
 All are bounded and configurable. Oversized messages close with WebSocket 1009;
-rate violations close with 1008. The gateway uses Jetty's own message-size and
-idle controls in addition to KIDE's explicit policy.
+rate violations close with 1008. The LSP transport is text-only; binary WebSocket
+messages are explicitly completed and closed with RFC 6455 code 1003 rather than
+being left unread. The gateway uses Jetty's own message-size and idle controls in
+addition to KIDE's explicit policy.
 
 The LSP runtime is in-process and per-session; no operating-system child language
 server process is spawned, so closing a WebSocket cannot leave an orphan LS
@@ -132,13 +137,14 @@ The headless KIDE product executes
 3. opens an authenticated browser-style WebSocket using the credential subprotocol;
 4. proves revoking the live role binding closes the already-open socket;
 5. proves an LSP initialize rooted outside the authorized project is rejected;
-6. performs LSP initialize;
-7. opens and changes documents for DML, Operation, MNC, Capability and Activity;
-8. requires diagnostics for every opened language;
-9. forwards a `$/cancelRequest` notification;
-10. performs LSP shutdown/exit;
-11. reconnects and repeats initialize/shutdown; and
-12. shuts down the Jetty gateway and all in-process LSP sessions.
+6. proves binary WebSocket payloads are rejected with code 1003;
+7. performs LSP initialize;
+8. opens and changes documents for DML, Operation, MNC, Capability and Activity;
+9. requires diagnostics for every opened language;
+10. forwards a `$/cancelRequest` notification;
+11. performs LSP shutdown/exit;
+12. reconnects and repeats initialize/shutdown; and
+13. shuts down the Jetty gateway and all in-process LSP sessions.
 
 This packaged test runs from the customer-consumable headless product, not from a
 source-only test harness.
