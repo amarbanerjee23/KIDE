@@ -2,17 +2,13 @@ package com.kide.languageserver.gateway;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Objects;
 
+/**
+ * Compatibility facade. Authentication semantics live in the shared enterprise
+ * identity bundle so REST and WebSocket transports use one implementation.
+ */
 public final class OidcIntrospectionConfig implements AutoCloseable {
-    private final URI endpoint;
-    private final String clientId;
-    private char[] clientSecret;
-    private final String expectedIssuer;
-    private final String requiredAudience;
-    private final Duration requestTimeout;
-    private boolean closed;
+    private final com.kide.enterprise.identity.OidcIntrospectionConfig delegate;
 
     public OidcIntrospectionConfig(
             URI endpoint,
@@ -21,55 +17,21 @@ public final class OidcIntrospectionConfig implements AutoCloseable {
             String expectedIssuer,
             String requiredAudience,
             Duration requestTimeout) {
-        this.endpoint = requireHttps(endpoint);
-        this.clientId = required(clientId, "clientId");
-        if (clientSecret == null || clientSecret.length == 0) {
-            throw new IllegalArgumentException("clientSecret is required");
-        }
-        this.clientSecret = clientSecret.clone();
-        this.expectedIssuer = required(expectedIssuer, "expectedIssuer");
-        this.requiredAudience = required(requiredAudience, "requiredAudience");
-        this.requestTimeout = Objects.requireNonNull(requestTimeout, "requestTimeout");
-        if (requestTimeout.isZero() || requestTimeout.isNegative()) {
-            throw new IllegalArgumentException("requestTimeout must be positive");
-        }
+        delegate = new com.kide.enterprise.identity.OidcIntrospectionConfig(
+                endpoint, clientId, clientSecret, expectedIssuer, requiredAudience, requestTimeout);
     }
 
-    public URI endpoint() { return endpoint; }
-    public String clientId() { return clientId; }
-    public String expectedIssuer() { return expectedIssuer; }
-    public String requiredAudience() { return requiredAudience; }
-    public Duration requestTimeout() { return requestTimeout; }
-
-    public synchronized char[] clientSecretCopy() {
-        if (closed) throw new IllegalStateException("OIDC introspection config is closed");
-        return clientSecret.clone();
-    }
+    com.kide.enterprise.identity.OidcIntrospectionConfig delegate() { return delegate; }
+    public URI endpoint() { return delegate.endpoint(); }
+    public String clientId() { return delegate.clientId(); }
+    public String expectedIssuer() { return delegate.expectedIssuer(); }
+    public String requiredAudience() { return delegate.requiredAudience(); }
+    public Duration requestTimeout() { return delegate.requestTimeout(); }
+    public char[] clientSecretCopy() { return delegate.clientSecretCopy(); }
 
     @Override
-    public synchronized void close() {
-        if (closed) return;
-        Arrays.fill(clientSecret, '\0');
-        clientSecret = new char[0];
-        closed = true;
-    }
+    public void close() { delegate.close(); }
 
     @Override
-    public String toString() {
-        return "OidcIntrospectionConfig[endpoint=" + endpoint
-                + ", clientId=" + clientId + ", clientSecret=[REDACTED]]";
-    }
-
-    private static URI requireHttps(URI uri) {
-        Objects.requireNonNull(uri, "endpoint");
-        if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null) {
-            throw new IllegalArgumentException("OIDC introspection endpoint must use HTTPS");
-        }
-        return uri;
-    }
-
-    private static String required(String value, String field) {
-        if (value == null || value.isBlank()) throw new IllegalArgumentException(field + " is required");
-        return value;
-    }
+    public String toString() { return delegate.toString(); }
 }
