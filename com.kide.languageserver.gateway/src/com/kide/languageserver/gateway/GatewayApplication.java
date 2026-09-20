@@ -52,6 +52,7 @@ public final class GatewayApplication implements IApplication {
                     integer(env, "KIDE_GATEWAY_MAX_MESSAGES_PER_MINUTE", 2400),
                     !allowInsecureLoopback,
                     trustForwarded,
+                    csv(env.get("KIDE_GATEWAY_TRUSTED_PROXY_ADDRESSES")),
                     csv(env.get("KIDE_GATEWAY_ALLOWED_ORIGINS")));
 
             GatewayWorkspaceBinding workspaceBinding = loadContext(env);
