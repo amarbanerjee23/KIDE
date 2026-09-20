@@ -23,8 +23,8 @@ qualified and documented once.
 | --- | --- | --- | --- |
 | **PR26** | Shared enterprise HTTP service runtime | Missing prerequisite between former PR20-22 and web work | Secure `/api/v1` runtime, shared OIDC introspection, RBAC, audit, revision-safe model access, structured unavailable states, packaged headless self-check |
 | **PR27** | Post-merge runtime stabilization | PR26 HTTP OSGi correction + PR25 LSP rename regression | Declare the direct Jetty HTTP dependency and restore rename at the per-language resource-service boundary; remove the invalid server-global rename binding; restore strict packaged qualification without weakening CI gates |
-| **PR28** | Post-merge gateway stabilization | PR27 packaged WebSocket race correction | Keep embedded LSP shutdown/exit session-local so valid client exit cannot terminate the shared gateway JVM; deterministic stage evidence; restore all packaged gates |
-| **PR29** | Post-merge rename-registry stabilization | PR25/PR27 rename compatibility completion | Publish the final rename-capable IDE providers into Xtext's global registry after all dependent language setups complete; prove packaged rename parity without weakening any gate |
+| **PR28** | Post-merge gateway stabilization | PR27 packaged WebSocket race correction | Keep embedded LSP shutdown/exit session-local so valid client exit cannot terminate the shared gateway JVM; deterministic stage evidence; restore gateway qualification |
+| **PR29** | Rename registry stabilization | PR27 incomplete rename correction | Republish final IDE-aware providers after all generated setups finish so transitive standalone registration cannot downgrade the global Xtext registry; share one process-wide registry provider; require rename in local and global providers |
 | **PR30** | Web engineering workspace foundation | Former PR23 + PR25 | React/TypeScript shell, Monaco base, API client, project open/import/export, autosave/revision/conflict UX, browser build/E2E |
 | **PR31** | Browser textual-language production parity | Former PR24 | Monaco language client, TextMate + semantic tokens, completion/hover/navigation/references/actions/format/rename using PR13 contracts |
 | **PR32** | GLSP graphical modelling and parity | Former PR26 + PR27 + PR28 | One EMF-backed GLSP mapping supports read/edit/undo/validation and semantic parity with Sirius |
@@ -60,23 +60,21 @@ The grouping follows shared code boundaries rather than feature labels:
 
 ## Current execution point
 
-PR22 through PR28 are merged. PR28 fixed the shared gateway JVM lifecycle defect and
-its packaged WebSocket and HTTP API checks are now green. However, PR28 was also
-merged before its exact-head build completed; the remaining failing gate is packaged
-LSP feature parity, specifically `textDocument/rename`.
+PR22 through PR28 are merged. PR28 makes embedded gateway LSP exit session-local,
+but the complete packaged qualification subsequently reproduced the rename NPE.
 
-The root cause is now precise: generated standalone setups register providers into
-Xtext's global `IResourceServiceProvider.Registry.INSTANCE`, and dependent language
-setups can overwrite an earlier IDE provider with a runtime-only provider. The prior
-compatibility wrapper only fixed the server-local registry, so `RenameService2`
-still resolved a provider whose `IRenameStrategy2` was null.
+The remaining defect is isolated to Xtext's global resource-service registry.
+Older generated standalone setups perform transitive registration side effects;
+for example a later DSL setup can invoke DML standalone setup and overwrite the
+IDE-aware DML provider with a runtime-only provider. `RenameService2` is created
+from a language injector and resolves `IResourceServiceProvider.Registry.INSTANCE`,
+so the earlier server-local compatibility wrapper could not guarantee rename.
 
-**PR29 is the active rename-registry stabilization PR.** It builds all five IDE
-providers first, then publishes the final rename-capable providers into both the
-server registry and Xtext global registry in one deterministic pass. Startup also
-fails explicitly if either registry lacks rename for any production language.
+**PR29 is the active stabilization PR and remains Draft until fully green.**
+It retains the final IDE-aware providers, republishes them only after all generated
+setup side effects complete, validates rename support through both local and global
+lookups, and shares one process-wide registry provider so each WebSocket session
+does not replay global registration side effects.
 
-PR30 begins the separate React/TypeScript web workspace only after PR29's exact head
-passes the full Tycho build, standalone desktop packaging, all enterprise runtime
-self-checks, ordinary multi-DSL LSP smoke, secure WebSocket qualification, PR26 HTTP
-self-check and packaged LSP feature parity.
+PR30 begins the separate React/TypeScript web workspace only after PR29's exact
+head passes every packaged desktop, enterprise, LSP, WebSocket, HTTP and parity gate.
