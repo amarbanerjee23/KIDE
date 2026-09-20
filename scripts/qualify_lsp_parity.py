@@ -302,7 +302,11 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                             "textDocument/definition",
                             {
                                 "textDocument": {"uri": uri},
-                                "position": position_of(text, definition_probe["token"]),
+                                "position": position_of(
+                                text,
+                                definition_probe["token"],
+                                int(definition_probe.get("occurrence", 1)),
+                            ),
                             },
                         ).get("result")
                         target_name = f"parity.{definition_probe['target_extension']}"
