@@ -87,7 +87,7 @@ function grammarFor(asset: LanguageAsset): IRawGrammar {
   const escaped = asset.keywords
     .map((keyword) => keyword.replace(/[.*+?^$()|[\]{}\\]/g, "\\$&"))
     .join("|");
-  return {
+  const raw = {
     scopeName: asset.scope_name,
     patterns: [
       { include: "#comments" },
@@ -137,6 +137,7 @@ function grammarFor(asset: LanguageAsset): IRawGrammar {
       }
     }
   };
+  return raw as IRawGrammar;
 }
 
 function tokenClass(scopes: string[]): string {
