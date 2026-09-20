@@ -177,6 +177,14 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 writeError(response, callback, requestId, 409, ApiErrorCode.CONFLICT,
                         "The model revision is stale.");
                 return true;
+            } catch (ResourceNotFoundException e) {
+                writeError(response, callback, requestId, 404, ApiErrorCode.NOT_FOUND,
+                        "The requested API resource was not found.");
+                return true;
+            } catch (RequestTooLargeException e) {
+                writeError(response, callback, requestId, 413, ApiErrorCode.TOO_LARGE,
+                        "The request body is too large.");
+                return true;
             } catch (ModelRepositoryException e) {
                 writeError(response, callback, requestId, 503, ApiErrorCode.SERVICE_UNAVAILABLE,
                         "The model repository is unavailable.");
