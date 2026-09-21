@@ -128,6 +128,11 @@ jobs:
           python3 scripts/smoke_enterprise_api_server.py \
             --products releng/com.kide.languageserver.repository/target/products
 
+      - name: Smoke-test packaged GLSP graphical runtime
+        run: |
+          python3 scripts/smoke_glsp_runtime.py \
+            --products releng/com.kide.languageserver.repository/target/products
+
       - name: Qualify packaged LSP feature parity
         run: |
           python3 scripts/qualify_lsp_parity.py \
