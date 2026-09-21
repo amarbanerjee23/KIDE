@@ -4,6 +4,7 @@ import java.util.Optional;
 import org.eclipse.emf.common.command.Command;
 import org.eclipse.emf.edit.command.AddCommand;
 import org.eclipse.glsp.server.emf.EMFCreateOperationHandler;
+import org.eclipse.glsp.server.emf.notation.EMFNotationModelState;
 import org.eclipse.glsp.server.operations.CreateNodeOperation;
 
 import activityDiagramModel.Activity;
@@ -16,7 +17,8 @@ public final class CreateActivityHandler extends EMFCreateOperationHandler<Creat
 
     @Override
     public Optional<Command> createCommand(CreateNodeOperation operation) {
-        if (!(modelState.getSemanticModel() instanceof ActivityDiagram root)) return doNothing();
+        if (!(modelState instanceof EMFNotationModelState notationState)
+                || !(notationState.getSemanticModel() instanceof ActivityDiagram root)) return doNothing();
         Activity activity = ActivityDiagramModelFactory.eINSTANCE.createActivity();
         String requested = operation.getArgs().get("name");
         activity.setName(requested == null || requested.isBlank()
