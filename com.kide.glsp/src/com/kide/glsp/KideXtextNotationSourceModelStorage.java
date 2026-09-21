@@ -109,11 +109,27 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
             throw new GLSPServerException("No graphical source model is loaded");
         }
 
+        if (action.getFileUri().isPresent()) {
+            throw new GLSPServerException(
+                    "Graphical Save As is not supported; save the active canonical model instead");
+        }
+
+        Resource semanticResource = modelState.getSemanticModel().eResource();
+        Resource notationResource = modelState.getNotationModel().eResource();
+        if (semanticResource == null || notationResource == null) {
+            throw new GLSPServerException(
+                    "Graphical semantic and notation resources must both be loaded");
+        }
+
         try (ModelTransaction tx = workspace.repository().beginTransaction()) {
             Map<URI, byte[]> serialized = new HashMap<>();
-            for (Resource resource : resourceSet.getResources()) {
+            for (Resource resource : java.util.List.of(
+                    semanticResource, notationResource)) {
                 URI uri = resource.getURI();
-                if (uri == null || !uri.isFile()) continue;
+                if (uri == null || !uri.isFile()) {
+                    throw new GLSPServerException(
+                            "Graphical model resources must use authorized project files");
+                }
                 Path path = workspace.requireProjectPath(uri.toFileString());
                 ModelPath modelPath = workspace.modelPath(path);
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
