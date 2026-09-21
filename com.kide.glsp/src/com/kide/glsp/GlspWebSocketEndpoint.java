@@ -18,7 +18,7 @@ import com.kide.languageserver.gateway.GatewayMessagePolicy;
 import com.kide.languageserver.gateway.GatewaySessionQuota;
 import com.kide.languageserver.gateway.GatewayWorkspaceBinding;
 
-final class GlspWebSocketEndpoint implements Session.Listener {
+public final class GlspWebSocketEndpoint implements Session.Listener {
     private final GatewayConfig config;
     private final AuthenticatedSession authenticatedSession;
     private final ServerAuthorizationGate authorization;
