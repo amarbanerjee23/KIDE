@@ -4,6 +4,7 @@ import java.util.Optional;
 import org.eclipse.emf.common.command.Command;
 import org.eclipse.emf.edit.command.AddCommand;
 import org.eclipse.glsp.server.emf.EMFCreateOperationHandler;
+import org.eclipse.glsp.server.emf.notation.EMFNotationModelState;
 import org.eclipse.glsp.server.operations.CreateNodeOperation;
 
 import mncModel.InterfaceDescription;
@@ -16,7 +17,8 @@ public final class CreateMncInterfaceHandler extends EMFCreateOperationHandler<C
 
     @Override
     public Optional<Command> createCommand(CreateNodeOperation operation) {
-        if (!(modelState.getSemanticModel() instanceof Model root)) return doNothing();
+        if (!(modelState instanceof EMFNotationModelState notationState)
+                || !(notationState.getSemanticModel() instanceof Model root)) return doNothing();
         InterfaceDescription iface = MncModelFactory.eINSTANCE.createInterfaceDescription();
         String requested = operation.getArgs().get("name");
         iface.setName(requested == null || requested.isBlank()
