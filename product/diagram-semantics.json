@@ -16,6 +16,7 @@
         {
           "id": "kide:activity-next",
           "emf_feature": "activityDiagramModel.Activity.nextActivity",
+          "sirius_mapping": "nextActivity",
           "editable": true
         }
       ]
@@ -28,28 +29,31 @@
         {
           "id": "kide:mnc-interface",
           "emf_class": "mncModel.InterfaceDescription",
-          "sirius_mapping": "InterfaceDescription",
+          "sirius_mapping": "InterfaceDiscription_BlockDiagram",
           "editable": true
         },
         {
           "id": "kide:mnc-control-node",
           "emf_class": "mncModel.ControlNode",
-          "sirius_mapping": "ControlNode",
+          "sirius_mapping": "ControlNode_BlockDiagram",
           "editable": true
         },
         {
           "id": "kide:mnc-uses",
           "emf_feature": "mncModel.InterfaceDescription.uses",
+          "sirius_mapping": "InterfaceDescriptionUsingEdge_BlockDiagram",
           "editable": true
         },
         {
           "id": "kide:mnc-implements",
           "emf_feature": "mncModel.ControlNode.interfaceDescription",
+          "sirius_mapping": "InterfaceDiscription",
           "editable": true
         },
         {
           "id": "kide:mnc-child",
           "emf_feature": "mncModel.ControlNode.childNodes",
+          "sirius_mapping": "ChildEdge_BlockDiagram",
           "editable": true
         }
       ]
@@ -59,6 +63,7 @@
     "Textual Xtext/EMF files remain canonical semantic source.",
     "Sirius desktop and GLSP web consume the same generated EMF model packages.",
     "GLSP semantic saves use PR21 optimistic revision transactions.",
-    "Notation sidecars contain layout only and never replace semantic project files."
+    "Notation sidecars contain layout only and never replace semantic project files.",
+    "Browser code renders GLSP GModel and sends protocol actions; it does not implement Activity or MNC model semantics."
   ]
 }
