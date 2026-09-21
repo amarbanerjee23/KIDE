@@ -73,3 +73,36 @@ button, .import-button {
 .symbol-list button { width: 100%; display: grid; gap: 2px; text-align: left; padding: 7px 8px; border: 0; background: transparent; }
 .symbol-list button:hover { background: #eef3f8; }
 .symbol-list span { font-size: 11px; color: #64748b; }
+
+.editor-actions { display: flex; align-items: center; gap: 12px; }
+.view-toggle { display: inline-flex; border: 1px solid #c4ccd8; border-radius: 7px; overflow: hidden; }
+.view-toggle button { border: 0; border-radius: 0; padding: 5px 10px; background: #f8fafc; }
+.view-toggle button + button { border-left: 1px solid #c4ccd8; }
+.view-toggle button.active-view { background: #1f4f8a; color: white; }
+.graphical-shell { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto 1fr; background: #f8fafc; }
+.graphical-toolbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 9px 12px; border-bottom: 1px solid #d8dee9; background: white; }
+.tool-group { display: flex; align-items: center; gap: 7px; }
+.tool-group strong { font-size: 12px; color: #475569; }
+.tool-group button { padding: 5px 9px; }
+.tool-group button.active-tool { background: #1f4f8a; color: white; border-color: #1f4f8a; }
+.graphical-body { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 240px; }
+.diagram-canvas { width: 100%; height: 100%; min-height: 560px; background: white; touch-action: none; }
+.diagram-node { cursor: pointer; }
+.diagram-node rect { fill: #f8fbff; stroke: #5b708b; stroke-width: 2; }
+.diagram-node text { fill: #172033; font-size: 15px; font-weight: 650; pointer-events: none; }
+.diagram-node.selected-node rect { stroke: #1f4f8a; stroke-width: 4; }
+.diagram-node.edge-source rect { stroke: #0369a1; stroke-dasharray: 7 5; }
+.diagram-node.error-node rect { stroke: #b42318; }
+.diagram-edge { stroke: #65758b; stroke-width: 2; fill: none; cursor: pointer; }
+.diagram-edge.selected-edge { stroke: #1f4f8a; stroke-width: 4; }
+.diagram-arrow { fill: #65758b; }
+.diagram-inspector { border-left: 1px solid #d8dee9; padding: 14px; background: #f8fafc; overflow: auto; }
+.diagram-inspector h3 { margin: 4px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+.diagram-inspector label { margin-bottom: 8px; }
+.diagram-inspector > button { width: 100%; margin-bottom: 7px; }
+.diagram-markers { list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 7px; }
+.diagram-markers li { display: grid; gap: 3px; padding: 8px; border: 1px solid #d8dee9; border-radius: 6px; background: white; }
+.diagram-markers li span { font-size: 12px; color: #475569; }
+.diagram-markers .marker-error { border-color: #e5a6a2; }
+.diagram-dirty { margin-top: 16px; padding: 8px; border-radius: 6px; background: #e8f3ec; font-size: 12px; font-weight: 700; }
+.diagram-dirty.dirty { background: #fff5e8; }

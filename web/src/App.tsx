@@ -15,6 +15,8 @@ import { KideLspClient, type SymbolInformation } from "./lspClient";
 import { MonacoEditor } from "./MonacoEditor";
 import { MonacoLspController } from "./monacoLsp";
 import { MonacoWorkspace } from "./monacoWorkspace";
+import { GraphicalEditor } from "./GraphicalEditor";
+import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
 import type { Model, Project, SaveState, WorkspaceEntry } from "./types";
 
@@ -57,6 +59,7 @@ export default function App() {
   const [symbolQuery, setSymbolQuery] = useState("");
   const [symbols, setSymbols] = useState<SymbolInformation[]>([]);
   const [revealRange, setRevealRange] = useState<monaco.Range>();
+  const [viewMode, setViewMode] = useState<"text" | "diagram">("text");
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
   const lspClient = useRef<KideLspClient | undefined>(undefined);
@@ -69,6 +72,12 @@ export default function App() {
 
   const selected = entries.find((entry) => entry.path === selectedPathRef.current);
   const editorText = selected ? editableText(selected) : null;
+  const selectedDiagramType = selected ? diagramTypeFor(selected.path) : undefined;
+  const diagramAvailable = Boolean(
+    selected?.source === "remote" &&
+    selectedDiagramType &&
+    project?.workspaceId
+  );
 
   workspaceChange.current = (path, value) => {
     const current = entriesRef.current.find((entry) => entry.path === path);
@@ -103,6 +112,10 @@ export default function App() {
       workspace.dispose();
     };
   }, [workspace]);
+
+  useEffect(() => {
+    setViewMode("text");
+  }, [selectedPath]);
 
   async function connect() {
     setNotice("");
@@ -370,6 +383,29 @@ export default function App() {
     }
   }
 
+  function openDiagram() {
+    if (!diagramAvailable || !selected) return;
+    if (!tokenRef.current.trim()) {
+      setNotice("An access token is required for the graphical service.");
+      return;
+    }
+    if (
+      saveState === "pending" ||
+      saveState === "saving" ||
+      saveState === "conflict" ||
+      saveState === "error"
+    ) {
+      setNotice("Resolve or finish textual saves before opening the shared graphical model.");
+      return;
+    }
+    setViewMode("diagram");
+  }
+
+  async function refreshAfterGraphicalSave(path: string) {
+    await loadSpecificModel(path);
+    setNotice("Graphical save completed. The Monaco model was refreshed from the same canonical project file.");
+  }
+
   async function resetProjectWorkspace() {
     await disposeLanguageServices();
     disposeAutosaves();
@@ -567,13 +603,45 @@ export default function App() {
 
         <section className="editor-panel">
           <div className="editor-toolbar">
-            <div>
+            <div className="editor-identity">
               <strong>{selected?.path ?? "No file selected"}</strong>
               {selected?.revision && <span>revision {selected.revision}</span>}
             </div>
-            <span className={`save-state state-${saveState}`}>{saveState}</span>
+            <div className="editor-actions">
+              {diagramAvailable && (
+                <div className="view-toggle" aria-label="Editor view">
+                  <button
+                    className={viewMode === "text" ? "active-view" : ""}
+                    aria-pressed={viewMode === "text"}
+                    onClick={() => setViewMode("text")}
+                  >
+                    Text
+                  </button>
+                  <button
+                    className={viewMode === "diagram" ? "active-view" : ""}
+                    aria-pressed={viewMode === "diagram"}
+                    onClick={openDiagram}
+                  >
+                    Diagram
+                  </button>
+                </div>
+              )}
+              <span className={`save-state state-${saveState}`}>{saveState}</span>
+            </div>
           </div>
-          {!selected ? (
+          {viewMode === "diagram" &&
+          selected &&
+          project?.workspaceId &&
+          selectedDiagramType ? (
+            <GraphicalEditor
+              gatewayOrigin={gatewayOrigin}
+              accessToken={tokenRef.current}
+              workspaceId={project.workspaceId}
+              path={selected.path}
+              onStatus={setNotice}
+              onSaved={() => void refreshAfterGraphicalSave(selected.path)}
+            />
+          ) : !selected ? (
             <div className="empty-state">
               Open a server project/model or import a project ZIP.
             </div>
