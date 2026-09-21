@@ -23,10 +23,9 @@ public final class CreateActivityHandler extends EMFCreateOperationHandler<Creat
         String requested = operation.getArgs().get("name");
         activity.setName(requested == null || requested.isBlank()
                 ? "Activity" + (root.getActivities().size() + 1) : requested.trim());
-        // Keep a newly-created Activity serializable by the existing Xtext grammar
-        // without inventing a browser-only semantic default.
+        // Keep a newly-created Activity serializable by the existing Xtext grammar.
+        // Transitions stay unset until the user explicitly connects the Activity.
         activity.setRequiredCapability("Unbound");
-        activity.setNextActivity(activity);
         return Optional.of(AddCommand.create(
                 modelState.getEditingDomain(),
                 root,
