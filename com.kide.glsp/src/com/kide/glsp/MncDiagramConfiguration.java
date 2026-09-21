@@ -26,4 +26,11 @@ public final class MncDiagramConfiguration extends BaseDiagramConfiguration {
                         List.of(KideDiagramTypes.MNC_CONTROL_NODE),
                         List.of(KideDiagramTypes.MNC_CONTROL_NODE)));
     }
+    @Override
+    public boolean needsClientLayout() {
+        // KIDE persists graphical bounds in the shared .notation sidecar.
+        // Browser clients therefore do not compute semantic model bounds.
+        return false;
+    }
+
 }
