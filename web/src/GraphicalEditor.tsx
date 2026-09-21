@@ -68,7 +68,7 @@ export function GraphicalEditor({
   onSaved
 }: Props) {
   const diagramType = diagramTypeFor(path);
-  const clientRef = useRef<KideGlspClient>();
+  const clientRef = useRef<KideGlspClient | undefined>(undefined);
   const svgRef = useRef<SVGSVGElement>(null);
   const saveRequested = useRef(false);
   const [snapshot, setSnapshot] = useState<GlspState>({
