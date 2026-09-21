@@ -19,4 +19,11 @@ public final class ActivityDiagramConfiguration extends BaseDiagramConfiguration
                 List.of(KideDiagramTypes.ACTIVITY),
                 List.of(KideDiagramTypes.ACTIVITY)));
     }
+    @Override
+    public boolean needsClientLayout() {
+        // KIDE persists graphical bounds in the shared .notation sidecar.
+        // Browser clients therefore do not compute semantic model bounds.
+        return false;
+    }
+
 }
