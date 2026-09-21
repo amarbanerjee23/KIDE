@@ -6,6 +6,7 @@ import org.eclipse.emf.common.command.CompoundCommand;
 import org.eclipse.emf.edit.command.AddCommand;
 import org.eclipse.emf.edit.command.SetCommand;
 import org.eclipse.glsp.server.emf.EMFCreateOperationHandler;
+import org.eclipse.glsp.server.emf.notation.EMFNotationModelState;
 import org.eclipse.glsp.server.operations.CreateNodeOperation;
 
 import mncModel.ControlNode;
@@ -19,7 +20,8 @@ public final class CreateMncControlNodeHandler extends EMFCreateOperationHandler
 
     @Override
     public Optional<Command> createCommand(CreateNodeOperation operation) {
-        if (!(modelState.getSemanticModel() instanceof Model root)) return doNothing();
+        if (!(modelState instanceof EMFNotationModelState notationState)
+                || !(notationState.getSemanticModel() instanceof Model root)) return doNothing();
         InterfaceDescription iface = root.getSystems().stream()
                 .filter(InterfaceDescription.class::isInstance)
                 .map(InterfaceDescription.class::cast)
