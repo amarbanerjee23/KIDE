@@ -247,6 +247,47 @@
         "true",
         "uses"
       ]
+    },
+    {
+      "id": "krl",
+      "display_name": "Knowledge Representation Language",
+      "extension": "krl",
+      "language_id": "kide-krl",
+      "scope_name": "source.kide-krl",
+      "keywords": [
+        "DataModel",
+        "E",
+        "Package",
+        "bind",
+        "body",
+        "boolean",
+        "composites",
+        "date",
+        "decimal",
+        "e",
+        "fact",
+        "false",
+        "float",
+        "for",
+        "int",
+        "integer",
+        "iri",
+        "knowledge",
+        "literal",
+        "match",
+        "namespace",
+        "object",
+        "output",
+        "primitives",
+        "query",
+        "select",
+        "string",
+        "target",
+        "template",
+        "true",
+        "type",
+        "where"
+      ]
     }
   ]
 }

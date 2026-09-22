@@ -11,7 +11,7 @@ All v1 routes are rooted at `/api/v1`. The v1 contract covers:
 - projects;
 - models;
 - knowledge queries;
-- deterministic synthesis and supervisory reconfiguration;
+- deterministic synthesis, supervisory reconfiguration and semantic code generation;
 - evidence; and
 - health.
 
@@ -85,3 +85,18 @@ the same customer product bytes that will be released.
 `MODEL_SYNTHESIZE` boundary as synthesis. The request contains the current Activity model
 ID/ETag, a reconfiguration cause, and previous requirement/resource IDs only. Current
 requirements, resources, contracts and migration decisions are server-derived.
+
+## PR38 semantic code generation
+
+`POST /api/v1/projects/{projectId}/generation` is the revision-safe semantic generation
+boundary. The caller supplies the current Activity model ID/ETag, KRL model ID/ETag and the
+fingerprint from the last successful deterministic synthesis.
+
+The server reruns synthesis and rejects a stale synthesis fingerprint, then validates KRL
+through the production Xtext runtime and executes the bounded KRL query/template engine over
+the current knowledge snapshot. Source model, KRL model and knowledge revisions are checked
+again after generation.
+
+The response contains bounded generated artifact payloads, artifact SHA-256 values and the
+canonical generation provenance manifest. The service does not write generated output into
+canonical project source files.

@@ -120,4 +120,65 @@ describe("KideApiClient synthesis boundary", () => {
     expect(result.migrations[0].policy).toBe("MIGRATE");
     expect(result.selections[0].resourceId).toBe("urn:kide:device:camera-b");
   });
+
+  it("sends only revision and synthesis evidence for semantic generation", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe(
+        "https://kide.example/api/v1/projects/P04-001/generation"
+      );
+      expect(init?.method).toBe("POST");
+      const body = JSON.parse(String(init?.body));
+      expect(body).toEqual({
+        sourceModelId: "flow.activity",
+        sourceRevision: "a".repeat(64),
+        krlModelId: "bindings.krl",
+        krlRevision: "d".repeat(64),
+        synthesisFingerprint: "c".repeat(64)
+      });
+      expect(body).not.toHaveProperty("template");
+      expect(body).not.toHaveProperty("knowledge");
+      expect(body).not.toHaveProperty("artifacts");
+
+      return new Response(JSON.stringify({
+        resultId: "gen-123",
+        toolchainVersion: "1",
+        fingerprint: "e".repeat(64),
+        sourceModelId: "flow.activity",
+        sourceModelVersion: "4",
+        sourceRevision: "a".repeat(64),
+        krlModelId: "bindings.krl",
+        krlModelVersion: "2",
+        krlRevision: "d".repeat(64),
+        knowledgeRevision: 3,
+        knowledgeEtag: "b".repeat(64),
+        synthesisFingerprint: "c".repeat(64),
+        manifestJson: "{\"schemaVersion\":\"1\"}",
+        artifacts: [{
+          path: "generated/ObserveBinding.java",
+          mediaType: "text/x-java-source",
+          contentBase64: "cHVibGljIGNsYXNzIE9ic2VydmVCaW5kaW5nIHt9",
+          sha256: "f".repeat(64),
+          targetId: "java",
+          targetVersion: "1"
+        }]
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    }));
+
+    const client = new KideApiClient("https://kide.example", () => "token");
+    const result = await client.generate(
+      "P04-001",
+      "flow.activity",
+      "a".repeat(64),
+      "bindings.krl",
+      "d".repeat(64),
+      "c".repeat(64)
+    );
+
+    expect(result.artifacts).toHaveLength(1);
+    expect(result.artifacts[0].targetId).toBe("java");
+    expect(result.synthesisFingerprint).toBe("c".repeat(64));
+  });
 });

@@ -1,5 +1,6 @@
 import type {
   ApiErrorEnvelope,
+  GenerationResult,
   Health,
   KnowledgeImpactResult,
   KnowledgeQueryResult,
@@ -278,6 +279,30 @@ export class KideApiClient {
           modelRevision,
           cause,
           previousBindings
+        })
+      }
+    );
+  }
+
+  generate(
+    projectId: string,
+    sourceModelId: string,
+    sourceRevision: string,
+    krlModelId: string,
+    krlRevision: string,
+    synthesisFingerprint: string
+  ): Promise<GenerationResult> {
+    return this.request<GenerationResult>(
+      `/projects/${encodeURIComponent(projectId)}/generation`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceModelId,
+          sourceRevision,
+          krlModelId,
+          krlRevision,
+          synthesisFingerprint
         })
       }
     );

@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE KRL IDE
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.krl.dsl.ide;singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: com.kide.krl.dsl,
+ org.eclipse.xtext.ide,
+ org.eclipse.xtext.xbase.ide,
+ org.antlr.runtime
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Export-Package: com.kide.krl.dsl.ide,
+ com.kide.krl.dsl.ide.contentassist.antlr,
+ com.kide.krl.dsl.ide.contentassist.antlr.internal
+Automatic-Module-Name: com.kide.krl.dsl.ide

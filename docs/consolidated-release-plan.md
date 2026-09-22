@@ -60,27 +60,22 @@ The grouping follows shared code boundaries rather than feature labels:
 
 ## Current execution point
 
-PR22 through PR36 are merged and green on `main`. PR36 delivered deterministic
-knowledge-backed synthesis, consolidated Activity-to-MNC controller composition,
-cross-model design contracts, browser/API synthesis surfaces and permanent packaged
-qualification.
+PR22 through PR37 are merged and green on `main`. PR37 delivered deterministic
+minimal-disruption dynamic reconfiguration, explicit supervisory state migration/fallback
+rules, and permanent 10/50/100/500/1000-device correctness/performance evidence.
 
-**PR37 is the active implementation PR.** It adds deterministic minimal-disruption
-reconfiguration over the PR36 synthesis graph. Valid previous bindings are preserved,
-invalidated bindings alone are replanned, state migration is explicit
-(PRESERVE/MIGRATE/RESET/INITIALIZE/SAFE_FALLBACK/RETIRE), and invalid/no-solution designs
-fail closed without mutating canonical models or executing device side effects.
+**PR38 is the active implementation PR.** It clubs the former KRL-language and semantic
+code-generation roadmap phases behind one language/toolchain boundary. KRL is now the sixth
+production Xtext DSL across desktop, browser/LSP and secure gateway. The semantic generation
+service provides bounded deterministic knowledge queries, placeholder-only templates, a
+versioned target SDK, the maintained Java reference target, path/symlink sandboxing and a
+canonical provenance manifest tied to source/KRL/knowledge/synthesis revisions.
 
-PR37 also turns the thesis-scale 10/50/100/500/1000-device scenarios into a packaged
-qualification application. Functional determinism and minimal-disruption behavior are hard
-CI gates. Wall-clock and thread-CPU timings are retained as JSON trend evidence; hosted
-runner timing is not treated as a soft-real-time guarantee.
+The PR38 acceptance gate requires valid/invalid KRL diagnostics, full packaged LSP parity,
+sandboxed deterministic query/template execution, ambiguous-binding refusal, byte-identical
+reproduction, generated Java compilation, strict source/KRL/knowledge revision checks,
+enterprise and browser generation flows, packaged semantic-codegen evidence and every
+previous desktop/knowledge/synthesis/reconfiguration/LSP/GLSP/security gate.
 
-The PR37 acceptance gate requires device-loss/replacement/capability/requirement-change
-regressions, safe fallback/no-solution behavior, deterministic state migration, strict
-model-revision checks, server-owned semantic revalidation, browser thin-client
-qualification, packaged enterprise API reconfiguration, all five scale scenarios and every
-existing desktop/knowledge/synthesis/LSP/GLSP release gate.
-
-PR38 follows after PR37 and will introduce KRL as a first-class language together with the
-versioned semantic code-generation toolchain and reproducible target provenance.
+PR39 follows after PR38 and will introduce first-class requirements/objectives together with
+the digital thread, immutable baselines, impact analysis and deterministic evidence reports.

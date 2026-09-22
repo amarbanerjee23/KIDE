@@ -20,6 +20,7 @@ import { GraphicalEditor } from "./GraphicalEditor";
 import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
 import type {
+  GenerationResult,
   KnowledgeCatalogueItem,
   KnowledgeImpactResult,
   KnowledgeTraceList,
@@ -93,6 +94,8 @@ export default function App() {
     useState<ReconfigurationCause>("AVAILABILITY_CHANGE");
   const [reconfigurationResult, setReconfigurationResult] =
     useState<ReconfigurationResult>();
+  const [generationKrlModelId, setGenerationKrlModelId] = useState("bindings.krl");
+  const [generationResult, setGenerationResult] = useState<GenerationResult>();
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
@@ -152,6 +155,7 @@ export default function App() {
     setViewMode("text");
     setSynthesisResult(undefined);
     setReconfigurationResult(undefined);
+    setGenerationResult(undefined);
     collaboration.current?.setModel(selectedPath);
   }, [selectedPath]);
 
@@ -327,6 +331,7 @@ export default function App() {
       );
       setSynthesisResult(result);
       setReconfigurationResult(undefined);
+      setGenerationResult(undefined);
       if (result.status === "SUCCESS") {
         setNotice(
           `Synthesis selected ${result.selections.length} resource binding(s) without modifying the source model.`
@@ -387,6 +392,52 @@ export default function App() {
       if (error instanceof ApiClientError && error.code === "CONFLICT") {
         setConflict("The Activity model changed on the server before reconfiguration completed.");
         setNotice("Reload the current server revision before replanning.");
+        return;
+      }
+      showError(error);
+    }
+  }
+
+  async function runGeneration() {
+    const currentProject = projectRef.current;
+    const current = entriesRef.current.find(
+      (entry) => entry.path === selectedPathRef.current
+    );
+    const krlModelId = generationKrlModelId.trim();
+    if (
+      !currentProject ||
+      !current ||
+      current.source !== "remote" ||
+      !current.path.endsWith(".activity") ||
+      !current.etag ||
+      !synthesisResult ||
+      synthesisResult.status !== "SUCCESS" ||
+      !krlModelId.endsWith(".krl")
+    ) {
+      return;
+    }
+    if (current.dirty || saveState === "pending" || saveState === "saving") {
+      setNotice("Save the Activity model before generating target artifacts.");
+      return;
+    }
+    try {
+      const krl = await clientRef.current.getModel(currentProject.id, krlModelId);
+      const result = await clientRef.current.generate(
+        currentProject.id,
+        current.path,
+        current.etag,
+        krl.id,
+        krl.etag,
+        synthesisResult.fingerprint
+      );
+      setGenerationResult(result);
+      setNotice(
+        `Generated ${result.artifacts.length} deterministic artifact(s) with toolchain v${result.toolchainVersion}.`
+      );
+    } catch (error) {
+      if (error instanceof ApiClientError && error.code === "CONFLICT") {
+        setConflict("The Activity, KRL, knowledge, or synthesis evidence changed before generation completed.");
+        setNotice("Reload current model revisions and synthesize again before generating.");
         return;
       }
       showError(error);
@@ -1208,6 +1259,47 @@ export default function App() {
                       <pre className="generated-mnc">{synthesisResult.generatedMnc}</pre>
                     </details>
                   )}
+                </div>
+              )}
+              <div className="reconfiguration-controls">
+                <label>
+                  KRL model ID
+                  <input
+                    aria-label="KRL model ID"
+                    value={generationKrlModelId}
+                    onChange={(event) => setGenerationKrlModelId(event.target.value)}
+                    placeholder="bindings.krl"
+                  />
+                </label>
+                <button
+                  disabled={
+                    !selected.etag ||
+                    selected.dirty ||
+                    !synthesisResult ||
+                    synthesisResult.status !== "SUCCESS" ||
+                    !generationKrlModelId.trim().endsWith(".krl")
+                  }
+                  onClick={() => void runGeneration()}
+                >
+                  Generate
+                </button>
+              </div>
+              {generationResult && (
+                <div className="synthesis-result" aria-label="Generation result">
+                  <strong>Generated {generationResult.artifacts.length} artifact(s)</strong>
+                  <span className="muted">
+                    toolchain v{generationResult.toolchainVersion} · fingerprint {generationResult.fingerprint.slice(0, 12)}
+                  </span>
+                  {generationResult.artifacts.map((artifact) => (
+                    <div className="synthesis-selection" key={artifact.path}>
+                      <span>{artifact.path}</span>
+                      <strong>{artifact.targetId}@{artifact.targetVersion}</strong>
+                    </div>
+                  ))}
+                  <details>
+                    <summary>Generation manifest</summary>
+                    <pre className="generated-mnc">{generationResult.manifestJson}</pre>
+                  </details>
                 </div>
               )}
               {reconfigurationResult && (

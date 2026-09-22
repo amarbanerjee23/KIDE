@@ -261,3 +261,30 @@ export interface ReconfigurationResult {
   migrations: StateMigrationInstruction[];
   diagnostics: SynthesisDiagnostic[];
 }
+
+
+export interface GenerationArtifact {
+  path: string;
+  mediaType: string;
+  contentBase64: string;
+  sha256: string;
+  targetId: string;
+  targetVersion: string;
+}
+
+export interface GenerationResult {
+  resultId: string;
+  toolchainVersion: string;
+  fingerprint: string;
+  sourceModelId: string;
+  sourceModelVersion: string;
+  sourceRevision: string;
+  krlModelId: string;
+  krlModelVersion: string;
+  krlRevision: string;
+  knowledgeRevision: number;
+  knowledgeEtag: string;
+  synthesisFingerprint: string;
+  manifestJson: string;
+  artifacts: GenerationArtifact[];
+}

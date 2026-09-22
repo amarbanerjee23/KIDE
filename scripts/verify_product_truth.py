@@ -58,8 +58,8 @@ def verify_repository(root: Path) -> list[str]:
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         return [str(exc)]
 
-    if len(languages) != 5:
-        errors.append(f"expected exactly five production DSLs, found {len(languages)}")
+    if len(languages) != 6:
+        errors.append(f"expected exactly six production DSLs, found {len(languages)}")
 
     seen_ids: set[str] = set()
     seen_extensions: set[str] = set()

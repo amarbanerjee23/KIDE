@@ -1,0 +1,104 @@
+grammar com.kide.krl.dsl.Krl with org.eclipse.xtext.common.Terminals
+
+generate krl "https://kide.dev/krl/1.0"
+
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
+
+KnowledgeModel:
+    'knowledge' name=ID '{'
+        declarations+=Declaration*
+    '}';
+
+Declaration:
+    Namespace | Fact | Query | Template | Target;
+
+Namespace:
+    'namespace' name=ID '=' uri=STRING ';';
+
+Fact:
+    'fact' subject=QualifiedName predicate=QualifiedName object=Value ';';
+
+Query:
+    'query' name=ID
+    ('(' parameters+=Parameter (',' parameters+=Parameter)* ')')?
+    '{'
+        'match' patterns+=Pattern (',' patterns+=Pattern)* ';'
+        ('where' conditions+=Condition (',' conditions+=Condition)* ';')?
+        'select' selections+=VariableRef (',' selections+=VariableRef)* ';'
+    '}';
+
+Template:
+    'template' name=ID
+    ('(' parameters+=Parameter (',' parameters+=Parameter)* ')')?
+    'for' targetType=ID
+    'body' body=STRING
+    ';';
+
+Target:
+    'target' name=ID 'type' targetType=ID '{'
+        'template' template=[Template|QualifiedName] ';'
+        'output' outputPath=STRING ';'
+        bindings+=Binding*
+    '}';
+
+Parameter:
+    name=ID ':' type=ValueType;
+
+Binding:
+    'bind' name=ID ':' type=ValueType '='
+    (literal=Value | query=QueryValue)
+    ';';
+
+QueryValue:
+    'query' query=[Query|QualifiedName]
+    '(' (arguments+=Value (',' arguments+=Value)*)? ')'
+    '.' variable=ID;
+
+Pattern:
+    subject=Term predicate=Term object=Term;
+
+Term:
+    ('?' variable=ID) |
+    ('iri' iri=STRING) |
+    ('literal' literal=STRING) |
+    name=QualifiedName;
+
+Condition:
+    left=VariableRef operator=ComparisonOperator right=Value;
+
+VariableRef:
+    '?' name=ID;
+
+Value:
+    ('string' stringValue=STRING) |
+    ('integer' integerValue=SIGNED_INT) |
+    ('decimal' decimalValue=SIGNED_DECIMAL) |
+    ('boolean' booleanValue=BooleanLiteral) |
+    ('iri' iriValue=STRING);
+
+QualifiedName:
+    ID (':' ID)?;
+
+BooleanLiteral returns ecore::EBoolean:
+    'false' | 'true';
+
+enum ValueType:
+    string='string' |
+    integer='integer' |
+    decimal='decimal' |
+    boolean='boolean' |
+    iri='iri';
+
+enum ComparisonOperator:
+    eq='==' |
+    ne='!=' |
+    lt='<' |
+    le='<=' |
+    gt='>' |
+    ge='>=';
+
+terminal SIGNED_INT returns ecore::EInt:
+    '-'? INT;
+
+terminal SIGNED_DECIMAL returns ecore::EDouble:
+    '-'? INT '.' INT;

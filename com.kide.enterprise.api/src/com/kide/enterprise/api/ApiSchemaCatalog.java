@@ -135,6 +135,26 @@ public final class ApiSchemaCatalog {
                         "modelId", "modelVersion", "revision", "knowledgeRevision",
                         "knowledgeEtag", "fingerprint", "selections",
                         "migrations", "diagnostics")));
+        add(schemas, schema("GenerationRequest",
+                Map.of("sourceModelId", s(), "sourceRevision", s(),
+                        "krlModelId", s(), "krlRevision", s(),
+                        "synthesisFingerprint", s()),
+                Set.of("sourceModelId", "sourceRevision", "krlModelId",
+                        "krlRevision", "synthesisFingerprint")));
+        add(schemas, schema("GenerationResult",
+                Map.ofEntries(
+                        Map.entry("resultId", s()), Map.entry("toolchainVersion", s()),
+                        Map.entry("fingerprint", s()), Map.entry("sourceModelId", s()),
+                        Map.entry("sourceModelVersion", s()), Map.entry("sourceRevision", s()),
+                        Map.entry("krlModelId", s()), Map.entry("krlModelVersion", s()),
+                        Map.entry("krlRevision", s()), Map.entry("knowledgeRevision", i()),
+                        Map.entry("knowledgeEtag", s()), Map.entry("synthesisFingerprint", s()),
+                        Map.entry("manifestJson", s()), Map.entry("artifacts", a())),
+                Set.of("resultId", "toolchainVersion", "fingerprint",
+                        "sourceModelId", "sourceModelVersion", "sourceRevision",
+                        "krlModelId", "krlModelVersion", "krlRevision",
+                        "knowledgeRevision", "knowledgeEtag", "synthesisFingerprint",
+                        "manifestJson", "artifacts")));
         add(schemas, schema("EvidenceList",
                 Map.of("items", a(), "nextCursor", s()), Set.of("items")));
         add(schemas, schema("Health",

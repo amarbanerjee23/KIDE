@@ -4,7 +4,7 @@ W02 introduces one headless Language Server Protocol process for the production 
 
 ## Production language set
 
-The current Maven/Tycho reactor contains five language IDE bundles, and W02 registers exactly those five:
+The current Maven/Tycho reactor contains six production language IDE bundles and registers exactly those six:
 
 | Language | Extension | Existing Xtext setup |
 | --- | --- | --- |
@@ -13,6 +13,7 @@ The current Maven/Tycho reactor contains five language IDE bundles, and W02 regi
 | MNC | `.mncspec` | `com.mncml.dsl.ide.MncIdeSetup` |
 | Operation | `.op` | `com.operation.dsl.ide.OperationIdeSetup` |
 | Activity | `.activity` | `com.smr.activity.dsl.ide.ActivityDiagramIdeSetup` |
+| KRL | `.krl` | `com.kide.krl.dsl.ide.KrlIdeSetup` |
 
 The registry is constructed explicitly from these generated `IdeSetup` classes because ordinary Java `ServiceLoader` discovery is not a reliable cross-bundle contract in an Equinox product. Each setup still creates the existing generated runtime/IDE injector; the language server only aggregates them.
 
@@ -37,4 +38,4 @@ Pull-request CI materializes the language-server product independently from the 
 5. requires non-empty diagnostics from every language provider; and
 6. performs a clean LSP `shutdown` / `exit` sequence.
 
-This gate proves that the packaged product can serve every production DSL without Eclipse UI bundles or a graphical display. W03 will add deeper Eclipse-versus-LSP feature parity tests.
+This gate proves that the packaged product can serve every production DSL without Eclipse UI bundles or a graphical display. The permanent LSP parity gate additionally qualifies functional completion, hover, navigation, references, symbols, formatting and rename.

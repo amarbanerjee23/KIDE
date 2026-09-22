@@ -47,6 +47,7 @@ import com.kide.enterprise.modelrepo.RevisionConflictException;
 import com.kide.knowledge.KnowledgeRepositoryException;
 import com.kide.knowledge.KnowledgeRevisionConflictException;
 import com.kide.synthesis.ProjectSynthesisException;
+import com.kide.codegen.GenerationException;
 
 /**
  * Shared HTTP runtime for browser and service clients. It binds the PR20 API
@@ -66,6 +67,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
     private final ProjectCollaborationService collaboration;
     private final ProjectKnowledgeService knowledge;
     private final ProjectSynthesisService synthesis;
+    private final ProjectGenerationService generation;
     private final AuditLedger audit;
     private final Clock clock;
     private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
@@ -81,6 +83,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
             ProjectCollaborationService collaboration,
             ProjectKnowledgeService knowledge,
             ProjectSynthesisService synthesis,
+            ProjectGenerationService generation,
             AuditLedger audit,
             Clock clock) {
         this.config = Objects.requireNonNull(config, "config");
@@ -91,6 +94,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
         this.collaboration = Objects.requireNonNull(collaboration, "collaboration");
         this.knowledge = Objects.requireNonNull(knowledge, "knowledge");
         this.synthesis = Objects.requireNonNull(synthesis, "synthesis");
+        this.generation = Objects.requireNonNull(generation, "generation");
         this.audit = Objects.requireNonNull(audit, "audit");
         this.clock = Objects.requireNonNull(clock, "clock");
 
@@ -193,7 +197,8 @@ public final class EnterpriseApiServer implements AutoCloseable {
             } catch (ResourceNotFoundException
                     | ProjectCollaborationService.NotFoundException
                     | ProjectKnowledgeService.NotFoundException
-                    | ProjectSynthesisService.NotFoundException e) {
+                    | ProjectSynthesisService.NotFoundException
+                    | ProjectGenerationService.NotFoundException e) {
                 writeError(response, callback, requestId, 404, ApiErrorCode.NOT_FOUND,
                         "The requested API resource was not found.");
                 return true;
@@ -205,9 +210,9 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 writeError(response, callback, requestId, 503, ApiErrorCode.SERVICE_UNAVAILABLE,
                         "A project repository is unavailable.");
                 return true;
-            } catch (IllegalArgumentException | ProjectSynthesisException e) {
+            } catch (IllegalArgumentException | ProjectSynthesisException | GenerationException e) {
                 writeError(response, callback, requestId, 400, ApiErrorCode.BAD_REQUEST,
-                        "The request or synthesis source is invalid.");
+                        "The request or engineering source is invalid.");
                 return true;
             } catch (RuntimeException e) {
                 ApiErrorEnvelope mapped = ApiExceptionMapper.map(requestId, e);
@@ -378,6 +383,32 @@ public final class EnterpriseApiServer implements AutoCloseable {
                             modelId, modelRevision, cause, bindings);
                     audit(session, requestId, "reconfiguration.run", "model", modelId,
                             AuditOutcome.SUCCESS, result.revision());
+                    writeJson(response, callback, 200,
+                            gson.toJsonTree(result).getAsJsonObject());
+                }
+                return true;
+            }
+
+            if (segments.length == 3 && "generation".equals(segments[2])) {
+                authorization.requireModelSynthesis(session, context);
+                if (!"POST".equals(request.getMethod())) {
+                    methodNotAllowed(response, callback, requestId);
+                } else {
+                    JsonObject input = readJsonObject(request);
+                    String sourceModelId = requiredString(input, "sourceModelId");
+                    String sourceRevision = requiredString(input, "sourceRevision");
+                    String krlModelId = requiredString(input, "krlModelId");
+                    String krlRevision = requiredString(input, "krlRevision");
+                    String synthesisFingerprint =
+                            requiredString(input, "synthesisFingerprint");
+                    var result = generation.generate(
+                            sourceModelId,
+                            sourceRevision,
+                            krlModelId,
+                            krlRevision,
+                            synthesisFingerprint);
+                    audit(session, requestId, "generation.run", "model", sourceModelId,
+                            AuditOutcome.SUCCESS, result.fingerprint());
                     writeJson(response, callback, 200,
                             gson.toJsonTree(result).getAsJsonObject());
                 }

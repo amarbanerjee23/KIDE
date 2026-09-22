@@ -4,7 +4,7 @@ PR12 establishes a machine-readable contract for the product that later moderniz
 
 ## Authoritative language registry
 
-`product/languages.json` is the build-time authority for the five production textual DSLs. Each entry records:
+`product/languages.json` is the build-time authority for the six production textual DSLs. Each entry records:
 
 - the file extension and LSP language ID;
 - the Xtext grammar;
@@ -24,7 +24,8 @@ The runtime language semantics still live in the Xtext bundles. The JSON registr
 2. Operation;
 3. MNC specification;
 4. Capability; and
-5. Activity.
+5. Activity; and
+6. KRL.
 
 The packaged Linux language-server product is launched from its built distribution. CI opens the valid corpus in dependency order so cross-language references are resolved through the real Xtext workspace/index, and requires no LSP error diagnostics. It then opens every invalid fixture and requires an error diagnostic.
 
@@ -48,7 +49,7 @@ repository governance tests
   -> full Tycho reactor including Activity->MNC golden test
   -> four-platform desktop product qualification
   -> packaged enterprise-context runtime self-check
-  -> packaged five-DSL valid/invalid LSP golden corpus
+  -> packaged six-DSL valid/invalid LSP golden corpus
 ```
 
 Expected model errors remain diagnostics. Product startup, server startup or qualification must not fail with uncaught application exceptions.

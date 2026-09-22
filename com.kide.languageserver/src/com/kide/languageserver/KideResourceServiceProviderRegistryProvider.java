@@ -40,7 +40,8 @@ public final class KideResourceServiceProviderRegistryProvider
             new LanguageSetup("com.capability.dsl.ide", "com.capability.ide.CapabilityIdeSetup", "cap"),
             new LanguageSetup("com.mncml.dsl.ide", "com.mncml.dsl.ide.MncIdeSetup", "mncspec"),
             new LanguageSetup("com.operation.dsl.ide", "com.operation.dsl.ide.OperationIdeSetup", "op"),
-            new LanguageSetup("com.smr.activity.dsl.ide", "com.smr.activity.dsl.ide.ActivityDiagramIdeSetup", "activity"));
+            new LanguageSetup("com.smr.activity.dsl.ide", "com.smr.activity.dsl.ide.ActivityDiagramIdeSetup", "activity"),
+            new LanguageSetup("com.kide.krl.dsl.ide", "com.kide.krl.dsl.ide.KrlIdeSetup", "krl"));
 
     private volatile IResourceServiceProvider.Registry registry;
 

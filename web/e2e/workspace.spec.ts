@@ -370,6 +370,23 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   );
 
   await page.route(
+    "**/api/v1/projects/P04-001/models/bindings.krl",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "bindings.krl",
+          content: "knowledge BrowserBindings { template T(name: string) for java body \"class ${name} {}\"; target Out type java { template T; output \"generated/Out.java\"; bind name: string = string \"Out\"; } }",
+          revision: "2",
+          etag: "d".repeat(64),
+          mediaType: "text/x-kide-krl"
+        })
+      });
+    }
+  );
+
+  await page.route(
     "**/api/v1/projects/P04-001/synthesis",
     async (route) => {
       const request = route.request();
@@ -401,6 +418,47 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
           diagnostics: [],
           rationale: ["ObserveStep -> urn:kide:device:camera"],
           generatedMnc: "Model GoldenWorkflow\nInterfaceDescription GoldenWorkflow {}\n"
+        })
+      });
+    }
+  );
+
+  await page.route(
+    "**/api/v1/projects/P04-001/generation",
+    async (route) => {
+      const body = route.request().postDataJSON();
+      expect(body).toEqual({
+        sourceModelId: "flow.activity",
+        sourceRevision: "etag-4",
+        krlModelId: "bindings.krl",
+        krlRevision: "d".repeat(64),
+        synthesisFingerprint: "c".repeat(64)
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          resultId: "gen-browser",
+          toolchainVersion: "1",
+          fingerprint: "f".repeat(64),
+          sourceModelId: "flow.activity",
+          sourceModelVersion: "4",
+          sourceRevision: "etag-4",
+          krlModelId: "bindings.krl",
+          krlModelVersion: "2",
+          krlRevision: "d".repeat(64),
+          knowledgeRevision: 2,
+          knowledgeEtag: "b".repeat(64),
+          synthesisFingerprint: "c".repeat(64),
+          manifestJson: "{\"schemaVersion\":\"1\",\"toolchainVersion\":\"1\"}",
+          artifacts: [{
+            path: "generated/Out.java",
+            mediaType: "text/x-java-source",
+            contentBase64: "cHVibGljIGNsYXNzIE91dCB7fQ==",
+            sha256: "a".repeat(64),
+            targetId: "java",
+            targetVersion: "1"
+          }]
         })
       });
     }
@@ -458,6 +516,16 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
     "urn:kide:device:camera"
   );
   await expect(page.getByText("Generated MNC")).toBeVisible();
+
+  await expect(page.getByLabel("KRL model ID")).toHaveValue("bindings.krl");
+  await page.getByRole("button", { name: "Generate" }).click();
+  await expect(page.getByLabel("Generation result")).toContainText(
+    "Generated 1 artifact"
+  );
+  await expect(page.getByLabel("Generation result")).toContainText(
+    "generated/Out.java"
+  );
+  await expect(page.getByText("Generation manifest")).toBeVisible();
 
   await page.getByLabel("Reconfiguration cause").selectOption("RESOURCE_LOSS");
   await expect(page.getByLabel("Reconfiguration cause")).toHaveValue("RESOURCE_LOSS");
