@@ -107,6 +107,22 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     + "    nextActivity : ObserveStep\n"
                     + "  }\n"
                     + "}\n");
+            Files.writeString(project.resolve("bindings.krl"),
+                    "knowledge ApiBindings {\n"
+                    + "  namespace kide = \"https://kide.dev/ontology/v1#\";\n"
+                    + "  query FindObserve(capability: iri) {\n"
+                    + "    match ?device kide:providesCapability ?capability;\n"
+                    + "    select ?device;\n"
+                    + "  }\n"
+                    + "  template Binding(name: string, resource: iri) for java\n"
+                    + "    body \"public final class ${name} { public static final String RESOURCE = \\\"${resource}\\\"; private ${name}() {} }\";\n"
+                    + "  target Observe type java {\n"
+                    + "    template Binding;\n"
+                    + "    output \"generated/ApiObserveBinding.java\";\n"
+                    + "    bind name: string = string \"ApiObserveBinding\";\n"
+                    + "    bind resource: iri = query FindObserve(iri \"urn:kide:capability:Observe\").device;\n"
+                    + "  }\n"
+                    + "}\n");
 
             InMemoryAuditLedger audit = new InMemoryAuditLedger(Clock.systemUTC());
             FileModelRepository modelRepository = new FileModelRepository(project);
@@ -541,6 +557,68 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 throw new AssertionError("synthesis mutated the canonical Activity source");
             }
 
+            HttpResponse<String> krlSource = send(
+                    client, base.resolve(projectApi + "/models/bindings.krl"),
+                    "GET", "Bearer pr26-self-check", null);
+            requireStatus(krlSource, 200);
+            String krlEtag = json(krlSource).get("etag").getAsString();
+            String krlSourceBefore = Files.readString(project.resolve("bindings.krl"));
+
+            JsonObject generationRequest = new JsonObject();
+            generationRequest.addProperty("sourceModelId", "workflow.activity");
+            generationRequest.addProperty("sourceRevision", synthesisEtag);
+            generationRequest.addProperty("krlModelId", "bindings.krl");
+            generationRequest.addProperty("krlRevision", krlEtag);
+            generationRequest.addProperty("synthesisFingerprint", synthesisFingerprint);
+
+            HttpResponse<String> generated = send(
+                    client, base.resolve(projectApi + "/generation"), "POST",
+                    "Bearer pr26-self-check", generationRequest.toString());
+            requireStatus(generated, 200);
+            JsonObject generatedJson = json(generated);
+            if (!synthesisFingerprint.equals(
+                            generatedJson.get("synthesisFingerprint").getAsString())
+                    || generatedJson.getAsJsonArray("artifacts").size() != 1
+                    || !"generated/ApiObserveBinding.java".equals(
+                            generatedJson.getAsJsonArray("artifacts").get(0)
+                                    .getAsJsonObject().get("path").getAsString())
+                    || !"java".equals(
+                            generatedJson.getAsJsonArray("artifacts").get(0)
+                                    .getAsJsonObject().get("targetId").getAsString())
+                    || !generatedJson.get("manifestJson").getAsString()
+                            .contains("\"schemaVersion\":\"1\"")) {
+                throw new AssertionError("semantic generation API evidence is incomplete");
+            }
+            String generationFingerprint =
+                    generatedJson.get("fingerprint").getAsString();
+
+            HttpResponse<String> repeatedGeneration = send(
+                    client, base.resolve(projectApi + "/generation"), "POST",
+                    "Bearer pr26-self-check", generationRequest.toString());
+            requireStatus(repeatedGeneration, 200);
+            if (!generationFingerprint.equals(
+                    json(repeatedGeneration).get("fingerprint").getAsString())) {
+                throw new AssertionError("semantic generation result was not deterministic");
+            }
+            if (!synthesisSourceBefore.equals(
+                            Files.readString(project.resolve("workflow.activity")))
+                    || !krlSourceBefore.equals(
+                            Files.readString(project.resolve("bindings.krl")))) {
+                throw new AssertionError("semantic generation mutated canonical source files");
+            }
+
+            JsonObject staleGeneration = generationRequest.deepCopy();
+            staleGeneration.addProperty("krlRevision", "0".repeat(64));
+            HttpResponse<String> staleGenerationResponse = send(
+                    client, base.resolve(projectApi + "/generation"), "POST",
+                    "Bearer pr26-self-check", staleGeneration.toString());
+            requireStatus(staleGenerationResponse, 409);
+
+            HttpResponse<String> reviewerCannotGenerate = send(
+                    client, base.resolve(projectApi + "/generation"), "POST",
+                    "Bearer pr33-reviewer", generationRequest.toString());
+            requireStatus(reviewerCannotGenerate, 403);
+
             String currentKnowledgeEtag =
                     knowledgeRepository.snapshot().orElseThrow().etag();
             knowledgeRepository.replace(
@@ -665,7 +743,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     "Bearer pr33-reviewer", synthesisRequest.toString());
             requireStatus(reviewerCannotSynthesize, 403);
 
-            if (!audit.verify() || audit.snapshot().size() < 18) {
+            if (!audit.verify() || audit.snapshot().size() < 20) {
                 throw new AssertionError("audit evidence missing or invalid");
             }
 
@@ -674,12 +752,13 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             System.out.println("KIDE PR35 ENTERPRISE KNOWLEDGE CATALOGUE SELF-CHECK OK");
             System.out.println("KIDE PR36 ENTERPRISE SYNTHESIS SELF-CHECK OK");
             System.out.println("KIDE PR37 ENTERPRISE RECONFIGURATION SELF-CHECK OK");
+            System.out.println("KIDE PR38 ENTERPRISE GENERATION SELF-CHECK OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
             String detail = failure.getMessage();
             if (detail == null || detail.isBlank()) detail = "no detail";
             detail = detail.replace('\r', ' ').replace('\n', ' ');
-            System.err.println("KIDE PR37 enterprise API self-check failed: "
+            System.err.println("KIDE PR38 enterprise API self-check failed: "
                     + failure.getClass().getSimpleName() + " - " + detail);
             return Integer.valueOf(2);
         } finally {
