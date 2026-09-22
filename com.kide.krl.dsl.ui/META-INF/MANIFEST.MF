@@ -1,0 +1,23 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE KRL Eclipse UI
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.krl.dsl.ui;singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: com.kide.krl.dsl,
+ com.kide.krl.dsl.ide,
+ org.eclipse.xtext.ui,
+ org.eclipse.xtext.ui.shared,
+ org.eclipse.xtext.ui.codetemplates.ui,
+ org.eclipse.ui.editors,
+ org.eclipse.ui.ide,
+ org.eclipse.core.runtime,
+ org.eclipse.ui,
+ org.eclipse.compare,
+ org.eclipse.xtext.builder,
+ org.eclipse.xtext.xbase.lib
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Export-Package: com.kide.krl.dsl.ui,
+ com.kide.krl.dsl.ui.internal
+Automatic-Module-Name: com.kide.krl.dsl.ui
