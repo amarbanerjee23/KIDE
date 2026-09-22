@@ -70,6 +70,20 @@
       "setup_class": "com.smr.activity.dsl.ide.ActivityDiagramIdeSetup",
       "valid_fixture": "qualification/golden/languages/valid/golden.activity",
       "invalid_fixture": "qualification/golden/languages/invalid/golden.activity"
+    },
+    {
+      "id": "krl",
+      "display_name": "Knowledge Representation Language",
+      "extension": "krl",
+      "language_id": "kide-krl",
+      "description": "typed knowledge facts, queries, templates and generation target bindings",
+      "grammar": "com.kide.krl.dsl/src/com/kide/krl/dsl/Krl.xtext",
+      "runtime_bundle": "com.kide.krl.dsl",
+      "ide_bundle": "com.kide.krl.dsl.ide",
+      "ui_bundle": "com.kide.krl.dsl.ui",
+      "setup_class": "com.kide.krl.dsl.ide.KrlIdeSetup",
+      "valid_fixture": "qualification/golden/languages/valid/golden.krl",
+      "invalid_fixture": "qualification/golden/languages/invalid/golden.krl"
     }
   ]
 }
