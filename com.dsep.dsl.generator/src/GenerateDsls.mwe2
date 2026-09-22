@@ -21,5 +21,8 @@ component = @com.capability.GenerateCapability{
 component = @com.smr.activity.GenerateActivityDsl{
 	rootPath = ".."
 }
+component = @com.kide.krl.dsl.GenerateKrl{
+	rootPath = ".."
+}
 }
 
