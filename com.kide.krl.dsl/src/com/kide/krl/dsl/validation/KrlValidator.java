@@ -64,7 +64,7 @@ public final class KrlValidator extends AbstractKrlValidator {
     @Check
     public void matchingTemplateTarget(Target target) {
         Template template = target.getTemplate();
-        if (template != null && template.getTargetType() != target.getTargetType()) {
+        if (template != null && !template.getTargetType().equals(target.getTargetType())) {
             error("Target type must match its template target type.",
                     KrlPackage.Literals.TARGET__TARGET_TYPE, TEMPLATE_TARGET_MISMATCH);
         }
