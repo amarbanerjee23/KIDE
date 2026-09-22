@@ -6,9 +6,10 @@ COPY web/ ./
 RUN npm run build
 
 FROM maven:3.9.11-eclipse-temurin-21 AS kide-builder
+ARG KIDE_BUILD_QUALIFIER=container
 WORKDIR /src
 COPY . .
-RUN mvn -B -ntp -DskipTests clean verify
+RUN mvn -B -ntp -DskipTests -DforceContextQualifier="${KIDE_BUILD_QUALIFIER}" clean verify
 
 FROM eclipse-temurin:21-jre-jammy AS runtime
 ARG DEBIAN_FRONTEND=noninteractive
