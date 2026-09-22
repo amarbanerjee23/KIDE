@@ -175,11 +175,11 @@ public class GlspGatewayIntegrationTest {
 
             sendProcess(socket,
                     "{\"kind\":\"createNode\",\"isOperation\":true,"
-                    + "\"elementTypeId\":\"kide:mnc-interface\","
+                    + "\"elementTypeId\":\"kide:mnc-control-node\","
                     + "\"location\":{\"x\":320,\"y\":160}}");
             JsonObject update = listener.await(
                     message -> actionKind(message, "updateModel"));
-            assertTrue(update.toString().contains("Interface2"));
+            assertTrue(update.toString().contains("ControlNode2"));
 
             sendProcess(socket, "{\"kind\":\"saveModel\"}");
             listener.await(
@@ -189,7 +189,8 @@ public class GlspGatewayIntegrationTest {
                                     .get("isDirty").getAsBoolean());
 
             String persisted = Files.readString(source);
-            assertTrue(persisted.contains("Interface2"));
+            assertTrue(persisted.contains("ControlNode2"));
+            assertTrue(persisted.contains("implements interface Device"));
             assertTrue(Files.exists(project.resolve("selfcheck.notation")));
         } finally {
             if (socket != null) {
