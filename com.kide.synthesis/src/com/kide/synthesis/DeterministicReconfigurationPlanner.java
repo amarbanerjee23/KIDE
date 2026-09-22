@@ -97,7 +97,7 @@ public final class DeterministicReconfigurationPlanner {
                 && combined.size() == orderedRequirements.size();
         SynthesisPlan plan = new SynthesisPlan(feasible, combined, diagnostics);
         List<StateMigrationInstruction> migrations = migrations(
-                previousByRequirement, requirementsById, combined, feasible);
+                previousByRequirement, requirementsById, combined, feasible, cause);
 
         ReconfigurationStatus status;
         if (!feasible) {
@@ -158,7 +158,8 @@ public final class DeterministicReconfigurationPlanner {
             Map<String, ResourceSelection> previous,
             Map<String, CapabilityRequirement> currentRequirements,
             List<ResourceSelection> currentSelections,
-            boolean feasible) {
+            boolean feasible,
+            ReconfigurationCause cause) {
         Map<String, ResourceSelection> current = new LinkedHashMap<>();
         currentSelections.forEach(s -> current.put(s.requirementId(), s));
         List<StateMigrationInstruction> result = new ArrayList<>();
@@ -203,7 +204,9 @@ public final class DeterministicReconfigurationPlanner {
             }
             if (old == null) continue;
 
-            if (!old.capabilityName().equals(requirement.capabilityName())) {
+            if (cause == ReconfigurationCause.REQUIREMENT_CHANGE
+                    || cause == ReconfigurationCause.CAPABILITY_CHANGE
+                    || !old.capabilityName().equals(requirement.capabilityName())) {
                 result.add(new StateMigrationInstruction(
                         requirementId,
                         StateMigrationPolicy.RESET,
