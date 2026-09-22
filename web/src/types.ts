@@ -175,7 +175,7 @@ export interface KnowledgeTraceList {
 
 export interface KnowledgeTraceIssue {
   traceId: string;
-  code: "BROKEN_KNOWLEDGE" | "BROKEN_MODEL" | "STALE_KNOWLEDGE" | string;
+  code: "BROKEN_KNOWLEDGE" | "BROKEN_MODEL" | "STALE_KNOWLEDGE" | "STALE_MODEL" | string;
   message: string;
 }
 
