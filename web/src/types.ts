@@ -125,3 +125,63 @@ export interface ReviewApplyResult {
   changeSet: ReviewChangeSet & { proposedContent: string };
   model: Model;
 }
+
+
+export interface KnowledgeCatalogueItem {
+  iri: string;
+  label: string;
+  types: string[];
+  properties: Record<string, string[]>;
+  provenanceSource: string;
+  authority: string;
+}
+
+export interface KnowledgeQueryResult {
+  revision: number;
+  etag: string;
+  items: KnowledgeCatalogueItem[];
+  cached: boolean;
+}
+
+export type KnowledgeTraceRelation =
+  | "SATISFIES"
+  | "DERIVED_FROM"
+  | "SELECTS"
+  | "DECLARES"
+  | "REALIZES"
+  | "DEPENDS_ON";
+
+export interface KnowledgeTraceLink {
+  id: string;
+  knowledgeIri: string;
+  modelPath: string;
+  semanticId: string;
+  relation: KnowledgeTraceRelation;
+  sourceAuthority: string;
+  provenanceSource: string;
+  createdBy: string;
+  updatedBy: string;
+  createdAtEpochMillis: number;
+  updatedAtEpochMillis: number;
+  knowledgeEtagAtBind: string;
+  modelEtagAtBind: string;
+}
+
+export interface KnowledgeTraceList {
+  revision: number;
+  etag: string;
+  links: KnowledgeTraceLink[];
+}
+
+export interface KnowledgeTraceIssue {
+  traceId: string;
+  code: "BROKEN_KNOWLEDGE" | "BROKEN_MODEL" | "STALE_KNOWLEDGE" | "STALE_MODEL" | string;
+  message: string;
+}
+
+export interface KnowledgeImpactResult {
+  items: KnowledgeTraceLink[];
+  issues: KnowledgeTraceIssue[];
+  knowledgeRevision: number;
+  traceRevision: number;
+}

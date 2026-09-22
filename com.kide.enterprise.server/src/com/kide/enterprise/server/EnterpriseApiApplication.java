@@ -30,6 +30,8 @@ import com.kide.enterprise.context.EnterpriseScope;
 import com.kide.enterprise.identity.OidcIntrospectionAuthenticator;
 import com.kide.enterprise.identity.OidcIntrospectionConfig;
 import com.kide.enterprise.modelrepo.FileModelRepository;
+import com.kide.knowledge.EmbeddedKnowledgeRepository;
+import com.kide.knowledge.KnowledgeTraceStore;
 
 public final class EnterpriseApiApplication implements IApplication {
     private volatile EnterpriseApiServer server;
@@ -100,6 +102,10 @@ public final class EnterpriseApiApplication implements IApplication {
             ProjectCollaborationService collaboration =
                     new ProjectCollaborationService(
                             projectRoot, modelRepository, Clock.systemUTC());
+            ProjectKnowledgeService knowledge = new ProjectKnowledgeService(
+                    new EmbeddedKnowledgeRepository(projectRoot),
+                    new KnowledgeTraceStore(projectRoot, Clock.systemUTC()),
+                    modelRepository);
             server = new EnterpriseApiServer(
                     config,
                     authenticator::authenticateAuthorizationHeader,
@@ -107,6 +113,7 @@ public final class EnterpriseApiApplication implements IApplication {
                     authorization,
                     modelRepository,
                     collaboration,
+                    knowledge,
                     new InMemoryAuditLedger(Clock.systemUTC()),
                     Clock.systemUTC());
             server.start();

@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
@@ -111,10 +112,53 @@ public final class KnowledgeFabricSelfCheckApplication implements IApplication {
                 throw new AssertionError("service validation failed after restart");
             }
 
+            KnowledgeCatalogueService catalogue = new KnowledgeCatalogueService(restarted);
+            KnowledgeQueryResult search = catalogue.query(new KnowledgeCatalogueQuery(
+                    "observe", Set.of(KnowledgeVocabulary.CAPABILITY), 20));
+            if (search.items().size() != 1
+                    || !"Observe".equals(search.items().get(0).label())) {
+                throw new AssertionError("deterministic catalogue query failed");
+            }
+            if (!catalogue.query(new KnowledgeCatalogueQuery(
+                    "observe", Set.of(KnowledgeVocabulary.CAPABILITY), 20)).cached()) {
+                throw new AssertionError("catalogue cache was not reused for the same revision");
+            }
+
+            KnowledgeTraceStore traceStore = new KnowledgeTraceStore(root, clock);
+            KnowledgeTraceSnapshot trace = traceStore.create(
+                    "urn:kide:capability:Observe",
+                    "models/selfcheck.activity",
+                    "//@activities.0",
+                    KnowledgeTraceRelation.REALIZES,
+                    reopened.dataset().provenance().authority(),
+                    reopened.dataset().provenance().source(),
+                    "selfcheck",
+                    reopened.etag(),
+                    "1".repeat(64),
+                    KnowledgeRepository.MISSING_ETAG);
+            String traceId = trace.links().get(0).id();
+            KnowledgeTraceSnapshot rebound = traceStore.rebind(
+                    traceId,
+                    "models/renamed.activity",
+                    "//@activities.0",
+                    "2".repeat(64),
+                    "selfcheck",
+                    trace.etag());
+            if (!traceId.equals(rebound.links().get(0).id())) {
+                throw new AssertionError("trace identity changed on model move");
+            }
+            if (!new KnowledgeTraceService().validate(
+                    rebound, reopened,
+                    path -> "models/renamed.activity".equals(path)
+                            ? "2".repeat(64) : null).isEmpty()) {
+                throw new AssertionError("healthy trace was reported broken");
+            }
+
             System.out.println("KIDE PR34 KNOWLEDGE FABRIC SELF-CHECK OK");
+            System.out.println("KIDE PR35 KNOWLEDGE CATALOGUE TRACE SELF-CHECK OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
-            System.err.println("KIDE PR34 knowledge fabric self-check failed: "
+            System.err.println("KIDE PR35 knowledge fabric self-check failed: "
                     + failure.getClass().getSimpleName());
             return Integer.valueOf(2);
         } finally {

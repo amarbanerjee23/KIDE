@@ -36,8 +36,16 @@ must use HTTPS; insecure HTTP is accepted only for loopback development. Bearer 
 supplied at call time and is not persisted by the adapter. Endpoint failures are bounded
 and sanitized as knowledge-repository errors.
 
-PR35 builds deterministic retrieval, catalogue UX and stable knowledge-to-model trace links
-over this repository. It must not duplicate RDF or ontology meaning in browser code.
+PR35 adds deterministic retrieval, catalogue UX and stable knowledge-to-model trace links
+over this repository. Catalogue indexes are rebuilt only when the knowledge ETag changes;
+desktop reads the shared Java service directly while the browser consumes the authenticated
+enterprise API. Neither client duplicates RDF parsing or ontology meaning.
+
+Trace links are persisted separately under `.kide/knowledge/traces.json`. They carry stable
+UUID identity, server-derived knowledge/model revision evidence, source authority and
+provenance. A model move or rename uses an explicit rebind that preserves the trace ID.
+Concurrent trace mutation requires the current trace-store ETag, and impact validation
+reports broken model targets, removed knowledge resources and stale knowledge bindings.
 
 ## Migration
 

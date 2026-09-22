@@ -84,6 +84,7 @@
     <module>com.kide.enterprise.migration</module>
     <module>com.kide.enterprise.migration.tests</module>
     <module>com.kide.knowledge</module>
+    <module>com.kide.knowledge.ui</module>
     <module>com.kide.knowledge.tests</module>
     <module>releng</module>
   </modules>

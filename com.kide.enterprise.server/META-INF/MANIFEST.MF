@@ -19,5 +19,6 @@ Require-Bundle: org.eclipse.core.runtime,
  com.kide.enterprise.context;bundle-version="1.0.0",
  com.kide.enterprise.identity;bundle-version="1.0.0",
  com.kide.enterprise.authorization;bundle-version="1.0.0",
- com.kide.enterprise.audit;bundle-version="1.0.0"
+ com.kide.enterprise.audit;bundle-version="1.0.0",
+ com.kide.knowledge;bundle-version="1.0.0"
 Export-Package: com.kide.enterprise.server

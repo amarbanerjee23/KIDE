@@ -27,6 +27,11 @@ public final class ApiContractRegistry {
             new ApiOperation("createReviewComment", HttpMethod.POST, "/api/v1/projects/{projectId}/reviews/changesets/{changeSetId}/comments", "ReviewCommentCreateRequest", "ReviewComment"),
             new ApiOperation("updateReviewComment", HttpMethod.PUT, "/api/v1/projects/{projectId}/reviews/changesets/{changeSetId}/comments/{commentId}", "ReviewCommentUpdateRequest", "ReviewComment"),
             new ApiOperation("queryKnowledge", HttpMethod.POST, "/api/v1/projects/{projectId}/knowledge/query", "KnowledgeQueryRequest", "KnowledgeQueryResult"),
+            new ApiOperation("listKnowledgeTraces", HttpMethod.GET, "/api/v1/projects/{projectId}/knowledge/traces", "", "KnowledgeTraceList"),
+            new ApiOperation("createKnowledgeTrace", HttpMethod.POST, "/api/v1/projects/{projectId}/knowledge/traces", "KnowledgeTraceCreateRequest", "KnowledgeTraceList"),
+            new ApiOperation("rebindKnowledgeTrace", HttpMethod.PUT, "/api/v1/projects/{projectId}/knowledge/traces/{traceId}", "KnowledgeTraceRebindRequest", "KnowledgeTraceList"),
+            new ApiOperation("deleteKnowledgeTrace", HttpMethod.DELETE, "/api/v1/projects/{projectId}/knowledge/traces/{traceId}", "KnowledgeTraceDeleteRequest", "KnowledgeTraceList"),
+            new ApiOperation("queryKnowledgeImpact", HttpMethod.POST, "/api/v1/projects/{projectId}/knowledge/impact", "KnowledgeImpactRequest", "KnowledgeImpactResult"),
             new ApiOperation("synthesize", HttpMethod.POST, "/api/v1/projects/{projectId}/synthesis", "SynthesisRequest", "SynthesisResult"),
             new ApiOperation("listEvidence", HttpMethod.GET, "/api/v1/projects/{projectId}/evidence", "", "EvidenceList"),
             new ApiOperation("health", HttpMethod.GET, "/api/v1/health", "", "Health"));

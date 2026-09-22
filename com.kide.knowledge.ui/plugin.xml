@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+  <extension point="org.eclipse.ui.views">
+    <category
+        id="com.kide.knowledge.ui.category"
+        name="KIDE"/>
+    <view
+        id="com.kide.knowledge.ui.catalogue"
+        name="Knowledge Catalogue"
+        category="com.kide.knowledge.ui.category"
+        class="com.kide.knowledge.ui.KnowledgeCatalogueView"
+        restorable="true"/>
+  </extension>
+</plugin>

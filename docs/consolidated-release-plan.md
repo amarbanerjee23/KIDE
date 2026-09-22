@@ -60,10 +60,22 @@ The grouping follows shared code boundaries rather than feature labels:
 
 ## Current execution point
 
-PR22 through PR32 are merged and green on main. PR33 is implemented and green on its exact head, with collaboration/review semantics qualified independently of model-write permission.
+PR22 through PR34 are merged and green on `main`. PR34 replaced the obsolete NeoEMF
+release dependency with the versioned knowledge-fabric core and its permanent packaged
+qualification.
 
-**PR34 is the active implementation PR.** It replaces the obsolete NeoEMF release dependency with a versioned `KnowledgeRepository`, bounded embedded persistence, standards-facing RDF/XML, Turtle and expanded JSON-LD interchange, OWL vocabulary support, a deterministic SHACL Core profile, explicit provenance/scope metadata, a secure external SPARQL HTTP adapter and migration from supported research XMI fixtures.
+**PR35 is the active implementation PR.** It adds deterministic ETag-keyed catalogue
+retrieval, typed capability/device/workflow/interface/behavior/interaction views, separate
+desktop and browser catalogue experiences, revision-safe stable knowledge-to-model trace
+links, impact/broken-link diagnostics and least-privilege knowledge read/write boundaries.
+Trace provenance and knowledge/model revision evidence are derived on the server; browser
+code does not duplicate RDF or ontology semantics.
 
-The acceptance gate requires offline persistence/restart, strict optimistic revisions, format round trips, SHACL positive/negative evidence, provenance retention, malformed-input isolation, supported legacy migration, secure SPARQL endpoint policy and every existing desktop/browser/LSP/GLSP/enterprise packaged check.
+The PR35 acceptance gate requires deterministic query/cache behavior, cache invalidation on
+knowledge revision, stable trace IDs across explicit model rebinds, trace-store optimistic
+concurrency, broken/stale-link diagnostics, viewer/reviewer read-only behavior, engineer
+trace-write behavior, desktop catalogue packaging, browser unit/E2E qualification, packaged
+knowledge + enterprise API self-checks and every existing desktop/LSP/GLSP/enterprise gate.
 
-PR35 follows after PR34 and will add deterministic retrieval, catalogue UX and stable knowledge-to-model trace links.
+PR36 follows after PR35 and consolidates deterministic capability matching,
+Activity-to-MNC synthesis, controller composition and cross-model design contracts.

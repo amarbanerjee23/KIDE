@@ -1,6 +1,10 @@
 import type {
   ApiErrorEnvelope,
   Health,
+  KnowledgeImpactResult,
+  KnowledgeQueryResult,
+  KnowledgeTraceList,
+  KnowledgeTraceRelation,
   Model,
   PresenceList,
   PresenceSession,
@@ -232,6 +236,103 @@ export class KideApiClient {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resolved })
+      }
+    );
+  }
+
+  queryKnowledge(
+    projectId: string,
+    query = "",
+    typeIri = "",
+    limit = 100
+  ): Promise<KnowledgeQueryResult> {
+    return this.request<KnowledgeQueryResult>(
+      `/projects/${encodeURIComponent(projectId)}/knowledge/query`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, typeIri, limit })
+      }
+    );
+  }
+
+  listKnowledgeTraces(projectId: string): Promise<KnowledgeTraceList> {
+    return this.request<KnowledgeTraceList>(
+      `/projects/${encodeURIComponent(projectId)}/knowledge/traces`,
+      { method: "GET" }
+    );
+  }
+
+  createKnowledgeTrace(
+    projectId: string,
+    knowledgeIri: string,
+    modelId: string,
+    semanticId: string,
+    relation: KnowledgeTraceRelation,
+    expectedTraceEtag: string
+  ): Promise<KnowledgeTraceList> {
+    return this.request<KnowledgeTraceList>(
+      `/projects/${encodeURIComponent(projectId)}/knowledge/traces`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          knowledgeIri,
+          modelId,
+          semanticId,
+          relation,
+          expectedTraceEtag
+        })
+      }
+    );
+  }
+
+  rebindKnowledgeTrace(
+    projectId: string,
+    traceId: string,
+    modelId: string,
+    semanticId: string,
+    expectedTraceEtag: string
+  ): Promise<KnowledgeTraceList> {
+    return this.request<KnowledgeTraceList>(
+      `/projects/${encodeURIComponent(projectId)}/knowledge/traces/${encodeURIComponent(traceId)}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelId, semanticId, expectedTraceEtag })
+      }
+    );
+  }
+
+  deleteKnowledgeTrace(
+    projectId: string,
+    traceId: string,
+    expectedTraceEtag: string
+  ): Promise<KnowledgeTraceList> {
+    return this.request<KnowledgeTraceList>(
+      `/projects/${encodeURIComponent(projectId)}/knowledge/traces/${encodeURIComponent(traceId)}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expectedTraceEtag })
+      }
+    );
+  }
+
+  queryKnowledgeImpact(
+    projectId: string,
+    knowledgeIri = "",
+    modelId = ""
+  ): Promise<KnowledgeImpactResult> {
+    return this.request<KnowledgeImpactResult>(
+      `/projects/${encodeURIComponent(projectId)}/knowledge/impact`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...(knowledgeIri ? { knowledgeIri } : {}),
+          ...(modelId ? { modelId } : {})
+        })
       }
     );
   }

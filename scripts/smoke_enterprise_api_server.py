@@ -11,7 +11,11 @@ from pathlib import Path
 
 
 HEADLESS_LINUX_LAUNCHER = "kide-languageserver-headless"
-MARKER = "KIDE PR26 ENTERPRISE API SELF-CHECK OK"
+MARKERS = (
+    "KIDE PR26 ENTERPRISE API SELF-CHECK OK",
+    "KIDE PR33 ENTERPRISE API COLLABORATION SELF-CHECK OK",
+    "KIDE PR35 ENTERPRISE KNOWLEDGE CATALOGUE SELF-CHECK OK",
+)
 
 
 class SmokeFailure(RuntimeError):
@@ -57,11 +61,12 @@ def run_selfcheck(launcher: Path) -> None:
         raise SmokeFailure(
             f"packaged PR26 API self-check exited {result.returncode}\n{output[-10000:]}"
         )
-    if MARKER not in output:
+    missing = [marker for marker in MARKERS if marker not in output]
+    if missing:
         raise SmokeFailure(
-            f"packaged PR26 API success marker missing\n{output[-10000:]}"
+            f"packaged enterprise API success markers missing: {missing}\n{output[-10000:]}"
         )
-    print(f"PR26 PACKAGED ENTERPRISE API QUALIFIED: {launcher}")
+    print(f"PR35 PACKAGED ENTERPRISE API + KNOWLEDGE QUALIFIED: {launcher}")
 
 
 def main() -> int:
