@@ -423,7 +423,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   await page.getByRole("button", { name: "Diagram" }).click();
 
   await expect(page.getByTestId("glsp-editor")).toBeVisible();
-  await expect(page.getByText("ObserveStep", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("glsp-editor").getByText("ObserveStep", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Activity", exact: true })).toBeVisible();
   await expect(page.getByText("Connected · Eclipse GLSP graphical model")).toBeVisible();
 
