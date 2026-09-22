@@ -63,4 +63,49 @@ describe("KideApiClient", () => {
       code: "CONFLICT"
     } satisfies Partial<ApiClientError>);
   });
+
+  it("uses revision-bound collaboration review endpoints", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe(
+        "https://kide.example/api/v1/projects/p1/reviews/changesets"
+      );
+      expect(init?.method).toBe("POST");
+      const body = JSON.parse(String(init?.body));
+      expect(body).toEqual({
+        modelId: "model.dml",
+        baseEtag: "a".repeat(64),
+        proposedContent: "domain Proposed",
+        mediaType: "text/x-kide-dml"
+      });
+      return new Response(JSON.stringify({
+        id: "review-1",
+        modelId: "model.dml",
+        baseEtag: "a".repeat(64),
+        baseRevision: "4",
+        proposedContent: "domain Proposed",
+        mediaType: "text/x-kide-dml",
+        authorId: "u1",
+        authorName: "User",
+        status: "DRAFT",
+        createdAt: "2026-09-22T00:00:00Z",
+        updatedAt: "2026-09-22T00:00:00Z",
+        reviewRevision: 1
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new KideApiClient("https://kide.example", () => "token-value");
+    const result = await client.createReviewChangeSet(
+      "p1",
+      "model.dml",
+      "a".repeat(64),
+      "domain Proposed",
+      "text/x-kide-dml"
+    );
+
+    expect(result.status).toBe("DRAFT");
+  });
 });
