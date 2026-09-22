@@ -198,6 +198,8 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     modelRepository);
             ProjectSynthesisService synthesis = new ProjectSynthesisService(
                     project, modelRepository, knowledgeRepository);
+            ProjectGenerationService generation = new ProjectGenerationService(
+                    project, modelRepository, knowledgeRepository, synthesis);
             server = new EnterpriseApiServer(
                     new EnterpriseApiConfig(
                             "127.0.0.1", 0, 1024 * 1024, Duration.ofSeconds(20),
@@ -217,6 +219,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     collaboration,
                     knowledge,
                     synthesis,
+                    generation,
                     audit,
                     Clock.systemUTC());
             server.start();
