@@ -36,7 +36,7 @@ jobs:
       - name: Boot Cloud Run image
         run: |
           set -euo pipefail
-          container_id="$(docker run -d             -p 18080:8080             -e PORT=8080             -e KIDE_OIDC_INTROSPECTION_URL=http://127.0.0.1:19999/introspect             -e KIDE_OIDC_CLIENT_ID=kide-ci             -e KIDE_OIDC_CLIENT_SECRET=ci-only-placeholder             -e KIDE_OIDC_ISSUER=https://issuer.example.test/             -e KIDE_OIDC_AUDIENCE=kide-ci             -e KIDE_PRIMARY_PRINCIPAL=ci:administrator             kide-cloud-run:ci)"
+          container_id="$(docker run -d             -p 18080:8080             -e PORT=8080             -e KIDE_OIDC_INTROSPECTION_URL=https://127.0.0.1:19999/introspect             -e KIDE_OIDC_CLIENT_ID=kide-ci             -e KIDE_OIDC_CLIENT_SECRET=ci-only-placeholder             -e KIDE_OIDC_ISSUER=https://issuer.example.test/             -e KIDE_OIDC_AUDIENCE=kide-ci             -e KIDE_PRIMARY_PRINCIPAL=ci:administrator             kide-cloud-run:ci)"
 
           cleanup() {
             docker logs "$container_id" || true
