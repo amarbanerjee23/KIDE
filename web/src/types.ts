@@ -185,3 +185,38 @@ export interface KnowledgeImpactResult {
   knowledgeRevision: number;
   traceRevision: number;
 }
+
+
+export type SynthesisStatus = "SUCCESS" | "NO_SOLUTION" | "CONTRACT_VIOLATION";
+
+export interface SynthesisSelection {
+  requirementId: string;
+  activityName: string;
+  capabilityName: string;
+  resourceId: string;
+  rationale: string;
+}
+
+export interface SynthesisDiagnostic {
+  severity: "INFO" | "WARNING" | "ERROR";
+  code: string;
+  message: string;
+  subjectId: string;
+  relatedIds: string[];
+}
+
+export interface SynthesisResult {
+  resultId: string;
+  serviceVersion: string;
+  status: SynthesisStatus;
+  modelId: string;
+  modelVersion: string;
+  revision: string;
+  knowledgeRevision: number;
+  knowledgeEtag: string;
+  fingerprint: string;
+  selections: SynthesisSelection[];
+  diagnostics: SynthesisDiagnostic[];
+  rationale: string[];
+  generatedMnc: string;
+}
