@@ -40,10 +40,10 @@
       startupForegroundColor="FDFDFF"/>
 
    <launcher name="kide">
-      <linux icon="/com.kide.branding/icons/kide256.xpm"/>
-      <macosx icon="/com.kide.branding/icons/kide.icns"/>
+      <linux icon="../../com.kide.branding/icons/kide256.xpm"/>
+      <macosx icon="../../com.kide.branding/icons/kide.icns"/>
       <win useIco="true">
-         <ico path="/com.kide.branding/icons/kide.ico"/>
+         <ico path="../../com.kide.branding/icons/kide.ico"/>
          <bmp/>
       </win>
    </launcher>
