@@ -86,6 +86,28 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
                     new AuthorizationEnforcer(new AuthorizationService(policies)));
 
+            Files.writeString(project.resolve("device.mncspec"),
+                    "Model Golden\n"
+                    + "InterfaceDescription Device {\n"
+                    + "  commands { Start[] }\n"
+                    + "  events { Publish Ready[] }\n"
+                    + "}\n");
+            Files.writeString(project.resolve("observe.cap"),
+                    "Capability Observe compatible component interface Device {\n"
+                    + "  providesControlCapabilities {\n"
+                    + "    fireable commands : Start\n"
+                    + "    receivable events : Ready\n"
+                    + "  }\n"
+                    + "}\n");
+            Files.writeString(project.resolve("workflow.activity"),
+                    "ActivityDiagram GoldenWorkflow\n"
+                    + "has activities {\n"
+                    + "  Activity ObserveStep {\n"
+                    + "    requireCapability : Observe { Start, Ready }\n"
+                    + "    nextActivity : ObserveStep\n"
+                    + "  }\n"
+                    + "}\n");
+
             InMemoryAuditLedger audit = new InMemoryAuditLedger(Clock.systemUTC());
             FileModelRepository modelRepository = new FileModelRepository(project);
             ProjectCollaborationService collaboration =
