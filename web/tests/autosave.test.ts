@@ -73,7 +73,7 @@ describe("AutosaveCoordinator", () => {
     coordinator.update("local");
     await coordinator.flush();
 
-    expect(onConflict).toHaveBeenCalledWith(conflict, "local");
+    expect(onConflict).toHaveBeenCalledWith(conflict, "local", "etag-1");
     expect(states.at(-1)).toBe("conflict");
     coordinator.dispose();
   });
