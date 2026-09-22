@@ -142,6 +142,14 @@ public class KnowledgeCatalogueTraceTest {
                     "3".repeat(64),
                     KnowledgeRepository.MISSING_ETAG);
 
+            var modelChanged = new KnowledgeTraceService().validate(
+                    traceSnapshot,
+                    first,
+                    ignored -> "4".repeat(64));
+            assertEquals(
+                    List.of("STALE_MODEL"),
+                    modelChanged.stream().map(issue -> issue.code()).toList());
+
             var second = repository.replace(dataset(false), first.etag());
             var issues = new KnowledgeTraceService().validate(
                     traceSnapshot,
