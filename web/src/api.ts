@@ -265,7 +265,7 @@ export class KideApiClient {
     cause: ReconfigurationCause,
     previousBindings: Array<Pick<
       SynthesisResult["selections"][number],
-      "requirementId" | "activityName" | "capabilityName" | "resourceId"
+      "requirementId" | "resourceId"
     >>
   ): Promise<ReconfigurationResult> {
     return this.request<ReconfigurationResult>(
