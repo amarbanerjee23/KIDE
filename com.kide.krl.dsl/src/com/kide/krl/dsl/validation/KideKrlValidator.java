@@ -12,7 +12,7 @@ import com.kide.krl.dsl.krl.Namespace;
 import com.kide.krl.dsl.krl.Target;
 import com.kide.krl.dsl.krl.Template;
 
-public final class KideKrlValidator extends AbstractKrlValidator {
+public final class KideKrlValidator extends KrlValidator {
     public static final String DUPLICATE_DECLARATION = "krl.duplicateDeclaration";
     public static final String UNSAFE_OUTPUT = "krl.unsafeOutput";
     public static final String TEMPLATE_TARGET_MISMATCH = "krl.templateTargetMismatch";
