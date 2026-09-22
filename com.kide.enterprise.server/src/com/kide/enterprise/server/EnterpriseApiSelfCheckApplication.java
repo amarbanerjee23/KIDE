@@ -134,7 +134,27 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                                     new KnowledgeTriple(
                                             "urn:kide:capability:Observe",
                                             KnowledgeVocabulary.LABEL,
-                                            KnowledgeTerm.literal("Observe")))),
+                                            KnowledgeTerm.literal("Observe")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            KnowledgeVocabulary.RDF_TYPE,
+                                            KnowledgeTerm.iri(KnowledgeVocabulary.DEVICE)),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            KnowledgeVocabulary.LABEL,
+                                            KnowledgeTerm.literal("Camera")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            SynthesisVocabulary.PROVIDES_CAPABILITY,
+                                            KnowledgeTerm.iri("urn:kide:capability:Observe")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            SynthesisVocabulary.PROVIDES_INTERFACE,
+                                            KnowledgeTerm.iri("urn:kide:interface:Device")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            SynthesisVocabulary.PRIORITY,
+                                            KnowledgeTerm.literal("10")))),
                     KnowledgeRepository.MISSING_ETAG);
             ProjectKnowledgeService knowledge = new ProjectKnowledgeService(
                     knowledgeRepository,
