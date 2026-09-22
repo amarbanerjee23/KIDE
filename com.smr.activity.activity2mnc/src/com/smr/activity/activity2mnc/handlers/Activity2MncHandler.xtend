@@ -4,6 +4,7 @@ import activityDiagramModel.ActivityDiagram
 import com.google.inject.Guice
 import com.google.inject.Inject
 import com.mncml.dsl.MncRuntimeModule
+import com.kide.synthesis.activity2mnc.GenerateMnCDesignFromActivityDiagram
 import java.util.ArrayList
 import org.eclipse.core.commands.AbstractHandler
 import org.eclipse.core.commands.ExecutionEvent
@@ -79,7 +80,7 @@ class Activity2MncHandler extends AbstractHandler {
 										var s = serializer.serialize(m);
 										print(s)
 //										fsa.generateFile(m.name+".mncspec",s)
-										var fileLocation = '''«project.location.toString»/src-gen/code/«m.name».mncspec'''
+										var fileLocation = '''Â«project.location.toStringÂ»/src-gen/code/Â«m.nameÂ».mncspec'''
 										var generatedRes = resourceSet.createResource(
 											URI.createFileURI(fileLocation)
 										) as XtextResource
