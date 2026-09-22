@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 public final class KnowledgeTraceService {
     public List<KnowledgeTraceLink> impactForKnowledge(
@@ -36,9 +36,13 @@ public final class KnowledgeTraceService {
                 issues.add(new KnowledgeTraceIssue(
                         link.id(), "BROKEN_KNOWLEDGE", "Knowledge resource no longer exists."));
             }
-            if (!modelExists.test(link.modelPath())) {
+            String currentModelEtag = modelEtagLookup.apply(link.modelPath());
+            if (currentModelEtag == null || currentModelEtag.isBlank()) {
                 issues.add(new KnowledgeTraceIssue(
                         link.id(), "BROKEN_MODEL", "Model resource no longer exists."));
+            } else if (!currentModelEtag.equals(link.modelEtagAtBind())) {
+                issues.add(new KnowledgeTraceIssue(
+                        link.id(), "STALE_MODEL", "Model changed after this trace was bound."));
             }
             if (!knowledge.etag().equals(link.knowledgeEtagAtBind())) {
                 issues.add(new KnowledgeTraceIssue(
