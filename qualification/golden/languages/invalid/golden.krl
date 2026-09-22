@@ -7,6 +7,6 @@ knowledge BrokenKrl {
   target Escape type java {
     template JsonBody;
     output "../Escape.java";
-    bind name: string = "Escape";
+    bind name: string = string "Escape";
   }
 }
