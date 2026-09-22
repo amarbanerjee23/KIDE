@@ -36,6 +36,14 @@ public class ApiContractTest {
         assertTrue(operations.stream().anyMatch(op -> op.path().equals("/api/v1/projects")));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/models")));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/knowledge")));
+        assertTrue(operations.stream().anyMatch(op ->
+                op.path().endsWith("/knowledge/query") && op.method() == HttpMethod.POST));
+        assertTrue(operations.stream().anyMatch(op ->
+                op.path().endsWith("/knowledge/traces") && op.method() == HttpMethod.GET));
+        assertTrue(operations.stream().anyMatch(op ->
+                op.path().contains("/knowledge/traces/{traceId}") && op.method() == HttpMethod.PUT));
+        assertTrue(operations.stream().anyMatch(op ->
+                op.path().endsWith("/knowledge/impact") && op.method() == HttpMethod.POST));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/synthesis")));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/evidence")));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/collaboration/sessions")));
