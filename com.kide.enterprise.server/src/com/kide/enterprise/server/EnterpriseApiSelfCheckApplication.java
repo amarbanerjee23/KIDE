@@ -35,6 +35,14 @@ import com.kide.enterprise.identity.AuthenticationMethod;
 import com.kide.enterprise.identity.PrincipalIdentity;
 import com.kide.enterprise.identity.PrincipalKind;
 import com.kide.enterprise.modelrepo.ServerModelRepository;
+import com.kide.knowledge.EmbeddedKnowledgeRepository;
+import com.kide.knowledge.KnowledgeDataset;
+import com.kide.knowledge.KnowledgeProvenance;
+import com.kide.knowledge.KnowledgeRepository;
+import com.kide.knowledge.KnowledgeTerm;
+import com.kide.knowledge.KnowledgeTraceStore;
+import com.kide.knowledge.KnowledgeTriple;
+import com.kide.knowledge.KnowledgeVocabulary;
 
 public final class EnterpriseApiSelfCheckApplication implements IApplication {
     private volatile EnterpriseApiServer server;
@@ -81,6 +89,34 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             ServerModelRepository modelRepository = new ServerModelRepository();
             ProjectCollaborationService collaboration =
                     new ProjectCollaborationService(project, modelRepository, Clock.systemUTC());
+            EmbeddedKnowledgeRepository knowledgeRepository =
+                    new EmbeddedKnowledgeRepository(project);
+            knowledgeRepository.replace(
+                    new KnowledgeDataset(
+                            KnowledgeDataset.CURRENT_SCHEMA,
+                            "api-selfcheck",
+                            "PROJECT",
+                            context.project().id().value(),
+                            new KnowledgeProvenance(
+                                    "urn:kide:selfcheck:catalogue",
+                                    "KIDE",
+                                    principal.id(),
+                                    Clock.systemUTC().millis(),
+                                    "INTERNAL"),
+                            List.of(
+                                    new KnowledgeTriple(
+                                            "urn:kide:capability:Observe",
+                                            KnowledgeVocabulary.RDF_TYPE,
+                                            KnowledgeTerm.iri(KnowledgeVocabulary.CAPABILITY)),
+                                    new KnowledgeTriple(
+                                            "urn:kide:capability:Observe",
+                                            KnowledgeVocabulary.LABEL,
+                                            KnowledgeTerm.literal("Observe")))),
+                    KnowledgeRepository.MISSING_ETAG);
+            ProjectKnowledgeService knowledge = new ProjectKnowledgeService(
+                    knowledgeRepository,
+                    new KnowledgeTraceStore(project, Clock.systemUTC()),
+                    modelRepository);
             server = new EnterpriseApiServer(
                     new EnterpriseApiConfig(
                             "127.0.0.1", 0, 1024 * 1024, Duration.ofSeconds(20),
@@ -98,6 +134,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     authorization,
                     modelRepository,
                     collaboration,
+                    knowledge,
                     audit,
                     Clock.systemUTC());
             server.start();
@@ -321,25 +358,97 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 throw new AssertionError("review state did not survive service rejoin");
             }
 
-            HttpResponse<String> future = send(
-                    client,
-                    base.resolve("/api/v1/projects/" + context.project().id().value()
-                            + "/knowledge/query"),
-                    "POST", "Bearer pr26-self-check", "{}");
-            requireStatus(future, 503);
-            if (!"SERVICE_UNAVAILABLE".equals(json(future).get("code").getAsString())) {
-                throw new AssertionError("future service did not fail with typed unavailable state");
+            String knowledgeBase = projectApi + "/knowledge";
+            JsonObject knowledgeQuery = new JsonObject();
+            knowledgeQuery.addProperty("query", "Observe");
+            knowledgeQuery.addProperty("typeIri", "CAPABILITY");
+            knowledgeQuery.addProperty("limit", 10);
+            HttpResponse<String> knowledgeResult = send(
+                    client, base.resolve(knowledgeBase + "/query"), "POST",
+                    "Bearer pr26-self-check", knowledgeQuery.toString());
+            requireStatus(knowledgeResult, 200);
+            JsonObject knowledgeJson = json(knowledgeResult);
+            if (knowledgeJson.getAsJsonArray("items").size() != 1
+                    || !"Observe".equals(
+                            knowledgeJson.getAsJsonArray("items")
+                                    .get(0).getAsJsonObject().get("label").getAsString())) {
+                throw new AssertionError("knowledge catalogue query did not return Observe");
             }
 
-            if (!audit.verify() || audit.snapshot().size() < 12) {
+            HttpResponse<String> reviewerKnowledge = send(
+                    client, base.resolve(knowledgeBase + "/query"), "POST",
+                    "Bearer pr33-reviewer", knowledgeQuery.toString());
+            requireStatus(reviewerKnowledge, 200);
+
+            HttpResponse<String> emptyTraces = send(
+                    client, base.resolve(knowledgeBase + "/traces"), "GET",
+                    "Bearer pr26-self-check", null);
+            requireStatus(emptyTraces, 200);
+            String emptyTraceEtag = json(emptyTraces).get("etag").getAsString();
+
+            JsonObject traceCreate = new JsonObject();
+            traceCreate.addProperty("knowledgeIri", "urn:kide:capability:Observe");
+            traceCreate.addProperty("modelId", "selfcheck.dml");
+            traceCreate.addProperty("semanticId", "domain:SelfCheck");
+            traceCreate.addProperty("relation", "REALIZES");
+            traceCreate.addProperty("expectedTraceEtag", emptyTraceEtag);
+
+            HttpResponse<String> reviewerCannotTrace = send(
+                    client, base.resolve(knowledgeBase + "/traces"), "POST",
+                    "Bearer pr33-reviewer", traceCreate.toString());
+            requireStatus(reviewerCannotTrace, 403);
+
+            HttpResponse<String> traceCreated = send(
+                    client, base.resolve(knowledgeBase + "/traces"), "POST",
+                    "Bearer pr26-self-check", traceCreate.toString());
+            requireStatus(traceCreated, 200);
+            JsonObject traceState = json(traceCreated);
+            if (traceState.getAsJsonArray("links").size() != 1) {
+                throw new AssertionError("knowledge trace was not persisted");
+            }
+            String traceId = traceState.getAsJsonArray("links")
+                    .get(0).getAsJsonObject().get("id").getAsString();
+            String traceEtag = traceState.get("etag").getAsString();
+
+            HttpResponse<String> staleTrace = send(
+                    client, base.resolve(knowledgeBase + "/traces"), "POST",
+                    "Bearer pr26-self-check", traceCreate.toString());
+            requireStatus(staleTrace, 409);
+
+            JsonObject impactQuery = new JsonObject();
+            impactQuery.addProperty("knowledgeIri", "urn:kide:capability:Observe");
+            HttpResponse<String> impact = send(
+                    client, base.resolve(knowledgeBase + "/impact"), "POST",
+                    "Bearer pr26-self-check", impactQuery.toString());
+            requireStatus(impact, 200);
+            if (json(impact).getAsJsonArray("items").size() != 1) {
+                throw new AssertionError("knowledge impact query did not return the trace");
+            }
+
+            JsonObject rebindTrace = new JsonObject();
+            rebindTrace.addProperty("modelId", "selfcheck.dml");
+            rebindTrace.addProperty("semanticId", "domain:Merged");
+            rebindTrace.addProperty("expectedTraceEtag", traceEtag);
+            HttpResponse<String> rebound = send(
+                    client, base.resolve(knowledgeBase + "/traces/" + traceId), "PUT",
+                    "Bearer pr26-self-check", rebindTrace.toString());
+            requireStatus(rebound, 200);
+            if (!traceId.equals(
+                    json(rebound).getAsJsonArray("links")
+                            .get(0).getAsJsonObject().get("id").getAsString())) {
+                throw new AssertionError("trace identity changed during rebind");
+            }
+
+            if (!audit.verify() || audit.snapshot().size() < 14) {
                 throw new AssertionError("audit evidence missing or invalid");
             }
 
             System.out.println("KIDE PR26 ENTERPRISE API SELF-CHECK OK");
             System.out.println("KIDE PR33 ENTERPRISE API COLLABORATION SELF-CHECK OK");
+            System.out.println("KIDE PR35 ENTERPRISE KNOWLEDGE CATALOGUE SELF-CHECK OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
-            System.err.println("KIDE PR33 enterprise API self-check failed: "
+            System.err.println("KIDE PR35 enterprise API self-check failed: "
                     + failure.getClass().getSimpleName());
             return Integer.valueOf(2);
         } finally {
