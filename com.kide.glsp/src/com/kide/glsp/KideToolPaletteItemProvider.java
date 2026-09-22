@@ -19,7 +19,8 @@ public final class KideToolPaletteItemProvider implements ToolPaletteItemProvide
             nodes.add(node(KideDiagramTypes.ACTIVITY, "Activity"));
             relations.add(edge(KideDiagramTypes.ACTIVITY_NEXT, "Next activity"));
         } else {
-            nodes.add(node(KideDiagramTypes.MNC_INTERFACE, "Interface"));
+            // An MNC file already contains its required singleton InterfaceDescription.
+            // The only grammar-valid top-level node creation is its optional ControlNode.
             nodes.add(node(KideDiagramTypes.MNC_CONTROL_NODE, "Control node"));
             relations.add(edge(KideDiagramTypes.MNC_USES, "Uses"));
             relations.add(edge(KideDiagramTypes.MNC_IMPLEMENTS, "Implements"));
