@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import CapabilityDescription.Capability;
 import CapabilityDescription.CapabilityDescriptionFactory;
+import CapabilityDescription.ControlCapabilities;
 import activityDiagramModel.Activity;
 import activityDiagramModel.ActivityDiagram;
 import activityDiagramModel.ActivityDiagramModelFactory;
@@ -30,6 +31,7 @@ import com.kide.synthesis.SynthesisDiagnosticSeverity;
 import com.kide.synthesis.SynthesisResource;
 import com.kide.synthesis.SynthesisStatus;
 import com.kide.synthesis.SynthesisVocabulary;
+import mncModel.Event;
 import mncModel.InterfaceDescription;
 import mncModel.MncModelFactory;
 
@@ -111,6 +113,44 @@ public class DeterministicSynthesisTest {
         assertTrue(result.diagnostics().stream()
                 .anyMatch(d -> "UNBOUND_CAPABILITY_MODEL".equals(d.code())));
         assertEquals(null, result.controllerModel());
+    }
+
+    @Test
+    public void eventCapabilityWithoutDeclaredInitProcessStillSynthesizesSafely() {
+        InterfaceDescription descriptor = MncModelFactory.eINSTANCE.createInterfaceDescription();
+        descriptor.setName("Sensor");
+        Event ready = MncModelFactory.eINSTANCE.createEvent();
+        ready.setName("Ready");
+        descriptor.getEvents().add(ready);
+
+        Capability capability = CapabilityDescriptionFactory.eINSTANCE.createCapability();
+        capability.setName("Observe");
+        capability.getComponentInterface().add(descriptor);
+        ControlCapabilities control =
+                CapabilityDescriptionFactory.eINSTANCE.createControlCapabilities();
+        control.getEvents().add(ready);
+        capability.setProvidesControlCapabilities(control);
+
+        Activity activity = ActivityDiagramModelFactory.eINSTANCE.createActivity();
+        activity.setName("Observe");
+        activity.setBindCapability(capability);
+        activity.getUseControlCapabilities().add(ready);
+
+        ActivityDiagram diagram = ActivityDiagramModelFactory.eINSTANCE.createActivityDiagram();
+        diagram.setName("Workflow");
+        diagram.getActivities().add(activity);
+
+        KnowledgeDataset knowledge = knowledge(
+                device("urn:kide:device:camera-a", "Camera A", "Observe", "Sensor", 10, 8, 40));
+
+        var result = new DeterministicSynthesisService().synthesize(diagram, knowledge);
+
+        assertEquals(SynthesisStatus.SUCCESS, result.status());
+        assertNotNull(result.controllerModel());
+        InterfaceDescription generated =
+                (InterfaceDescription) result.controllerModel().getSystems().get(0);
+        assertTrue(generated.getSubscribedItems().getSubscribedEvents().stream()
+                .anyMatch(event -> "Ready".equals(event.getName())));
     }
 
     @Test
