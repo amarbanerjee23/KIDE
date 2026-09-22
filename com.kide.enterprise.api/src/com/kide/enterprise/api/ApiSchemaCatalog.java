@@ -47,10 +47,15 @@ public final class ApiSchemaCatalog {
                 Map.of("expectedCurrentEtag", s(), "proposedContent", s()),
                 Set.of("expectedCurrentEtag", "proposedContent")));
         add(schemas, schema("ReviewChangeSet",
-                Map.of("id", s(), "modelId", s(), "baseEtag", s(), "baseRevision", s(),
-                        "proposedContent", s(), "mediaType", s(), "authorId", s(), "authorName", s(),
-                        "status", s(), "createdAt", s(), "updatedAt", s(), "reviewRevision", i(),
-                        "approvedBy", s(), "approvedAt", s(), "appliedEtag", s(), "appliedRevision", s()),
+                Map.ofEntries(
+                        Map.entry("id", s()), Map.entry("modelId", s()),
+                        Map.entry("baseEtag", s()), Map.entry("baseRevision", s()),
+                        Map.entry("proposedContent", s()), Map.entry("mediaType", s()),
+                        Map.entry("authorId", s()), Map.entry("authorName", s()),
+                        Map.entry("status", s()), Map.entry("createdAt", s()),
+                        Map.entry("updatedAt", s()), Map.entry("reviewRevision", i()),
+                        Map.entry("approvedBy", s()), Map.entry("approvedAt", s()),
+                        Map.entry("appliedEtag", s()), Map.entry("appliedRevision", s())),
                 Set.of("id", "modelId", "baseEtag", "authorId", "authorName", "status",
                         "createdAt", "updatedAt", "reviewRevision")));
         add(schemas, schema("ReviewChangeSetList",
@@ -63,9 +68,12 @@ public final class ApiSchemaCatalog {
         add(schemas, schema("ReviewCommentUpdateRequest",
                 Map.of("resolved", b()), Set.of("resolved")));
         add(schemas, schema("ReviewComment",
-                Map.of("id", s(), "changeSetId", s(), "authorId", s(), "authorName", s(),
-                        "body", s(), "anchor", s(), "createdAt", s(), "resolved", b(),
-                        "resolvedBy", s(), "resolvedAt", s()),
+                Map.ofEntries(
+                        Map.entry("id", s()), Map.entry("changeSetId", s()),
+                        Map.entry("authorId", s()), Map.entry("authorName", s()),
+                        Map.entry("body", s()), Map.entry("anchor", s()),
+                        Map.entry("createdAt", s()), Map.entry("resolved", b()),
+                        Map.entry("resolvedBy", s()), Map.entry("resolvedAt", s())),
                 Set.of("id", "changeSetId", "authorId", "authorName", "body",
                         "createdAt", "resolved")));
         add(schemas, schema("ReviewCommentList",
