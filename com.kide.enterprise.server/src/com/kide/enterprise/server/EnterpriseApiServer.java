@@ -46,6 +46,7 @@ import com.kide.enterprise.modelrepo.ModelTransaction;
 import com.kide.enterprise.modelrepo.RevisionConflictException;
 import com.kide.knowledge.KnowledgeRepositoryException;
 import com.kide.knowledge.KnowledgeRevisionConflictException;
+import com.kide.synthesis.ProjectSynthesisException;
 
 /**
  * Shared HTTP runtime for browser and service clients. It binds the PR20 API
@@ -64,6 +65,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
     private final ModelRepository models;
     private final ProjectCollaborationService collaboration;
     private final ProjectKnowledgeService knowledge;
+    private final ProjectSynthesisService synthesis;
     private final AuditLedger audit;
     private final Clock clock;
     private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
@@ -78,6 +80,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
             ModelRepository models,
             ProjectCollaborationService collaboration,
             ProjectKnowledgeService knowledge,
+            ProjectSynthesisService synthesis,
             AuditLedger audit,
             Clock clock) {
         this.config = Objects.requireNonNull(config, "config");
@@ -87,6 +90,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
         this.models = Objects.requireNonNull(models, "models");
         this.collaboration = Objects.requireNonNull(collaboration, "collaboration");
         this.knowledge = Objects.requireNonNull(knowledge, "knowledge");
+        this.synthesis = Objects.requireNonNull(synthesis, "synthesis");
         this.audit = Objects.requireNonNull(audit, "audit");
         this.clock = Objects.requireNonNull(clock, "clock");
 
@@ -188,7 +192,8 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 return true;
             } catch (ResourceNotFoundException
                     | ProjectCollaborationService.NotFoundException
-                    | ProjectKnowledgeService.NotFoundException e) {
+                    | ProjectKnowledgeService.NotFoundException
+                    | ProjectSynthesisService.NotFoundException e) {
                 writeError(response, callback, requestId, 404, ApiErrorCode.NOT_FOUND,
                         "The requested API resource was not found.");
                 return true;
@@ -200,9 +205,9 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 writeError(response, callback, requestId, 503, ApiErrorCode.SERVICE_UNAVAILABLE,
                         "A project repository is unavailable.");
                 return true;
-            } catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException | ProjectSynthesisException e) {
                 writeError(response, callback, requestId, 400, ApiErrorCode.BAD_REQUEST,
-                        "The request is invalid.");
+                        "The request or synthesis source is invalid.");
                 return true;
             } catch (RuntimeException e) {
                 ApiErrorEnvelope mapped = ApiExceptionMapper.map(requestId, e);
@@ -332,8 +337,14 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 if (!"POST".equals(request.getMethod())) {
                     methodNotAllowed(response, callback, requestId);
                 } else {
-                    unavailable(response, callback, requestId,
-                            "Synthesis services are not installed yet.");
+                    JsonObject input = readJsonObject(request);
+                    String modelId = requiredString(input, "modelId");
+                    String modelRevision = requiredString(input, "modelRevision");
+                    var result = synthesis.synthesize(modelId, modelRevision);
+                    audit(session, requestId, "synthesis.run", "model", modelId,
+                            AuditOutcome.SUCCESS, result.revision());
+                    writeJson(response, callback, 200,
+                            gson.toJsonTree(result).getAsJsonObject());
                 }
                 return true;
             }
