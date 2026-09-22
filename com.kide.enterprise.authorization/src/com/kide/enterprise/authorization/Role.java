@@ -21,7 +21,9 @@ public enum Role {
             Permission.EVIDENCE_WRITE,
             Permission.COLLABORATION_READ,
             Permission.COLLABORATION_WRITE,
-            Permission.REVIEW_COMMENT)),
+            Permission.REVIEW_COMMENT,
+            Permission.KNOWLEDGE_READ,
+            Permission.KNOWLEDGE_TRACE_WRITE)),
     REVIEWER(EnumSet.of(
             Permission.CONTEXT_READ,
             Permission.PROJECT_READ,
@@ -33,7 +35,8 @@ public enum Role {
             Permission.EVIDENCE_READ,
             Permission.COLLABORATION_READ,
             Permission.REVIEW_COMMENT,
-            Permission.REVIEW_APPROVE)),
+            Permission.REVIEW_APPROVE,
+            Permission.KNOWLEDGE_READ)),
     VIEWER(EnumSet.of(
             Permission.CONTEXT_READ,
             Permission.PROJECT_READ,
@@ -41,7 +44,8 @@ public enum Role {
             Permission.WORKSPACE_OPEN,
             Permission.API_ACCESS,
             Permission.EVIDENCE_READ,
-            Permission.COLLABORATION_READ)),
+            Permission.COLLABORATION_READ,
+            Permission.KNOWLEDGE_READ)),
     SERVICE_OPERATOR(EnumSet.of(
             Permission.CONTEXT_READ,
             Permission.PROJECT_READ,
@@ -58,7 +62,9 @@ public enum Role {
             Permission.COLLABORATION_READ,
             Permission.COLLABORATION_WRITE,
             Permission.REVIEW_COMMENT,
-            Permission.REVIEW_APPROVE));
+            Permission.REVIEW_APPROVE,
+            Permission.KNOWLEDGE_READ,
+            Permission.KNOWLEDGE_TRACE_WRITE));
 
     private final Set<Permission> permissions;
 
