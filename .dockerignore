@@ -1,0 +1,10 @@
+.git
+.gitignore
+**/target
+**/bin
+web/node_modules
+web/dist
+qualification/pr37-reconfiguration-benchmark.json
+qualification/pr38-codegen
+*.log
+.DS_Store
