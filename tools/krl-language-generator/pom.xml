@@ -28,6 +28,8 @@
         </executions>
         <configuration>
           <mainClass>org.eclipse.emf.mwe2.launch.runtime.Mwe2Launcher</mainClass>
+          <includePluginDependencies>true</includePluginDependencies>
+          <cleanupDaemonThreads>false</cleanupDaemonThreads>
           <arguments>
             <argument>${maven.multiModuleProjectDirectory}/com.kide.krl.dsl/src/com/kide/krl/dsl/GenerateKrl.mwe2</argument>
             <argument>-p</argument>
