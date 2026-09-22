@@ -104,7 +104,7 @@ public final class CodeGenerationSelfCheckApplication implements IApplication {
                   }
 
                   template JavaBinding(name: string, resource: iri) for java
-                    body "public final class ${name} { public static final String RESOURCE = \"${resource}\"; private ${name}() {} }";
+                    body "public final class ${name} { public static final String RESOURCE = \\\"${resource}\\\"; private ${name}() {} }";
 
                   target ObserveBinding type java {
                     template JavaBinding;
