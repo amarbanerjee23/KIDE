@@ -156,22 +156,46 @@ if ! curl --fail --silent \
   exit 2
 fi
 
-if ! kill -0 "${lsp_pid}" 2>/dev/null; then
-  cat /tmp/kide-lsp.log >&2
-  exit 2
-fi
-if ! kill -0 "${glsp_pid}" 2>/dev/null; then
-  cat /tmp/kide-glsp.log >&2
-  exit 2
-fi
+wait_listener() {
+  local name="$1"
+  local pid="$2"
+  local url="$3"
+  local log="$4"
+  for _ in $(seq 1 60); do
+    if ! kill -0 "${pid}" 2>/dev/null; then
+      echo "KIDE ${name} process exited before becoming ready" >&2
+      cat "${log}" >&2
+      return 1
+    fi
+    if curl --silent --output /dev/null --max-time 1 \
+        -H 'X-Forwarded-Proto: https' "${url}"; then
+      return 0
+    fi
+    sleep 1
+  done
+  echo "KIDE ${name} listener did not become ready" >&2
+  cat "${log}" >&2
+  return 1
+}
 
+wait_listener lsp "${lsp_pid}" \
+  "http://127.0.0.1:18082/lsp?workspaceId=${workspace_id}" \
+  /tmp/kide-lsp.log
+wait_listener glsp "${glsp_pid}" \
+  "http://127.0.0.1:18083/glsp?workspaceId=${workspace_id}" \
+  /tmp/kide-glsp.log
+
+mkdir -p /tmp/nginx-client /tmp/nginx-proxy /tmp/nginx-fastcgi \
+  /tmp/nginx-uwsgi /tmp/nginx-scgi
 envsubst '$PORT' < /opt/kide-cloud/nginx.conf.template > /tmp/nginx.conf
 nginx -c /tmp/nginx.conf -g 'daemon off;' &
 nginx_pid=$!
 
 echo "KIDE CLOUD RUN READY port=${PORT} workspaceId=${workspace_id}"
+set +e
 wait -n "${api_pid}" "${lsp_pid}" "${glsp_pid}" "${nginx_pid}"
 exit_code=$?
+set -e
 
 echo "A KIDE Cloud Run process exited unexpectedly" >&2
 for log in /tmp/kide-api.log /tmp/kide-lsp.log /tmp/kide-glsp.log; do
