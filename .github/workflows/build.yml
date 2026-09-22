@@ -55,6 +55,9 @@ jobs:
       - name: Verify LSP feature parity matrix
         run: python3 scripts/verify_lsp_parity_matrix.py
 
+      - name: Verify GLSP and Sirius semantic parity
+        run: python3 scripts/verify_diagram_parity.py
+
       - name: Verify Xtext modernization contract
         run: python3 scripts/verify_xtext_modernization.py
 
@@ -126,6 +129,11 @@ jobs:
       - name: Smoke-test packaged enterprise HTTP API runtime
         run: |
           python3 scripts/smoke_enterprise_api_server.py \
+            --products releng/com.kide.languageserver.repository/target/products
+
+      - name: Smoke-test packaged GLSP graphical runtime
+        run: |
+          python3 scripts/smoke_glsp_runtime.py \
             --products releng/com.kide.languageserver.repository/target/products
 
       - name: Qualify packaged LSP feature parity

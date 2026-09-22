@@ -1,0 +1,38 @@
+package com.kide.glsp;
+
+import java.util.Optional;
+import org.eclipse.emf.common.command.Command;
+import org.eclipse.emf.edit.command.AddCommand;
+import org.eclipse.glsp.server.emf.EMFCreateOperationHandler;
+import org.eclipse.glsp.server.emf.notation.EMFNotationModelState;
+import org.eclipse.glsp.server.operations.CreateNodeOperation;
+
+import mncModel.InterfaceDescription;
+import mncModel.MncModelFactory;
+import mncModel.MncModelPackage;
+import mncModel.Model;
+
+public final class CreateMncInterfaceHandler extends EMFCreateOperationHandler<CreateNodeOperation> {
+    public CreateMncInterfaceHandler() { super(KideDiagramTypes.MNC_INTERFACE); }
+
+    @Override
+    public Optional<Command> createCommand(CreateNodeOperation operation) {
+        if (!(modelState instanceof EMFNotationModelState notationState)
+                || !(notationState.getSemanticModel() instanceof Model root)) return doNothing();
+        // The canonical Xtext grammar requires exactly one InterfaceDescription.
+        // Never let a graphical operation create a semantic state that cannot be serialized.
+        if (root.getSystems().stream().anyMatch(InterfaceDescription.class::isInstance)) {
+            return doNothing();
+        }
+
+        InterfaceDescription iface = MncModelFactory.eINSTANCE.createInterfaceDescription();
+        String requested = operation.getArgs().get("name");
+        iface.setName(requested == null || requested.isBlank()
+                ? "Interface1" : requested.trim());
+        return Optional.of(AddCommand.create(
+                modelState.getEditingDomain(),
+                root,
+                MncModelPackage.Literals.MODEL__SYSTEMS,
+                iface));
+    }
+}

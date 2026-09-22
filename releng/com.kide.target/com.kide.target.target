@@ -8,7 +8,7 @@
   release supplies the platform and common third-party IUs. Legacy Xtext-Web,
   GWT and the Xtext-2.25 LSP4J compatibility repository are intentionally absent.
 -->
-<target name="KIDE Target Platform" sequenceNumber="2">
+<target name="KIDE Target Platform" sequenceNumber="3">
   <locations>
     <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
       <unit id="org.eclipse.platform.feature.group" version="0.0.0"/>
@@ -52,6 +52,12 @@
       <unit id="org.eclipse.xtend.lib" version="0.0.0"/>
       <unit id="org.eclipse.xtext.redist.feature.group" version="0.0.0"/>
       <repository location="https://download.eclipse.org/modeling/tmf/xtext/updates/releases/2.44.0/"/>
+    </location>
+
+    <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+      <unit id="org.eclipse.glsp.feature.feature.group" version="0.0.0"/>
+      <unit id="org.eclipse.glsp.server.emf" version="0.0.0"/>
+      <repository location="https://download.eclipse.org/glsp/server/p2/releases/2.8.0"/>
     </location>
 
     <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
