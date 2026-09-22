@@ -102,9 +102,21 @@ public final class ProjectSynthesisService {
             throw new IllegalArgumentException("cause is invalid", e);
         }
 
+        List<PreviousBinding> bindingsInput =
+                previousBindings == null ? List.of() : List.copyOf(previousBindings);
+        if (bindingsInput.size() > 10_000) {
+            throw new IllegalArgumentException("previousBindings exceeds the supported limit");
+        }
+        java.util.Set<String> bindingIds = new java.util.HashSet<>();
+        for (PreviousBinding binding : bindingsInput) {
+            if (!bindingIds.add(binding.requirementId())) {
+                throw new IllegalArgumentException(
+                        "previousBindings contains duplicate requirementId");
+            }
+        }
+
         List<ResourceSelection> previousSelections =
-                (previousBindings == null ? List.<PreviousBinding>of() : previousBindings)
-                        .stream()
+                bindingsInput.stream()
                         .map(binding -> new ResourceSelection(
                                 binding.requirementId(),
                                 binding.activityName(),
