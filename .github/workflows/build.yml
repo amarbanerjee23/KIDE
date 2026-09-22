@@ -130,6 +130,21 @@ jobs:
           python3 scripts/smoke_synthesis.py \
             --products releng/com.kide.languageserver.repository/target/products
 
+      - name: Qualify deterministic reconfiguration at thesis scale
+        run: |
+          python3 scripts/smoke_reconfiguration_scale.py \
+            --products releng/com.kide.languageserver.repository/target/products \
+            --output qualification/pr37-reconfiguration-benchmark.json
+
+      - name: Upload PR37 reconfiguration benchmark evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr37-reconfiguration-benchmark-${{ github.run_id }}
+          path: qualification/pr37-reconfiguration-benchmark.json
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Smoke-test headless multi-DSL language server
         run: |
           python3 scripts/smoke_language_server.py \
