@@ -5,7 +5,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.mncml.dsl.MncRuntimeModule;
-import com.smr.activity.activity2mnc.handlers.GenerateMnCDesignFromActivityDiagram;
+import com.kide.synthesis.activity2mnc.GenerateMnCDesignFromActivityDiagram;
 import java.util.List;
 import mncModel.Model;
 import org.eclipse.core.commands.AbstractHandler;
