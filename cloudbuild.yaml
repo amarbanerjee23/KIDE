@@ -1,0 +1,21 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --file
+      - deploy/gcp/Dockerfile
+      - --tag
+      - ${_IMAGE}
+      - --build-arg
+      - KIDE_BUILD_QUALIFIER=${_QUALIFIER}
+      - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_IMAGE}
+images:
+  - ${_IMAGE}
+timeout: 3600s
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
