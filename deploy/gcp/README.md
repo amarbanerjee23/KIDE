@@ -95,3 +95,41 @@ If your project uses a restricted custom build service account, grant that
 service account `roles/logging.logWriter` and
 `roles/artifactregistry.writer`. The repository intentionally does not fall
 back to Google-owned legacy log buckets.
+
+
+## Existing Cloud Build triggers
+
+A trigger must use a **Cloud Build configuration file**, not the console's
+Dockerfile or inline configuration mode. The trigger-level service account is
+still used by Google Cloud, but the logging policy comes from the referenced
+build configuration. KIDE provides the same configuration at both
+`cloudbuild.yaml` and `deploy/gcp/cloudbuild.yaml`; the root file is the
+recommended trigger target.
+
+To repair an existing GitHub trigger:
+
+```bash
+export PROJECT_ID="your-gcp-project"
+export TRIGGER_NAME="your-trigger-name"
+export TRIGGER_REGION="global"       # or the trigger's actual region
+export REGION="asia-south1"          # Artifact Registry / Cloud Run region
+
+# Optional: only if you want to explicitly replace the trigger's current SA.
+# export BUILD_SERVICE_ACCOUNT="projects/PROJECT_ID/serviceAccounts/SA_EMAIL"
+
+bash deploy/gcp/repair-cloud-build-trigger.sh
+```
+
+For a manual trigger, also set:
+
+```bash
+export TRIGGER_KIND="manual"
+```
+
+In the Google Cloud console, the equivalent setting is **Cloud Build > Triggers
+> Edit trigger > Configuration > Cloud Build configuration file** with
+`/cloudbuild.yaml` as the location. Do not select **Dockerfile** or an inline
+configuration for this trigger.
+
+The trigger build then receives `_IMAGE` and `_QUALIFIER` from the repair
+script and reads `options.logging: CLOUD_LOGGING_ONLY` from the repository.
