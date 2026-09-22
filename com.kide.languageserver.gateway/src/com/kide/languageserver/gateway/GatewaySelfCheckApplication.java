@@ -126,7 +126,7 @@ public final class GatewaySelfCheckApplication implements IApplication {
             stage = "binary-rejection";
             stage(stage);
             runBinaryRejectionQualification(endpoint);
-            stage = "five-language-lsp";
+            stage = "six-language-lsp";
             stage(stage);
             runFullLanguageQualification(endpoint, project);
             stage = "reconnect";
@@ -265,6 +265,7 @@ public final class GatewaySelfCheckApplication implements IApplication {
             probes.put("mncspec", "Model CompletionProbe\nInterfaceDescription Device {\n");
             probes.put("cap", "Capability CompletionProbe compatible component interface Device {\n");
             probes.put("activity", "ActivityDiagram CompletionProbe has activities { Activity Step {\n");
+            probes.put("krl", "knowledge CompletionProbe {\n");
 
             int version = 1;
             for (Map.Entry<String, String> probe : probes.entrySet()) {
