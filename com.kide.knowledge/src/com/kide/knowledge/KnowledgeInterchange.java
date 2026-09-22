@@ -282,7 +282,7 @@ public final class KnowledgeInterchange {
 
     private static String xml(String value) {
         return value.replace("&", "&amp;").replace("<", "&lt;")
-                .replace(">", "&gt;").replace(""", "&quot;");
+                .replace(">", "&gt;").replace("\\"", "&quot;");
     }
 
     private record Name(String namespace, String local) { }
