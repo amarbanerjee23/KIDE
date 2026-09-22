@@ -3,9 +3,10 @@ package com.kide.glsp;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.eclipse.emf.common.notify.impl.AdapterImpl;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.resource.Resource;
@@ -33,9 +34,6 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
 
     @Inject
     protected KideGlspWorkspace workspace;
-
-    // Optimistic revisions are repository identities, not EMF URI spellings.
-    private final Map<ModelPath, String> loadedEtags = new HashMap<>();
 
     @Override
     protected ResourceSet setupResourceSet(ResourceSet resourceSet) {
@@ -71,8 +69,10 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
         ModelSnapshot snapshot = workspace.repository().read(modelPath)
                 .orElseThrow(() -> new GLSPServerException(
                         "Graphical source model does not exist: " + modelPath.value()));
-        loadedEtags.put(modelPath, snapshot.revision().etag());
+
         super.loadSemanticModel(resourceSet, sourceURI, action);
+        Resource resource = modelState.getSemanticModel().eResource();
+        rememberRevision(resource, modelPath, snapshot.revision().etag());
     }
 
     @Override
@@ -80,14 +80,16 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
             ResourceSet resourceSet, URI sourceURI, RequestModelAction action) {
         URI notationURI = deriveNotationModelURI(sourceURI);
         Path notationPath = workspace.requireProjectPath(notationURI.toFileString());
-        ModelPath notationModelPath = workspace.modelPath(notationPath);
+        ModelPath modelPath = workspace.modelPath(notationPath);
+
         if (Files.exists(notationPath)) {
-            ModelSnapshot snapshot = workspace.repository().read(notationModelPath)
+            ModelSnapshot snapshot = workspace.repository().read(modelPath)
                     .orElseThrow(() -> new GLSPServerException(
                             "Graphical notation model could not be read: "
-                            + notationModelPath.value()));
-            loadedEtags.put(notationModelPath, snapshot.revision().etag());
+                            + modelPath.value()));
             super.loadNotationModel(resourceSet, sourceURI, action);
+            Resource resource = modelState.getNotationModel().eResource();
+            rememberRevision(resource, modelPath, snapshot.revision().etag());
             return;
         }
 
@@ -103,7 +105,7 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
         diagram.setSemanticElement(reference);
         resource.getContents().add(diagram);
         modelState.setNotationModel(diagram);
-        loadedEtags.put(notationModelPath, MISSING_ETAG);
+        rememberRevision(resource, modelPath, MISSING_ETAG);
     }
 
     @Override
@@ -126,7 +128,7 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
         }
 
         try (ModelTransaction tx = workspace.repository().beginTransaction()) {
-            Map<URI, ModelPath> savedPaths = new HashMap<>();
+            Map<Resource, RevisionAdapter> saved = new LinkedHashMap<>();
             for (Resource resource : java.util.List.of(
                     semanticResource, notationResource)) {
                 URI uri = resource.getURI();
@@ -134,28 +136,28 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
                     throw new GLSPServerException(
                             "Graphical model resources must use authorized project files");
                 }
+
                 Path path = workspace.requireProjectPath(uri.toFileString());
-                ModelPath modelPath = workspace.modelPath(path);
-                String expectedEtag = loadedEtags.get(modelPath);
-                if (expectedEtag == null) {
+                ModelPath actualPath = workspace.modelPath(path);
+                RevisionAdapter revision = revisionOf(resource);
+                if (!revision.modelPath.value().equals(actualPath.value())) {
                     throw new GLSPServerException(
-                            "Graphical resource revision was not captured at load: "
-                            + modelPath.value());
+                            "Graphical resource identity changed after load: "
+                            + actualPath.value());
                 }
 
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 resource.save(out, Map.of());
-                tx.write(modelPath, out.toByteArray(), expectedEtag);
-                savedPaths.put(uri, modelPath);
+                tx.write(actualPath, out.toByteArray(), revision.etag);
+                saved.put(resource, revision);
             }
             tx.commit();
 
-            for (Map.Entry<URI, ModelPath> entry : savedPaths.entrySet()) {
+            for (Map.Entry<Resource, RevisionAdapter> entry : saved.entrySet()) {
                 ModelSnapshot snapshot = workspace.repository()
-                        .read(entry.getValue()).orElseThrow();
-                loadedEtags.put(entry.getValue(), snapshot.revision().etag());
-                Resource resource = resourceSet.getResource(entry.getKey(), false);
-                if (resource != null) resource.setModified(false);
+                        .read(entry.getValue().modelPath).orElseThrow();
+                entry.getValue().etag = snapshot.revision().etag();
+                entry.getKey().setModified(false);
             }
         } catch (com.kide.enterprise.modelrepo.RevisionConflictException conflict) {
             throw new GLSPServerException(
@@ -165,6 +167,43 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
             if (failure instanceof GLSPServerException glsp) throw glsp;
             throw new GLSPServerException(
                     "Could not persist graphical model transaction", failure);
+        }
+    }
+
+    private static void rememberRevision(
+            Resource resource, ModelPath modelPath, String etag) {
+        RevisionAdapter existing = null;
+        for (var adapter : resource.eAdapters()) {
+            if (adapter instanceof RevisionAdapter revision) {
+                existing = revision;
+                break;
+            }
+        }
+        if (existing == null) {
+            resource.eAdapters().add(new RevisionAdapter(modelPath, etag));
+        } else {
+            existing.etag = etag;
+        }
+    }
+
+    private static RevisionAdapter revisionOf(Resource resource) {
+        for (var adapter : resource.eAdapters()) {
+            if (adapter instanceof RevisionAdapter revision) {
+                return revision;
+            }
+        }
+        throw new GLSPServerException(
+                "Graphical resource revision was not captured at load: "
+                + String.valueOf(resource.getURI()));
+    }
+
+    private static final class RevisionAdapter extends AdapterImpl {
+        private final ModelPath modelPath;
+        private String etag;
+
+        private RevisionAdapter(ModelPath modelPath, String etag) {
+            this.modelPath = modelPath;
+            this.etag = etag;
         }
     }
 }
