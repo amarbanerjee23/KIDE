@@ -15,6 +15,8 @@ import type {
   ReviewChangeSet,
   ReviewChangeSetList,
   ReviewComment,
+  ReconfigurationCause,
+  ReconfigurationResult,
   SynthesisResult
 } from "./types";
 
@@ -252,6 +254,31 @@ export class KideApiClient {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modelId, modelRevision })
+      }
+    );
+  }
+
+  reconfigure(
+    projectId: string,
+    modelId: string,
+    modelRevision: string,
+    cause: ReconfigurationCause,
+    previousBindings: Array<Pick<
+      SynthesisResult["selections"][number],
+      "requirementId" | "activityName" | "capabilityName" | "resourceId"
+    >>
+  ): Promise<ReconfigurationResult> {
+    return this.request<ReconfigurationResult>(
+      `/projects/${encodeURIComponent(projectId)}/reconfiguration`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          modelId,
+          modelRevision,
+          cause,
+          previousBindings
+        })
       }
     );
   }
