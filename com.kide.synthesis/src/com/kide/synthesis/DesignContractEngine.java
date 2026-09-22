@@ -57,11 +57,10 @@ public final class DesignContractEngine {
             }
 
             if (activity.getNextActivity() != null
-                    && (!contained.contains(activity.getNextActivity())
-                        || activity.getNextActivity() == activity)) {
+                    && !contained.contains(activity.getNextActivity())) {
                 diagnostics.add(SynthesisDiagnostic.error(
                         "INVALID_NEXT_ACTIVITY",
-                        "nextActivity must reference a different activity in the same diagram.",
+                        "nextActivity must reference an activity in the same diagram.",
                         "activity:" + name,
                         List.of()));
             }
