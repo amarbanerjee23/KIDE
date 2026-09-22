@@ -9,7 +9,17 @@ FROM maven:3.9.11-eclipse-temurin-21 AS kide-builder
 ARG KIDE_BUILD_QUALIFIER=container
 WORKDIR /src
 COPY . .
-RUN mvn -B -ntp -DskipTests -DforceContextQualifier="${KIDE_BUILD_QUALIFIER}" clean verify
+# Tycho is configured with the JGit timestamp provider. The Docker context
+# deliberately excludes the checkout .git directory so credentials and local
+# repository metadata never enter image layers. Create a clean builder-only
+# repository so JGit can resolve its timestamp provider; the explicit qualifier
+# remains the externally traceable container revision.
+RUN git init \
+    && git config user.name "KIDE Container Build" \
+    && git config user.email "build@kide.local" \
+    && git add -A \
+    && git commit -m "KIDE container build context" >/dev/null \
+    && mvn -B -ntp -DskipTests -DforceContextQualifier="${KIDE_BUILD_QUALIFIER}" clean verify
 
 FROM eclipse-temurin:21-jre-jammy AS runtime
 ARG DEBIAN_FRONTEND=noninteractive
