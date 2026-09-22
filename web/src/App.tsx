@@ -658,12 +658,17 @@ export default function App() {
 
   async function resetProjectWorkspace() {
     await disposeLanguageServices();
+    await disposeCollaboration();
     disposeAutosaves();
     workspace.dispose();
     updateEntries(() => []);
     setSelectedPath(undefined);
     setRevealRange(undefined);
     setSymbols([]);
+    setReviews([]);
+    setActiveReview(undefined);
+    setReviewProposal("");
+    setReviewComment("");
     setSaveState("clean");
   }
 
