@@ -32,6 +32,10 @@
     NeoEMF. PR34 replaces that release dependency with com.kide.knowledge.
   -->
   <modules>
+    <module>tools/krl-language-generator</module>
+    <module>com.kide.krl.dsl</module>
+    <module>com.kide.krl.dsl.ide</module>
+    <module>com.kide.krl.dsl.ui</module>
     <module>com.capability</module>
     <module>com.capability.dsl</module>
     <module>com.capability.dsl.ide</module>
