@@ -103,11 +103,21 @@ public final class ApiSchemaCatalog {
                 Map.of("items", a(), "issues", a(), "knowledgeRevision", i(), "traceRevision", i()),
                 Set.of("items", "issues", "knowledgeRevision", "traceRevision")));
         add(schemas, schema("SynthesisRequest",
-                Map.of("modelRevision", s(), "objectiveId", s(), "parameters", o()),
-                Set.of("modelRevision")));
+                Map.of("modelId", s(), "modelRevision", s(), "objectiveId", s(), "parameters", o()),
+                Set.of("modelId", "modelRevision")));
         add(schemas, schema("SynthesisResult",
-                Map.of("resultId", s(), "status", s(), "revision", s(), "rationale", a()),
-                Set.of("resultId", "status", "revision")));
+                Map.ofEntries(
+                        Map.entry("resultId", s()), Map.entry("serviceVersion", s()),
+                        Map.entry("status", s()), Map.entry("modelId", s()),
+                        Map.entry("modelVersion", s()), Map.entry("revision", s()),
+                        Map.entry("knowledgeRevision", i()), Map.entry("knowledgeEtag", s()),
+                        Map.entry("fingerprint", s()), Map.entry("selections", a()),
+                        Map.entry("diagnostics", a()), Map.entry("rationale", a()),
+                        Map.entry("generatedMnc", s())),
+                Set.of("resultId", "serviceVersion", "status", "modelId",
+                        "modelVersion", "revision", "knowledgeRevision",
+                        "knowledgeEtag", "fingerprint", "selections",
+                        "diagnostics", "rationale", "generatedMnc")));
         add(schemas, schema("EvidenceList",
                 Map.of("items", a(), "nextCursor", s()), Set.of("items")));
         add(schemas, schema("Health",
