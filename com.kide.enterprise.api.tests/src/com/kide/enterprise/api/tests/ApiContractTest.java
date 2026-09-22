@@ -38,6 +38,8 @@ public class ApiContractTest {
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/knowledge")));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/synthesis")));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/evidence")));
+        assertTrue(operations.stream().anyMatch(op -> op.path().contains("/collaboration/sessions")));
+        assertTrue(operations.stream().anyMatch(op -> op.path().contains("/reviews/changesets")));
         assertTrue(operations.stream().anyMatch(op -> op.path().equals("/api/v1/health")));
         assertTrue(operations.stream().allMatch(op -> op.path().startsWith(ApiVersion.V1.basePath())));
     }
