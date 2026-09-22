@@ -183,16 +183,16 @@ public final class ProjectCollaborationService {
         return refreshed;
     }
 
-    public synchronized boolean leave(PrincipalIdentity principal, String sessionId) {
+    public synchronized PresenceSession leave(PrincipalIdentity principal, String sessionId) {
         Objects.requireNonNull(principal, "principal");
         String id = requiredUuid(sessionId, "sessionId");
         PresenceSession existing = presence.get(id);
-        if (existing == null) return false;
+        if (existing == null) throw new NotFoundException();
         if (!existing.principalId().equals(principal.id())) {
             throw new AccessDeniedException("collaboration session belongs to another principal");
         }
         presence.remove(id);
-        return true;
+        return existing;
     }
 
     public synchronized List<PresenceSession> listPresence() {
