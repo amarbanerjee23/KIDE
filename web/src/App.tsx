@@ -28,6 +28,8 @@ import type {
   Project,
   ReviewBundle,
   ReviewChangeSet,
+  ReconfigurationCause,
+  ReconfigurationResult,
   SaveState,
   SynthesisResult,
   WorkspaceEntry
@@ -87,6 +89,10 @@ export default function App() {
   const [knowledgeImpact, setKnowledgeImpact] = useState<KnowledgeImpactResult>();
   const [traceSemanticId, setTraceSemanticId] = useState("");
   const [synthesisResult, setSynthesisResult] = useState<SynthesisResult>();
+  const [reconfigurationCause, setReconfigurationCause] =
+    useState<ReconfigurationCause>("AVAILABILITY_CHANGE");
+  const [reconfigurationResult, setReconfigurationResult] =
+    useState<ReconfigurationResult>();
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
@@ -145,6 +151,7 @@ export default function App() {
   useEffect(() => {
     setViewMode("text");
     setSynthesisResult(undefined);
+    setReconfigurationResult(undefined);
     collaboration.current?.setModel(selectedPath);
   }, [selectedPath]);
 
@@ -319,6 +326,7 @@ export default function App() {
         current.etag
       );
       setSynthesisResult(result);
+      setReconfigurationResult(undefined);
       if (result.status === "SUCCESS") {
         setNotice(
           `Synthesis selected ${result.selections.length} resource binding(s) without modifying the source model.`
@@ -332,6 +340,55 @@ export default function App() {
       if (error instanceof ApiClientError && error.code === "CONFLICT") {
         setConflict("The Activity model changed on the server before synthesis completed.");
         setNotice("Reload the current server revision before synthesizing again.");
+        return;
+      }
+      showError(error);
+    }
+  }
+
+  async function runReconfiguration() {
+    const currentProject = projectRef.current;
+    const current = entriesRef.current.find(
+      (entry) => entry.path === selectedPathRef.current
+    );
+    if (
+      !currentProject ||
+      !current ||
+      current.source !== "remote" ||
+      !current.path.endsWith(".activity") ||
+      !current.etag ||
+      !synthesisResult ||
+      synthesisResult.status !== "SUCCESS"
+    ) {
+      return;
+    }
+    if (current.dirty || saveState === "pending" || saveState === "saving") {
+      setNotice("Save the Activity model before running reconfiguration.");
+      return;
+    }
+    try {
+      const result = await clientRef.current.reconfigure(
+        currentProject.id,
+        current.path,
+        current.etag,
+        reconfigurationCause,
+        synthesisResult.selections.map((selection) => ({
+          requirementId: selection.requirementId,
+          activityName: selection.activityName,
+          capabilityName: selection.capabilityName,
+          resourceId: selection.resourceId
+        }))
+      );
+      setReconfigurationResult(result);
+      setNotice(
+        result.status === "NO_SOLUTION"
+          ? "Reconfiguration found no safe solution; follow the returned fallback instructions."
+          : `Reconfiguration completed with ${result.migrations.length} state migration instruction(s).`
+      );
+    } catch (error) {
+      if (error instanceof ApiClientError && error.code === "CONFLICT") {
+        setConflict("The Activity model changed on the server before reconfiguration completed.");
+        setNotice("Reload the current server revision before replanning.");
         return;
       }
       showError(error);
@@ -1096,6 +1153,36 @@ export default function App() {
               <p className="muted">
                 Server-owned capability matching, design contracts and Activity→MNC composition.
               </p>
+              <div className="reconfiguration-controls">
+                <label>
+                  Reconfiguration cause
+                  <select
+                    aria-label="Reconfiguration cause"
+                    value={reconfigurationCause}
+                    onChange={(event) =>
+                      setReconfigurationCause(event.target.value as ReconfigurationCause)
+                    }
+                  >
+                    <option value="AVAILABILITY_CHANGE">Availability change</option>
+                    <option value="RESOURCE_LOSS">Resource loss</option>
+                    <option value="RESOURCE_REPLACEMENT">Resource replacement</option>
+                    <option value="CAPABILITY_CHANGE">Capability change</option>
+                    <option value="REQUIREMENT_CHANGE">Requirement change</option>
+                    <option value="MANUAL_REPLAN">Manual re-plan</option>
+                  </select>
+                </label>
+                <button
+                  disabled={
+                    !selected.etag ||
+                    selected.dirty ||
+                    !synthesisResult ||
+                    synthesisResult.status !== "SUCCESS"
+                  }
+                  onClick={() => void runReconfiguration()}
+                >
+                  Reconfigure
+                </button>
+              </div>
               {synthesisResult && (
                 <div className="synthesis-result" aria-label="Synthesis result">
                   <strong>{synthesisResult.status}</strong>
@@ -1123,6 +1210,35 @@ export default function App() {
                       <pre className="generated-mnc">{synthesisResult.generatedMnc}</pre>
                     </details>
                   )}
+                </div>
+              )}
+              {reconfigurationResult && (
+                <div className="synthesis-result" aria-label="Reconfiguration result">
+                  <strong>{reconfigurationResult.status}</strong>
+                  <span className="muted">
+                    {reconfigurationResult.cause.toLowerCase().replaceAll("_", " ")} · fingerprint {reconfigurationResult.fingerprint.slice(0, 12)}
+                  </span>
+                  {reconfigurationResult.selections.map((selection) => (
+                    <div className="synthesis-selection" key={selection.requirementId}>
+                      <span>{selection.activityName}</span>
+                      <strong>{selection.resourceId}</strong>
+                    </div>
+                  ))}
+                  {reconfigurationResult.migrations.map((migration) => (
+                    <div className="synthesis-diagnostic" key={migration.requirementId}>
+                      <strong>{migration.policy}</strong>
+                      <span>{migration.reason}</span>
+                    </div>
+                  ))}
+                  {reconfigurationResult.diagnostics.map((diagnostic, index) => (
+                    <div
+                      className={`synthesis-diagnostic diagnostic-${diagnostic.severity.toLowerCase()}`}
+                      key={diagnostic.code + index}
+                    >
+                      <strong>{diagnostic.code}</strong>
+                      <span>{diagnostic.message}</span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
