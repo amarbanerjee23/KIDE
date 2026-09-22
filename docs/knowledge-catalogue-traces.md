@@ -45,6 +45,7 @@ Impact queries can start from a knowledge IRI or model path. Validation reports:
 
 - `BROKEN_KNOWLEDGE` when the referenced knowledge resource no longer exists;
 - `BROKEN_MODEL` when the project model no longer exists;
+- `STALE_MODEL` when the model still exists but its current ETag differs from the bound ETag;
 - `STALE_KNOWLEDGE` when the knowledge graph has changed since the trace was bound.
 
 These findings are evidence only; validation does not mutate or auto-merge engineering
