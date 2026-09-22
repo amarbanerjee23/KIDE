@@ -6,6 +6,8 @@ steps:
       - deploy/gcp/Dockerfile
       - --tag
       - ${_IMAGE}
+      - --build-arg
+      - KIDE_BUILD_QUALIFIER=${_QUALIFIER}
       - .
   - name: gcr.io/cloud-builders/docker
     args:
