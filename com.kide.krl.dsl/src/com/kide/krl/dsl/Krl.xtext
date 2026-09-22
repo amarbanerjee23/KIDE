@@ -45,10 +45,9 @@ Parameter:
     name=ID ':' type=ValueType;
 
 Binding:
-    'bind' name=ID ':' type=ValueType '=' value=BindingValue ';';
-
-BindingValue:
-    Value | QueryValue;
+    'bind' name=ID ':' type=ValueType '='
+    (literal=Value | query=QueryValue)
+    ';';
 
 QueryValue:
     'query' query=[Query|QualifiedName]
@@ -56,40 +55,26 @@ QueryValue:
     '.' variable=ID;
 
 Pattern:
-    subject=PatternTerm predicate=PatternTerm object=PatternValue;
+    subject=Term predicate=Term object=Term;
+
+Term:
+    ('?' variable=ID) |
+    ('iri' iri=STRING) |
+    ('literal' literal=STRING) |
+    name=QualifiedName;
 
 Condition:
     left=VariableRef operator=ComparisonOperator right=Value;
 
-PatternTerm:
-    VariableRef | QualifiedNameRef;
-
-PatternValue:
-    VariableRef | Value;
-
 VariableRef:
     '?' name=ID;
 
-QualifiedNameRef:
-    value=QualifiedName;
-
 Value:
-    StringValue | IntegerValue | DecimalValue | BooleanValue | IriValue;
-
-StringValue:
-    value=STRING;
-
-IntegerValue:
-    value=SIGNED_INT;
-
-DecimalValue:
-    value=SIGNED_DECIMAL;
-
-BooleanValue:
-    value=('true' | 'false');
-
-IriValue:
-    'iri' value=STRING;
+    ('string' stringValue=STRING) |
+    ('integer' integerValue=SIGNED_INT) |
+    ('decimal' decimalValue=SIGNED_DECIMAL) |
+    ('boolean' booleanValue=('true' | 'false')) |
+    ('iri' iriValue=STRING);
 
 QualifiedName:
     ID (':' ID)?;
