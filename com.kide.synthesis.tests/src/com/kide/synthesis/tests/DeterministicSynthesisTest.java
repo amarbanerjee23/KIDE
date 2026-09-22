@@ -5,9 +5,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -27,6 +30,7 @@ import com.kide.knowledge.KnowledgeVocabulary;
 import com.kide.synthesis.CapabilityRequirement;
 import com.kide.synthesis.DeterministicCapabilityMatcher;
 import com.kide.synthesis.DeterministicSynthesisService;
+import com.kide.synthesis.ProjectSynthesisEngine;
 import com.kide.synthesis.SynthesisDiagnosticSeverity;
 import com.kide.synthesis.SynthesisResource;
 import com.kide.synthesis.SynthesisStatus;
@@ -113,6 +117,52 @@ public class DeterministicSynthesisTest {
         assertTrue(result.diagnostics().stream()
                 .anyMatch(d -> "UNBOUND_CAPABILITY_MODEL".equals(d.code())));
         assertEquals(null, result.controllerModel());
+    }
+
+    @Test
+    public void unrelatedInvalidDslFileDoesNotBlockValidSynthesisDependencyClosure()
+            throws Exception {
+        Path project = Files.createTempDirectory("kide-pr36-synthesis-closure-");
+        try {
+            Files.writeString(project.resolve("device.mncspec"),
+                    "Model Golden\n"
+                    + "InterfaceDescription Device {\n"
+                    + "  commands { Start[] }\n"
+                    + "  events { Publish Ready[] }\n"
+                    + "}\n");
+            Files.writeString(project.resolve("observe.cap"),
+                    "Capability Observe compatible component interface Device {\n"
+                    + "  providesControlCapabilities {\n"
+                    + "    fireable commands : Start\n"
+                    + "    receivable events : Ready\n"
+                    + "  }\n"
+                    + "}\n");
+            Files.writeString(project.resolve("workflow.activity"),
+                    "ActivityDiagram GoldenWorkflow\n"
+                    + "has activities {\n"
+                    + "  Activity ObserveStep {\n"
+                    + "    requireCapability : Observe { Start, Ready }\n"
+                    + "    nextActivity : ObserveStep\n"
+                    + "  }\n"
+                    + "}\n");
+            Files.writeString(project.resolve("unrelated.dml"), "domain Broken");
+
+            var output = new ProjectSynthesisEngine().synthesize(
+                    project,
+                    "workflow.activity",
+                    knowledge(device(
+                            "urn:kide:device:camera-a", "Camera A",
+                            "Observe", "Device", 10, 8, 40)));
+
+            assertEquals(SynthesisStatus.SUCCESS, output.result().status());
+            assertTrue(output.generatedMnc().contains("Model GoldenWorkflow"));
+        } finally {
+            try (var stream = Files.walk(project)) {
+                for (Path path : stream.sorted(Comparator.reverseOrder()).toList()) {
+                    Files.deleteIfExists(path);
+                }
+            }
+        }
     }
 
     @Test
