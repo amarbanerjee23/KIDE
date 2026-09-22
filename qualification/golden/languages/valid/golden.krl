@@ -15,7 +15,7 @@ knowledge GoldenKrl {
   target ObserveBinding type java {
     template JavaBinding;
     output "generated/ObserveBinding.java";
-    bind name: string = "ObserveBinding";
+    bind name: string = string "ObserveBinding";
     bind resource: iri = iri "urn:kide:device:camera";
   }
 }
