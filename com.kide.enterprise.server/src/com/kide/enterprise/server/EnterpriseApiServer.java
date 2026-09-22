@@ -60,6 +60,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
     private final EnterpriseContext context;
     private final ServerAuthorizationGate authorization;
     private final ModelRepository models;
+    private final ProjectCollaborationService collaboration;
     private final AuditLedger audit;
     private final Clock clock;
     private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
@@ -72,6 +73,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
             EnterpriseContext context,
             ServerAuthorizationGate authorization,
             ModelRepository models,
+            ProjectCollaborationService collaboration,
             AuditLedger audit,
             Clock clock) {
         this.config = Objects.requireNonNull(config, "config");
@@ -79,6 +81,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
         this.context = Objects.requireNonNull(context, "context");
         this.authorization = Objects.requireNonNull(authorization, "authorization");
         this.models = Objects.requireNonNull(models, "models");
+        this.collaboration = Objects.requireNonNull(collaboration, "collaboration");
         this.audit = Objects.requireNonNull(audit, "audit");
         this.clock = Objects.requireNonNull(clock, "clock");
 
@@ -136,7 +139,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
 
                 if ("OPTIONS".equals(request.getMethod())) {
                     response.setStatus(204);
-                    response.getHeaders().put("Access-Control-Allow-Methods", "GET,POST,PUT,OPTIONS");
+                    response.getHeaders().put("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
                     response.getHeaders().put(
                             "Access-Control-Allow-Headers",
                             "Authorization,Content-Type,If-Match,X-Request-Id");
@@ -177,7 +180,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 writeError(response, callback, requestId, 409, ApiErrorCode.CONFLICT,
                         "The model revision is stale.");
                 return true;
-            } catch (ResourceNotFoundException e) {
+            } catch (ResourceNotFoundException | ProjectCollaborationService.NotFoundException e) {
                 writeError(response, callback, requestId, 404, ApiErrorCode.NOT_FOUND,
                         "The requested API resource was not found.");
                 return true;
