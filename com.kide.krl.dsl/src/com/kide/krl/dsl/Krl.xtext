@@ -1,0 +1,114 @@
+grammar com.kide.krl.dsl.Krl with org.eclipse.xtext.common.Terminals
+
+generate krl "https://kide.dev/krl/1.0"
+
+KnowledgeModel:
+    'knowledge' name=ID '{'
+        declarations+=Declaration*
+    '}';
+
+Declaration:
+    Namespace | Fact | Query | Template | Target;
+
+Namespace:
+    'namespace' name=ID '=' uri=STRING ';';
+
+Fact:
+    'fact' subject=QualifiedName predicate=QualifiedName object=Value ';';
+
+Query:
+    'query' name=ID
+    ('(' parameters+=Parameter (',' parameters+=Parameter)* ')')?
+    '{'
+        'match' patterns+=Pattern (',' patterns+=Pattern)* ';'
+        ('where' conditions+=Condition (',' conditions+=Condition)* ';')?
+        'select' selections+=VariableRef (',' selections+=VariableRef)* ';'
+    '}';
+
+Template:
+    'template' name=ID
+    ('(' parameters+=Parameter (',' parameters+=Parameter)* ')')?
+    'for' targetType=TargetType
+    'body' body=STRING
+    ';';
+
+Target:
+    'target' name=ID 'type' targetType=TargetType '{'
+        'template' template=[Template|QualifiedName] ';'
+        'output' outputPath=STRING ';'
+        bindings+=Binding*
+    '}';
+
+Parameter:
+    name=ID ':' type=ValueType;
+
+Binding:
+    'bind' name=ID ':' type=ValueType '=' value=Value ';';
+
+Pattern:
+    subject=PatternTerm predicate=PatternTerm object=PatternValue;
+
+Condition:
+    left=VariableRef operator=ComparisonOperator right=Value;
+
+PatternTerm:
+    VariableRef | QualifiedNameRef;
+
+PatternValue:
+    VariableRef | Value;
+
+VariableRef:
+    '?' name=ID;
+
+QualifiedNameRef:
+    value=QualifiedName;
+
+Value:
+    StringValue | IntegerValue | DecimalValue | BooleanValue | IriValue;
+
+StringValue:
+    value=STRING;
+
+IntegerValue:
+    value=SIGNED_INT;
+
+DecimalValue:
+    value=SIGNED_DECIMAL;
+
+BooleanValue:
+    value=('true' | 'false');
+
+IriValue:
+    '<' value=IRI_BODY '>';
+
+QualifiedName:
+    ID (':' ID)?;
+
+enum ValueType:
+    string='string' |
+    integer='integer' |
+    decimal='decimal' |
+    boolean='boolean' |
+    iri='iri';
+
+enum TargetType:
+    java='java' |
+    json='json' |
+    text='text';
+
+enum ComparisonOperator:
+    eq='==' |
+    ne='!=' |
+    lt='<' |
+    le='<=' |
+    gt='>' |
+    ge='>=';
+
+terminal SIGNED_INT returns ecore::EInt:
+    '-'? INT;
+
+terminal SIGNED_DECIMAL returns ecore::EDouble:
+    '-'? INT '.' INT;
+
+terminal IRI_BODY:
+    ('a'..'z'|'A'..'Z'|'0'..'9'|'_'|'-'|'.'|':'|'/'|'#'|'?'|'='|'&'|'%')+;
