@@ -20,4 +20,5 @@ Require-Bundle: com.kide.krl.dsl,
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: com.kide.krl.dsl.ui,
  com.kide.krl.dsl.ui.internal
+Bundle-Activator: com.kide.krl.dsl.ui.internal.DslActivator
 Automatic-Module-Name: com.kide.krl.dsl.ui
