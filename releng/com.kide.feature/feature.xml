@@ -36,6 +36,7 @@
    <plugin id="com.kide.enterprise.api" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.kide.enterprise.modelrepo" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.kide.enterprise.migration" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.kide.knowledge" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
 
    <plugin id="com.capability" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.capability.dsl" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
