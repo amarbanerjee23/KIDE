@@ -149,7 +149,7 @@ public class SemanticCodeGenerationTest {
                   }
 
                   template Binding(name: string, resource: iri) for java
-                    body "public final class ${name} { public static final String RESOURCE = \"${resource}\"; private ${name}() {} }";
+                    body "public final class ${name} { public static final String RESOURCE = \\\"${resource}\\\"; private ${name}() {} }";
 
                   target Observe type java {
                     template Binding;
