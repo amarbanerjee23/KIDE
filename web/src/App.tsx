@@ -723,6 +723,9 @@ export default function App() {
         <div className="status-stack">
           <div className="service-state" aria-live="polite">{serviceStatus}</div>
           <div className="service-state lsp-state" aria-live="polite">{lspStatus}</div>
+          <div className="service-state collaboration-state" aria-live="polite">
+            {collaborationStatus}
+          </div>
         </div>
       </header>
 
@@ -854,6 +857,58 @@ export default function App() {
               </li>
             ))}
           </ul>
+
+          {project && (
+            <div className="collaboration-panel">
+              <div className="panel-heading">
+                <h2>Collaboration</h2>
+                <button onClick={() => {
+                  void collaboration.current?.refresh();
+                  void refreshReviews();
+                }}>
+                  Refresh
+                </button>
+              </div>
+              <p className="muted">{collaborationStatus}</p>
+              <h3>Presence</h3>
+              {presence.length ? (
+                <ul className="presence-list">
+                  {presence.map((item) => (
+                    <li key={item.id}>
+                      <strong>{item.displayName}</strong>
+                      <span>{item.modelId || "Project"}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">No active collaborators reported.</p>
+              )}
+
+              <div className="panel-heading">
+                <h3>Reviews</h3>
+                <button
+                  disabled={!selected || selected.source !== "remote" || !selected.etag}
+                  onClick={() => void createReviewFromEditor()}
+                >
+                  Create review
+                </button>
+              </div>
+              {reviews.length ? (
+                <ul className="review-list">
+                  {reviews.map((review) => (
+                    <li key={review.id}>
+                      <button onClick={() => void openReview(review.id)}>
+                        <strong>{review.modelId}</strong>
+                        <span>{review.status} · {review.authorName}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">No review change sets yet.</p>
+              )}
+            </div>
+          )}
         </aside>
 
         <section className="editor-panel">
@@ -912,6 +967,111 @@ export default function App() {
               lsp={lspController.current}
               revealRange={revealRange}
             />
+          )}
+
+          {activeReview && (
+            <section className="review-workbench" aria-label="Change review">
+              <div className="review-header">
+                <div>
+                  <p className="eyebrow">REVIEW CHANGE SET</p>
+                  <h2>{activeReview.changeSet.modelId}</h2>
+                  <p className="muted">
+                    {activeReview.changeSet.status} · revision {activeReview.changeSet.reviewRevision}
+                    {activeReview.conflicted ? " · server revision changed" : ""}
+                  </p>
+                </div>
+                <button onClick={() => setActiveReview(undefined)}>Close review</button>
+              </div>
+
+              <div className="review-compare">
+                <label>
+                  Current server revision
+                  <textarea
+                    aria-label="Current server revision"
+                    readOnly
+                    value={activeReview.currentModel.content}
+                  />
+                </label>
+                <label>
+                  Proposed / resolved revision
+                  <textarea
+                    aria-label="Resolved review proposal"
+                    value={reviewProposal}
+                    readOnly={
+                      activeReview.changeSet.status === "READY" ||
+                      activeReview.changeSet.status === "APPROVED" ||
+                      activeReview.changeSet.status === "APPLIED"
+                    }
+                    onChange={(event) => setReviewProposal(event.target.value)}
+                  />
+                </label>
+              </div>
+
+              <div className="review-actions">
+                {(activeReview.conflicted || activeReview.changeSet.status === "CONFLICT") && (
+                  <button onClick={() => void rebaseActiveReview()}>
+                    Rebase resolved proposal
+                  </button>
+                )}
+                {activeReview.changeSet.status === "DRAFT" && (
+                  <button onClick={() => void markActiveReviewReady()}>
+                    Mark ready for review
+                  </button>
+                )}
+                {activeReview.changeSet.status === "READY" && (
+                  <button onClick={() => void approveActiveReview()}>
+                    Approve as reviewer
+                  </button>
+                )}
+                {activeReview.changeSet.status === "APPROVED" && (
+                  <button onClick={() => void applyActiveReview()}>
+                    Apply approved change
+                  </button>
+                )}
+              </div>
+
+              <div className="review-comments">
+                <h3>Review comments</h3>
+                {activeReview.changeSet.status !== "APPLIED" && (
+                  <div className="comment-composer">
+                    <input
+                      aria-label="Review comment"
+                      value={reviewComment}
+                      onChange={(event) => setReviewComment(event.target.value)}
+                      placeholder="Add an anchored review comment"
+                    />
+                    <button
+                      disabled={!reviewComment.trim()}
+                      onClick={() => void addActiveReviewComment()}
+                    >
+                      Comment
+                    </button>
+                  </div>
+                )}
+                {activeReview.comments.length ? (
+                  <ul>
+                    {activeReview.comments.map((comment) => (
+                      <li key={comment.id} className={comment.resolved ? "resolved-comment" : ""}>
+                        <div>
+                          <strong>{comment.authorName}</strong>
+                          <span>{comment.anchor ?? ""}</span>
+                        </div>
+                        <p>{comment.body}</p>
+                        {activeReview.changeSet.status !== "APPLIED" && (
+                          <button
+                            onClick={() => void setCommentResolved(comment.id, !comment.resolved)}
+                          >
+                            {comment.resolved ? "Reopen" : "Resolve"}
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted">No review comments.</p>
+                )}
+              </div>
+            </section>
           )}
         </section>
       </section>
