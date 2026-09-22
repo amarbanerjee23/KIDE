@@ -46,6 +46,26 @@ public class GlspWorkspaceUriMapperTest {
                     + "}}");
             assertTrue(outbound.contains("kide-workspace:/models/main.activity"));
             assertTrue(!outbound.contains(project.toString()));
+
+            String rootModel = mapper.toClient(
+                    "{\"params\":{\"action\":{\"kind\":\"setModel\","
+                    + "\"newRoot\":{\"id\":"
+                    + com.google.gson.JsonParser.parseString(
+                            "\"" + serverPath.replace("\\", "\\\\") + "\"")
+                    + ",\"children\":[{\"id\":\"//@systems.0\"}]}}}}");
+            assertTrue(rootModel.contains(
+                    "\"id\":\"kide-workspace:/models/main.activity\""));
+            assertTrue(rootModel.contains("\"id\":\"//@systems.0\""));
+            assertTrue(!rootModel.contains(project.toString()));
+
+            String rootInbound = mapper.toServer(
+                    "{\"params\":{\"action\":{\"id\":"
+                    + "\"kide-workspace:/models/main.activity\"}}}");
+            String rootServerId = JsonParser.parseString(rootInbound).getAsJsonObject()
+                    .getAsJsonObject("params")
+                    .getAsJsonObject("action")
+                    .get("id").getAsString();
+            assertEquals(serverPath, rootServerId);
         } finally {
             deleteTree(root);
         }
