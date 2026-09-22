@@ -50,7 +50,10 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         root_cloudbuild = self.read("cloudbuild.yaml")
         self.assertEqual(root_cloudbuild, cloudbuild)
         self.assertIn("deploy/gcp/Dockerfile", cloudbuild)
-        self.assertIn("${_IMAGE}", cloudbuild)
+        self.assertIn("${_KIDE_IMAGE}", cloudbuild)
+        self.assertIn("_KIDE_IMAGE:", cloudbuild)
+        self.assertIn("${BUILD_ID}", cloudbuild)
+        self.assertIn("dynamicSubstitutions: true", cloudbuild)
         self.assertIn("logging: CLOUD_LOGGING_ONLY", cloudbuild)
 
     def test_deployment_shell_scripts_parse(self):
@@ -76,6 +79,9 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("--build-config", repair)
         self.assertIn('BUILD_CONFIG="${BUILD_CONFIG:-cloudbuild.yaml}"', repair)
         self.assertIn("--update-substitutions", repair)
+        self.assertIn("_REGION=", repair)
+        self.assertIn("_AR_REPOSITORY=", repair)
+        self.assertNotIn("_IMAGE=", repair)
         self.assertIn("gcloud builds triggers update github", repair)
 
 
