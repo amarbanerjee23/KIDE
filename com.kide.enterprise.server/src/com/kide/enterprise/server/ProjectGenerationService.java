@@ -8,6 +8,7 @@ import java.util.Objects;
 import com.kide.codegen.GeneratedArtifact;
 import com.kide.codegen.GenerationContext;
 import com.kide.codegen.GenerationException;
+import com.kide.codegen.GenerationHashes;
 import com.kide.codegen.GenerationOutput;
 import com.kide.codegen.ProjectKrlGenerationEngine;
 import com.kide.enterprise.modelrepo.ModelPath;
@@ -143,16 +144,7 @@ public final class ProjectGenerationService {
                 artifact.path(),
                 artifact.mediaType(),
                 Base64.getEncoder().encodeToString(bytes),
-                com.kide.codegen.GenerationManifest
-                        .create(
-                                new GenerationContext(
-                                        "placeholder", "0", "0".repeat(64),
-                                        1L, "0".repeat(64), "0".repeat(64),
-                                        "placeholder.krl", "0", "0".repeat(64)),
-                                "placeholder",
-                                java.util.Map.of(),
-                                List.of(artifact))
-                        .artifacts().get(0).sha256(),
+                GenerationHashes.sha256(bytes),
                 artifact.targetId(),
                 artifact.targetVersion());
     }
