@@ -33,6 +33,7 @@ public final class ApiContractRegistry {
             new ApiOperation("deleteKnowledgeTrace", HttpMethod.DELETE, "/api/v1/projects/{projectId}/knowledge/traces/{traceId}", "KnowledgeTraceDeleteRequest", "KnowledgeTraceList"),
             new ApiOperation("queryKnowledgeImpact", HttpMethod.POST, "/api/v1/projects/{projectId}/knowledge/impact", "KnowledgeImpactRequest", "KnowledgeImpactResult"),
             new ApiOperation("synthesize", HttpMethod.POST, "/api/v1/projects/{projectId}/synthesis", "SynthesisRequest", "SynthesisResult"),
+            new ApiOperation("reconfigure", HttpMethod.POST, "/api/v1/projects/{projectId}/reconfiguration", "ReconfigurationRequest", "ReconfigurationResult"),
             new ApiOperation("listEvidence", HttpMethod.GET, "/api/v1/projects/{projectId}/evidence", "", "EvidenceList"),
             new ApiOperation("health", HttpMethod.GET, "/api/v1/health", "", "Health"));
 
