@@ -544,8 +544,11 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             System.out.println("KIDE PR36 ENTERPRISE SYNTHESIS SELF-CHECK OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
+            String detail = failure.getMessage();
+            if (detail == null || detail.isBlank()) detail = "no detail";
+            detail = detail.replace('\r', ' ').replace('\n', ' ');
             System.err.println("KIDE PR36 enterprise API self-check failed: "
-                    + failure.getClass().getSimpleName());
+                    + failure.getClass().getSimpleName() + " - " + detail);
             return Integer.valueOf(2);
         } finally {
             if (server != null) {
