@@ -38,6 +38,54 @@ public final class ProjectSynthesisEngine {
             Path projectRoot,
             String activityModelPath,
             KnowledgeDataset knowledge) {
+        PreparedProject prepared = prepare(projectRoot, activityModelPath);
+        SynthesisResult result =
+                new DeterministicSynthesisService().synthesize(prepared.diagram(), knowledge);
+        String generated = "";
+        if (result.status() == SynthesisStatus.SUCCESS) {
+            generated = prepared.runtime().mncSerializer.serialize(result.controllerModel());
+            if (generated == null || generated.isBlank()) {
+                throw new ProjectSynthesisException("generated MNC serialization is empty");
+            }
+        }
+        return new ProjectSynthesisOutput(result, generated);
+    }
+
+    public ReconfigurationResult reconfigure(
+            Path projectRoot,
+            String activityModelPath,
+            KnowledgeDataset knowledge,
+            List<HistoricalResourceBinding> previousBindings,
+            ReconfigurationCause cause) {
+        PreparedProject prepared = prepare(projectRoot, activityModelPath);
+        List<CapabilityRequirement> requirements =
+                new ActivityRequirementExtractor().extract(prepared.diagram());
+        java.util.Map<String, CapabilityRequirement> byId = new java.util.HashMap<>();
+        requirements.forEach(requirement -> byId.put(requirement.id(), requirement));
+
+        List<ResourceSelection> previousSelections =
+                (previousBindings == null ? List.<HistoricalResourceBinding>of() : previousBindings)
+                        .stream()
+                        .sorted(Comparator.comparing(HistoricalResourceBinding::requirementId))
+                        .map(binding -> {
+                            CapabilityRequirement current = byId.get(binding.requirementId());
+                            return new ResourceSelection(
+                                    binding.requirementId(),
+                                    current == null ? binding.requirementId() : current.activityName(),
+                                    current == null ? "historical-removed" : current.capabilityName(),
+                                    binding.resourceId(),
+                                    "previous binding evidence");
+                        })
+                        .toList();
+        SynthesisPlan previousPlan =
+                new SynthesisPlan(true, previousSelections, List.of());
+        return new DeterministicReconfigurationService().reconfigure(
+                prepared.diagram(), knowledge, previousPlan, cause);
+    }
+
+    private static PreparedProject prepare(
+            Path projectRoot,
+            String activityModelPath) {
         Path root = safeRoot(projectRoot);
         Path target = safeModel(root, activityModelPath);
         if (!target.getFileName().toString().endsWith(".activity")) {
@@ -70,17 +118,7 @@ public final class ProjectSynthesisEngine {
                 throw new ProjectSynthesisException(
                         "Activity model does not contain exactly one ActivityDiagram root");
             }
-
-            SynthesisResult result =
-                    new DeterministicSynthesisService().synthesize(diagram, knowledge);
-            String generated = "";
-            if (result.status() == SynthesisStatus.SUCCESS) {
-                generated = rt.mncSerializer.serialize(result.controllerModel());
-                if (generated == null || generated.isBlank()) {
-                    throw new ProjectSynthesisException("generated MNC serialization is empty");
-                }
-            }
-            return new ProjectSynthesisOutput(result, generated);
+            return new PreparedProject(rt, diagram);
         } catch (IOException e) {
             throw new ProjectSynthesisException("project synthesis input could not be read", e);
         }
@@ -188,4 +226,5 @@ public final class ProjectSynthesisEngine {
     }
 
     private record Runtime(Injector activityInjector, ISerializer mncSerializer) { }
+    private record PreparedProject(Runtime runtime, ActivityDiagram diagram) { }
 }

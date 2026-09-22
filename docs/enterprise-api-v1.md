@@ -11,7 +11,7 @@ All v1 routes are rooted at `/api/v1`. The v1 contract covers:
 - projects;
 - models;
 - knowledge queries;
-- deterministic synthesis;
+- deterministic synthesis and supervisory reconfiguration;
 - evidence; and
 - health.
 
@@ -78,3 +78,10 @@ mapping, unknown-field compatibility and non-breaking schema/route evolution.
 The packaged desktop product executes
 `com.kide.enterprise.api.selfcheck` in CI so the contract bundle is qualified from
 the same customer product bytes that will be released.
+
+## PR37 reconfiguration
+
+`POST /api/v1/projects/{projectId}/reconfiguration` uses the same authenticated
+`MODEL_SYNTHESIZE` boundary as synthesis. The request contains the current Activity model
+ID/ETag, a reconfiguration cause, and previous requirement/resource IDs only. Current
+requirements, resources, contracts and migration decisions are server-derived.

@@ -220,3 +220,44 @@ export interface SynthesisResult {
   rationale: string[];
   generatedMnc: string;
 }
+
+
+export type ReconfigurationCause =
+  | "RESOURCE_LOSS"
+  | "RESOURCE_REPLACEMENT"
+  | "CAPABILITY_CHANGE"
+  | "REQUIREMENT_CHANGE"
+  | "AVAILABILITY_CHANGE"
+  | "MANUAL_REPLAN";
+
+export type StateMigrationPolicy =
+  | "PRESERVE"
+  | "MIGRATE"
+  | "RESET"
+  | "INITIALIZE"
+  | "SAFE_FALLBACK"
+  | "RETIRE";
+
+export interface StateMigrationInstruction {
+  requirementId: string;
+  policy: StateMigrationPolicy;
+  fromResourceId: string;
+  toResourceId: string;
+  reason: string;
+}
+
+export interface ReconfigurationResult {
+  resultId: string;
+  serviceVersion: string;
+  status: "UNCHANGED" | "RECONFIGURED" | "NO_SOLUTION";
+  cause: ReconfigurationCause;
+  modelId: string;
+  modelVersion: string;
+  revision: string;
+  knowledgeRevision: number;
+  knowledgeEtag: string;
+  fingerprint: string;
+  selections: SynthesisSelection[];
+  migrations: StateMigrationInstruction[];
+  diagnostics: SynthesisDiagnostic[];
+}

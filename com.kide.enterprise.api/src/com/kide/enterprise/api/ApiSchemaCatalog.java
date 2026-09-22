@@ -118,6 +118,23 @@ public final class ApiSchemaCatalog {
                         "modelVersion", "revision", "knowledgeRevision",
                         "knowledgeEtag", "fingerprint", "selections",
                         "diagnostics", "rationale", "generatedMnc")));
+        add(schemas, schema("ReconfigurationRequest",
+                Map.of("modelId", s(), "modelRevision", s(), "cause", s(),
+                        "previousBindings", a()),
+                Set.of("modelId", "modelRevision", "cause", "previousBindings")));
+        add(schemas, schema("ReconfigurationResult",
+                Map.ofEntries(
+                        Map.entry("resultId", s()), Map.entry("serviceVersion", s()),
+                        Map.entry("status", s()), Map.entry("cause", s()),
+                        Map.entry("modelId", s()), Map.entry("modelVersion", s()),
+                        Map.entry("revision", s()), Map.entry("knowledgeRevision", i()),
+                        Map.entry("knowledgeEtag", s()), Map.entry("fingerprint", s()),
+                        Map.entry("selections", a()), Map.entry("migrations", a()),
+                        Map.entry("diagnostics", a())),
+                Set.of("resultId", "serviceVersion", "status", "cause",
+                        "modelId", "modelVersion", "revision", "knowledgeRevision",
+                        "knowledgeEtag", "fingerprint", "selections",
+                        "migrations", "diagnostics")));
         add(schemas, schema("EvidenceList",
                 Map.of("items", a(), "nextCursor", s()), Set.of("items")));
         add(schemas, schema("Health",

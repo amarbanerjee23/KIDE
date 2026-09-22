@@ -169,6 +169,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   let requestedSourceUri = "";
   let requestedDiagramType = "";
   let glspSessionId = "";
+  let reconfigurationRequest: unknown;
 
   await page.routeWebSocket("**/lsp?*", (ws) => {
     ws.onMessage((message) => {
@@ -405,6 +406,44 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
     }
   );
 
+  await page.route(
+    "**/api/v1/projects/P04-001/reconfiguration",
+    async (route) => {
+      reconfigurationRequest = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          resultId: "reconf-browser",
+          serviceVersion: "1",
+          status: "RECONFIGURED",
+          cause: "RESOURCE_LOSS",
+          modelId: "flow.activity",
+          modelVersion: "4",
+          revision: "etag-4",
+          knowledgeRevision: 3,
+          knowledgeEtag: "d".repeat(64),
+          fingerprint: "e".repeat(64),
+          selections: [{
+            requirementId: "activity:ObserveStep",
+            activityName: "ObserveStep",
+            capabilityName: "Observe",
+            resourceId: "urn:kide:device:camera-b",
+            rationale: "priority=5"
+          }],
+          migrations: [{
+            requirementId: "activity:ObserveStep",
+            policy: "MIGRATE",
+            fromResourceId: "urn:kide:device:camera",
+            toResourceId: "urn:kide:device:camera-b",
+            reason: "Equivalent capability binding changed; migrate supervisory state."
+          }],
+          diagnostics: []
+        })
+      });
+    }
+  );
+
   await page.goto("/");
   await page.getByLabel("Access token").fill("browser-test-token");
   await page.getByRole("button", { name: "Connect API" }).click();
@@ -419,6 +458,24 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
     "urn:kide:device:camera"
   );
   await expect(page.getByText("Generated MNC")).toBeVisible();
+
+  await page.getByLabel("Reconfiguration cause").selectOption("RESOURCE_LOSS");
+  await expect(page.getByLabel("Reconfiguration cause")).toHaveValue("RESOURCE_LOSS");
+  await page.getByRole("button", { name: "Reconfigure" }).click();
+  await expect(page.getByLabel("Reconfiguration result")).toContainText("RECONFIGURED");
+  await expect(page.getByLabel("Reconfiguration result")).toContainText(
+    "urn:kide:device:camera-b"
+  );
+  await expect(page.getByLabel("Reconfiguration result")).toContainText("MIGRATE");
+  expect(reconfigurationRequest).toEqual({
+    modelId: "flow.activity",
+    modelRevision: "etag-4",
+    cause: "RESOURCE_LOSS",
+    previousBindings: [{
+      requirementId: "activity:ObserveStep",
+      resourceId: "urn:kide:device:camera"
+    }]
+  });
 
   await page.getByRole("button", { name: "Diagram" }).click();
 
