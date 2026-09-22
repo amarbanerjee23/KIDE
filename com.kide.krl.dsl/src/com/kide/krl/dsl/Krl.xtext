@@ -73,11 +73,14 @@ Value:
     ('string' stringValue=STRING) |
     ('integer' integerValue=SIGNED_INT) |
     ('decimal' decimalValue=SIGNED_DECIMAL) |
-    ('boolean' booleanValue=('true' | 'false')) |
+    ('boolean' booleanValue=BooleanLiteral) |
     ('iri' iriValue=STRING);
 
 QualifiedName:
     ID (':' ID)?;
+
+BooleanLiteral returns ecore::EBoolean:
+    'false' | 'true';
 
 enum ValueType:
     string='string' |
