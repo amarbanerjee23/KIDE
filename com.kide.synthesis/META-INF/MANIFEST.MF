@@ -1,0 +1,23 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Deterministic Synthesis Core
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.synthesis;singleton:=true
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Automatic-Module-Name: com.kide.synthesis
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.equinox.app,
+ org.eclipse.emf.ecore,
+ org.eclipse.emf.common,
+ org.eclipse.xtext,
+ org.eclipse.xtext.xbase.lib,
+ com.google.guava,
+ com.smr.activity;bundle-version="1.0.0",
+ com.capability;bundle-version="1.0.0",
+ com.mncml;bundle-version="1.0.0",
+ com.dml;bundle-version="1.0.0",
+ com.operation;bundle-version="1.0.0"
+Export-Package: com.kide.synthesis,
+ com.kide.synthesis.activity2mnc
