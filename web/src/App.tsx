@@ -20,6 +20,9 @@ import { GraphicalEditor } from "./GraphicalEditor";
 import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
 import type {
+  KnowledgeCatalogueItem,
+  KnowledgeImpactResult,
+  KnowledgeTraceList,
   Model,
   PresenceSession,
   Project,
@@ -75,6 +78,13 @@ export default function App() {
   const [activeReview, setActiveReview] = useState<ReviewBundle>();
   const [reviewProposal, setReviewProposal] = useState("");
   const [reviewComment, setReviewComment] = useState("");
+  const [knowledgeQuery, setKnowledgeQuery] = useState("");
+  const [knowledgeType, setKnowledgeType] = useState("");
+  const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeCatalogueItem[]>([]);
+  const [selectedKnowledge, setSelectedKnowledge] = useState<KnowledgeCatalogueItem>();
+  const [knowledgeTraces, setKnowledgeTraces] = useState<KnowledgeTraceList>();
+  const [knowledgeImpact, setKnowledgeImpact] = useState<KnowledgeImpactResult>();
+  const [traceSemanticId, setTraceSemanticId] = useState("");
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
@@ -157,6 +167,8 @@ export default function App() {
       setProjectState(opened);
       setNotice(`Opened server project ${opened.displayName}.`);
       await connectLanguageServices(opened);
+      await connectCollaboration(opened);
+      await refreshKnowledgeTraces(opened.id);
     } catch (error) {
       showError(error);
     }
@@ -275,6 +287,92 @@ export default function App() {
       setActiveReview(bundle);
       setReviewProposal(bundle.changeSet.proposedContent);
     } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function refreshKnowledgeTraces(projectId = projectRef.current?.id) {
+    if (!projectId) return;
+    try {
+      setKnowledgeTraces(await clientRef.current.listKnowledgeTraces(projectId));
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function searchKnowledge() {
+    const currentProject = projectRef.current;
+    if (!currentProject) return;
+    try {
+      const result = await clientRef.current.queryKnowledge(
+        currentProject.id,
+        knowledgeQuery,
+        knowledgeType,
+        100
+      );
+      setKnowledgeItems(result.items);
+      if (
+        selectedKnowledge &&
+        !result.items.some((item) => item.iri === selectedKnowledge.iri)
+      ) {
+        setSelectedKnowledge(undefined);
+        setKnowledgeImpact(undefined);
+      }
+      await refreshKnowledgeTraces(currentProject.id);
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function chooseKnowledge(item: KnowledgeCatalogueItem) {
+    const currentProject = projectRef.current;
+    setSelectedKnowledge(item);
+    if (!currentProject) return;
+    try {
+      setKnowledgeImpact(
+        await clientRef.current.queryKnowledgeImpact(currentProject.id, item.iri)
+      );
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function createKnowledgeTrace() {
+    const currentProject = projectRef.current;
+    if (
+      !currentProject ||
+      !selectedKnowledge ||
+      !selected ||
+      selected.source !== "remote"
+    ) {
+      return;
+    }
+    try {
+      const currentTraces =
+        knowledgeTraces ??
+        (await clientRef.current.listKnowledgeTraces(currentProject.id));
+      const updated = await clientRef.current.createKnowledgeTrace(
+        currentProject.id,
+        selectedKnowledge.iri,
+        selected.path,
+        traceSemanticId.trim(),
+        "REALIZES",
+        currentTraces.etag
+      );
+      setKnowledgeTraces(updated);
+      setKnowledgeImpact(
+        await clientRef.current.queryKnowledgeImpact(
+          currentProject.id,
+          selectedKnowledge.iri
+        )
+      );
+      setNotice(`Traced ${selectedKnowledge.label} to ${selected.path}.`);
+    } catch (error) {
+      if (error instanceof ApiClientError && error.code === "CONFLICT") {
+        await refreshKnowledgeTraces(currentProject.id);
+        setNotice("Knowledge traces changed on the server. Refreshed without overwriting them.");
+        return;
+      }
       showError(error);
     }
   }
@@ -669,6 +767,11 @@ export default function App() {
     setActiveReview(undefined);
     setReviewProposal("");
     setReviewComment("");
+    setKnowledgeItems([]);
+    setSelectedKnowledge(undefined);
+    setKnowledgeTraces(undefined);
+    setKnowledgeImpact(undefined);
+    setTraceSemanticId("");
     setSaveState("clean");
   }
 
@@ -840,6 +943,94 @@ export default function App() {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {project && (
+            <div className="knowledge-panel">
+              <div className="panel-heading">
+                <h2>Knowledge catalogue</h2>
+                <button onClick={() => void searchKnowledge()}>Search</button>
+              </div>
+              <label>
+                Knowledge query
+                <input
+                  aria-label="Knowledge query"
+                  value={knowledgeQuery}
+                  onChange={(event) => setKnowledgeQuery(event.target.value)}
+                  placeholder="Capability, device, role, property…"
+                />
+              </label>
+              <label>
+                Concept type
+                <select
+                  aria-label="Knowledge concept type"
+                  value={knowledgeType}
+                  onChange={(event) => setKnowledgeType(event.target.value)}
+                >
+                  <option value="">All concepts</option>
+                  <option value="CAPABILITY">Capability</option>
+                  <option value="DEVICE">Device</option>
+                  <option value="WORKFLOW">Workflow</option>
+                  <option value="INTERFACE">Interface</option>
+                  <option value="BEHAVIOR">Behavior</option>
+                  <option value="INTERACTION">Interaction</option>
+                </select>
+              </label>
+              {knowledgeItems.length ? (
+                <ul className="knowledge-list">
+                  {knowledgeItems.map((item) => (
+                    <li key={item.iri}>
+                      <button
+                        className={selectedKnowledge?.iri === item.iri ? "selected" : ""}
+                        onClick={() => void chooseKnowledge(item)}
+                      >
+                        <strong>{item.label}</strong>
+                        <span>{item.types.map(compactKnowledgeIri).join(", ")}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">Search the server-owned knowledge catalogue.</p>
+              )}
+
+              {selectedKnowledge && (
+                <div className="knowledge-detail">
+                  <strong>{selectedKnowledge.label}</strong>
+                  <span className="muted">{selectedKnowledge.authority}</span>
+                  <span className="knowledge-iri">{selectedKnowledge.iri}</span>
+                  {Object.entries(selectedKnowledge.properties).map(([key, values]) => (
+                    <div className="knowledge-property" key={key}>
+                      <span>{compactKnowledgeIri(key)}</span>
+                      <strong>{values.join(", ")}</strong>
+                    </div>
+                  ))}
+                  <label>
+                    Semantic ID (optional)
+                    <input
+                      aria-label="Knowledge trace semantic ID"
+                      value={traceSemanticId}
+                      onChange={(event) => setTraceSemanticId(event.target.value)}
+                      placeholder="e.g. //@activities.0"
+                    />
+                  </label>
+                  <button
+                    disabled={!selected || selected.source !== "remote"}
+                    onClick={() => void createKnowledgeTrace()}
+                  >
+                    Trace to current model
+                  </button>
+                  {knowledgeImpact && (
+                    <p className="muted">
+                      {knowledgeImpact.items.length} linked model location(s)
+                      {knowledgeImpact.issues.length
+                        ? ` · ${knowledgeImpact.issues.length} stale/broken`
+                        : " · all links healthy"}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1107,6 +1298,17 @@ function upsert(
   return entries.map((entry, index) =>
     index === existing ? replacement : entry
   );
+}
+
+function compactKnowledgeIri(value: string): string {
+  const split = Math.max(
+    value.lastIndexOf("#"),
+    value.lastIndexOf("/"),
+    value.lastIndexOf(":")
+  );
+  return split >= 0 && split + 1 < value.length
+    ? value.slice(split + 1)
+    : value;
 }
 
 function safeName(value: string): string {
