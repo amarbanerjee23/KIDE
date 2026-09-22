@@ -29,6 +29,7 @@ import type {
   ReviewBundle,
   ReviewChangeSet,
   SaveState,
+  SynthesisResult,
   WorkspaceEntry
 } from "./types";
 
@@ -85,6 +86,7 @@ export default function App() {
   const [knowledgeTraces, setKnowledgeTraces] = useState<KnowledgeTraceList>();
   const [knowledgeImpact, setKnowledgeImpact] = useState<KnowledgeImpactResult>();
   const [traceSemanticId, setTraceSemanticId] = useState("");
+  const [synthesisResult, setSynthesisResult] = useState<SynthesisResult>();
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
@@ -142,6 +144,7 @@ export default function App() {
 
   useEffect(() => {
     setViewMode("text");
+    setSynthesisResult(undefined);
     collaboration.current?.setModel(selectedPath);
   }, [selectedPath]);
 
@@ -287,6 +290,50 @@ export default function App() {
       setActiveReview(bundle);
       setReviewProposal(bundle.changeSet.proposedContent);
     } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function runSynthesis() {
+    const currentProject = projectRef.current;
+    const current = entriesRef.current.find(
+      (entry) => entry.path === selectedPathRef.current
+    );
+    if (
+      !currentProject ||
+      !current ||
+      current.source !== "remote" ||
+      !current.path.endsWith(".activity") ||
+      !current.etag
+    ) {
+      return;
+    }
+    if (current.dirty || saveState === "pending" || saveState === "saving") {
+      setNotice("Save the Activity model before running deterministic synthesis.");
+      return;
+    }
+    try {
+      const result = await clientRef.current.synthesize(
+        currentProject.id,
+        current.path,
+        current.etag
+      );
+      setSynthesisResult(result);
+      if (result.status === "SUCCESS") {
+        setNotice(
+          `Synthesis selected ${result.selections.length} resource binding(s) without modifying the source model.`
+        );
+      } else {
+        setNotice(
+          `Synthesis completed with ${result.status.toLowerCase().replaceAll("_", " ")}.`
+        );
+      }
+    } catch (error) {
+      if (error instanceof ApiClientError && error.code === "CONFLICT") {
+        setConflict("The Activity model changed on the server before synthesis completed.");
+        setNotice("Reload the current server revision before synthesizing again.");
+        return;
+      }
       showError(error);
     }
   }
@@ -772,6 +819,7 @@ export default function App() {
     setKnowledgeTraces(undefined);
     setKnowledgeImpact(undefined);
     setTraceSemanticId("");
+    setSynthesisResult(undefined);
     setSaveState("clean");
   }
 
@@ -1028,6 +1076,52 @@ export default function App() {
                         ? ` · ${knowledgeImpact.issues.length} stale/broken`
                         : " · all links healthy"}
                     </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {project && selected?.source === "remote" && selected.path.endsWith(".activity") && (
+            <div className="synthesis-panel">
+              <div className="panel-heading">
+                <h2>Deterministic synthesis</h2>
+                <button
+                  disabled={!selected.etag || selected.dirty}
+                  onClick={() => void runSynthesis()}
+                >
+                  Synthesize
+                </button>
+              </div>
+              <p className="muted">
+                Server-owned capability matching, design contracts and Activity→MNC composition.
+              </p>
+              {synthesisResult && (
+                <div className="synthesis-result" aria-label="Synthesis result">
+                  <strong>{synthesisResult.status}</strong>
+                  <span className="muted">
+                    fingerprint {synthesisResult.fingerprint.slice(0, 12)} · knowledge revision {synthesisResult.knowledgeRevision}
+                  </span>
+                  {synthesisResult.selections.map((selection) => (
+                    <div className="synthesis-selection" key={selection.requirementId}>
+                      <span>{selection.activityName}</span>
+                      <strong>{selection.resourceId}</strong>
+                    </div>
+                  ))}
+                  {synthesisResult.diagnostics.map((diagnostic, index) => (
+                    <div
+                      className={`synthesis-diagnostic diagnostic-${diagnostic.severity.toLowerCase()}`}
+                      key={diagnostic.code + index}
+                    >
+                      <strong>{diagnostic.code}</strong>
+                      <span>{diagnostic.message}</span>
+                    </div>
+                  ))}
+                  {synthesisResult.generatedMnc && (
+                    <details>
+                      <summary>Generated MNC</summary>
+                      <pre className="generated-mnc">{synthesisResult.generatedMnc}</pre>
+                    </details>
                   )}
                 </div>
               )}
