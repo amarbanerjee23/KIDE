@@ -65,7 +65,7 @@ gcloud secrets add-iam-policy-binding "${KIDE_OIDC_SECRET_NAME}" \
 
 gcloud builds submit . \
   --config deploy/gcp/cloudbuild.yaml \
-  --substitutions="_IMAGE=${IMAGE}"
+  --substitutions="_IMAGE=${IMAGE},_QUALIFIER=${IMAGE_TAG}"
 
 gcloud run deploy "${SERVICE_NAME}" \
   --region "${REGION}" \
