@@ -298,3 +298,11 @@ button, .import-button {
   overflow-wrap: anywhere;
   font-size: 11px;
 }
+
+
+.reconfiguration-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
