@@ -82,3 +82,16 @@ request timeout.
 For a horizontally scaled enterprise deployment, replace the file-backed
 persistence and in-memory collaboration state with shared transactional
 services before increasing `--max` above 1.
+
+
+## Cloud Build custom service account logging
+
+The build config explicitly uses `CLOUD_LOGGING_ONLY`. Google Cloud requires
+an explicit user-owned log destination whenever a user-specified build service
+account is used; otherwise build creation is rejected before any Docker step
+starts.
+
+If your project uses a restricted custom build service account, grant that
+service account `roles/logging.logWriter` and
+`roles/artifactregistry.writer`. The repository intentionally does not fall
+back to Google-owned legacy log buckets.
