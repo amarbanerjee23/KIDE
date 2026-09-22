@@ -133,3 +133,22 @@ configuration for this trigger.
 
 The trigger build then receives `_IMAGE` and `_QUALIFIER` from the repair
 script and reads `options.logging: CLOUD_LOGGING_ONLY` from the repository.
+
+
+## Trigger-safe image naming
+
+Cloud Build triggers run with `ALLOW_LOOSE` substitutions. A missing custom
+substitution can therefore become an empty string instead of failing early. To
+avoid Docker receiving an empty image tag, KIDE no longer depends on a
+trigger-supplied `_IMAGE` value.
+
+Both Cloud Build configurations now define an internal `_KIDE_IMAGE` default
+from values Cloud Build always supplies:
+
+```text
+${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/kide:${BUILD_ID}
+```
+
+The trigger only needs optional `_REGION` and `_AR_REPOSITORY` overrides.
+The normal deployment script may still override the internal image value when
+it needs a deterministic Git-derived image tag.
