@@ -116,7 +116,7 @@ jobs:
           python3 scripts/smoke_model_repository.py \
             --products releng/com.kide.repository/target/products
 
-      - name: Smoke-test packaged knowledge fabric
+      - name: Smoke-test packaged knowledge fabric and catalogue traces
         run: |
           python3 scripts/smoke_knowledge_fabric.py \
             --products releng/com.kide.repository/target/products
@@ -131,7 +131,7 @@ jobs:
           python3 scripts/smoke_lsp_websocket_gateway.py \
             --products releng/com.kide.languageserver.repository/target/products
 
-      - name: Smoke-test packaged enterprise HTTP API runtime
+      - name: Smoke-test packaged enterprise HTTP API and knowledge runtime
         run: |
           python3 scripts/smoke_enterprise_api_server.py \
             --products releng/com.kide.languageserver.repository/target/products
