@@ -41,6 +41,7 @@ the transformation.
 | `.mncspec` | MNC Specification Language | component interfaces, commands, events, alarms, responses and control nodes |
 | `.cap` | Capability Language | capabilities bound to component interfaces and their controllable outcomes |
 | `.activity` | Activity Language | supervisory workflows that consume capabilities and operations |
+| `.krl` | Knowledge Representation Language | typed knowledge facts, queries, templates and generation target bindings |
 <!-- KIDE-LANGUAGES:END -->
 
 ## The KIDE visual language
