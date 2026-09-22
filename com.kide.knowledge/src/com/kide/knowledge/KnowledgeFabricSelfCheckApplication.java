@@ -149,7 +149,8 @@ public final class KnowledgeFabricSelfCheckApplication implements IApplication {
             }
             if (!new KnowledgeTraceService().validate(
                     rebound, reopened,
-                    path -> "models/renamed.activity".equals(path)).isEmpty()) {
+                    path -> "models/renamed.activity".equals(path)
+                            ? "2".repeat(64) : null).isEmpty()) {
                 throw new AssertionError("healthy trace was reported broken");
             }
 
