@@ -49,6 +49,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         cloudbuild = self.read("deploy/gcp/cloudbuild.yaml")
         self.assertIn("deploy/gcp/Dockerfile", cloudbuild)
         self.assertIn("${_IMAGE}", cloudbuild)
+        self.assertIn("logging: CLOUD_LOGGING_ONLY", cloudbuild)
 
     def test_deployment_shell_scripts_parse(self):
         for relative in (
