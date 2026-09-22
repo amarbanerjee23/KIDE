@@ -60,22 +60,27 @@ The grouping follows shared code boundaries rather than feature labels:
 
 ## Current execution point
 
-PR22 through PR35 are merged and green on `main`. PR35 delivered deterministic knowledge
-catalogue retrieval, desktop/web catalogue UX and stable revision-aware knowledge-to-model
-trace links.
+PR22 through PR36 are merged and green on `main`. PR36 delivered deterministic
+knowledge-backed synthesis, consolidated Activity-to-MNC controller composition,
+cross-model design contracts, browser/API synthesis surfaces and permanent packaged
+qualification.
 
-**PR36 is the active implementation PR.** It consolidates deterministic capability/resource
-matching, the existing Activity-to-MNC supervisory-controller transformation and cross-model
-design contracts behind one headless synthesis service. Resource ranking is transparent
-and deterministic from declared knowledge properties; failed matching or contract
-validation emits diagnostics without generating or mutating engineering models.
+**PR37 is the active implementation PR.** It adds deterministic minimal-disruption
+reconfiguration over the PR36 synthesis graph. Valid previous bindings are preserved,
+invalidated bindings alone are replanned, state migration is explicit
+(PRESERVE/MIGRATE/RESET/INITIALIZE/SAFE_FALLBACK/RETIRE), and invalid/no-solution designs
+fail closed without mutating canonical models or executing device side effects.
 
-The PR36 acceptance gate requires deterministic repeatability, explicit ambiguity and
-no-solution evidence, resolved Capability semantics before controller generation,
-resource-conflict/contract diagnostics, preservation of the historical Activity-to-MNC
-golden snapshot, strict source-revision checks, read-only synthesis, browser thin-client
-qualification, packaged headless synthesis and every existing desktop/knowledge/API/GLSP/LSP
-release gate.
+PR37 also turns the thesis-scale 10/50/100/500/1000-device scenarios into a packaged
+qualification application. Functional determinism and minimal-disruption behavior are hard
+CI gates. Wall-clock and thread-CPU timings are retained as JSON trend evidence; hosted
+runner timing is not treated as a soft-real-time guarantee.
 
-PR37 follows after PR36 and will implement deterministic dynamic reconfiguration together
-with thesis-scale 10/50/100/500/1000-device qualification and performance evidence.
+The PR37 acceptance gate requires device-loss/replacement/capability/requirement-change
+regressions, safe fallback/no-solution behavior, deterministic state migration, strict
+model-revision checks, server-owned semantic revalidation, browser thin-client
+qualification, packaged enterprise API reconfiguration, all five scale scenarios and every
+existing desktop/knowledge/synthesis/LSP/GLSP release gate.
+
+PR38 follows after PR37 and will introduce KRL as a first-class language together with the
+versioned semantic code-generation toolchain and reproducible target provenance.
