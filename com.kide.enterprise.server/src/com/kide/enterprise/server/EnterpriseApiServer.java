@@ -44,6 +44,8 @@ import com.kide.enterprise.modelrepo.ModelRepositoryException;
 import com.kide.enterprise.modelrepo.ModelSnapshot;
 import com.kide.enterprise.modelrepo.ModelTransaction;
 import com.kide.enterprise.modelrepo.RevisionConflictException;
+import com.kide.knowledge.KnowledgeRepositoryException;
+import com.kide.knowledge.KnowledgeRevisionConflictException;
 
 /**
  * Shared HTTP runtime for browser and service clients. It binds the PR20 API
@@ -61,6 +63,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
     private final ServerAuthorizationGate authorization;
     private final ModelRepository models;
     private final ProjectCollaborationService collaboration;
+    private final ProjectKnowledgeService knowledge;
     private final AuditLedger audit;
     private final Clock clock;
     private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
@@ -74,6 +77,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
             ServerAuthorizationGate authorization,
             ModelRepository models,
             ProjectCollaborationService collaboration,
+            ProjectKnowledgeService knowledge,
             AuditLedger audit,
             Clock clock) {
         this.config = Objects.requireNonNull(config, "config");
@@ -82,6 +86,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
         this.authorization = Objects.requireNonNull(authorization, "authorization");
         this.models = Objects.requireNonNull(models, "models");
         this.collaboration = Objects.requireNonNull(collaboration, "collaboration");
+        this.knowledge = Objects.requireNonNull(knowledge, "knowledge");
         this.audit = Objects.requireNonNull(audit, "audit");
         this.clock = Objects.requireNonNull(clock, "clock");
 
@@ -153,6 +158,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
                     health.addProperty("version", ApiVersion.V1.token());
                     JsonObject dependencies = new JsonObject();
                     dependencies.addProperty("modelRepository", "AVAILABLE");
+                    dependencies.addProperty("knowledgeRepository", "AVAILABLE");
                     health.add("dependencies", dependencies);
                     writeJson(response, callback, 200, health);
                     return true;
@@ -176,11 +182,13 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 writeError(response, callback, requestId, 403, ApiErrorCode.FORBIDDEN,
                         "The requested operation is not permitted.");
                 return true;
-            } catch (RevisionConflictException e) {
+            } catch (RevisionConflictException | KnowledgeRevisionConflictException e) {
                 writeError(response, callback, requestId, 409, ApiErrorCode.CONFLICT,
-                        "The model revision is stale.");
+                        "The requested revision is stale.");
                 return true;
-            } catch (ResourceNotFoundException | ProjectCollaborationService.NotFoundException e) {
+            } catch (ResourceNotFoundException
+                    | ProjectCollaborationService.NotFoundException
+                    | ProjectKnowledgeService.NotFoundException e) {
                 writeError(response, callback, requestId, 404, ApiErrorCode.NOT_FOUND,
                         "The requested API resource was not found.");
                 return true;
@@ -188,9 +196,9 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 writeError(response, callback, requestId, 413, ApiErrorCode.TOO_LARGE,
                         "The request body is too large.");
                 return true;
-            } catch (ModelRepositoryException e) {
+            } catch (ModelRepositoryException | KnowledgeRepositoryException e) {
                 writeError(response, callback, requestId, 503, ApiErrorCode.SERVICE_UNAVAILABLE,
-                        "The model repository is unavailable.");
+                        "A project repository is unavailable.");
                 return true;
             } catch (IllegalArgumentException e) {
                 writeError(response, callback, requestId, 400, ApiErrorCode.BAD_REQUEST,
@@ -314,16 +322,9 @@ public final class EnterpriseApiServer implements AutoCloseable {
                         request, response, callback, requestId, session, segments);
             }
 
-            if (segments.length == 4
-                    && "knowledge".equals(segments[2])
-                    && "query".equals(segments[3])) {
-                if (!"POST".equals(request.getMethod())) {
-                    methodNotAllowed(response, callback, requestId);
-                } else {
-                    unavailable(response, callback, requestId,
-                            "Knowledge services are not installed yet.");
-                }
-                return true;
+            if (segments.length >= 4 && "knowledge".equals(segments[2])) {
+                return handleKnowledge(
+                        request, response, callback, requestId, session, segments);
             }
 
             if (segments.length == 3 && "synthesis".equals(segments[2])) {
@@ -347,6 +348,108 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 }
                 return true;
             }
+        }
+
+        writeError(response, callback, requestId, 404, ApiErrorCode.NOT_FOUND,
+                "The requested API resource was not found.");
+        return true;
+    }
+
+    private boolean handleKnowledge(
+            Request request,
+            Response response,
+            Callback callback,
+            UUID requestId,
+            AuthenticatedSession session,
+            String[] segments) {
+        authorization.requireKnowledgeRead(session, context);
+
+        if (segments.length == 4 && "query".equals(segments[3])) {
+            if (!"POST".equals(request.getMethod())) {
+                methodNotAllowed(response, callback, requestId);
+                return true;
+            }
+            JsonObject input = readJsonObject(request);
+            String type = optionalString(
+                    input, "typeIri", optionalString(input, "scope", ""));
+            int limit = optionalInteger(input, "limit", 100);
+            var result = knowledge.query(
+                    optionalString(input, "query", ""), type, limit);
+            writeJson(response, callback, 200,
+                    gson.toJsonTree(result).getAsJsonObject());
+            return true;
+        }
+
+        if (segments.length == 4 && "traces".equals(segments[3])) {
+            if ("GET".equals(request.getMethod())) {
+                writeJson(response, callback, 200,
+                        gson.toJsonTree(knowledge.traces()).getAsJsonObject());
+                return true;
+            }
+            if ("POST".equals(request.getMethod())) {
+                authorization.requireKnowledgeTraceWrite(session, context);
+                JsonObject input = readJsonObject(request);
+                var result = knowledge.createTrace(
+                        requiredString(input, "knowledgeIri"),
+                        requiredString(input, "modelId"),
+                        optionalString(input, "semanticId", ""),
+                        requiredString(input, "relation"),
+                        session.principal().id(),
+                        requiredString(input, "expectedTraceEtag"));
+                audit(session, requestId, "knowledge.trace.create", "knowledge-traces",
+                        context.project().id().value(), AuditOutcome.SUCCESS,
+                        Long.toString(result.revision()));
+                writeJson(response, callback, 200,
+                        gson.toJsonTree(result).getAsJsonObject());
+                return true;
+            }
+            methodNotAllowed(response, callback, requestId);
+            return true;
+        }
+
+        if (segments.length == 5 && "traces".equals(segments[3])) {
+            authorization.requireKnowledgeTraceWrite(session, context);
+            String traceId = segments[4];
+            if ("PUT".equals(request.getMethod())) {
+                JsonObject input = readJsonObject(request);
+                var result = knowledge.rebindTrace(
+                        traceId,
+                        requiredString(input, "modelId"),
+                        optionalString(input, "semanticId", ""),
+                        session.principal().id(),
+                        requiredString(input, "expectedTraceEtag"));
+                audit(session, requestId, "knowledge.trace.rebind", "knowledge-trace",
+                        traceId, AuditOutcome.SUCCESS, Long.toString(result.revision()));
+                writeJson(response, callback, 200,
+                        gson.toJsonTree(result).getAsJsonObject());
+                return true;
+            }
+            if ("DELETE".equals(request.getMethod())) {
+                JsonObject input = readJsonObject(request);
+                var result = knowledge.deleteTrace(
+                        traceId, requiredString(input, "expectedTraceEtag"));
+                audit(session, requestId, "knowledge.trace.delete", "knowledge-trace",
+                        traceId, AuditOutcome.SUCCESS, Long.toString(result.revision()));
+                writeJson(response, callback, 200,
+                        gson.toJsonTree(result).getAsJsonObject());
+                return true;
+            }
+            methodNotAllowed(response, callback, requestId);
+            return true;
+        }
+
+        if (segments.length == 4 && "impact".equals(segments[3])) {
+            if (!"POST".equals(request.getMethod())) {
+                methodNotAllowed(response, callback, requestId);
+                return true;
+            }
+            JsonObject input = readJsonObject(request);
+            var result = knowledge.impact(
+                    optionalString(input, "knowledgeIri", ""),
+                    optionalString(input, "modelId", ""));
+            writeJson(response, callback, 200,
+                    gson.toJsonTree(result).getAsJsonObject());
+            return true;
         }
 
         writeError(response, callback, requestId, 404, ApiErrorCode.NOT_FOUND,
@@ -759,6 +862,19 @@ public final class EnterpriseApiServer implements AutoCloseable {
         if (!object.has(key) || !object.get(key).isJsonPrimitive()) return fallback;
         String value = object.get(key).getAsString();
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private static int optionalInteger(JsonObject object, String key, int fallback) {
+        if (!object.has(key)) return fallback;
+        if (!object.get(key).isJsonPrimitive()
+                || !object.get(key).getAsJsonPrimitive().isNumber()) {
+            throw new IllegalArgumentException(key + " must be an integer");
+        }
+        try {
+            return object.get(key).getAsInt();
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(key + " must be an integer");
+        }
     }
 
     private static final class ResourceNotFoundException extends RuntimeException {
