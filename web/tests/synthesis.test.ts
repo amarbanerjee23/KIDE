@@ -33,8 +33,6 @@ describe("KideApiClient synthesis boundary", () => {
         fingerprint: "c".repeat(64),
         selections: [{
           requirementId: "activity:ObserveStep",
-          activityName: "ObserveStep",
-          capabilityName: "Observe",
           resourceId: "urn:kide:device:camera",
           rationale: "priority=10"
         }],
@@ -70,8 +68,6 @@ describe("KideApiClient synthesis boundary", () => {
         cause: "RESOURCE_LOSS",
         previousBindings: [{
           requirementId: "activity:ObserveStep",
-          activityName: "ObserveStep",
-          capabilityName: "Observe",
           resourceId: "urn:kide:device:camera"
         }]
       });
@@ -91,8 +87,6 @@ describe("KideApiClient synthesis boundary", () => {
         fingerprint: "e".repeat(64),
         selections: [{
           requirementId: "activity:ObserveStep",
-          activityName: "ObserveStep",
-          capabilityName: "Observe",
           resourceId: "urn:kide:device:camera-b",
           rationale: "priority=5"
         }],
@@ -118,8 +112,6 @@ describe("KideApiClient synthesis boundary", () => {
       "RESOURCE_LOSS",
       [{
         requirementId: "activity:ObserveStep",
-        activityName: "ObserveStep",
-        capabilityName: "Observe",
         resourceId: "urn:kide:device:camera"
       }]
     );
