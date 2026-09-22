@@ -34,7 +34,7 @@ import com.kide.enterprise.identity.AuthenticationException;
 import com.kide.enterprise.identity.AuthenticationMethod;
 import com.kide.enterprise.identity.PrincipalIdentity;
 import com.kide.enterprise.identity.PrincipalKind;
-import com.kide.enterprise.modelrepo.ServerModelRepository;
+import com.kide.enterprise.modelrepo.FileModelRepository;
 import com.kide.knowledge.EmbeddedKnowledgeRepository;
 import com.kide.knowledge.KnowledgeDataset;
 import com.kide.knowledge.KnowledgeProvenance;
@@ -43,6 +43,7 @@ import com.kide.knowledge.KnowledgeTerm;
 import com.kide.knowledge.KnowledgeTraceStore;
 import com.kide.knowledge.KnowledgeTriple;
 import com.kide.knowledge.KnowledgeVocabulary;
+import com.kide.synthesis.SynthesisVocabulary;
 
 public final class EnterpriseApiSelfCheckApplication implements IApplication {
     private volatile EnterpriseApiServer server;
@@ -86,7 +87,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     new AuthorizationEnforcer(new AuthorizationService(policies)));
 
             InMemoryAuditLedger audit = new InMemoryAuditLedger(Clock.systemUTC());
-            ServerModelRepository modelRepository = new ServerModelRepository();
+            FileModelRepository modelRepository = new FileModelRepository(project);
             ProjectCollaborationService collaboration =
                     new ProjectCollaborationService(project, modelRepository, Clock.systemUTC());
             EmbeddedKnowledgeRepository knowledgeRepository =
@@ -117,6 +118,8 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     knowledgeRepository,
                     new KnowledgeTraceStore(project, Clock.systemUTC()),
                     modelRepository);
+            ProjectSynthesisService synthesis = new ProjectSynthesisService(
+                    project, modelRepository, knowledgeRepository);
             server = new EnterpriseApiServer(
                     new EnterpriseApiConfig(
                             "127.0.0.1", 0, 1024 * 1024, Duration.ofSeconds(20),
@@ -135,6 +138,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     modelRepository,
                     collaboration,
                     knowledge,
+                    synthesis,
                     audit,
                     Clock.systemUTC());
             server.start();
