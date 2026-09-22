@@ -19,10 +19,16 @@ public final class CreateMncInterfaceHandler extends EMFCreateOperationHandler<C
     public Optional<Command> createCommand(CreateNodeOperation operation) {
         if (!(modelState instanceof EMFNotationModelState notationState)
                 || !(notationState.getSemanticModel() instanceof Model root)) return doNothing();
+        // The canonical Xtext grammar requires exactly one InterfaceDescription.
+        // Never let a graphical operation create a semantic state that cannot be serialized.
+        if (root.getSystems().stream().anyMatch(InterfaceDescription.class::isInstance)) {
+            return doNothing();
+        }
+
         InterfaceDescription iface = MncModelFactory.eINSTANCE.createInterfaceDescription();
         String requested = operation.getArgs().get("name");
         iface.setName(requested == null || requested.isBlank()
-                ? "Interface" + (root.getSystems().size() + 1) : requested.trim());
+                ? "Interface1" : requested.trim());
         return Optional.of(AddCommand.create(
                 modelState.getEditingDomain(),
                 root,
