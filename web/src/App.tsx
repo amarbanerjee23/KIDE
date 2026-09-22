@@ -363,7 +363,7 @@ export default function App() {
             })
           );
         },
-        onConflict(error, localContent) {
+        onConflict(error, localContent, expectedEtag) {
           try {
             sessionStorage.setItem(
               `kide:conflict:${entry.projectId}:${entry.path}`,
@@ -387,6 +387,157 @@ export default function App() {
     );
     autosaves.current.set(entry.path, coordinator);
     return coordinator;
+  }
+
+  async function createConflictReview(
+    entry: WorkspaceEntry,
+    localContent: string,
+    baseEtag: string
+  ) {
+    if (!entry.projectId) return;
+    try {
+      const set = await clientRef.current.createReviewChangeSet(
+        entry.projectId,
+        entry.path,
+        baseEtag,
+        localContent,
+        entry.mediaType
+      );
+      await refreshReviews(entry.projectId);
+      await openReview(set.id);
+      if (entry.path === selectedPathRef.current) {
+        setConflict(
+          `Server revision changed. Local edits were captured as review change set ${set.id.slice(0, 8)}; no server content was overwritten.`
+        );
+      }
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function createReviewFromEditor() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !selected || selected.source !== "remote" || !selected.etag) return;
+    const proposed = workspace.text(selected.path) ?? editableText(selected);
+    if (proposed === null || proposed === undefined) return;
+    try {
+      const set = await clientRef.current.createReviewChangeSet(
+        currentProject.id,
+        selected.path,
+        selected.etag,
+        proposed,
+        selected.mediaType
+      );
+      await refreshReviews(currentProject.id);
+      await openReview(set.id);
+      setNotice(`Created review change set ${set.id.slice(0, 8)}.`);
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function rebaseActiveReview() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview) return;
+    try {
+      const updated = await clientRef.current.rebaseReviewChangeSet(
+        currentProject.id,
+        activeReview.changeSet.id,
+        activeReview.currentModel.etag,
+        reviewProposal
+      );
+      await refreshReviews(currentProject.id);
+      await openReview(updated.id);
+      setNotice("Review proposal rebased explicitly on the current server revision.");
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function markActiveReviewReady() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview) return;
+    try {
+      const updated = await clientRef.current.markReviewReady(
+        currentProject.id,
+        activeReview.changeSet.id
+      );
+      await refreshReviews(currentProject.id);
+      await openReview(updated.id);
+      setNotice("Change set is ready for independent review.");
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function approveActiveReview() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview) return;
+    try {
+      const updated = await clientRef.current.approveReview(
+        currentProject.id,
+        activeReview.changeSet.id
+      );
+      await refreshReviews(currentProject.id);
+      await openReview(updated.id);
+      setNotice("Change set approved.");
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function applyActiveReview() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview) return;
+    try {
+      const applied = await clientRef.current.applyReview(
+        currentProject.id,
+        activeReview.changeSet.id
+      );
+      const entry = remoteEntry(currentProject.id, applied.model);
+      replaceRemoteEntry(entry);
+      workspace.sync(entry.path, applied.model.content);
+      await refreshReviews(currentProject.id);
+      await openReview(applied.changeSet.id);
+      setSaveState("clean");
+      setConflict(undefined);
+      setNotice("Approved change set applied to the canonical model.");
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function addActiveReviewComment() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview || !reviewComment.trim()) return;
+    try {
+      await clientRef.current.addReviewComment(
+        currentProject.id,
+        activeReview.changeSet.id,
+        reviewComment.trim(),
+        activeReview.changeSet.modelId
+      );
+      setReviewComment("");
+      await openReview(activeReview.changeSet.id);
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function setCommentResolved(commentId: string, resolved: boolean) {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview) return;
+    try {
+      await clientRef.current.updateReviewComment(
+        currentProject.id,
+        activeReview.changeSet.id,
+        commentId,
+        resolved
+      );
+      await openReview(activeReview.changeSet.id);
+    } catch (error) {
+      showError(error);
+    }
   }
 
   function selectEntry(entry: WorkspaceEntry) {
