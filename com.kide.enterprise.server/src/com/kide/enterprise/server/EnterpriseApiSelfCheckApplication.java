@@ -611,8 +611,6 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 JsonObject value = selection.getAsJsonObject();
                 JsonObject binding = new JsonObject();
                 binding.addProperty("requirementId", value.get("requirementId").getAsString());
-                binding.addProperty("activityName", value.get("activityName").getAsString());
-                binding.addProperty("capabilityName", value.get("capabilityName").getAsString());
                 binding.addProperty("resourceId", value.get("resourceId").getAsString());
                 previousBindings.add(binding);
             }
