@@ -374,8 +374,6 @@ export default function App() {
         reconfigurationCause,
         synthesisResult.selections.map((selection) => ({
           requirementId: selection.requirementId,
-          activityName: selection.activityName,
-          capabilityName: selection.capabilityName,
           resourceId: selection.resourceId
         }))
       );
