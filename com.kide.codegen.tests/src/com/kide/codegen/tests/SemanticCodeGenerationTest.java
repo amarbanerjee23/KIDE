@@ -77,7 +77,7 @@ public class SemanticCodeGenerationTest {
     public void javaTargetRejectsTraversalBeforeWriting() {
         var target = new JavaGenerationTarget();
         assertThrows(
-                IllegalArgumentException.class,
+                GenerationException.class,
                 () -> target.generate("Bad", "T", "../Bad.java", "class Bad {}"));
     }
 
