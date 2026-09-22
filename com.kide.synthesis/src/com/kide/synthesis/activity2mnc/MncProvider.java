@@ -15,6 +15,7 @@ import dataModelPackage.Parameter;
 import dataModelPackage.SimpleType;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import mncModel.AbstractInterfaceItems;
@@ -55,21 +56,21 @@ import org.eclipse.xtext.xbase.lib.Procedures.Procedure1;
 
 @SuppressWarnings("all")
 public class MncProvider {
-  private final HashSet<InterfaceDescription> usedInterfaces = new HashSet<InterfaceDescription>();
+  private final HashSet<InterfaceDescription> usedInterfaces = new LinkedHashSet<InterfaceDescription>();
   
-  private final HashSet<Action> initExecutableActions = new HashSet<Action>();
+  private final HashSet<Action> initExecutableActions = new LinkedHashSet<Action>();
   
-  private final HashSet<ControlNode> childNodes = new HashSet<ControlNode>();
+  private final HashSet<ControlNode> childNodes = new LinkedHashSet<ControlNode>();
   
-  private final HashSet<OperatingState> operatingState = new HashSet<OperatingState>();
+  private final HashSet<OperatingState> operatingState = new LinkedHashSet<OperatingState>();
   
-  private final HashSet<CommandResponseBlock> commandResponseBlocks = new HashSet<CommandResponseBlock>();
+  private final HashSet<CommandResponseBlock> commandResponseBlocks = new LinkedHashSet<CommandResponseBlock>();
   
-  private final HashSet<EventBlock> eventBlocks = new HashSet<EventBlock>();
+  private final HashSet<EventBlock> eventBlocks = new LinkedHashSet<EventBlock>();
   
-  private final HashSet<DataPointBlock> dataPointBlocks = new HashSet<DataPointBlock>();
+  private final HashSet<DataPointBlock> dataPointBlocks = new LinkedHashSet<DataPointBlock>();
   
-  private final HashSet<AlarmBlock> alarmBlocks = new HashSet<AlarmBlock>();
+  private final HashSet<AlarmBlock> alarmBlocks = new LinkedHashSet<AlarmBlock>();
   
   public HashMap<String, Set> getParseInfo() {
     HashMap<String, Set> parseInfor = new HashMap<String, Set>();
