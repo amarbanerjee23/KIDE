@@ -59,30 +59,45 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     "",
                     "api-engineer",
                     Map.of("offline", "true"));
+            PrincipalIdentity reviewer = new PrincipalIdentity(
+                    "selfcheck:api-reviewer",
+                    "API Reviewer",
+                    PrincipalKind.LOCAL_OFFLINE,
+                    AuthenticationMethod.LOCAL_OFFLINE,
+                    "",
+                    "api-reviewer",
+                    Map.of("offline", "true"));
 
             InMemoryAuthorizationPolicyStore policies =
                     new InMemoryAuthorizationPolicyStore(List.of(
                             RoleBinding.allow(
-                                    principal.id(), Role.ENGINEER, context.project().id())));
+                                    principal.id(), Role.ENGINEER, context.project().id()),
+                            RoleBinding.allow(
+                                    reviewer.id(), Role.REVIEWER, context.project().id())));
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
                     new AuthorizationEnforcer(new AuthorizationService(policies)));
 
             InMemoryAuditLedger audit = new InMemoryAuditLedger(Clock.systemUTC());
+            ServerModelRepository modelRepository = new ServerModelRepository();
+            ProjectCollaborationService collaboration =
+                    new ProjectCollaborationService(project, modelRepository, Clock.systemUTC());
             server = new EnterpriseApiServer(
                     new EnterpriseApiConfig(
                             "127.0.0.1", 0, 1024 * 1024, Duration.ofSeconds(20),
                             false, false, Set.of(), Set.of("https://web.example.test")),
                     header -> {
-                        if (!"Bearer pr26-self-check".equals(header)) {
-                            throw new AuthenticationException("Bearer authentication is invalid");
+                        if ("Bearer pr26-self-check".equals(header)) {
+                            return new AuthenticatedSession(principal, null, Clock.systemUTC());
                         }
-                        return new AuthenticatedSession(principal, null, Clock.systemUTC());
+                        if ("Bearer pr33-reviewer".equals(header)) {
+                            return new AuthenticatedSession(reviewer, null, Clock.systemUTC());
+                        }
+                        throw new AuthenticationException("Bearer authentication is invalid");
                     },
                     context,
                     authorization,
-                    new ServerModelRepository(),
-                    new ProjectCollaborationService(
-                            project, new ServerModelRepository(), Clock.systemUTC()),
+                    modelRepository,
+                    collaboration,
                     audit,
                     Clock.systemUTC());
             server.start();
