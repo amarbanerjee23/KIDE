@@ -372,8 +372,6 @@ public final class EnterpriseApiServer implements AutoCloseable {
                         JsonObject binding = element.getAsJsonObject();
                         bindings.add(new ProjectSynthesisService.PreviousBinding(
                                 requiredString(binding, "requirementId"),
-                                requiredString(binding, "activityName"),
-                                requiredString(binding, "capabilityName"),
                                 requiredString(binding, "resourceId")));
                     }
                     var result = synthesis.reconfigure(
