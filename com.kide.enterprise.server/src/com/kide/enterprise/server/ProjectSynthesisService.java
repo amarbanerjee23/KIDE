@@ -11,6 +11,7 @@ import com.kide.enterprise.modelrepo.RevisionConflictException;
 import com.kide.knowledge.KnowledgeRepository;
 import com.kide.knowledge.KnowledgeRepositoryException;
 import com.kide.knowledge.KnowledgeSnapshot;
+import com.kide.synthesis.HistoricalResourceBinding;
 import com.kide.synthesis.ProjectSynthesisEngine;
 import com.kide.synthesis.ReconfigurationCause;
 import com.kide.synthesis.ReconfigurationResult;
@@ -115,24 +116,17 @@ public final class ProjectSynthesisService {
             }
         }
 
-        List<ResourceSelection> previousSelections =
+        List<HistoricalResourceBinding> historicalBindings =
                 bindingsInput.stream()
-                        .map(binding -> new ResourceSelection(
-                                binding.requirementId(),
-                                binding.activityName(),
-                                binding.capabilityName(),
-                                binding.resourceId(),
-                                "previous binding evidence"))
-                        .sorted(java.util.Comparator.comparing(ResourceSelection::requirementId))
+                        .map(binding -> new HistoricalResourceBinding(
+                                binding.requirementId(), binding.resourceId()))
                         .toList();
-        SynthesisPlan previousPlan =
-                new SynthesisPlan(true, previousSelections, List.of());
 
         ReconfigurationResult result = engine.reconfigure(
                 projectRoot,
                 path.value(),
                 knowledgeSnapshot.dataset(),
-                previousPlan,
+                historicalBindings,
                 parsedCause);
 
         ModelSnapshot after = models.read(path).orElseThrow(NotFoundException::new);
@@ -165,15 +159,9 @@ public final class ProjectSynthesisService {
         return value;
     }
 
-    public record PreviousBinding(
-            String requirementId,
-            String activityName,
-            String capabilityName,
-            String resourceId) {
+    public record PreviousBinding(String requirementId, String resourceId) {
         public PreviousBinding {
             requirementId = required(requirementId, "requirementId");
-            activityName = required(activityName, "activityName");
-            capabilityName = required(capabilityName, "capabilityName");
             resourceId = required(resourceId, "resourceId");
         }
     }
