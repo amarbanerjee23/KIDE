@@ -83,7 +83,7 @@ public final class ApiSchemaCatalog {
         add(schemas, schema("KnowledgeQueryRequest",
                 Map.of("query", s(), "scope", s(), "typeIri", s(), "limit", i()), Set.of()));
         add(schemas, schema("KnowledgeQueryResult",
-                Map.of("items", a(), "revision", s(), "etag", s(), "cached", b()),
+                Map.of("items", a(), "revision", i(), "etag", s(), "cached", b()),
                 Set.of("items", "revision", "etag")));
         add(schemas, schema("KnowledgeTraceCreateRequest",
                 Map.of("knowledgeIri", s(), "modelId", s(), "semanticId", s(),
@@ -95,12 +95,12 @@ public final class ApiSchemaCatalog {
         add(schemas, schema("KnowledgeTraceDeleteRequest",
                 Map.of("expectedTraceEtag", s()), Set.of("expectedTraceEtag")));
         add(schemas, schema("KnowledgeTraceList",
-                Map.of("revision", s(), "etag", s(), "items", a()),
-                Set.of("revision", "etag", "items")));
+                Map.of("revision", i(), "etag", s(), "links", a()),
+                Set.of("revision", "etag", "links")));
         add(schemas, schema("KnowledgeImpactRequest",
                 Map.of("knowledgeIri", s(), "modelId", s()), Set.of()));
         add(schemas, schema("KnowledgeImpactResult",
-                Map.of("items", a(), "issues", a(), "knowledgeRevision", s(), "traceRevision", s()),
+                Map.of("items", a(), "issues", a(), "knowledgeRevision", i(), "traceRevision", i()),
                 Set.of("items", "issues", "knowledgeRevision", "traceRevision")));
         add(schemas, schema("SynthesisRequest",
                 Map.of("modelRevision", s(), "objectiveId", s(), "parameters", o()),
