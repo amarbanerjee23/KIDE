@@ -111,7 +111,8 @@ public class KnowledgeCatalogueTraceTest {
             var issues = new KnowledgeTraceService().validate(
                     rebound,
                     knowledge,
-                    path -> "renamed/flow.activity".equals(path));
+                    path -> "renamed/flow.activity".equals(path)
+                            ? "2".repeat(64) : null);
             assertTrue(issues.isEmpty());
 
             assertThrows(
@@ -145,7 +146,7 @@ public class KnowledgeCatalogueTraceTest {
             var issues = new KnowledgeTraceService().validate(
                     traceSnapshot,
                     second,
-                    ignored -> false);
+                    ignored -> null);
 
             assertEquals(
                     List.of("BROKEN_KNOWLEDGE", "BROKEN_MODEL", "STALE_KNOWLEDGE"),
