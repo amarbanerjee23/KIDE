@@ -370,8 +370,12 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 return true;
             }
             JsonObject input = readJsonObject(request);
-            String type = optionalString(
-                    input, "typeIri", optionalString(input, "scope", ""));
+            String scope = optionalString(input, "scope", "PROJECT");
+            if (!"PROJECT".equalsIgnoreCase(scope)) {
+                throw new IllegalArgumentException(
+                        "This project-scoped knowledge endpoint accepts only PROJECT scope");
+            }
+            String type = optionalString(input, "typeIri", "");
             int limit = optionalInteger(input, "limit", 100);
             var result = knowledge.query(
                     optionalString(input, "query", ""), type, limit);
