@@ -110,6 +110,8 @@ public final class EnterpriseApiApplication implements IApplication {
                     modelRepository);
             ProjectSynthesisService synthesis = new ProjectSynthesisService(
                     projectRoot, modelRepository, knowledgeRepository);
+            ProjectGenerationService generation = new ProjectGenerationService(
+                    projectRoot, modelRepository, knowledgeRepository, synthesis);
             server = new EnterpriseApiServer(
                     config,
                     authenticator::authenticateAuthorizationHeader,
@@ -119,6 +121,7 @@ public final class EnterpriseApiApplication implements IApplication {
                     collaboration,
                     knowledge,
                     synthesis,
+                    generation,
                     new InMemoryAuditLedger(Clock.systemUTC()),
                     Clock.systemUTC());
             server.start();
