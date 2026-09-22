@@ -30,12 +30,12 @@ Query:
 Template:
     'template' name=ID
     ('(' parameters+=Parameter (',' parameters+=Parameter)* ')')?
-    'for' targetType=TargetType
+    'for' targetType=ID
     'body' body=STRING
     ';';
 
 Target:
-    'target' name=ID 'type' targetType=TargetType '{'
+    'target' name=ID 'type' targetType=ID '{'
         'template' template=[Template|QualifiedName] ';'
         'output' outputPath=STRING ';'
         bindings+=Binding*
@@ -100,11 +100,6 @@ enum ValueType:
     decimal='decimal' |
     boolean='boolean' |
     iri='iri';
-
-enum TargetType:
-    java='java' |
-    json='json' |
-    text='text';
 
 enum ComparisonOperator:
     eq='==' |
