@@ -349,6 +349,43 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 return true;
             }
 
+            if (segments.length == 3 && "reconfiguration".equals(segments[2])) {
+                authorization.requireModelSynthesis(session, context);
+                if (!"POST".equals(request.getMethod())) {
+                    methodNotAllowed(response, callback, requestId);
+                } else {
+                    JsonObject input = readJsonObject(request);
+                    String modelId = requiredString(input, "modelId");
+                    String modelRevision = requiredString(input, "modelRevision");
+                    String cause = requiredString(input, "cause");
+                    if (!input.has("previousBindings")
+                            || !input.get("previousBindings").isJsonArray()) {
+                        throw new IllegalArgumentException("previousBindings is required");
+                    }
+                    java.util.List<ProjectSynthesisService.PreviousBinding> bindings =
+                            new java.util.ArrayList<>();
+                    for (var element : input.getAsJsonArray("previousBindings")) {
+                        if (!element.isJsonObject()) {
+                            throw new IllegalArgumentException(
+                                    "previousBindings must contain objects");
+                        }
+                        JsonObject binding = element.getAsJsonObject();
+                        bindings.add(new ProjectSynthesisService.PreviousBinding(
+                                requiredString(binding, "requirementId"),
+                                requiredString(binding, "activityName"),
+                                requiredString(binding, "capabilityName"),
+                                requiredString(binding, "resourceId")));
+                    }
+                    var result = synthesis.reconfigure(
+                            modelId, modelRevision, cause, bindings);
+                    audit(session, requestId, "reconfiguration.run", "model", modelId,
+                            AuditOutcome.SUCCESS, result.revision());
+                    writeJson(response, callback, 200,
+                            gson.toJsonTree(result).getAsJsonObject());
+                }
+                return true;
+            }
+
             if (segments.length == 3 && "evidence".equals(segments[2])) {
                 authorization.requireEvidenceRead(session, context);
                 if (!"GET".equals(request.getMethod())) {
