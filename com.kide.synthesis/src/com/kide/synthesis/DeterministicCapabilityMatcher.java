@@ -12,6 +12,14 @@ public final class DeterministicCapabilityMatcher {
     public SynthesisPlan match(
             List<CapabilityRequirement> requirements,
             List<SynthesisResource> resources) {
+        return match(requirements, resources, Map.of(), Set.of());
+    }
+
+    public SynthesisPlan match(
+            List<CapabilityRequirement> requirements,
+            List<SynthesisResource> resources,
+            Map<String, Integer> reservedBindings,
+            Set<String> alreadySelectedResourceIds) {
         List<CapabilityRequirement> orderedRequirements = requirements == null
                 ? List.of()
                 : requirements.stream()
@@ -26,7 +34,9 @@ public final class DeterministicCapabilityMatcher {
         List<ResourceSelection> selections = new ArrayList<>();
         List<SynthesisDiagnostic> diagnostics = new ArrayList<>();
         Map<String, Integer> bindings = new HashMap<>();
+        if (reservedBindings != null) bindings.putAll(reservedBindings);
         Set<String> selectedIds = new LinkedHashSet<>();
+        if (alreadySelectedResourceIds != null) selectedIds.addAll(alreadySelectedResourceIds);
 
         for (CapabilityRequirement requirement : orderedRequirements) {
             List<SynthesisResource> candidates = orderedResources.stream()
