@@ -122,7 +122,9 @@ public final class ProjectKnowledgeService {
         List<KnowledgeTraceIssue> issues = traceService.validate(
                         traceSnapshot,
                         knowledge,
-                        path -> models.read(new ModelPath(path)).isPresent())
+                        path -> models.read(new ModelPath(path))
+                                .map(snapshot -> snapshot.revision().etag())
+                                .orElse(null))
                 .stream()
                 .filter(issue -> selectedIds.contains(issue.traceId()))
                 .toList();
