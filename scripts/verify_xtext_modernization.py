@@ -67,7 +67,10 @@ def verify() -> None:
 
     contract_ids = {row.get("id") for row in rows}
     registry_ids = {row.get("id") for row in registry.get("languages", [])}
-    require(contract_ids == registry_ids, "generation contract language set differs from product truth")
+    require(contract_ids == {"dml", "operation", "mnc", "capability", "activity"},
+            "legacy generated-byte contract must remain the original five DSLs")
+    require(registry_ids == contract_ids | {"krl"},
+            "product truth must contain the frozen legacy five plus KRL")
 
     baseline = contract.get("baseline", {})
     require(baseline.get("xtext") == "2.44.0", "current Xtext baseline must be 2.44.0")
@@ -145,6 +148,7 @@ def verify() -> None:
         "com.mncml.dsl.GenerateMnc",
         "com.capability.GenerateCapability",
         "com.smr.activity.GenerateActivityDsl",
+        "com.kide.krl.dsl.GenerateKrl",
     }
     aggregate_without_line_comments = re.sub(r"(?m)^\s*//.*$", "", aggregate)
     actual_modules = set(re.findall(
@@ -154,8 +158,23 @@ def verify() -> None:
     require(actual_modules == expected_modules,
             f"aggregate MWE2 language set mismatch: {sorted(actual_modules)}")
 
+    krl_workflow = ROOT / "com.kide.krl.dsl" / "src" / "com" / "kide" / "krl" / "dsl" / "GenerateKrl.mwe2"
+    krl_generator_pom = ROOT / "tools" / "krl-language-generator" / "pom.xml"
+    krl_text = read(krl_workflow)
+    require('encoding = "UTF-8"' in krl_text, "krl: generator is not UTF-8")
+    require('lineDelimiter = "\\n"' in krl_text, "krl: generator is not LF-normalized")
+    require('name = "com.kide.krl.dsl.Krl"' in krl_text, "krl: unexpected Xtext language name")
+    require('fileExtensions = "krl"' in krl_text, "krl: file extension is not .krl")
+    require("createEclipseMetaData = false" in krl_text,
+            "krl: build-time generation must not mutate Maven project metadata")
+    generator_pom = read(krl_generator_pom)
+    require("<version>2.44.0</version>" in generator_pom,
+            "krl: Xtext generator must be pinned to 2.44.0")
+    require("org.eclipse.emf.mwe2.launch" in generator_pom,
+            "krl: MWE2 build generator dependency is missing")
+
     verify_generated_baseline(contract)
-    print("PR15 XTEXT MODERNIZATION CONTRACT OK")
+    print("PR15 XTEXT MODERNIZATION CONTRACT OK + PR38 KRL GENERATOR OK")
 
 
 def main() -> int:
