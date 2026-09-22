@@ -44,15 +44,21 @@ public class AuthorizationServiceTest {
         assertTrue(Role.ENGINEER.grants(Permission.MODEL_SYNTHESIZE));
         assertTrue(Role.ENGINEER.grants(Permission.COLLABORATION_WRITE));
         assertTrue(Role.ENGINEER.grants(Permission.REVIEW_COMMENT));
+        assertTrue(Role.ENGINEER.grants(Permission.KNOWLEDGE_READ));
+        assertTrue(Role.ENGINEER.grants(Permission.KNOWLEDGE_TRACE_WRITE));
         assertFalse(Role.ENGINEER.grants(Permission.REVIEW_APPROVE));
         assertFalse(Role.ENGINEER.grants(Permission.AUTHORIZATION_MANAGE));
         assertTrue(Role.REVIEWER.grants(Permission.MODEL_VALIDATE));
         assertTrue(Role.REVIEWER.grants(Permission.REVIEW_COMMENT));
         assertTrue(Role.REVIEWER.grants(Permission.REVIEW_APPROVE));
+        assertTrue(Role.REVIEWER.grants(Permission.KNOWLEDGE_READ));
+        assertFalse(Role.REVIEWER.grants(Permission.KNOWLEDGE_TRACE_WRITE));
         assertFalse(Role.REVIEWER.grants(Permission.COLLABORATION_WRITE));
         assertFalse(Role.REVIEWER.grants(Permission.MODEL_WRITE));
         assertTrue(Role.VIEWER.grants(Permission.MODEL_READ));
         assertTrue(Role.VIEWER.grants(Permission.COLLABORATION_READ));
+        assertTrue(Role.VIEWER.grants(Permission.KNOWLEDGE_READ));
+        assertFalse(Role.VIEWER.grants(Permission.KNOWLEDGE_TRACE_WRITE));
         assertFalse(Role.VIEWER.grants(Permission.REVIEW_COMMENT));
         assertFalse(Role.VIEWER.grants(Permission.MODEL_VALIDATE));
         assertTrue(Role.SERVICE_OPERATOR.grants(Permission.LSP_CONNECT));
@@ -171,6 +177,10 @@ public class AuthorizationServiceTest {
                         () -> gate.requireWebSocketWorkspaceAccess(session, fixture.context));
                 assertThrows(AccessDeniedException.class,
                         () -> gate.requireLspWorkspaceAccess(session, fixture.context));
+                assertThrows(AccessDeniedException.class,
+                        () -> gate.requireKnowledgeRead(session, fixture.context));
+                assertThrows(AccessDeniedException.class,
+                        () -> gate.requireKnowledgeTraceWrite(session, fixture.context));
             }
         } finally {
             fixture.close();
