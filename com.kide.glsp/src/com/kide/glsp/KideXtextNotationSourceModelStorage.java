@@ -34,7 +34,8 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
     @Inject
     protected KideGlspWorkspace workspace;
 
-    private final Map<URI, String> loadedEtags = new HashMap<>();
+    // Optimistic revisions are repository identities, not EMF URI spellings.
+    private final Map<ModelPath, String> loadedEtags = new HashMap<>();
 
     @Override
     protected ResourceSet setupResourceSet(ResourceSet resourceSet) {
@@ -70,7 +71,7 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
         ModelSnapshot snapshot = workspace.repository().read(modelPath)
                 .orElseThrow(() -> new GLSPServerException(
                         "Graphical source model does not exist: " + modelPath.value()));
-        loadedEtags.put(sourceURI, snapshot.revision().etag());
+        loadedEtags.put(modelPath, snapshot.revision().etag());
         super.loadSemanticModel(resourceSet, sourceURI, action);
     }
 
@@ -79,10 +80,13 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
             ResourceSet resourceSet, URI sourceURI, RequestModelAction action) {
         URI notationURI = deriveNotationModelURI(sourceURI);
         Path notationPath = workspace.requireProjectPath(notationURI.toFileString());
+        ModelPath notationModelPath = workspace.modelPath(notationPath);
         if (Files.exists(notationPath)) {
-            workspace.repository().read(workspace.modelPath(notationPath))
-                    .ifPresent(snapshot -> loadedEtags.put(
-                            notationURI, snapshot.revision().etag()));
+            ModelSnapshot snapshot = workspace.repository().read(notationModelPath)
+                    .orElseThrow(() -> new GLSPServerException(
+                            "Graphical notation model could not be read: "
+                            + notationModelPath.value()));
+            loadedEtags.put(notationModelPath, snapshot.revision().etag());
             super.loadNotationModel(resourceSet, sourceURI, action);
             return;
         }
@@ -99,7 +103,7 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
         diagram.setSemanticElement(reference);
         resource.getContents().add(diagram);
         modelState.setNotationModel(diagram);
-        loadedEtags.put(notationURI, MISSING_ETAG);
+        loadedEtags.put(notationModelPath, MISSING_ETAG);
     }
 
     @Override
@@ -122,7 +126,7 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
         }
 
         try (ModelTransaction tx = workspace.repository().beginTransaction()) {
-            Map<URI, byte[]> serialized = new HashMap<>();
+            Map<URI, ModelPath> savedPaths = new HashMap<>();
             for (Resource resource : java.util.List.of(
                     semanticResource, notationResource)) {
                 URI uri = resource.getURI();
@@ -132,21 +136,25 @@ public final class KideXtextNotationSourceModelStorage extends EMFNotationSource
                 }
                 Path path = workspace.requireProjectPath(uri.toFileString());
                 ModelPath modelPath = workspace.modelPath(path);
+                String expectedEtag = loadedEtags.get(modelPath);
+                if (expectedEtag == null) {
+                    throw new GLSPServerException(
+                            "Graphical resource revision was not captured at load: "
+                            + modelPath.value());
+                }
+
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 resource.save(out, Map.of());
-                byte[] bytes = out.toByteArray();
-                serialized.put(uri, bytes);
-                tx.write(modelPath, bytes,
-                        loadedEtags.getOrDefault(uri, MISSING_ETAG));
+                tx.write(modelPath, out.toByteArray(), expectedEtag);
+                savedPaths.put(uri, modelPath);
             }
             tx.commit();
 
-            for (URI uri : serialized.keySet()) {
-                Path path = workspace.requireProjectPath(uri.toFileString());
+            for (Map.Entry<URI, ModelPath> entry : savedPaths.entrySet()) {
                 ModelSnapshot snapshot = workspace.repository()
-                        .read(workspace.modelPath(path)).orElseThrow();
-                loadedEtags.put(uri, snapshot.revision().etag());
-                Resource resource = resourceSet.getResource(uri, false);
+                        .read(entry.getValue()).orElseThrow();
+                loadedEtags.put(entry.getValue(), snapshot.revision().etag());
+                Resource resource = resourceSet.getResource(entry.getKey(), false);
                 if (resource != null) resource.setModified(false);
             }
         } catch (com.kide.enterprise.modelrepo.RevisionConflictException conflict) {
