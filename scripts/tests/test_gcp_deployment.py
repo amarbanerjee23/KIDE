@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -48,6 +49,23 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         cloudbuild = self.read("deploy/gcp/cloudbuild.yaml")
         self.assertIn("deploy/gcp/Dockerfile", cloudbuild)
         self.assertIn("${_IMAGE}", cloudbuild)
+
+    def test_deployment_shell_scripts_parse(self):
+        for relative in (
+            "deploy/gcp/entrypoint.sh",
+            "deploy/gcp/deploy-cloud-run.sh",
+        ):
+            result = subprocess.run(
+                ["bash", "-n", str(ROOT / relative)],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(
+                result.returncode,
+                0,
+                msg=f"{relative} failed bash -n: {result.stderr}",
+            )
 
 
 if __name__ == "__main__":
