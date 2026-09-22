@@ -190,7 +190,7 @@ public class GlspGatewayIntegrationTest {
 
             String persisted = Files.readString(source);
             assertTrue(persisted.contains("ControlNode2"));
-            assertTrue(persisted.contains("implements interface Device"));
+            assertTrue(persisted.contains("implements interface Golden.Device"));
             assertTrue(Files.exists(project.resolve("selfcheck.notation")));
         } finally {
             if (socket != null) {
