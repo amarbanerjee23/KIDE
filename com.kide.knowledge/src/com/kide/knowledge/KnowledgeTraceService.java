@@ -24,7 +24,7 @@ public final class KnowledgeTraceService {
     public List<KnowledgeTraceIssue> validate(
             KnowledgeTraceSnapshot traces,
             KnowledgeSnapshot knowledge,
-            java.util.function.Predicate<String> modelExists) {
+            Function<String, String> modelEtagLookup) {
         Set<String> resources = new LinkedHashSet<>();
         for (KnowledgeTriple triple : knowledge.dataset().triples()) {
             resources.add(triple.subject());
