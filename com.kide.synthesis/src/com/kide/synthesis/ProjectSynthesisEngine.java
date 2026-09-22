@@ -4,11 +4,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 
 import org.eclipse.emf.common.util.URI;
+import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.xtext.resource.XtextResource;
@@ -59,7 +63,7 @@ public final class ProjectSynthesisEngine {
             }
             Resource source = load(resourceSet, target);
             EcoreUtil.resolveAll(resourceSet);
-            rejectResourceErrors(resourceSet);
+            rejectRelevantResourceErrors(source);
 
             if (source.getContents().size() != 1
                     || !(source.getContents().get(0) instanceof ActivityDiagram diagram)) {
@@ -87,8 +91,15 @@ public final class ProjectSynthesisEngine {
         return set.getResource(uri, true);
     }
 
-    private static void rejectResourceErrors(XtextResourceSet set) {
-        for (Resource resource : set.getResources()) {
+    private static void rejectRelevantResourceErrors(Resource source) {
+        Set<Resource> relevant =
+                Collections.newSetFromMap(new IdentityHashMap<>());
+        ArrayDeque<Resource> queue = new ArrayDeque<>();
+        relevant.add(source);
+        queue.add(source);
+
+        while (!queue.isEmpty()) {
+            Resource resource = queue.removeFirst();
             if (!resource.getErrors().isEmpty()) {
                 Resource.Diagnostic first = resource.getErrors().get(0);
                 String location = resource.getURI() == null
@@ -96,6 +107,24 @@ public final class ProjectSynthesisEngine {
                 throw new ProjectSynthesisException(
                         "Project model validation failed in " + location
                                 + " at line " + first.getLine());
+            }
+            for (EObject root : resource.getContents()) {
+                enqueueReferencedResources(root, relevant, queue);
+                for (var iterator = root.eAllContents(); iterator.hasNext();) {
+                    enqueueReferencedResources(iterator.next(), relevant, queue);
+                }
+            }
+        }
+    }
+
+    private static void enqueueReferencedResources(
+            EObject object,
+            Set<Resource> relevant,
+            ArrayDeque<Resource> queue) {
+        for (EObject referenced : object.eCrossReferences()) {
+            Resource resource = referenced.eResource();
+            if (resource != null && relevant.add(resource)) {
+                queue.addLast(resource);
             }
         }
     }
