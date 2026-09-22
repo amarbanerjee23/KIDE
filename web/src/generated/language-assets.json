@@ -272,9 +272,8 @@
         "int",
         "integer",
         "iri",
-        "java",
-        "json",
         "knowledge",
+        "literal",
         "match",
         "namespace",
         "object",
@@ -285,7 +284,6 @@
         "string",
         "target",
         "template",
-        "text",
         "true",
         "type",
         "where"
