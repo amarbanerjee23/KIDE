@@ -47,6 +47,8 @@ public class ApiContractTest {
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/synthesis")));
         assertTrue(operations.stream().anyMatch(op ->
                 op.path().endsWith("/reconfiguration") && op.method() == HttpMethod.POST));
+        assertTrue(operations.stream().anyMatch(op ->
+                op.path().endsWith("/generation") && op.method() == HttpMethod.POST));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/evidence")));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/collaboration/sessions")));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/reviews/changesets")));
