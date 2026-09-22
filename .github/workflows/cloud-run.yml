@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build Cloud Run image
-        run: docker build --file deploy/gcp/Dockerfile --tag kide-cloud-run:ci .
+        run: docker build --file deploy/gcp/Dockerfile --build-arg KIDE_BUILD_QUALIFIER=ci${GITHUB_SHA:0:12} --tag kide-cloud-run:ci .
 
       - name: Boot Cloud Run image
         run: |
