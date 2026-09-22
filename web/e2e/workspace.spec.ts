@@ -60,6 +60,10 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
     });
   });
 
+  await mockCollaboration(page);
+
+  await mockCollaboration(page);
+
   await page.route("**/api/v1/health", async (route) => {
     await route.fulfill({
       status: 200,
@@ -352,3 +356,46 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   expect(requestedSourceUri).toBe("kide-workspace:/flow.activity");
   expect(requestedDiagramType).toBe("kide-activity-diagram");
 });
+
+
+async function mockCollaboration(page: import("@playwright/test").Page) {
+  const presence = {
+    id: "11111111-1111-4111-8111-111111111111",
+    principalId: "browser-user",
+    displayName: "Browser Engineer",
+    modelId: "",
+    joinedAt: "2026-09-22T00:00:00Z",
+    lastSeenAt: "2026-09-22T00:00:00Z"
+  };
+
+  await page.route(
+    "**/api/v1/projects/P04-001/collaboration/sessions*",
+    async (route) => {
+      const request = route.request();
+      if (request.method() === "GET") {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ items: [presence] })
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(presence)
+      });
+    }
+  );
+
+  await page.route(
+    "**/api/v1/projects/P04-001/reviews/changesets*",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ items: [] })
+      });
+    }
+  );
+}
