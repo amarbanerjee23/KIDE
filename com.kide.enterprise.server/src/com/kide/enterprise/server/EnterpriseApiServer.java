@@ -300,6 +300,20 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 return true;
             }
 
+            if (segments.length >= 4
+                    && "collaboration".equals(segments[2])
+                    && "sessions".equals(segments[3])) {
+                return handlePresence(
+                        request, response, callback, requestId, session, segments);
+            }
+
+            if (segments.length >= 4
+                    && "reviews".equals(segments[2])
+                    && "changesets".equals(segments[3])) {
+                return handleReviews(
+                        request, response, callback, requestId, session, segments);
+            }
+
             if (segments.length == 4
                     && "knowledge".equals(segments[2])
                     && "query".equals(segments[3])) {
