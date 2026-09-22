@@ -139,91 +139,6 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
     }
   );
 
-  await page.route(
-    "**/api/v1/projects/P04-001/reconfiguration",
-    async (route) => {
-      const body = route.request().postDataJSON();
-      expect(body).toEqual({
-        modelId: "flow.activity",
-        modelRevision: "etag-4",
-        cause: "RESOURCE_LOSS",
-        previousBindings: [{
-          requirementId: "activity:ObserveStep",
-          resourceId: "urn:kide:device:camera"
-        }]
-      });
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          resultId: "reconf-browser",
-          serviceVersion: "1",
-          status: "RECONFIGURED",
-          cause: "RESOURCE_LOSS",
-          modelId: "flow.activity",
-          modelVersion: "4",
-          revision: "etag-4",
-          knowledgeRevision: 3,
-          knowledgeEtag: "d".repeat(64),
-          fingerprint: "e".repeat(64),
-          selections: [{
-            requirementId: "activity:ObserveStep",
-            activityName: "ObserveStep",
-            capabilityName: "Observe",
-            resourceId: "urn:kide:device:camera-b",
-            rationale: "priority=5"
-          }],
-          migrations: [{
-            requirementId: "activity:ObserveStep",
-            policy: "MIGRATE",
-            fromResourceId: "urn:kide:device:camera",
-            toResourceId: "urn:kide:device:camera-b",
-            reason: "Equivalent capability binding changed; migrate supervisory state."
-          }],
-          diagnostics: []
-        })
-      });
-    }
-  );
-
-  await page.route(
-    "**/api/v1/projects/P04-001/reconfiguration",
-    async (route) => {
-      reconfigurationRequest = route.request().postDataJSON();
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          resultId: "reconf-browser",
-          serviceVersion: "1",
-          status: "RECONFIGURED",
-          cause: "RESOURCE_LOSS",
-          modelId: "flow.activity",
-          modelVersion: "4",
-          revision: "etag-4",
-          knowledgeRevision: 3,
-          knowledgeEtag: "d".repeat(64),
-          fingerprint: "e".repeat(64),
-          selections: [{
-            requirementId: "activity:ObserveStep",
-            activityName: "ObserveStep",
-            capabilityName: "Observe",
-            resourceId: "urn:kide:device:camera-b",
-            rationale: "priority=5"
-          }],
-          migrations: [{
-            requirementId: "activity:ObserveStep",
-            policy: "MIGRATE",
-            fromResourceId: "urn:kide:device:camera",
-            toResourceId: "urn:kide:device:camera-b",
-            reason: "Equivalent capability binding changed; migrate supervisory state."
-          }],
-          diagnostics: []
-        })
-      });
-    }
-  );
-
   await page.goto("/");
   await page.getByLabel("Access token").fill("browser-test-token");
   await page.getByRole("button", { name: "Connect API" }).click();
@@ -486,6 +401,44 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
           diagnostics: [],
           rationale: ["ObserveStep -> urn:kide:device:camera"],
           generatedMnc: "Model GoldenWorkflow\nInterfaceDescription GoldenWorkflow {}\n"
+        })
+      });
+    }
+  );
+
+  await page.route(
+    "**/api/v1/projects/P04-001/reconfiguration",
+    async (route) => {
+      reconfigurationRequest = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          resultId: "reconf-browser",
+          serviceVersion: "1",
+          status: "RECONFIGURED",
+          cause: "RESOURCE_LOSS",
+          modelId: "flow.activity",
+          modelVersion: "4",
+          revision: "etag-4",
+          knowledgeRevision: 3,
+          knowledgeEtag: "d".repeat(64),
+          fingerprint: "e".repeat(64),
+          selections: [{
+            requirementId: "activity:ObserveStep",
+            activityName: "ObserveStep",
+            capabilityName: "Observe",
+            resourceId: "urn:kide:device:camera-b",
+            rationale: "priority=5"
+          }],
+          migrations: [{
+            requirementId: "activity:ObserveStep",
+            policy: "MIGRATE",
+            fromResourceId: "urn:kide:device:camera",
+            toResourceId: "urn:kide:device:camera-b",
+            reason: "Equivalent capability binding changed; migrate supervisory state."
+          }],
+          diagnostics: []
         })
       });
     }
