@@ -60,10 +60,10 @@ The grouping follows shared code boundaries rather than feature labels:
 
 ## Current execution point
 
-PR22 through PR32 are merged and green on main. PR32 established EMF-backed GLSP graphical editing for the separate browser client while retaining Sirius desktop over the same Xtext/EMF semantic core.
+PR22 through PR32 are merged and green on main. PR33 is implemented and green on its exact head, with collaboration/review semantics qualified independently of model-write permission.
 
-**PR33 is the active implementation PR.** It adds project collaboration without introducing unsafe semantic merging: expiring presence sessions, persisted review change sets/comments, exact-revision conflict review, independent reviewer approval and explicit revision-safe apply. Browser autosave conflicts are captured as review change sets rather than overwritten or merged implicitly.
+**PR34 is the active implementation PR.** It replaces the obsolete NeoEMF release dependency with a versioned `KnowledgeRepository`, bounded embedded persistence, standards-facing RDF/XML, Turtle and expanded JSON-LD interchange, OWL vocabulary support, a deterministic SHACL Core profile, explicit provenance/scope metadata, a secure external SPARQL HTTP adapter and migration from supported research XMI fixtures.
 
-The acceptance gate requires two-user concurrent editing, disconnect/rejoin, authorization separation between engineer and reviewer, comments, conflict rebase, approval/apply, audit evidence, browser qualification and every existing desktop/LSP/GLSP/enterprise packaged check.
+The acceptance gate requires offline persistence/restart, strict optimistic revisions, format round trips, SHACL positive/negative evidence, provenance retention, malformed-input isolation, supported legacy migration, secure SPARQL endpoint policy and every existing desktop/browser/LSP/GLSP/enterprise packaged check.
 
-PR34 follows only after PR33 is green and will introduce the knowledge fabric core.
+PR35 follows after PR34 and will add deterministic retrieval, catalogue UX and stable knowledge-to-model trace links.
