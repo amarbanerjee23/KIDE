@@ -92,6 +92,8 @@
     <module>com.kide.knowledge.tests</module>
     <module>com.kide.synthesis</module>
     <module>com.kide.synthesis.tests</module>
+    <module>com.kide.codegen</module>
+    <module>com.kide.codegen.tests</module>
     <module>releng</module>
   </modules>
 
