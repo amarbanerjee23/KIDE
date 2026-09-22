@@ -22,6 +22,12 @@ public final class CreateMncControlNodeHandler extends EMFCreateOperationHandler
     public Optional<Command> createCommand(CreateNodeOperation operation) {
         if (!(modelState instanceof EMFNotationModelState notationState)
                 || !(notationState.getSemanticModel() instanceof Model root)) return doNothing();
+
+        // The canonical grammar permits at most one top-level ControlNode.
+        if (root.getSystems().stream().anyMatch(ControlNode.class::isInstance)) {
+            return doNothing();
+        }
+
         InterfaceDescription iface = root.getSystems().stream()
                 .filter(InterfaceDescription.class::isInstance)
                 .map(InterfaceDescription.class::cast)
