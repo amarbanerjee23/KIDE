@@ -149,8 +149,6 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
         cause: "RESOURCE_LOSS",
         previousBindings: [{
           requirementId: "activity:ObserveStep",
-          activityName: "ObserveStep",
-          capabilityName: "Observe",
           resourceId: "urn:kide:device:camera"
         }]
       });
