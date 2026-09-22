@@ -559,6 +559,8 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     "Bearer pr26-self-check", generationRequest.toString());
             requireStatus(generated, 200);
             JsonObject generatedJson = json(generated);
+            JsonObject generationManifest = JsonParser.parseString(
+                    generatedJson.get("manifestJson").getAsString()).getAsJsonObject();
             if (!synthesisFingerprint.equals(
                             generatedJson.get("synthesisFingerprint").getAsString())
                     || generatedJson.getAsJsonArray("artifacts").size() != 1
@@ -568,8 +570,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     || !"java".equals(
                             generatedJson.getAsJsonArray("artifacts").get(0)
                                     .getAsJsonObject().get("targetId").getAsString())
-                    || !generatedJson.get("manifestJson").getAsString()
-                            .contains("\"schemaVersion\":\"1\"")) {
+                    || !"1".equals(generationManifest.get("schemaVersion").getAsString())) {
                 throw new AssertionError("semantic generation API evidence is incomplete");
             }
             String generationFingerprint =
