@@ -305,7 +305,7 @@ KIDE may call the release world-class/enterprise-ready only when all of the foll
 
 - Human objectives/requirements are first-class and traceable.
 - Capability ontology and knowledge retrieval are production supported.
-- All five current DSLs plus KRL are supported through the shared semantic layer and LSP.
+- All six production DSLs, including KRL, are supported through the shared semantic layer and LSP.
 - Automated capability matching, controller synthesis, validation, visualization, code generation and reconfiguration are product features, not research-only code.
 - Requirements -> knowledge -> model -> synthesis -> generated code -> verification evidence is queryable as a digital thread.
 - Simulation and formal-verification hooks exist without coupling KIDE to one solver/runtime.
