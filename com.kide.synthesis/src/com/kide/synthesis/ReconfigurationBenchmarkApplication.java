@@ -1,6 +1,5 @@
 package com.kide.synthesis;
 
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.nio.charset.StandardCharsets;
@@ -170,7 +169,7 @@ public final class ReconfigurationBenchmarkApplication implements IApplication {
         return Path.of("pr37-reconfiguration-benchmark.json");
     }
 
-    private static String json(List<BenchmarkRow> rows) throws IOException {
+    private static String json(List<BenchmarkRow> rows) {
         StringBuilder out = new StringBuilder();
         out.append("{\n")
                 .append("  \"schema\": \"kide-pr37-reconfiguration-benchmark-v1\",\n")
