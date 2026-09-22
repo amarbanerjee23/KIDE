@@ -35,15 +35,16 @@ public final class KrlQueryEngine {
         }
 
         KrlNamespaceResolver namespaces = new KrlNamespaceResolver(model);
-        List<KnowledgeTriple> triples = new ArrayList<>(knowledge.triples());
+        List<KnowledgeTriple> collectedTriples = new ArrayList<>(knowledge.triples());
         model.getDeclarations().stream()
                 .filter(Fact.class::isInstance)
                 .map(Fact.class::cast)
-                .forEach(fact -> triples.add(new KnowledgeTriple(
+                .forEach(fact -> collectedTriples.add(new KnowledgeTriple(
                         namespaces.resolve(fact.getSubject()),
                         namespaces.resolve(fact.getPredicate()),
                         KrlValues.toKnowledge(fact.getObject()))));
-        triples = triples.stream().distinct().sorted().toList();
+        List<KnowledgeTriple> triples =
+                collectedTriples.stream().distinct().sorted().toList();
 
         Map<String, SemanticValue> initial = new LinkedHashMap<>();
         for (int i = 0; i < query.getParameters().size(); i++) {
