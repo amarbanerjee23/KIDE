@@ -18,6 +18,7 @@ Require-Bundle: org.eclipse.core.runtime,
  com.capability;bundle-version="1.0.0",
  com.mncml;bundle-version="1.0.0",
  com.dml;bundle-version="1.0.0",
- com.operation;bundle-version="1.0.0"
+ com.operation;bundle-version="1.0.0",
+ com.kide.knowledge;bundle-version="1.0.0"
 Export-Package: com.kide.synthesis,
  com.kide.synthesis.activity2mnc
