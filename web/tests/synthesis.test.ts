@@ -180,3 +180,5 @@ describe("KideApiClient synthesis boundary", () => {
     expect(result.artifacts).toHaveLength(1);
     expect(result.artifacts[0].targetId).toBe("java");
     expect(result.synthesisFingerprint).toBe("c".repeat(64));
+  });
+});
