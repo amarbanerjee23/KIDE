@@ -64,6 +64,14 @@ public final class ServerAuthorizationGate {
         enforcer.require(session, context, EnterpriseScope.PROJECT, Permission.REVIEW_APPROVE);
     }
 
+    public void requireKnowledgeRead(AuthenticatedSession session, EnterpriseContext context) {
+        enforcer.require(session, context, EnterpriseScope.PROJECT, Permission.KNOWLEDGE_READ);
+    }
+
+    public void requireKnowledgeTraceWrite(AuthenticatedSession session, EnterpriseContext context) {
+        enforcer.require(session, context, EnterpriseScope.PROJECT, Permission.KNOWLEDGE_TRACE_WRITE);
+    }
+
     public void requireWorkspaceWrite(AuthenticatedSession session, EnterpriseContext context) {
         enforcer.require(session, context, EnterpriseScope.WORKSPACE, Permission.WORKSPACE_WRITE);
         requireModelWrite(session, context);
