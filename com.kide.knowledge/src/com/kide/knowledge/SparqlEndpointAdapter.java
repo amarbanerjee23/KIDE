@@ -101,7 +101,7 @@ public final class SparqlEndpointAdapter {
     }
 
     private static String escape(String value) {
-        return value.replace("\\", "\\\\").replace(""", "\\"")
+        return value.replace("\\", "\\\\").replace("\"", "\\\"")
                 .replace("\n", "\\n").replace("\r", "\\r");
     }
 }
