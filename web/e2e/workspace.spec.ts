@@ -62,8 +62,6 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
 
   await mockCollaboration(page);
 
-  await mockCollaboration(page);
-
   await page.route("**/api/v1/health", async (route) => {
     await route.fulfill({
       status: 200,
@@ -116,6 +114,31 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
     }
   );
 
+  await page.route(
+    "**/api/v1/projects/P04-001/knowledge/query",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          revision: 4,
+          etag: "a".repeat(64),
+          cached: false,
+          items: [{
+            iri: "urn:kide:capability:Observe",
+            label: "Observe",
+            types: ["https://kide.dev/ontology/v1#Capability"],
+            properties: {
+              "https://kide.dev/ontology/v1#role": ["Sensor"]
+            },
+            provenanceSource: "urn:test:catalogue",
+            authority: "KIDE"
+          }]
+        })
+      });
+    }
+  );
+
   await page.goto("/");
   await page.getByLabel("Access token").fill("browser-test-token");
   await page.getByRole("button", { name: "Connect API" }).click();
@@ -134,6 +157,11 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
   await page.getByLabel("Symbol query").fill("Self");
   await page.getByRole("button", { name: "Search symbols" }).click();
   await expect(page.getByRole("button", { name: /SelfCheck/ })).toBeVisible();
+
+  await page.getByLabel("Knowledge query").fill("Observe");
+  await page.getByLabel("Knowledge concept type").selectOption("CAPABILITY");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Observe/ })).toBeVisible();
 });
 
 
@@ -288,6 +316,8 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
     });
   });
 
+  await mockCollaboration(page);
+
   await page.route("**/api/v1/health", async (route) => {
     await route.fulfill({
       status: 200,
@@ -395,6 +425,21 @@ async function mockCollaboration(page: import("@playwright/test").Page) {
         status: 200,
         contentType: "application/json",
         body: JSON.stringify({ items: [] })
+      });
+    }
+  );
+
+  await page.route(
+    "**/api/v1/projects/P04-001/knowledge/traces*",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          revision: 0,
+          etag: "0".repeat(64),
+          links: []
+        })
       });
     }
   );
