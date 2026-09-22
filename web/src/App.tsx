@@ -10,6 +10,7 @@ import {
   withText
 } from "./archive";
 import { AutosaveCoordinator } from "./autosave";
+import { CollaborationCoordinator } from "./collaboration";
 import { pathFromWorkspaceUri } from "./languageAssets";
 import { KideLspClient, type SymbolInformation } from "./lspClient";
 import { MonacoEditor } from "./MonacoEditor";
@@ -18,7 +19,15 @@ import { MonacoWorkspace } from "./monacoWorkspace";
 import { GraphicalEditor } from "./GraphicalEditor";
 import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
-import type { Model, Project, SaveState, WorkspaceEntry } from "./types";
+import type {
+  Model,
+  PresenceSession,
+  Project,
+  ReviewBundle,
+  ReviewChangeSet,
+  SaveState,
+  WorkspaceEntry
+} from "./types";
 
 const SERVICE_ORIGIN =
   import.meta.env.VITE_KIDE_API_ORIGIN ?? window.location.origin;
@@ -60,8 +69,15 @@ export default function App() {
   const [symbols, setSymbols] = useState<SymbolInformation[]>([]);
   const [revealRange, setRevealRange] = useState<monaco.Range>();
   const [viewMode, setViewMode] = useState<"text" | "diagram">("text");
+  const [collaborationStatus, setCollaborationStatus] = useState("Not connected");
+  const [presence, setPresence] = useState<PresenceSession[]>([]);
+  const [reviews, setReviews] = useState<ReviewChangeSet[]>([]);
+  const [activeReview, setActiveReview] = useState<ReviewBundle>();
+  const [reviewProposal, setReviewProposal] = useState("");
+  const [reviewComment, setReviewComment] = useState("");
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
+  const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
   const lspClient = useRef<KideLspClient | undefined>(undefined);
   const lspController = useRef<MonacoLspController | undefined>(undefined);
   const workspaceChange = useRef<(path: string, value: string) => void>(() => {});
@@ -108,6 +124,7 @@ export default function App() {
     });
     return () => {
       void disposeLanguageServices();
+      void disposeCollaboration();
       disposeAutosaves();
       workspace.dispose();
     };
@@ -115,6 +132,7 @@ export default function App() {
 
   useEffect(() => {
     setViewMode("text");
+    collaboration.current?.setModel(selectedPath);
   }, [selectedPath]);
 
   async function connect() {
