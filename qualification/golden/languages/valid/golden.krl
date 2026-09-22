@@ -3,9 +3,8 @@ knowledge GoldenKrl {
 
   fact kide:Camera kide:providesCapability iri "urn:kide:capability:Observe";
 
-  query FindObserve(sensor: iri) {
-    match ?device kide:providesCapability ?cap;
-    where ?cap == iri "urn:kide:capability:Observe";
+  query FindObserve(capability: iri) {
+    match ?device kide:providesCapability ?capability;
     select ?device;
   }
 
@@ -16,6 +15,6 @@ knowledge GoldenKrl {
     template JavaBinding;
     output "generated/ObserveBinding.java";
     bind name: string = string "ObserveBinding";
-    bind resource: iri = iri "urn:kide:device:camera";
+    bind resource: iri = query FindObserve(iri "urn:kide:capability:Observe").device;
   }
 }
