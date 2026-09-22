@@ -60,6 +60,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
     private final EnterpriseContext context;
     private final ServerAuthorizationGate authorization;
     private final ModelRepository models;
+    private final ProjectCollaborationService collaboration;
     private final AuditLedger audit;
     private final Clock clock;
     private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
@@ -72,6 +73,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
             EnterpriseContext context,
             ServerAuthorizationGate authorization,
             ModelRepository models,
+            ProjectCollaborationService collaboration,
             AuditLedger audit,
             Clock clock) {
         this.config = Objects.requireNonNull(config, "config");
@@ -79,6 +81,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
         this.context = Objects.requireNonNull(context, "context");
         this.authorization = Objects.requireNonNull(authorization, "authorization");
         this.models = Objects.requireNonNull(models, "models");
+        this.collaboration = Objects.requireNonNull(collaboration, "collaboration");
         this.audit = Objects.requireNonNull(audit, "audit");
         this.clock = Objects.requireNonNull(clock, "clock");
 
@@ -136,7 +139,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
 
                 if ("OPTIONS".equals(request.getMethod())) {
                     response.setStatus(204);
-                    response.getHeaders().put("Access-Control-Allow-Methods", "GET,POST,PUT,OPTIONS");
+                    response.getHeaders().put("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
                     response.getHeaders().put(
                             "Access-Control-Allow-Headers",
                             "Authorization,Content-Type,If-Match,X-Request-Id");
@@ -177,7 +180,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 writeError(response, callback, requestId, 409, ApiErrorCode.CONFLICT,
                         "The model revision is stale.");
                 return true;
-            } catch (ResourceNotFoundException e) {
+            } catch (ResourceNotFoundException | ProjectCollaborationService.NotFoundException e) {
                 writeError(response, callback, requestId, 404, ApiErrorCode.NOT_FOUND,
                         "The requested API resource was not found.");
                 return true;
@@ -297,6 +300,20 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 return true;
             }
 
+            if (segments.length >= 4
+                    && "collaboration".equals(segments[2])
+                    && "sessions".equals(segments[3])) {
+                return handlePresence(
+                        request, response, callback, requestId, session, segments);
+            }
+
+            if (segments.length >= 4
+                    && "reviews".equals(segments[2])
+                    && "changesets".equals(segments[3])) {
+                return handleReviews(
+                        request, response, callback, requestId, session, segments);
+            }
+
             if (segments.length == 4
                     && "knowledge".equals(segments[2])
                     && "query".equals(segments[3])) {
@@ -335,6 +352,239 @@ public final class EnterpriseApiServer implements AutoCloseable {
         writeError(response, callback, requestId, 404, ApiErrorCode.NOT_FOUND,
                 "The requested API resource was not found.");
         return true;
+    }
+
+    private boolean handlePresence(
+            Request request,
+            Response response,
+            Callback callback,
+            UUID requestId,
+            AuthenticatedSession session,
+            String[] segments) {
+        authorization.requireCollaborationRead(session, context);
+
+        if (segments.length == 4) {
+            if ("GET".equals(request.getMethod())) {
+                JsonObject body = new JsonObject();
+                com.google.gson.JsonArray items = new com.google.gson.JsonArray();
+                for (var presence : collaboration.listPresence()) {
+                    items.add(gson.toJsonTree(presence));
+                }
+                body.add("items", items);
+                writeJson(response, callback, 200, body);
+                return true;
+            }
+            if ("POST".equals(request.getMethod())) {
+                JsonObject input = readJsonObject(request);
+                var joined = collaboration.join(
+                        session.principal(),
+                        optionalString(input, "sessionId", ""),
+                        optionalString(input, "modelId", ""));
+                audit(session, requestId, "collaboration.presence.join", "presence",
+                        joined.id(), AuditOutcome.SUCCESS, "presence-v1");
+                writeJson(response, callback, 200,
+                        gson.toJsonTree(joined).getAsJsonObject());
+                return true;
+            }
+            methodNotAllowed(response, callback, requestId);
+            return true;
+        }
+
+        if (segments.length == 5) {
+            String sessionId = segments[4];
+            if ("PUT".equals(request.getMethod())) {
+                JsonObject input = readJsonObject(request);
+                var refreshed = collaboration.heartbeat(
+                        session.principal(), sessionId,
+                        optionalString(input, "modelId", ""));
+                writeJson(response, callback, 200,
+                        gson.toJsonTree(refreshed).getAsJsonObject());
+                return true;
+            }
+            if ("DELETE".equals(request.getMethod())) {
+                var departed = collaboration.leave(session.principal(), sessionId);
+                audit(session, requestId, "collaboration.presence.leave", "presence",
+                        departed.id(), AuditOutcome.SUCCESS, "presence-v1");
+                writeJson(response, callback, 200,
+                        gson.toJsonTree(departed).getAsJsonObject());
+                return true;
+            }
+            methodNotAllowed(response, callback, requestId);
+            return true;
+        }
+
+        throw new ResourceNotFoundException();
+    }
+
+    private boolean handleReviews(
+            Request request,
+            Response response,
+            Callback callback,
+            UUID requestId,
+            AuthenticatedSession session,
+            String[] segments) {
+        authorization.requireCollaborationRead(session, context);
+
+        if (segments.length == 4) {
+            if ("GET".equals(request.getMethod())) {
+                JsonObject body = new JsonObject();
+                com.google.gson.JsonArray items = new com.google.gson.JsonArray();
+                for (var set : collaboration.listChangeSets()) {
+                    items.add(changeSetJson(set, false));
+                }
+                body.add("items", items);
+                writeJson(response, callback, 200, body);
+                return true;
+            }
+            if ("POST".equals(request.getMethod())) {
+                authorization.requireCollaborationWrite(session, context);
+                authorization.requireModelRead(session, context);
+                JsonObject input = readJsonObject(request);
+                var set = collaboration.createChangeSet(
+                        session.principal(),
+                        requiredString(input, "modelId"),
+                        requiredString(input, "baseEtag"),
+                        requiredString(input, "proposedContent"),
+                        optionalString(input, "mediaType", "text/plain"));
+                audit(session, requestId, "review.changeset.create", "reviewChangeSet",
+                        set.id(), AuditOutcome.SUCCESS, Long.toString(set.reviewRevision()));
+                writeJson(response, callback, 200, changeSetJson(set, true));
+                return true;
+            }
+            methodNotAllowed(response, callback, requestId);
+            return true;
+        }
+
+        String changeSetId = segments[4];
+        if (segments.length == 5) {
+            if ("GET".equals(request.getMethod())) {
+                authorization.requireModelRead(session, context);
+                var set = collaboration.findChangeSet(changeSetId)
+                        .orElseThrow(ResourceNotFoundException::new);
+                ModelSnapshot current = collaboration.currentModel(changeSetId);
+                writeJson(response, callback, 200, reviewBundleJson(set, current));
+                return true;
+            }
+            if ("PUT".equals(request.getMethod())) {
+                authorization.requireCollaborationWrite(session, context);
+                authorization.requireModelRead(session, context);
+                JsonObject input = readJsonObject(request);
+                var set = collaboration.rebase(
+                        session.principal(),
+                        changeSetId,
+                        requiredString(input, "expectedCurrentEtag"),
+                        requiredString(input, "proposedContent"));
+                audit(session, requestId, "review.changeset.rebase", "reviewChangeSet",
+                        set.id(), AuditOutcome.SUCCESS, Long.toString(set.reviewRevision()));
+                writeJson(response, callback, 200, changeSetJson(set, true));
+                return true;
+            }
+            methodNotAllowed(response, callback, requestId);
+            return true;
+        }
+
+        if (segments.length == 6) {
+            String operation = segments[5];
+            if ("ready".equals(operation) && "POST".equals(request.getMethod())) {
+                authorization.requireCollaborationWrite(session, context);
+                var set = collaboration.markReady(session.principal(), changeSetId);
+                audit(session, requestId, "review.changeset.ready", "reviewChangeSet",
+                        set.id(), AuditOutcome.SUCCESS, Long.toString(set.reviewRevision()));
+                writeJson(response, callback, 200, changeSetJson(set, true));
+                return true;
+            }
+            if ("approve".equals(operation) && "POST".equals(request.getMethod())) {
+                authorization.requireReviewApprove(session, context);
+                var set = collaboration.approve(session.principal(), changeSetId);
+                audit(session, requestId, "review.changeset.approve", "reviewChangeSet",
+                        set.id(), AuditOutcome.SUCCESS, Long.toString(set.reviewRevision()));
+                writeJson(response, callback, 200, changeSetJson(set, true));
+                return true;
+            }
+            if ("apply".equals(operation) && "POST".equals(request.getMethod())) {
+                authorization.requireCollaborationWrite(session, context);
+                authorization.requireModelWrite(session, context);
+                var applied = collaboration.apply(session.principal(), changeSetId);
+                audit(session, requestId, "review.changeset.apply", "model",
+                        applied.model().path().value(), AuditOutcome.SUCCESS,
+                        Long.toString(applied.model().revision().version()));
+                JsonObject body = new JsonObject();
+                body.add("changeSet", changeSetJson(applied.changeSet(), true));
+                body.add("model", modelJson(
+                        applied.model(), applied.changeSet().mediaType()));
+                writeJson(response, callback, 200, body);
+                return true;
+            }
+            if ("comments".equals(operation)) {
+                if ("GET".equals(request.getMethod())) {
+                    JsonObject body = new JsonObject();
+                    com.google.gson.JsonArray items = new com.google.gson.JsonArray();
+                    for (var comment : collaboration.comments(changeSetId)) {
+                        items.add(gson.toJsonTree(comment));
+                    }
+                    body.add("items", items);
+                    writeJson(response, callback, 200, body);
+                    return true;
+                }
+                if ("POST".equals(request.getMethod())) {
+                    authorization.requireReviewComment(session, context);
+                    JsonObject input = readJsonObject(request);
+                    var comment = collaboration.addComment(
+                            session.principal(),
+                            changeSetId,
+                            requiredString(input, "body"),
+                            optionalString(input, "anchor", ""));
+                    audit(session, requestId, "review.comment.create", "reviewComment",
+                            comment.id(), AuditOutcome.SUCCESS, "review-v1");
+                    writeJson(response, callback, 200,
+                            gson.toJsonTree(comment).getAsJsonObject());
+                    return true;
+                }
+            }
+            methodNotAllowed(response, callback, requestId);
+            return true;
+        }
+
+        if (segments.length == 7
+                && "comments".equals(segments[5])
+                && "PUT".equals(request.getMethod())) {
+            authorization.requireReviewComment(session, context);
+            JsonObject input = readJsonObject(request);
+            var comment = collaboration.resolveComment(
+                    session.principal(), changeSetId, segments[6],
+                    requiredBoolean(input, "resolved"));
+            audit(session, requestId, "review.comment.update", "reviewComment",
+                    comment.id(), AuditOutcome.SUCCESS, "review-v1");
+            writeJson(response, callback, 200,
+                    gson.toJsonTree(comment).getAsJsonObject());
+            return true;
+        }
+
+        throw new ResourceNotFoundException();
+    }
+
+    private JsonObject reviewBundleJson(
+            ProjectCollaborationService.ChangeSet set,
+            ModelSnapshot current) {
+        JsonObject body = new JsonObject();
+        body.add("changeSet", changeSetJson(set, true));
+        body.add("currentModel", modelJson(current, set.mediaType()));
+        com.google.gson.JsonArray comments = new com.google.gson.JsonArray();
+        for (var comment : collaboration.comments(set.id())) {
+            comments.add(gson.toJsonTree(comment));
+        }
+        body.add("comments", comments);
+        boolean conflicted = set.status() != ProjectCollaborationService.ChangeSetStatus.APPLIED
+                && !set.baseEtag().equals(current.revision().etag());
+        body.addProperty("conflicted", conflicted);
+        return body;
+    }
+
+    private JsonObject changeSetJson(
+            ProjectCollaborationService.ChangeSet set, boolean includeContent) {
+        JsonObject value = gson.toJsonTree(set).getAsJsonObject();
+        if (!includeContent) value.remove("proposedContent");
+        return value;
     }
 
     private JsonObject projectJson() {
@@ -495,6 +745,14 @@ public final class EnterpriseApiServer implements AutoCloseable {
         String value = object.get(key).getAsString();
         if (value == null || value.isBlank()) throw new IllegalArgumentException(key + " is required");
         return value;
+    }
+
+    private static boolean requiredBoolean(JsonObject object, String key) {
+        if (!object.has(key) || !object.get(key).isJsonPrimitive()
+                || !object.get(key).getAsJsonPrimitive().isBoolean()) {
+            throw new IllegalArgumentException(key + " is required");
+        }
+        return object.get(key).getAsBoolean();
     }
 
     private static String optionalString(JsonObject object, String key, String fallback) {

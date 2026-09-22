@@ -30,6 +30,56 @@ public final class ApiSchemaCatalog {
                 Set.of("id", "content", "revision", "etag")));
         add(schemas, schema("ModelList",
                 Map.of("items", a(), "nextCursor", s()), Set.of("items")));
+        add(schemas, schema("PresenceJoinRequest",
+                Map.of("sessionId", s(), "modelId", s()), Set.of()));
+        add(schemas, schema("PresenceHeartbeatRequest",
+                Map.of("modelId", s()), Set.of()));
+        add(schemas, schema("PresenceSession",
+                Map.of("id", s(), "principalId", s(), "displayName", s(), "modelId", s(),
+                        "joinedAt", s(), "lastSeenAt", s()),
+                Set.of("id", "principalId", "displayName", "joinedAt", "lastSeenAt")));
+        add(schemas, schema("PresenceList",
+                Map.of("items", a()), Set.of("items")));
+        add(schemas, schema("ReviewChangeSetCreateRequest",
+                Map.of("modelId", s(), "baseEtag", s(), "proposedContent", s(), "mediaType", s()),
+                Set.of("modelId", "baseEtag", "proposedContent")));
+        add(schemas, schema("ReviewChangeSetUpdateRequest",
+                Map.of("expectedCurrentEtag", s(), "proposedContent", s()),
+                Set.of("expectedCurrentEtag", "proposedContent")));
+        add(schemas, schema("ReviewChangeSet",
+                Map.ofEntries(
+                        Map.entry("id", s()), Map.entry("modelId", s()),
+                        Map.entry("baseEtag", s()), Map.entry("baseRevision", s()),
+                        Map.entry("proposedContent", s()), Map.entry("mediaType", s()),
+                        Map.entry("authorId", s()), Map.entry("authorName", s()),
+                        Map.entry("status", s()), Map.entry("createdAt", s()),
+                        Map.entry("updatedAt", s()), Map.entry("reviewRevision", i()),
+                        Map.entry("approvedBy", s()), Map.entry("approvedAt", s()),
+                        Map.entry("appliedEtag", s()), Map.entry("appliedRevision", s())),
+                Set.of("id", "modelId", "baseEtag", "authorId", "authorName", "status",
+                        "createdAt", "updatedAt", "reviewRevision")));
+        add(schemas, schema("ReviewChangeSetList",
+                Map.of("items", a()), Set.of("items")));
+        add(schemas, schema("ReviewBundle",
+                Map.of("changeSet", o(), "currentModel", o(), "comments", a(), "conflicted", b()),
+                Set.of("changeSet", "currentModel", "comments", "conflicted")));
+        add(schemas, schema("ReviewCommentCreateRequest",
+                Map.of("body", s(), "anchor", s()), Set.of("body")));
+        add(schemas, schema("ReviewCommentUpdateRequest",
+                Map.of("resolved", b()), Set.of("resolved")));
+        add(schemas, schema("ReviewComment",
+                Map.ofEntries(
+                        Map.entry("id", s()), Map.entry("changeSetId", s()),
+                        Map.entry("authorId", s()), Map.entry("authorName", s()),
+                        Map.entry("body", s()), Map.entry("anchor", s()),
+                        Map.entry("createdAt", s()), Map.entry("resolved", b()),
+                        Map.entry("resolvedBy", s()), Map.entry("resolvedAt", s())),
+                Set.of("id", "changeSetId", "authorId", "authorName", "body",
+                        "createdAt", "resolved")));
+        add(schemas, schema("ReviewCommentList",
+                Map.of("items", a()), Set.of("items")));
+        add(schemas, schema("ReviewApplyResult",
+                Map.of("changeSet", o(), "model", o()), Set.of("changeSet", "model")));
         add(schemas, schema("KnowledgeQueryRequest",
                 Map.of("query", s(), "scope", s(), "limit", i()), Set.of("query")));
         add(schemas, schema("KnowledgeQueryResult",
@@ -57,6 +107,7 @@ public final class ApiSchemaCatalog {
 
     private static ApiFieldType s() { return ApiFieldType.STRING; }
     private static ApiFieldType i() { return ApiFieldType.INTEGER; }
+    private static ApiFieldType b() { return ApiFieldType.BOOLEAN; }
     private static ApiFieldType o() { return ApiFieldType.OBJECT; }
     private static ApiFieldType a() { return ApiFieldType.ARRAY; }
 

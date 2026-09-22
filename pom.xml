@@ -28,9 +28,8 @@
   </properties>
 
   <!--
-    com.system.knowledge.plugin is intentionally NOT a module: it depends on
-    NeoEMF (fr.inria.atlanmod.*), which is not in the target platform.
-    See docs/architecture.md.
+    com.system.knowledge.plugin remains excluded because it depends on obsolete
+    NeoEMF. PR34 replaces that release dependency with com.kide.knowledge.
   -->
   <modules>
     <module>com.capability</module>
@@ -84,6 +83,8 @@
     <module>com.kide.enterprise.modelrepo.tests</module>
     <module>com.kide.enterprise.migration</module>
     <module>com.kide.enterprise.migration.tests</module>
+    <module>com.kide.knowledge</module>
+    <module>com.kide.knowledge.tests</module>
     <module>releng</module>
   </modules>
 

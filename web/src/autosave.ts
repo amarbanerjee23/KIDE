@@ -4,7 +4,7 @@ import type { Model, SaveState } from "./types";
 export interface AutosaveEvents {
   onState(state: SaveState): void;
   onSaved(model: Model): void;
-  onConflict(error: ApiClientError, localContent: string): void;
+  onConflict(error: ApiClientError, localContent: string, expectedEtag: string): void;
   onError(error: Error): void;
 }
 
@@ -34,12 +34,13 @@ export class AutosaveCoordinator {
     this.timer = undefined;
 
     const content = this.pending;
+    const expectedEtag = this.etag;
     this.pending = undefined;
     this.saving = true;
     this.events.onState("saving");
 
     try {
-      const saved = await this.save(content, this.etag);
+      const saved = await this.save(content, expectedEtag);
       this.etag = saved.etag;
       this.events.onSaved(saved);
       this.events.onState(this.pending === undefined ? "saved" : "pending");
@@ -48,7 +49,7 @@ export class AutosaveCoordinator {
       if (normalized instanceof ApiClientError && normalized.code === "CONFLICT") {
         this.pending = content;
         this.events.onState("conflict");
-        this.events.onConflict(normalized, content);
+        this.events.onConflict(normalized, content, expectedEtag);
         return;
       }
       this.pending = content;

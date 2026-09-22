@@ -96,12 +96,17 @@ public final class EnterpriseApiApplication implements IApplication {
                                     .build(),
                             Clock.systemUTC());
 
+            FileModelRepository modelRepository = new FileModelRepository(projectRoot);
+            ProjectCollaborationService collaboration =
+                    new ProjectCollaborationService(
+                            projectRoot, modelRepository, Clock.systemUTC());
             server = new EnterpriseApiServer(
                     config,
                     authenticator::authenticateAuthorizationHeader,
                     context,
                     authorization,
-                    new FileModelRepository(projectRoot),
+                    modelRepository,
+                    collaboration,
                     new InMemoryAuditLedger(Clock.systemUTC()),
                     Clock.systemUTC());
             server.start();

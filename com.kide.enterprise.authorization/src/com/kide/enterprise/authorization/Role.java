@@ -18,7 +18,10 @@ public enum Role {
             Permission.LSP_CONNECT,
             Permission.API_ACCESS,
             Permission.EVIDENCE_READ,
-            Permission.EVIDENCE_WRITE)),
+            Permission.EVIDENCE_WRITE,
+            Permission.COLLABORATION_READ,
+            Permission.COLLABORATION_WRITE,
+            Permission.REVIEW_COMMENT)),
     REVIEWER(EnumSet.of(
             Permission.CONTEXT_READ,
             Permission.PROJECT_READ,
@@ -27,14 +30,18 @@ public enum Role {
             Permission.WORKSPACE_OPEN,
             Permission.LSP_CONNECT,
             Permission.API_ACCESS,
-            Permission.EVIDENCE_READ)),
+            Permission.EVIDENCE_READ,
+            Permission.COLLABORATION_READ,
+            Permission.REVIEW_COMMENT,
+            Permission.REVIEW_APPROVE)),
     VIEWER(EnumSet.of(
             Permission.CONTEXT_READ,
             Permission.PROJECT_READ,
             Permission.MODEL_READ,
             Permission.WORKSPACE_OPEN,
             Permission.API_ACCESS,
-            Permission.EVIDENCE_READ)),
+            Permission.EVIDENCE_READ,
+            Permission.COLLABORATION_READ)),
     SERVICE_OPERATOR(EnumSet.of(
             Permission.CONTEXT_READ,
             Permission.PROJECT_READ,
@@ -47,7 +54,11 @@ public enum Role {
             Permission.LSP_CONNECT,
             Permission.API_ACCESS,
             Permission.EVIDENCE_READ,
-            Permission.EVIDENCE_WRITE));
+            Permission.EVIDENCE_WRITE,
+            Permission.COLLABORATION_READ,
+            Permission.COLLABORATION_WRITE,
+            Permission.REVIEW_COMMENT,
+            Permission.REVIEW_APPROVE));
 
     private final Set<Permission> permissions;
 

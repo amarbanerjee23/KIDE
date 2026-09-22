@@ -1,0 +1,13 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Knowledge Fabric Core
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.knowledge;singleton:=true
+Bundle-ActivationPolicy: lazy
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Automatic-Module-Name: com.kide.knowledge
+Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.equinox.app,
+ com.google.gson
+Export-Package: com.kide.knowledge

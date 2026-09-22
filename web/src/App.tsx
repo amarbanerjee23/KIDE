@@ -10,6 +10,7 @@ import {
   withText
 } from "./archive";
 import { AutosaveCoordinator } from "./autosave";
+import { CollaborationCoordinator } from "./collaboration";
 import { pathFromWorkspaceUri } from "./languageAssets";
 import { KideLspClient, type SymbolInformation } from "./lspClient";
 import { MonacoEditor } from "./MonacoEditor";
@@ -18,7 +19,15 @@ import { MonacoWorkspace } from "./monacoWorkspace";
 import { GraphicalEditor } from "./GraphicalEditor";
 import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
-import type { Model, Project, SaveState, WorkspaceEntry } from "./types";
+import type {
+  Model,
+  PresenceSession,
+  Project,
+  ReviewBundle,
+  ReviewChangeSet,
+  SaveState,
+  WorkspaceEntry
+} from "./types";
 
 const SERVICE_ORIGIN =
   import.meta.env.VITE_KIDE_API_ORIGIN ?? window.location.origin;
@@ -60,8 +69,15 @@ export default function App() {
   const [symbols, setSymbols] = useState<SymbolInformation[]>([]);
   const [revealRange, setRevealRange] = useState<monaco.Range>();
   const [viewMode, setViewMode] = useState<"text" | "diagram">("text");
+  const [collaborationStatus, setCollaborationStatus] = useState("Not connected");
+  const [presence, setPresence] = useState<PresenceSession[]>([]);
+  const [reviews, setReviews] = useState<ReviewChangeSet[]>([]);
+  const [activeReview, setActiveReview] = useState<ReviewBundle>();
+  const [reviewProposal, setReviewProposal] = useState("");
+  const [reviewComment, setReviewComment] = useState("");
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
+  const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
   const lspClient = useRef<KideLspClient | undefined>(undefined);
   const lspController = useRef<MonacoLspController | undefined>(undefined);
   const workspaceChange = useRef<(path: string, value: string) => void>(() => {});
@@ -108,6 +124,7 @@ export default function App() {
     });
     return () => {
       void disposeLanguageServices();
+      void disposeCollaboration();
       disposeAutosaves();
       workspace.dispose();
     };
@@ -115,6 +132,7 @@ export default function App() {
 
   useEffect(() => {
     setViewMode("text");
+    collaboration.current?.setModel(selectedPath);
   }, [selectedPath]);
 
   async function connect() {
@@ -176,6 +194,87 @@ export default function App() {
       setSymbols([]);
     } catch (error) {
       setLspStatus("Connection failed");
+      showError(error);
+    }
+  }
+
+  async function connectCollaboration(opened = projectRef.current) {
+    if (!opened) return;
+    await disposeCollaboration();
+    setCollaborationStatus("Connecting…");
+
+    const coordinator = new CollaborationCoordinator(
+      clientRef.current,
+      opened.id,
+      {
+        onPresence(items) {
+          setPresence(items);
+        },
+        onSession(session) {
+          setCollaborationStatus(`Connected · ${session.displayName}`);
+          try {
+            sessionStorage.setItem(
+              `kide:collaboration-session:${opened.id}`,
+              session.id
+            );
+          } catch {
+            // Presence remains functional without browser session persistence.
+          }
+        },
+        onError(error) {
+          setCollaborationStatus("Connection degraded");
+          setNotice(error.message);
+        }
+      }
+    );
+    collaboration.current = coordinator;
+
+    let existingSessionId: string | undefined;
+    try {
+      existingSessionId =
+        sessionStorage.getItem(`kide:collaboration-session:${opened.id}`) ?? undefined;
+    } catch {
+      existingSessionId = undefined;
+    }
+    try {
+      await coordinator.connect(existingSessionId, selectedPathRef.current);
+      await refreshReviews(opened.id);
+    } catch (error) {
+      collaboration.current = undefined;
+      setCollaborationStatus("Connection failed");
+      showError(error);
+    }
+  }
+
+  async function disposeCollaboration() {
+    const current = collaboration.current;
+    collaboration.current = undefined;
+    if (current) await current.disconnect();
+    setPresence([]);
+    setCollaborationStatus("Not connected");
+  }
+
+  async function refreshReviews(projectId = projectRef.current?.id) {
+    if (!projectId) return;
+    try {
+      const list = await clientRef.current.listReviewChangeSets(projectId);
+      setReviews(list.items);
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function openReview(changeSetId: string) {
+    const currentProject = projectRef.current;
+    if (!currentProject) return;
+    try {
+      const bundle = await clientRef.current.getReviewChangeSet(
+        currentProject.id,
+        changeSetId
+      );
+      setActiveReview(bundle);
+      setReviewProposal(bundle.changeSet.proposedContent);
+    } catch (error) {
       showError(error);
     }
   }
@@ -264,7 +363,7 @@ export default function App() {
             })
           );
         },
-        onConflict(error, localContent) {
+        onConflict(error, localContent, expectedEtag) {
           try {
             sessionStorage.setItem(
               `kide:conflict:${entry.projectId}:${entry.path}`,
@@ -288,6 +387,157 @@ export default function App() {
     );
     autosaves.current.set(entry.path, coordinator);
     return coordinator;
+  }
+
+  async function createConflictReview(
+    entry: WorkspaceEntry,
+    localContent: string,
+    baseEtag: string
+  ) {
+    if (!entry.projectId) return;
+    try {
+      const set = await clientRef.current.createReviewChangeSet(
+        entry.projectId,
+        entry.path,
+        baseEtag,
+        localContent,
+        entry.mediaType
+      );
+      await refreshReviews(entry.projectId);
+      await openReview(set.id);
+      if (entry.path === selectedPathRef.current) {
+        setConflict(
+          `Server revision changed. Local edits were captured as review change set ${set.id.slice(0, 8)}; no server content was overwritten.`
+        );
+      }
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function createReviewFromEditor() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !selected || selected.source !== "remote" || !selected.etag) return;
+    const proposed = workspace.text(selected.path) ?? editableText(selected);
+    if (proposed === null || proposed === undefined) return;
+    try {
+      const set = await clientRef.current.createReviewChangeSet(
+        currentProject.id,
+        selected.path,
+        selected.etag,
+        proposed,
+        selected.mediaType
+      );
+      await refreshReviews(currentProject.id);
+      await openReview(set.id);
+      setNotice(`Created review change set ${set.id.slice(0, 8)}.`);
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function rebaseActiveReview() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview) return;
+    try {
+      const updated = await clientRef.current.rebaseReviewChangeSet(
+        currentProject.id,
+        activeReview.changeSet.id,
+        activeReview.currentModel.etag,
+        reviewProposal
+      );
+      await refreshReviews(currentProject.id);
+      await openReview(updated.id);
+      setNotice("Review proposal rebased explicitly on the current server revision.");
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function markActiveReviewReady() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview) return;
+    try {
+      const updated = await clientRef.current.markReviewReady(
+        currentProject.id,
+        activeReview.changeSet.id
+      );
+      await refreshReviews(currentProject.id);
+      await openReview(updated.id);
+      setNotice("Change set is ready for independent review.");
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function approveActiveReview() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview) return;
+    try {
+      const updated = await clientRef.current.approveReview(
+        currentProject.id,
+        activeReview.changeSet.id
+      );
+      await refreshReviews(currentProject.id);
+      await openReview(updated.id);
+      setNotice("Change set approved.");
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function applyActiveReview() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview) return;
+    try {
+      const applied = await clientRef.current.applyReview(
+        currentProject.id,
+        activeReview.changeSet.id
+      );
+      const entry = remoteEntry(currentProject.id, applied.model);
+      replaceRemoteEntry(entry);
+      workspace.sync(entry.path, applied.model.content);
+      await refreshReviews(currentProject.id);
+      await openReview(applied.changeSet.id);
+      setSaveState("clean");
+      setConflict(undefined);
+      setNotice("Approved change set applied to the canonical model.");
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function addActiveReviewComment() {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview || !reviewComment.trim()) return;
+    try {
+      await clientRef.current.addReviewComment(
+        currentProject.id,
+        activeReview.changeSet.id,
+        reviewComment.trim(),
+        activeReview.changeSet.modelId
+      );
+      setReviewComment("");
+      await openReview(activeReview.changeSet.id);
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function setCommentResolved(commentId: string, resolved: boolean) {
+    const currentProject = projectRef.current;
+    if (!currentProject || !activeReview) return;
+    try {
+      await clientRef.current.updateReviewComment(
+        currentProject.id,
+        activeReview.changeSet.id,
+        commentId,
+        resolved
+      );
+      await openReview(activeReview.changeSet.id);
+    } catch (error) {
+      showError(error);
+    }
   }
 
   function selectEntry(entry: WorkspaceEntry) {
@@ -408,12 +658,17 @@ export default function App() {
 
   async function resetProjectWorkspace() {
     await disposeLanguageServices();
+    await disposeCollaboration();
     disposeAutosaves();
     workspace.dispose();
     updateEntries(() => []);
     setSelectedPath(undefined);
     setRevealRange(undefined);
     setSymbols([]);
+    setReviews([]);
+    setActiveReview(undefined);
+    setReviewProposal("");
+    setReviewComment("");
     setSaveState("clean");
   }
 
@@ -468,6 +723,9 @@ export default function App() {
         <div className="status-stack">
           <div className="service-state" aria-live="polite">{serviceStatus}</div>
           <div className="service-state lsp-state" aria-live="polite">{lspStatus}</div>
+          <div className="service-state collaboration-state" aria-live="polite">
+            {collaborationStatus}
+          </div>
         </div>
       </header>
 
@@ -599,6 +857,58 @@ export default function App() {
               </li>
             ))}
           </ul>
+
+          {project && (
+            <div className="collaboration-panel">
+              <div className="panel-heading">
+                <h2>Collaboration</h2>
+                <button onClick={() => {
+                  void collaboration.current?.refresh();
+                  void refreshReviews();
+                }}>
+                  Refresh
+                </button>
+              </div>
+              <p className="muted">{collaborationStatus}</p>
+              <h3>Presence</h3>
+              {presence.length ? (
+                <ul className="presence-list">
+                  {presence.map((item) => (
+                    <li key={item.id}>
+                      <strong>{item.displayName}</strong>
+                      <span>{item.modelId || "Project"}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">No active collaborators reported.</p>
+              )}
+
+              <div className="panel-heading">
+                <h3>Reviews</h3>
+                <button
+                  disabled={!selected || selected.source !== "remote" || !selected.etag}
+                  onClick={() => void createReviewFromEditor()}
+                >
+                  Create review
+                </button>
+              </div>
+              {reviews.length ? (
+                <ul className="review-list">
+                  {reviews.map((review) => (
+                    <li key={review.id}>
+                      <button onClick={() => void openReview(review.id)}>
+                        <strong>{review.modelId}</strong>
+                        <span>{review.status} · {review.authorName}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="muted">No review change sets yet.</p>
+              )}
+            </div>
+          )}
         </aside>
 
         <section className="editor-panel">
@@ -657,6 +967,111 @@ export default function App() {
               lsp={lspController.current}
               revealRange={revealRange}
             />
+          )}
+
+          {activeReview && (
+            <section className="review-workbench" aria-label="Change review">
+              <div className="review-header">
+                <div>
+                  <p className="eyebrow">REVIEW CHANGE SET</p>
+                  <h2>{activeReview.changeSet.modelId}</h2>
+                  <p className="muted">
+                    {activeReview.changeSet.status} · revision {activeReview.changeSet.reviewRevision}
+                    {activeReview.conflicted ? " · server revision changed" : ""}
+                  </p>
+                </div>
+                <button onClick={() => setActiveReview(undefined)}>Close review</button>
+              </div>
+
+              <div className="review-compare">
+                <label>
+                  Current server revision
+                  <textarea
+                    aria-label="Current server revision"
+                    readOnly
+                    value={activeReview.currentModel.content}
+                  />
+                </label>
+                <label>
+                  Proposed / resolved revision
+                  <textarea
+                    aria-label="Resolved review proposal"
+                    value={reviewProposal}
+                    readOnly={
+                      activeReview.changeSet.status === "READY" ||
+                      activeReview.changeSet.status === "APPROVED" ||
+                      activeReview.changeSet.status === "APPLIED"
+                    }
+                    onChange={(event) => setReviewProposal(event.target.value)}
+                  />
+                </label>
+              </div>
+
+              <div className="review-actions">
+                {(activeReview.conflicted || activeReview.changeSet.status === "CONFLICT") && (
+                  <button onClick={() => void rebaseActiveReview()}>
+                    Rebase resolved proposal
+                  </button>
+                )}
+                {activeReview.changeSet.status === "DRAFT" && (
+                  <button onClick={() => void markActiveReviewReady()}>
+                    Mark ready for review
+                  </button>
+                )}
+                {activeReview.changeSet.status === "READY" && (
+                  <button onClick={() => void approveActiveReview()}>
+                    Approve as reviewer
+                  </button>
+                )}
+                {activeReview.changeSet.status === "APPROVED" && (
+                  <button onClick={() => void applyActiveReview()}>
+                    Apply approved change
+                  </button>
+                )}
+              </div>
+
+              <div className="review-comments">
+                <h3>Review comments</h3>
+                {activeReview.changeSet.status !== "APPLIED" && (
+                  <div className="comment-composer">
+                    <input
+                      aria-label="Review comment"
+                      value={reviewComment}
+                      onChange={(event) => setReviewComment(event.target.value)}
+                      placeholder="Add an anchored review comment"
+                    />
+                    <button
+                      disabled={!reviewComment.trim()}
+                      onClick={() => void addActiveReviewComment()}
+                    >
+                      Comment
+                    </button>
+                  </div>
+                )}
+                {activeReview.comments.length ? (
+                  <ul>
+                    {activeReview.comments.map((comment) => (
+                      <li key={comment.id} className={comment.resolved ? "resolved-comment" : ""}>
+                        <div>
+                          <strong>{comment.authorName}</strong>
+                          <span>{comment.anchor ?? ""}</span>
+                        </div>
+                        <p>{comment.body}</p>
+                        {activeReview.changeSet.status !== "APPLIED" && (
+                          <button
+                            onClick={() => void setCommentResolved(comment.id, !comment.resolved)}
+                          >
+                            {comment.resolved ? "Reopen" : "Resolve"}
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="muted">No review comments.</p>
+                )}
+              </div>
+            </section>
           )}
         </section>
       </section>

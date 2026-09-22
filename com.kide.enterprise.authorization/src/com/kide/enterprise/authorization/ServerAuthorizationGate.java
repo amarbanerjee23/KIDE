@@ -48,6 +48,22 @@ public final class ServerAuthorizationGate {
         enforcer.require(session, context, EnterpriseScope.PROJECT, Permission.EVIDENCE_READ);
     }
 
+    public void requireCollaborationRead(AuthenticatedSession session, EnterpriseContext context) {
+        enforcer.require(session, context, EnterpriseScope.PROJECT, Permission.COLLABORATION_READ);
+    }
+
+    public void requireCollaborationWrite(AuthenticatedSession session, EnterpriseContext context) {
+        enforcer.require(session, context, EnterpriseScope.PROJECT, Permission.COLLABORATION_WRITE);
+    }
+
+    public void requireReviewComment(AuthenticatedSession session, EnterpriseContext context) {
+        enforcer.require(session, context, EnterpriseScope.PROJECT, Permission.REVIEW_COMMENT);
+    }
+
+    public void requireReviewApprove(AuthenticatedSession session, EnterpriseContext context) {
+        enforcer.require(session, context, EnterpriseScope.PROJECT, Permission.REVIEW_APPROVE);
+    }
+
     public void requireWorkspaceWrite(AuthenticatedSession session, EnterpriseContext context) {
         enforcer.require(session, context, EnterpriseScope.WORKSPACE, Permission.WORKSPACE_WRITE);
         requireModelWrite(session, context);

@@ -60,19 +60,10 @@ The grouping follows shared code boundaries rather than feature labels:
 
 ## Current execution point
 
-PR22 through PR30 are merged and green on main. PR30 established the separate
-React/TypeScript browser workspace without changing Eclipse desktop semantics.
+PR22 through PR32 are merged and green on main. PR33 is implemented and green on its exact head, with collaboration/review semantics qualified independently of model-write permission.
 
-**PR31 is the active implementation PR.** It connects Monaco to the existing
-authenticated Xtext WebSocket gateway, virtualizes browser project URIs without
-exposing server filesystem paths, generates TextMate lexical assets from the
-production Xtext grammars, and maps the PR13 language-service contract into Monaco.
+**PR34 is the active implementation PR.** It replaces the obsolete NeoEMF release dependency with a versioned `KnowledgeRepository`, bounded embedded persistence, standards-facing RDF/XML, Turtle and expanded JSON-LD interchange, OWL vocabulary support, a deterministic SHACL Core profile, explicit provenance/scope metadata, a secure external SPARQL HTTP adapter and migration from supported research XMI fixtures.
 
-Required server capabilities remain governed by `product/lsp-capabilities.json`.
-The browser consumes completion, hover, navigation, references, symbols,
-formatting and rename from Xtext, and conditionally consumes folding, code actions
-and semantic tokens when those capabilities are advertised. It does not fabricate
-browser-only language semantics for deferred server capabilities.
+The acceptance gate requires offline persistence/restart, strict optimistic revisions, format round trips, SHACL positive/negative evidence, provenance retention, malformed-input isolation, supported legacy migration, secure SPARQL endpoint policy and every existing desktop/browser/LSP/GLSP/enterprise packaged check.
 
-PR32 follows only after PR31 passes browser protocol/E2E qualification together
-with every existing packaged desktop, enterprise, gateway and LSP parity gate.
+PR35 follows after PR34 and will add deterministic retrieval, catalogue UX and stable knowledge-to-model trace links.

@@ -42,10 +42,18 @@ public class AuthorizationServiceTest {
         assertTrue(Role.ADMINISTRATOR.grants(Permission.AUTHORIZATION_MANAGE));
         assertTrue(Role.ENGINEER.grants(Permission.MODEL_WRITE));
         assertTrue(Role.ENGINEER.grants(Permission.MODEL_SYNTHESIZE));
+        assertTrue(Role.ENGINEER.grants(Permission.COLLABORATION_WRITE));
+        assertTrue(Role.ENGINEER.grants(Permission.REVIEW_COMMENT));
+        assertFalse(Role.ENGINEER.grants(Permission.REVIEW_APPROVE));
         assertFalse(Role.ENGINEER.grants(Permission.AUTHORIZATION_MANAGE));
         assertTrue(Role.REVIEWER.grants(Permission.MODEL_VALIDATE));
+        assertTrue(Role.REVIEWER.grants(Permission.REVIEW_COMMENT));
+        assertTrue(Role.REVIEWER.grants(Permission.REVIEW_APPROVE));
+        assertFalse(Role.REVIEWER.grants(Permission.COLLABORATION_WRITE));
         assertFalse(Role.REVIEWER.grants(Permission.MODEL_WRITE));
         assertTrue(Role.VIEWER.grants(Permission.MODEL_READ));
+        assertTrue(Role.VIEWER.grants(Permission.COLLABORATION_READ));
+        assertFalse(Role.VIEWER.grants(Permission.REVIEW_COMMENT));
         assertFalse(Role.VIEWER.grants(Permission.MODEL_VALIDATE));
         assertTrue(Role.SERVICE_OPERATOR.grants(Permission.LSP_CONNECT));
         assertFalse(Role.SERVICE_OPERATOR.grants(Permission.AUTHORIZATION_MANAGE));
