@@ -198,6 +198,87 @@ export default function App() {
     }
   }
 
+  async function connectCollaboration(opened = projectRef.current) {
+    if (!opened) return;
+    await disposeCollaboration();
+    setCollaborationStatus("Connecting…");
+
+    const coordinator = new CollaborationCoordinator(
+      clientRef.current,
+      opened.id,
+      {
+        onPresence(items) {
+          setPresence(items);
+        },
+        onSession(session) {
+          setCollaborationStatus(`Connected · ${session.displayName}`);
+          try {
+            sessionStorage.setItem(
+              `kide:collaboration-session:${opened.id}`,
+              session.id
+            );
+          } catch {
+            // Presence remains functional without browser session persistence.
+          }
+        },
+        onError(error) {
+          setCollaborationStatus("Connection degraded");
+          setNotice(error.message);
+        }
+      }
+    );
+    collaboration.current = coordinator;
+
+    let existingSessionId: string | undefined;
+    try {
+      existingSessionId =
+        sessionStorage.getItem(`kide:collaboration-session:${opened.id}`) ?? undefined;
+    } catch {
+      existingSessionId = undefined;
+    }
+    try {
+      await coordinator.connect(existingSessionId, selectedPathRef.current);
+      await refreshReviews(opened.id);
+    } catch (error) {
+      collaboration.current = undefined;
+      setCollaborationStatus("Connection failed");
+      showError(error);
+    }
+  }
+
+  async function disposeCollaboration() {
+    const current = collaboration.current;
+    collaboration.current = undefined;
+    if (current) await current.disconnect();
+    setPresence([]);
+    setCollaborationStatus("Not connected");
+  }
+
+  async function refreshReviews(projectId = projectRef.current?.id) {
+    if (!projectId) return;
+    try {
+      const list = await clientRef.current.listReviewChangeSets(projectId);
+      setReviews(list.items);
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function openReview(changeSetId: string) {
+    const currentProject = projectRef.current;
+    if (!currentProject) return;
+    try {
+      const bundle = await clientRef.current.getReviewChangeSet(
+        currentProject.id,
+        changeSetId
+      );
+      setActiveReview(bundle);
+      setReviewProposal(bundle.changeSet.proposedContent);
+    } catch (error) {
+      showError(error);
+    }
+  }
+
   async function loadModel() {
     if (!projectRef.current) return;
     await loadSpecificModel(modelId.trim(), true);
