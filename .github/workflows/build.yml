@@ -145,6 +145,21 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      - name: Smoke-test packaged semantic code generation
+        run: |
+          python3 scripts/smoke_codegen.py \
+            --products releng/com.kide.languageserver.repository/target/products \
+            --output qualification/pr38-codegen
+
+      - name: Upload PR38 code generation evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr38-codegen-evidence-${{ github.run_id }}
+          path: qualification/pr38-codegen
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Smoke-test headless multi-DSL language server
         run: |
           python3 scripts/smoke_language_server.py \
