@@ -38,10 +38,16 @@ def main() -> int:
         result=subprocess.run([str(launcher),"-nosplash","-consoleLog","-application","com.kide.knowledge.selfcheck","-data",str(workspace)],
             cwd=launcher.parent,env=os.environ.copy(),text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,timeout=90,check=False)
         output=result.stdout or ""
-        marker="KIDE PR34 KNOWLEDGE FABRIC SELF-CHECK OK"
-        if result.returncode!=0 or marker not in output:
-            raise SmokeError(f"packaged PR34 knowledge fabric self-check failed ({result.returncode})\n{output[-6000:]}")
-        print(f"PR34 PACKAGED KNOWLEDGE FABRIC QUALIFIED: {archive.name}")
+        markers=[
+            "KIDE PR34 KNOWLEDGE FABRIC SELF-CHECK OK",
+            "KIDE PR35 KNOWLEDGE CATALOGUE TRACE SELF-CHECK OK",
+        ]
+        missing=[marker for marker in markers if marker not in output]
+        if result.returncode!=0 or missing:
+            raise SmokeError(
+                f"packaged PR35 knowledge fabric/catalogue self-check failed "
+                f"({result.returncode}, missing={missing})\n{output[-6000:]}")
+        print(f"PR35 PACKAGED KNOWLEDGE FABRIC + CATALOGUE QUALIFIED: {archive.name}")
     return 0
 
 if __name__=="__main__":
