@@ -45,7 +45,15 @@ Parameter:
     name=ID ':' type=ValueType;
 
 Binding:
-    'bind' name=ID ':' type=ValueType '=' value=Value ';';
+    'bind' name=ID ':' type=ValueType '=' value=BindingValue ';';
+
+BindingValue:
+    Value | QueryValue;
+
+QueryValue:
+    'query' query=[Query|QualifiedName]
+    '(' (arguments+=Value (',' arguments+=Value)*)? ')'
+    '.' variable=ID;
 
 Pattern:
     subject=PatternTerm predicate=PatternTerm object=PatternValue;
