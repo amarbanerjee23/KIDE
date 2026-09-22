@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: KIDE Semantic Code Generation Tests
+Bundle-Vendor: KIDE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: com.kide.codegen.tests
+Bundle-RequiredExecutionEnvironment: JavaSE-21
+Require-Bundle: com.kide.codegen;bundle-version="1.0.0",
+ com.kide.knowledge;bundle-version="1.0.0",
+ org.junit;bundle-version="[4.12.0,5.0.0)"
