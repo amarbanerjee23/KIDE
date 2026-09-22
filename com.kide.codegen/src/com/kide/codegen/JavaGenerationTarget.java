@@ -21,7 +21,12 @@ public final class JavaGenerationTarget implements GenerationTarget {
             String templateName,
             String outputPath,
             String renderedContent) {
-        String safe = GenerationPaths.requireSafeRelative(outputPath);
+        final String safe;
+        try {
+            safe = GenerationPaths.requireSafeRelative(outputPath);
+        } catch (IllegalArgumentException e) {
+            throw new GenerationException(e.getMessage(), e);
+        }
         if (!safe.endsWith(".java")) {
             throw new GenerationException("java target output must end with .java");
         }
