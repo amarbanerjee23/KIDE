@@ -104,7 +104,7 @@ public class MncProvider {
                 }
                 if ((item instanceof Event)) {
                   if ((!actionItemExists)) {
-                    EList<ActionEvent> _publishEvent = IterableExtensions.<Action>head(this.initExecutableActions).getPublishEvent();
+                    EList<ActionEvent> _publishEvent = this.ensureInitAction().getPublishEvent();
                     ActionEvent _createActionEvent = MncModelFactory.eINSTANCE.createActionEvent();
                     final Procedure1<ActionEvent> _function = new Procedure1<ActionEvent>() {
                       @Override
@@ -121,7 +121,7 @@ public class MncProvider {
                 }
                 if ((item instanceof Alarm)) {
                   if ((!actionItemExists)) {
-                    EList<ActionAlarm> _raiseAlarm = IterableExtensions.<Action>head(this.initExecutableActions).getRaiseAlarm();
+                    EList<ActionAlarm> _raiseAlarm = this.ensureInitAction().getRaiseAlarm();
                     ActionAlarm _createActionAlarm = MncModelFactory.eINSTANCE.createActionAlarm();
                     final Procedure1<ActionAlarm> _function_1 = new Procedure1<ActionAlarm>() {
                       @Override
@@ -138,7 +138,7 @@ public class MncProvider {
                 }
                 if ((item instanceof DataPoint)) {
                   if ((!actionItemExists)) {
-                    EList<ActionDataPoint> _triggerDataPoint = IterableExtensions.<Action>head(this.initExecutableActions).getTriggerDataPoint();
+                    EList<ActionDataPoint> _triggerDataPoint = this.ensureInitAction().getTriggerDataPoint();
                     ActionDataPoint _createActionDataPoint = MncModelFactory.eINSTANCE.createActionDataPoint();
                     final Procedure1<ActionDataPoint> _function_2 = new Procedure1<ActionDataPoint>() {
                       @Override
@@ -170,6 +170,16 @@ public class MncProvider {
         }
       }
     }
+  }
+  
+  private Action ensureInitAction() {
+    Action existing = IterableExtensions.<Action>head(this.initExecutableActions);
+    if (existing != null) {
+      return existing;
+    }
+    Action created = MncModelFactory.eINSTANCE.createAction();
+    this.initExecutableActions.add(created);
+    return created;
   }
   
   public boolean getCapabilityCommandResponseBlock(final Command com, final Activity activity) {
