@@ -16,6 +16,7 @@ public final class GlspWorkspaceUriMapper {
 
     private static final Set<String> URI_KEYS =
             Set.of("sourceuri", "fileuri");
+    private static final String MODEL_ROOT_ID_KEY = "id";
 
     private final KideGlspWorkspace workspace;
 
@@ -62,9 +63,16 @@ public final class GlspWorkspaceUriMapper {
         }
         if (element.isJsonPrimitive()
                 && element.getAsJsonPrimitive().isString()
-                && key != null
-                && URI_KEYS.contains(key.toLowerCase(Locale.ROOT))) {
-            return new JsonPrimitive(rewriteUri(element.getAsString(), inbound));
+                && key != null) {
+            String raw = element.getAsString();
+            String normalizedKey = key.toLowerCase(Locale.ROOT);
+            if (URI_KEYS.contains(normalizedKey)) {
+                return new JsonPrimitive(rewriteUri(raw, inbound));
+            }
+            if (MODEL_ROOT_ID_KEY.equals(normalizedKey)
+                    && (!inbound || raw.startsWith(ROOT_URI))) {
+                return new JsonPrimitive(rewriteUri(raw, inbound));
+            }
         }
         return element.deepCopy();
     }
