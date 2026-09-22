@@ -47,6 +47,8 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
 
     def test_cloud_build_uses_dedicated_dockerfile(self):
         cloudbuild = self.read("deploy/gcp/cloudbuild.yaml")
+        root_cloudbuild = self.read("cloudbuild.yaml")
+        self.assertEqual(root_cloudbuild, cloudbuild)
         self.assertIn("deploy/gcp/Dockerfile", cloudbuild)
         self.assertIn("${_IMAGE}", cloudbuild)
         self.assertIn("logging: CLOUD_LOGGING_ONLY", cloudbuild)
@@ -55,6 +57,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         for relative in (
             "deploy/gcp/entrypoint.sh",
             "deploy/gcp/deploy-cloud-run.sh",
+            "deploy/gcp/repair-cloud-build-trigger.sh",
         ):
             result = subprocess.run(
                 ["bash", "-n", str(ROOT / relative)],
@@ -67,6 +70,13 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
                 0,
                 msg=f"{relative} failed bash -n: {result.stderr}",
             )
+
+    def test_trigger_repair_forces_cloudbuild_config(self):
+        repair = self.read("deploy/gcp/repair-cloud-build-trigger.sh")
+        self.assertIn("--build-config", repair)
+        self.assertIn('BUILD_CONFIG="${BUILD_CONFIG:-cloudbuild.yaml}"', repair)
+        self.assertIn("--update-substitutions", repair)
+        self.assertIn("gcloud builds triggers update github", repair)
 
 
 if __name__ == "__main__":
