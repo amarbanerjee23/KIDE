@@ -246,3 +246,55 @@ button, .import-button {
 .knowledge-property { display: grid; grid-template-columns: minmax(80px, .8fr) minmax(0, 1.2fr); gap: 8px; font-size: 11px; }
 .knowledge-property span { color: #64748b; overflow-wrap: anywhere; }
 .knowledge-property strong { overflow-wrap: anywhere; }
+
+
+.synthesis-panel {
+  margin: 14px 0 22px;
+  padding: 12px;
+  border: 1px solid #d8dee9;
+  border-radius: 8px;
+  background: white;
+  display: grid;
+  gap: 9px;
+}
+.synthesis-result {
+  display: grid;
+  gap: 7px;
+  padding-top: 9px;
+  border-top: 1px solid #e2e8f0;
+}
+.synthesis-selection {
+  display: grid;
+  grid-template-columns: minmax(80px, .75fr) minmax(0, 1.25fr);
+  gap: 8px;
+  font-size: 11px;
+}
+.synthesis-selection strong,
+.synthesis-diagnostic span {
+  overflow-wrap: anywhere;
+}
+.synthesis-diagnostic {
+  display: grid;
+  gap: 3px;
+  padding: 7px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 11px;
+}
+.diagnostic-error {
+  border-color: #e9a7a7;
+}
+.diagnostic-warning {
+  border-color: #e4c77a;
+}
+.generated-mnc {
+  max-height: 260px;
+  overflow: auto;
+  margin: 7px 0 0;
+  padding: 9px;
+  border-radius: 6px;
+  background: #f7f9fc;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
