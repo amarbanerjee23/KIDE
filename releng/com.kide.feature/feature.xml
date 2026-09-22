@@ -40,6 +40,10 @@
    <plugin id="com.kide.synthesis" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.kide.knowledge.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
 
+   <plugin id="com.kide.krl.dsl" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.kide.krl.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.kide.krl.dsl.ui" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+
    <plugin id="com.capability" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.capability.dsl" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.capability.dsl.ide" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
