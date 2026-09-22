@@ -81,6 +81,8 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     context,
                     authorization,
                     new ServerModelRepository(),
+                    new ProjectCollaborationService(
+                            project, new ServerModelRepository(), Clock.systemUTC()),
                     audit,
                     Clock.systemUTC());
             server.start();
