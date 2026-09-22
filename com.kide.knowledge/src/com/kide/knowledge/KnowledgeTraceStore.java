@@ -25,6 +25,7 @@ public final class KnowledgeTraceStore {
         this.clock = Objects.requireNonNull(clock, "clock");
         try {
             Path project = projectRoot.toAbsolutePath().normalize();
+            rejectSymlink(project, "project root");
             Files.createDirectories(project);
             Path kide = project.resolve(".kide");
             Path knowledge = kide.resolve("knowledge");
