@@ -16,7 +16,7 @@ import org.junit.Test;
 
 import activityDiagramModel.ActivityDiagram;
 import activityDiagramModel.ActivityDiagramModelFactory;
-import com.smr.activity.activity2mnc.handlers.GenerateMnCDesignFromActivityDiagram;
+import com.kide.synthesis.activity2mnc.GenerateMnCDesignFromActivityDiagram;
 import mncModel.Alarm;
 import mncModel.Command;
 import mncModel.ControlNode;
