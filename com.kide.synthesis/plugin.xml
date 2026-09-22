@@ -6,4 +6,9 @@
       <run class="com.kide.synthesis.SynthesisSelfCheckApplication"/>
     </application>
   </extension>
+  <extension id="reconfigurationBenchmark" point="org.eclipse.core.runtime.applications">
+    <application cardinality="singleton-global" thread="main" visible="false">
+      <run class="com.kide.synthesis.ReconfigurationBenchmarkApplication"/>
+    </application>
+  </extension>
 </plugin>
