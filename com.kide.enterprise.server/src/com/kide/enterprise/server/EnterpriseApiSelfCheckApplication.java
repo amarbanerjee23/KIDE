@@ -335,6 +335,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 throw new AssertionError("audit evidence missing or invalid");
             }
 
+            System.out.println("KIDE PR26 ENTERPRISE API SELF-CHECK OK");
             System.out.println("KIDE PR33 ENTERPRISE API COLLABORATION SELF-CHECK OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
