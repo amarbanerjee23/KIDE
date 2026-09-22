@@ -17,9 +17,13 @@ final class KnowledgeCodec {
     }
 
     static String sha256(KnowledgeDataset dataset) {
+        return sha256Text(canonicalJson(dataset));
+    }
+
+    static String sha256Text(String value) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")
-                    .digest(canonicalJson(dataset).getBytes(StandardCharsets.UTF_8));
+                    .digest(value.getBytes(StandardCharsets.UTF_8));
             return java.util.HexFormat.of().formatHex(digest);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 unavailable", e);
