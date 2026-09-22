@@ -158,6 +158,169 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 throw new AssertionError("model round-trip mismatch");
             }
 
+            String projectApi = "/api/v1/projects/" + context.project().id().value();
+            String presenceUri = projectApi + "/collaboration/sessions";
+
+            JsonObject joinEngineer = new JsonObject();
+            joinEngineer.addProperty("modelId", "selfcheck.dml");
+            HttpResponse<String> engineerPresence = send(
+                    client, base.resolve(presenceUri), "POST",
+                    "Bearer pr26-self-check", joinEngineer.toString());
+            requireStatus(engineerPresence, 200);
+            String engineerSessionId = json(engineerPresence).get("id").getAsString();
+
+            HttpResponse<String> reviewerPresence = send(
+                    client, base.resolve(presenceUri), "POST",
+                    "Bearer pr33-reviewer", "{}");
+            requireStatus(reviewerPresence, 200);
+
+            HttpResponse<String> presenceList = send(
+                    client, base.resolve(presenceUri), "GET",
+                    "Bearer pr26-self-check", null);
+            requireStatus(presenceList, 200);
+            if (json(presenceList).getAsJsonArray("items").size() != 2) {
+                throw new AssertionError("two-user presence was not visible");
+            }
+
+            HttpResponse<String> departed = send(
+                    client, base.resolve(presenceUri + "/" + engineerSessionId),
+                    "DELETE", "Bearer pr26-self-check", null);
+            requireStatus(departed, 200);
+
+            JsonObject rejoin = new JsonObject();
+            rejoin.addProperty("sessionId", engineerSessionId);
+            rejoin.addProperty("modelId", "selfcheck.dml");
+            HttpResponse<String> rejoined = send(
+                    client, base.resolve(presenceUri), "POST",
+                    "Bearer pr26-self-check", rejoin.toString());
+            requireStatus(rejoined, 200);
+            if (!engineerSessionId.equals(json(rejoined).get("id").getAsString())) {
+                throw new AssertionError("presence session did not rejoin deterministically");
+            }
+
+            JsonObject concurrentWrite = new JsonObject();
+            concurrentWrite.addProperty("content", "domain Concurrent");
+            concurrentWrite.addProperty("expectedRevision", etag);
+            concurrentWrite.addProperty("mediaType", "text/x-kide-dml");
+            HttpResponse<String> concurrent = send(
+                    client, base.resolve(modelUri), "PUT",
+                    "Bearer pr26-self-check", concurrentWrite.toString());
+            requireStatus(concurrent, 200);
+            String concurrentEtag = json(concurrent).get("etag").getAsString();
+
+            String reviewsUri = projectApi + "/reviews/changesets";
+            JsonObject proposal = new JsonObject();
+            proposal.addProperty("modelId", "selfcheck.dml");
+            proposal.addProperty("baseEtag", etag);
+            proposal.addProperty("proposedContent", "domain Proposed");
+            proposal.addProperty("mediaType", "text/x-kide-dml");
+            HttpResponse<String> proposed = send(
+                    client, base.resolve(reviewsUri), "POST",
+                    "Bearer pr26-self-check", proposal.toString());
+            requireStatus(proposed, 200);
+            JsonObject proposedJson = json(proposed);
+            if (!"CONFLICT".equals(proposedJson.get("status").getAsString())) {
+                throw new AssertionError("stale proposal was not classified as conflict");
+            }
+            String changeSetId = proposedJson.get("id").getAsString();
+
+            HttpResponse<String> reviewerCannotAuthor = send(
+                    client, base.resolve(reviewsUri), "POST",
+                    "Bearer pr33-reviewer", proposal.toString());
+            requireStatus(reviewerCannotAuthor, 403);
+
+            HttpResponse<String> review = send(
+                    client, base.resolve(reviewsUri + "/" + changeSetId), "GET",
+                    "Bearer pr33-reviewer", null);
+            requireStatus(review, 200);
+            JsonObject reviewJson = json(review);
+            if (!reviewJson.get("conflicted").getAsBoolean()
+                    || !"domain Concurrent".equals(
+                            reviewJson.getAsJsonObject("currentModel")
+                                    .get("content").getAsString())) {
+                throw new AssertionError("conflict review did not expose the current server revision");
+            }
+
+            JsonObject rebased = new JsonObject();
+            rebased.addProperty("expectedCurrentEtag", concurrentEtag);
+            rebased.addProperty("proposedContent", "domain Merged");
+            HttpResponse<String> rebasedResponse = send(
+                    client, base.resolve(reviewsUri + "/" + changeSetId), "PUT",
+                    "Bearer pr26-self-check", rebased.toString());
+            requireStatus(rebasedResponse, 200);
+            if (!"DRAFT".equals(json(rebasedResponse).get("status").getAsString())) {
+                throw new AssertionError("explicit conflict rebase did not return to draft");
+            }
+
+            HttpResponse<String> ready = send(
+                    client, base.resolve(reviewsUri + "/" + changeSetId + "/ready"), "POST",
+                    "Bearer pr26-self-check", null);
+            requireStatus(ready, 200);
+            if (!"READY".equals(json(ready).get("status").getAsString())) {
+                throw new AssertionError("change set was not review-ready");
+            }
+
+            JsonObject commentBody = new JsonObject();
+            commentBody.addProperty("body", "Conflict resolution checked.");
+            commentBody.addProperty("anchor", "selfcheck.dml:1");
+            HttpResponse<String> comment = send(
+                    client, base.resolve(reviewsUri + "/" + changeSetId + "/comments"), "POST",
+                    "Bearer pr33-reviewer", commentBody.toString());
+            requireStatus(comment, 200);
+            String commentId = json(comment).get("id").getAsString();
+
+            HttpResponse<String> blockedApproval = send(
+                    client, base.resolve(reviewsUri + "/" + changeSetId + "/approve"), "POST",
+                    "Bearer pr33-reviewer", null);
+            requireStatus(blockedApproval, 400);
+
+            JsonObject resolve = new JsonObject();
+            resolve.addProperty("resolved", true);
+            HttpResponse<String> resolved = send(
+                    client,
+                    base.resolve(reviewsUri + "/" + changeSetId + "/comments/" + commentId),
+                    "PUT", "Bearer pr33-reviewer", resolve.toString());
+            requireStatus(resolved, 200);
+
+            HttpResponse<String> authorCannotApprove = send(
+                    client, base.resolve(reviewsUri + "/" + changeSetId + "/approve"), "POST",
+                    "Bearer pr26-self-check", null);
+            requireStatus(authorCannotApprove, 403);
+
+            HttpResponse<String> approved = send(
+                    client, base.resolve(reviewsUri + "/" + changeSetId + "/approve"), "POST",
+                    "Bearer pr33-reviewer", null);
+            requireStatus(approved, 200);
+            if (!"APPROVED".equals(json(approved).get("status").getAsString())) {
+                throw new AssertionError("independent review approval failed");
+            }
+
+            HttpResponse<String> applied = send(
+                    client, base.resolve(reviewsUri + "/" + changeSetId + "/apply"), "POST",
+                    "Bearer pr26-self-check", null);
+            requireStatus(applied, 200);
+            if (!"APPLIED".equals(
+                    json(applied).getAsJsonObject("changeSet").get("status").getAsString())) {
+                throw new AssertionError("approved change set was not applied");
+            }
+
+            HttpResponse<String> mergedRead = send(
+                    client, base.resolve(modelUri), "GET",
+                    "Bearer pr26-self-check", null);
+            requireStatus(mergedRead, 200);
+            if (!"domain Merged".equals(json(mergedRead).get("content").getAsString())) {
+                throw new AssertionError("review apply did not update the canonical model");
+            }
+
+            ProjectCollaborationService reloadedCollaboration =
+                    new ProjectCollaborationService(project, modelRepository, Clock.systemUTC());
+            if (reloadedCollaboration.listChangeSets().stream().noneMatch(
+                    set -> set.id().equals(changeSetId)
+                            && set.status()
+                                    == ProjectCollaborationService.ChangeSetStatus.APPLIED)) {
+                throw new AssertionError("review state did not survive service rejoin");
+            }
+
             HttpResponse<String> future = send(
                     client,
                     base.resolve("/api/v1/projects/" + context.project().id().value()
@@ -168,14 +331,14 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 throw new AssertionError("future service did not fail with typed unavailable state");
             }
 
-            if (!audit.verify() || audit.snapshot().size() < 3) {
+            if (!audit.verify() || audit.snapshot().size() < 12) {
                 throw new AssertionError("audit evidence missing or invalid");
             }
 
-            System.out.println("KIDE PR26 ENTERPRISE API SELF-CHECK OK");
+            System.out.println("KIDE PR33 ENTERPRISE API COLLABORATION SELF-CHECK OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
-            System.err.println("KIDE PR26 enterprise API self-check failed: "
+            System.err.println("KIDE PR33 enterprise API self-check failed: "
                     + failure.getClass().getSimpleName());
             return Integer.valueOf(2);
         } finally {
