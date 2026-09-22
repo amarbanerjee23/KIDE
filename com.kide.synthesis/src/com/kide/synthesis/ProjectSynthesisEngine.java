@@ -55,9 +55,30 @@ public final class ProjectSynthesisEngine {
             Path projectRoot,
             String activityModelPath,
             KnowledgeDataset knowledge,
-            SynthesisPlan previousPlan,
+            List<HistoricalResourceBinding> previousBindings,
             ReconfigurationCause cause) {
         PreparedProject prepared = prepare(projectRoot, activityModelPath);
+        List<CapabilityRequirement> requirements =
+                new ActivityRequirementExtractor().extract(prepared.diagram());
+        java.util.Map<String, CapabilityRequirement> byId = new java.util.HashMap<>();
+        requirements.forEach(requirement -> byId.put(requirement.id(), requirement));
+
+        List<ResourceSelection> previousSelections =
+                (previousBindings == null ? List.<HistoricalResourceBinding>of() : previousBindings)
+                        .stream()
+                        .sorted(Comparator.comparing(HistoricalResourceBinding::requirementId))
+                        .map(binding -> {
+                            CapabilityRequirement current = byId.get(binding.requirementId());
+                            return new ResourceSelection(
+                                    binding.requirementId(),
+                                    current == null ? binding.requirementId() : current.activityName(),
+                                    current == null ? "historical-removed" : current.capabilityName(),
+                                    binding.resourceId(),
+                                    "previous binding evidence");
+                        })
+                        .toList();
+        SynthesisPlan previousPlan =
+                new SynthesisPlan(true, previousSelections, List.of());
         return new DeterministicReconfigurationService().reconfigure(
                 prepared.diagram(), knowledge, previousPlan, cause);
     }
