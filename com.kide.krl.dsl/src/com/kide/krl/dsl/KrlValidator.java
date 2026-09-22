@@ -7,6 +7,7 @@ import java.util.Set;
 import org.eclipse.xtext.validation.Check;
 
 import com.kide.krl.dsl.krl.KnowledgeModel;
+import com.kide.krl.dsl.krl.KrlPackage;
 import com.kide.krl.dsl.krl.Namespace;
 import com.kide.krl.dsl.krl.Target;
 import com.kide.krl.dsl.krl.Template;
@@ -39,21 +40,24 @@ public final class KrlValidator extends AbstractKrlValidator {
         String uri = namespace.getUri();
         if (uri == null || !(uri.startsWith("http://") || uri.startsWith("https://")
                 || uri.startsWith("urn:"))) {
-            error("Namespace URI must use http, https or urn.", null, INVALID_NAMESPACE);
+            error("Namespace URI must use http, https or urn.",
+                    KrlPackage.Literals.NAMESPACE__URI, INVALID_NAMESPACE);
         }
     }
 
     @Check
     public void safeOutputPath(Target target) {
-        String raw = unquote(target.getOutputPath());
+        String raw = target.getOutputPath() == null ? "" : target.getOutputPath();
         if (raw.isBlank() || raw.indexOf('\\') >= 0) {
-            error("Target output must be a non-empty portable relative path.", null, UNSAFE_OUTPUT);
+            error("Target output must be a non-empty portable relative path.",
+                    KrlPackage.Literals.TARGET__OUTPUT_PATH, UNSAFE_OUTPUT);
             return;
         }
         Path value = Path.of(raw);
         if (value.isAbsolute() || value.normalize().startsWith("..")
                 || raw.startsWith(".kide/") || raw.equals(".kide")) {
-            error("Target output escapes the generation sandbox.", null, UNSAFE_OUTPUT);
+            error("Target output escapes the generation sandbox.",
+                    KrlPackage.Literals.TARGET__OUTPUT_PATH, UNSAFE_OUTPUT);
         }
     }
 
@@ -61,16 +65,9 @@ public final class KrlValidator extends AbstractKrlValidator {
     public void matchingTemplateTarget(Target target) {
         Template template = target.getTemplate();
         if (template != null && template.getTargetType() != target.getTargetType()) {
-            error("Target type must match its template target type.", null,
-                    TEMPLATE_TARGET_MISMATCH);
+            error("Target type must match its template target type.",
+                    KrlPackage.Literals.TARGET__TARGET_TYPE, TEMPLATE_TARGET_MISMATCH);
         }
     }
 
-    private static String unquote(String value) {
-        if (value == null) return "";
-        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
-            return value.substring(1, value.length() - 1);
-        }
-        return value;
-    }
 }
