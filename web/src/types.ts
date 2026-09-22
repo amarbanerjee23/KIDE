@@ -56,3 +56,72 @@ export interface WorkspaceEntry {
   revision?: string;
   dirty: boolean;
 }
+
+
+export interface PresenceSession {
+  id: string;
+  principalId: string;
+  displayName: string;
+  modelId?: string;
+  joinedAt: string;
+  lastSeenAt: string;
+}
+
+export interface PresenceList {
+  items: PresenceSession[];
+}
+
+export type ReviewChangeSetStatus =
+  | "DRAFT"
+  | "CONFLICT"
+  | "READY"
+  | "APPROVED"
+  | "APPLIED";
+
+export interface ReviewChangeSet {
+  id: string;
+  modelId: string;
+  baseEtag: string;
+  baseRevision: string;
+  proposedContent?: string;
+  mediaType: string;
+  authorId: string;
+  authorName: string;
+  status: ReviewChangeSetStatus;
+  createdAt: string;
+  updatedAt: string;
+  reviewRevision: number;
+  approvedBy?: string;
+  approvedAt?: string;
+  appliedEtag?: string;
+  appliedRevision?: string;
+}
+
+export interface ReviewChangeSetList {
+  items: ReviewChangeSet[];
+}
+
+export interface ReviewComment {
+  id: string;
+  changeSetId: string;
+  authorId: string;
+  authorName: string;
+  body: string;
+  anchor?: string;
+  createdAt: string;
+  resolved: boolean;
+  resolvedBy?: string;
+  resolvedAt?: string;
+}
+
+export interface ReviewBundle {
+  changeSet: ReviewChangeSet & { proposedContent: string };
+  currentModel: Model;
+  comments: ReviewComment[];
+  conflicted: boolean;
+}
+
+export interface ReviewApplyResult {
+  changeSet: ReviewChangeSet & { proposedContent: string };
+  model: Model;
+}
