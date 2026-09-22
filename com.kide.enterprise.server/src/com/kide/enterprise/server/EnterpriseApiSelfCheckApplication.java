@@ -154,7 +154,27 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                                     new KnowledgeTriple(
                                             "urn:kide:device:camera",
                                             SynthesisVocabulary.PRIORITY,
-                                            KnowledgeTerm.literal("10")))),
+                                            KnowledgeTerm.literal("10")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera-b",
+                                            KnowledgeVocabulary.RDF_TYPE,
+                                            KnowledgeTerm.iri(KnowledgeVocabulary.DEVICE)),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera-b",
+                                            KnowledgeVocabulary.LABEL,
+                                            KnowledgeTerm.literal("Camera B")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera-b",
+                                            SynthesisVocabulary.PROVIDES_CAPABILITY,
+                                            KnowledgeTerm.iri("urn:kide:capability:Observe")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera-b",
+                                            SynthesisVocabulary.PROVIDES_INTERFACE,
+                                            KnowledgeTerm.iri("urn:kide:interface:Device")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera-b",
+                                            SynthesisVocabulary.PRIORITY,
+                                            KnowledgeTerm.literal("5")))),
                     KnowledgeRepository.MISSING_ETAG);
             ProjectKnowledgeService knowledge = new ProjectKnowledgeService(
                     knowledgeRepository,
@@ -521,6 +541,119 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 throw new AssertionError("synthesis mutated the canonical Activity source");
             }
 
+            String currentKnowledgeEtag =
+                    knowledgeRepository.snapshot().orElseThrow().etag();
+            knowledgeRepository.replace(
+                    new KnowledgeDataset(
+                            KnowledgeDataset.CURRENT_SCHEMA,
+                            "api-selfcheck-reconfigured",
+                            "PROJECT",
+                            context.project().id().value(),
+                            new KnowledgeProvenance(
+                                    "urn:kide:selfcheck:reconfiguration",
+                                    "KIDE",
+                                    principal.id(),
+                                    Clock.systemUTC().millis(),
+                                    "INTERNAL"),
+                            List.of(
+                                    new KnowledgeTriple(
+                                            "urn:kide:capability:Observe",
+                                            KnowledgeVocabulary.RDF_TYPE,
+                                            KnowledgeTerm.iri(KnowledgeVocabulary.CAPABILITY)),
+                                    new KnowledgeTriple(
+                                            "urn:kide:capability:Observe",
+                                            KnowledgeVocabulary.LABEL,
+                                            KnowledgeTerm.literal("Observe")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            KnowledgeVocabulary.RDF_TYPE,
+                                            KnowledgeTerm.iri(KnowledgeVocabulary.DEVICE)),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            SynthesisVocabulary.PROVIDES_CAPABILITY,
+                                            KnowledgeTerm.iri("urn:kide:capability:Observe")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            SynthesisVocabulary.PROVIDES_INTERFACE,
+                                            KnowledgeTerm.iri("urn:kide:interface:Device")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            SynthesisVocabulary.AVAILABLE,
+                                            KnowledgeTerm.literal("false")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            SynthesisVocabulary.PRIORITY,
+                                            KnowledgeTerm.literal("10")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera-b",
+                                            KnowledgeVocabulary.RDF_TYPE,
+                                            KnowledgeTerm.iri(KnowledgeVocabulary.DEVICE)),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera-b",
+                                            SynthesisVocabulary.PROVIDES_CAPABILITY,
+                                            KnowledgeTerm.iri("urn:kide:capability:Observe")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera-b",
+                                            SynthesisVocabulary.PROVIDES_INTERFACE,
+                                            KnowledgeTerm.iri("urn:kide:interface:Device")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera-b",
+                                            SynthesisVocabulary.PRIORITY,
+                                            KnowledgeTerm.literal("5")))),
+                    currentKnowledgeEtag);
+
+            JsonObject reconfigurationRequest = new JsonObject();
+            reconfigurationRequest.addProperty("modelId", "workflow.activity");
+            reconfigurationRequest.addProperty("modelRevision", synthesisEtag);
+            reconfigurationRequest.addProperty("cause", "RESOURCE_LOSS");
+            com.google.gson.JsonArray previousBindings = new com.google.gson.JsonArray();
+            for (var selection : synthesisJson.getAsJsonArray("selections")) {
+                JsonObject value = selection.getAsJsonObject();
+                JsonObject binding = new JsonObject();
+                binding.addProperty("requirementId", value.get("requirementId").getAsString());
+                binding.addProperty("activityName", value.get("activityName").getAsString());
+                binding.addProperty("capabilityName", value.get("capabilityName").getAsString());
+                binding.addProperty("resourceId", value.get("resourceId").getAsString());
+                previousBindings.add(binding);
+            }
+            reconfigurationRequest.add("previousBindings", previousBindings);
+
+            HttpResponse<String> reconfigured = send(
+                    client, base.resolve(projectApi + "/reconfiguration"), "POST",
+                    "Bearer pr26-self-check", reconfigurationRequest.toString());
+            requireStatus(reconfigured, 200);
+            JsonObject reconfiguredJson = json(reconfigured);
+            if (!"RECONFIGURED".equals(reconfiguredJson.get("status").getAsString())
+                    || reconfiguredJson.getAsJsonArray("selections").size() != 1
+                    || !"urn:kide:device:camera-b".equals(
+                            reconfiguredJson.getAsJsonArray("selections").get(0)
+                                    .getAsJsonObject().get("resourceId").getAsString())
+                    || !"MIGRATE".equals(
+                            reconfiguredJson.getAsJsonArray("migrations").get(0)
+                                    .getAsJsonObject().get("policy").getAsString())) {
+                throw new AssertionError("device-loss reconfiguration did not migrate to standby");
+            }
+            String reconfigurationFingerprint =
+                    reconfiguredJson.get("fingerprint").getAsString();
+
+            HttpResponse<String> repeatedReconfiguration = send(
+                    client, base.resolve(projectApi + "/reconfiguration"), "POST",
+                    "Bearer pr26-self-check", reconfigurationRequest.toString());
+            requireStatus(repeatedReconfiguration, 200);
+            if (!reconfigurationFingerprint.equals(
+                    json(repeatedReconfiguration).get("fingerprint").getAsString())) {
+                throw new AssertionError("reconfiguration result was not deterministic");
+            }
+            if (!synthesisSourceBefore.equals(
+                    Files.readString(project.resolve("workflow.activity")))) {
+                throw new AssertionError("reconfiguration mutated the canonical Activity source");
+            }
+
+            HttpResponse<String> reviewerCannotReconfigure = send(
+                    client, base.resolve(projectApi + "/reconfiguration"), "POST",
+                    "Bearer pr33-reviewer", reconfigurationRequest.toString());
+            requireStatus(reviewerCannotReconfigure, 403);
+
             JsonObject staleSynthesis = new JsonObject();
             staleSynthesis.addProperty("modelId", "workflow.activity");
             staleSynthesis.addProperty("modelRevision", "0".repeat(64));
@@ -534,7 +667,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     "Bearer pr33-reviewer", synthesisRequest.toString());
             requireStatus(reviewerCannotSynthesize, 403);
 
-            if (!audit.verify() || audit.snapshot().size() < 16) {
+            if (!audit.verify() || audit.snapshot().size() < 18) {
                 throw new AssertionError("audit evidence missing or invalid");
             }
 
@@ -542,12 +675,13 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             System.out.println("KIDE PR33 ENTERPRISE API COLLABORATION SELF-CHECK OK");
             System.out.println("KIDE PR35 ENTERPRISE KNOWLEDGE CATALOGUE SELF-CHECK OK");
             System.out.println("KIDE PR36 ENTERPRISE SYNTHESIS SELF-CHECK OK");
+            System.out.println("KIDE PR37 ENTERPRISE RECONFIGURATION SELF-CHECK OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
             String detail = failure.getMessage();
             if (detail == null || detail.isBlank()) detail = "no detail";
             detail = detail.replace('\r', ' ').replace('\n', ' ');
-            System.err.println("KIDE PR36 enterprise API self-check failed: "
+            System.err.println("KIDE PR37 enterprise API self-check failed: "
                     + failure.getClass().getSimpleName() + " - " + detail);
             return Integer.valueOf(2);
         } finally {
