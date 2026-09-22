@@ -1,4 +1,4 @@
-package com.smr.activity.activity2mnc.methods;
+package com.kide.synthesis.activity2mnc;
 
 import CapabilityDescription.Capability;
 import CapabilityDescription.ControlCapabilities;
@@ -7,7 +7,7 @@ import activityDiagramModel.ActivityDiagram;
 import activityDiagramModel.ConditionalActivity;
 import activityDiagramModel.Outcome;
 import com.google.common.collect.Iterables;
-import com.smr.activity.activity2mnc.handlers.GenerateMnCDesignFromActivityDiagram;
+import com.kide.synthesis.activity2mnc.GenerateMnCDesignFromActivityDiagram;
 import dataModelPackage.AbstractType;
 import dataModelPackage.ArrayType;
 import dataModelPackage.DataModelFactory;
@@ -15,6 +15,7 @@ import dataModelPackage.Parameter;
 import dataModelPackage.SimpleType;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import mncModel.AbstractInterfaceItems;
@@ -55,21 +56,21 @@ import org.eclipse.xtext.xbase.lib.Procedures.Procedure1;
 
 @SuppressWarnings("all")
 public class MncProvider {
-  private final HashSet<InterfaceDescription> usedInterfaces = new HashSet<InterfaceDescription>();
+  private final HashSet<InterfaceDescription> usedInterfaces = new LinkedHashSet<InterfaceDescription>();
   
-  private final HashSet<Action> initExecutableActions = new HashSet<Action>();
+  private final HashSet<Action> initExecutableActions = new LinkedHashSet<Action>();
   
-  private final HashSet<ControlNode> childNodes = new HashSet<ControlNode>();
+  private final HashSet<ControlNode> childNodes = new LinkedHashSet<ControlNode>();
   
-  private final HashSet<OperatingState> operatingState = new HashSet<OperatingState>();
+  private final HashSet<OperatingState> operatingState = new LinkedHashSet<OperatingState>();
   
-  private final HashSet<CommandResponseBlock> commandResponseBlocks = new HashSet<CommandResponseBlock>();
+  private final HashSet<CommandResponseBlock> commandResponseBlocks = new LinkedHashSet<CommandResponseBlock>();
   
-  private final HashSet<EventBlock> eventBlocks = new HashSet<EventBlock>();
+  private final HashSet<EventBlock> eventBlocks = new LinkedHashSet<EventBlock>();
   
-  private final HashSet<DataPointBlock> dataPointBlocks = new HashSet<DataPointBlock>();
+  private final HashSet<DataPointBlock> dataPointBlocks = new LinkedHashSet<DataPointBlock>();
   
-  private final HashSet<AlarmBlock> alarmBlocks = new HashSet<AlarmBlock>();
+  private final HashSet<AlarmBlock> alarmBlocks = new LinkedHashSet<AlarmBlock>();
   
   public HashMap<String, Set> getParseInfo() {
     HashMap<String, Set> parseInfor = new HashMap<String, Set>();
@@ -103,7 +104,7 @@ public class MncProvider {
                 }
                 if ((item instanceof Event)) {
                   if ((!actionItemExists)) {
-                    EList<ActionEvent> _publishEvent = IterableExtensions.<Action>head(this.initExecutableActions).getPublishEvent();
+                    EList<ActionEvent> _publishEvent = this.ensureInitAction().getPublishEvent();
                     ActionEvent _createActionEvent = MncModelFactory.eINSTANCE.createActionEvent();
                     final Procedure1<ActionEvent> _function = new Procedure1<ActionEvent>() {
                       @Override
@@ -120,7 +121,7 @@ public class MncProvider {
                 }
                 if ((item instanceof Alarm)) {
                   if ((!actionItemExists)) {
-                    EList<ActionAlarm> _raiseAlarm = IterableExtensions.<Action>head(this.initExecutableActions).getRaiseAlarm();
+                    EList<ActionAlarm> _raiseAlarm = this.ensureInitAction().getRaiseAlarm();
                     ActionAlarm _createActionAlarm = MncModelFactory.eINSTANCE.createActionAlarm();
                     final Procedure1<ActionAlarm> _function_1 = new Procedure1<ActionAlarm>() {
                       @Override
@@ -137,7 +138,7 @@ public class MncProvider {
                 }
                 if ((item instanceof DataPoint)) {
                   if ((!actionItemExists)) {
-                    EList<ActionDataPoint> _triggerDataPoint = IterableExtensions.<Action>head(this.initExecutableActions).getTriggerDataPoint();
+                    EList<ActionDataPoint> _triggerDataPoint = this.ensureInitAction().getTriggerDataPoint();
                     ActionDataPoint _createActionDataPoint = MncModelFactory.eINSTANCE.createActionDataPoint();
                     final Procedure1<ActionDataPoint> _function_2 = new Procedure1<ActionDataPoint>() {
                       @Override
@@ -169,6 +170,16 @@ public class MncProvider {
         }
       }
     }
+  }
+  
+  private Action ensureInitAction() {
+    Action existing = IterableExtensions.<Action>head(this.initExecutableActions);
+    if (existing != null) {
+      return existing;
+    }
+    Action created = MncModelFactory.eINSTANCE.createAction();
+    this.initExecutableActions.add(created);
+    return created;
   }
   
   public boolean getCapabilityCommandResponseBlock(final Command com, final Activity activity) {

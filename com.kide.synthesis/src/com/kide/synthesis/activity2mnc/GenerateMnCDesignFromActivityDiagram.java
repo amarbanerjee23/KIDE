@@ -1,14 +1,15 @@
-package com.smr.activity.activity2mnc.handlers;
+package com.kide.synthesis.activity2mnc;
 
 import activityDiagramModel.ActivityDiagram;
 import com.google.common.collect.Iterables;
-import com.smr.activity.activity2mnc.handlers.ECREGeneratorUtils;
-import com.smr.activity.activity2mnc.methods.MncProvider;
+import com.kide.synthesis.activity2mnc.ECREGeneratorUtils;
+import com.kide.synthesis.activity2mnc.MncProvider;
 import dataModelPackage.DataModelFactory;
 import dataModelPackage.Parameter;
 import dataModelPackage.SimpleType;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import mncModel.Action;
@@ -46,7 +47,7 @@ import org.eclipse.xtext.xbase.lib.Procedures.Procedure1;
 public class GenerateMnCDesignFromActivityDiagram {
   private BasicEList<Model> mncModels = new BasicEList<Model>();
   
-  public static BasicEList<AlarmBlock> defaultAlarmBlocks = new BasicEList<AlarmBlock>();
+  private BasicEList<AlarmBlock> defaultAlarmBlocks = new BasicEList<AlarmBlock>();
   
   public List<Model> getMnCModels() {
     return this.mncModels;
@@ -90,7 +91,7 @@ public class GenerateMnCDesignFromActivityDiagram {
     final BasicEList<ResponseBlock> defaultResponseBlocks = this.getDefaultResponsesForController();
     final OperatingStateUtility defaultOperatingStates = this.getDefaultOperatingStatesForController(activityDiagram.getResults());
     final BasicEList<EventBlock> defaultEventBlocks = this.getDefaultEventsForController();
-    GenerateMnCDesignFromActivityDiagram.defaultAlarmBlocks = this.getDefaultAlarmsForController(activityDiagram.getResults());
+    this.defaultAlarmBlocks = this.getDefaultAlarmsForController(activityDiagram.getResults());
     MncProvider mncProvider = new MncProvider();
     mncProvider.parseActivityDiagram(activityDiagram);
     HashMap<String, Set> parseInfo = mncProvider.getParseInfo();
@@ -151,7 +152,7 @@ public class GenerateMnCDesignFromActivityDiagram {
         return Boolean.valueOf(_alarms.add(_alarm));
       }
     };
-    IterableExtensions.<AlarmBlock>forall(GenerateMnCDesignFromActivityDiagram.defaultAlarmBlocks, _function_5);
+    IterableExtensions.<AlarmBlock>forall(this.defaultAlarmBlocks, _function_5);
     final Function1<CommandResponseBlock, Boolean> _function_6 = new Function1<CommandResponseBlock, Boolean>() {
       @Override
       public Boolean apply(final CommandResponseBlock crb) {
@@ -276,9 +277,9 @@ public class GenerateMnCDesignFromActivityDiagram {
       Iterable<DataPointBlock> _filterNull_7 = IterableExtensions.<DataPointBlock>filterNull(dataPointBlocksToBeImplemented);
       Iterables.<DataPointBlock>addAll(_dataPointBlocks, _filterNull_7);
     }
-    if ((GenerateMnCDesignFromActivityDiagram.defaultAlarmBlocks != null)) {
+    if ((this.defaultAlarmBlocks != null)) {
       EList<AlarmBlock> _alarmBlocks = controlNodeDescription.getAlarmBlocks();
-      Iterables.<AlarmBlock>addAll(_alarmBlocks, GenerateMnCDesignFromActivityDiagram.defaultAlarmBlocks);
+      Iterables.<AlarmBlock>addAll(_alarmBlocks, this.defaultAlarmBlocks);
     }
     if ((alarmBlocksToBeImplemented != null)) {
       EList<AlarmBlock> _alarmBlocks_1 = controlNodeDescription.getAlarmBlocks();
@@ -329,7 +330,7 @@ public class GenerateMnCDesignFromActivityDiagram {
   }
   
   public HashSet<ActionOperation> toBeExecutedOperations(final Set<Action> list) {
-    HashSet<ActionOperation> tobeExecutedOps = new HashSet<ActionOperation>();
+    HashSet<ActionOperation> tobeExecutedOps = new LinkedHashSet<ActionOperation>();
     for (final Action action : list) {
       EList<ActionOperation> _executeOperation = action.getExecuteOperation();
       boolean _tripleNotEquals = (_executeOperation != null);
@@ -342,7 +343,7 @@ public class GenerateMnCDesignFromActivityDiagram {
   }
   
   public HashSet<Command> toBeFiredCommands(final Set<Action> list) {
-    HashSet<Command> tobeFiredCommands = new HashSet<Command>();
+    HashSet<Command> tobeFiredCommands = new LinkedHashSet<Command>();
     for (final Action action : list) {
       EList<ActionCommand> _fireCommand = action.getFireCommand();
       boolean _tripleNotEquals = (_fireCommand != null);
@@ -362,7 +363,7 @@ public class GenerateMnCDesignFromActivityDiagram {
   }
   
   public HashSet<Response> getToBeReceivedResponse(final Set<Action> actions) {
-    HashSet<Response> tobeReceivedResponses = new HashSet<Response>();
+    HashSet<Response> tobeReceivedResponses = new LinkedHashSet<Response>();
     for (final Action action : actions) {
       EList<ActionCommand> _fireCommand = action.getFireCommand();
       boolean _tripleNotEquals = (_fireCommand != null);
@@ -383,7 +384,7 @@ public class GenerateMnCDesignFromActivityDiagram {
   }
   
   public HashSet<DataPoint> toBeSubscribedDataPoints(final Set<Action> list) {
-    HashSet<DataPoint> subscribedDataPoints = new HashSet<DataPoint>();
+    HashSet<DataPoint> subscribedDataPoints = new LinkedHashSet<DataPoint>();
     for (final Action action : list) {
       EList<ActionDataPoint> _triggerDataPoint = action.getTriggerDataPoint();
       boolean _tripleNotEquals = (_triggerDataPoint != null);
@@ -399,7 +400,7 @@ public class GenerateMnCDesignFromActivityDiagram {
   }
   
   public HashSet<Alarm> toBeSubscribedAlarms(final Set<Action> list) {
-    HashSet<Alarm> subscribedAlarms = new HashSet<Alarm>();
+    HashSet<Alarm> subscribedAlarms = new LinkedHashSet<Alarm>();
     for (final Action action : list) {
       EList<ActionAlarm> _raiseAlarm = action.getRaiseAlarm();
       boolean _tripleNotEquals = (_raiseAlarm != null);
@@ -415,7 +416,7 @@ public class GenerateMnCDesignFromActivityDiagram {
   }
   
   public HashSet<Event> toBeSubscribedEvents(final Set<Action> list) {
-    HashSet<Event> subscribedEvents = new HashSet<Event>();
+    HashSet<Event> subscribedEvents = new LinkedHashSet<Event>();
     for (final Action action : list) {
       EList<ActionEvent> _publishEvent = action.getPublishEvent();
       boolean _tripleNotEquals = (_publishEvent != null);

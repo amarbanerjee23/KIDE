@@ -368,6 +368,43 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
     }
   );
 
+  await page.route(
+    "**/api/v1/projects/P04-001/synthesis",
+    async (route) => {
+      const request = route.request();
+      const body = request.postDataJSON();
+      expect(body).toEqual({
+        modelId: "flow.activity",
+        modelRevision: "etag-4"
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          resultId: "syn-browser",
+          serviceVersion: "1",
+          status: "SUCCESS",
+          modelId: "flow.activity",
+          modelVersion: "4",
+          revision: "etag-4",
+          knowledgeRevision: 2,
+          knowledgeEtag: "b".repeat(64),
+          fingerprint: "c".repeat(64),
+          selections: [{
+            requirementId: "activity:ObserveStep",
+            activityName: "ObserveStep",
+            capabilityName: "Observe",
+            resourceId: "urn:kide:device:camera",
+            rationale: "priority=10"
+          }],
+          diagnostics: [],
+          rationale: ["ObserveStep -> urn:kide:device:camera"],
+          generatedMnc: "Model GoldenWorkflow\nInterfaceDescription GoldenWorkflow {}\n"
+        })
+      });
+    }
+  );
+
   await page.goto("/");
   await page.getByLabel("Access token").fill("browser-test-token");
   await page.getByRole("button", { name: "Connect API" }).click();
@@ -375,10 +412,18 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
 
   await page.getByLabel("Model ID").fill("flow.activity");
   await page.getByRole("button", { name: "Load model" }).click();
+
+  await page.getByRole("button", { name: "Synthesize" }).click();
+  await expect(page.getByLabel("Synthesis result")).toContainText("SUCCESS");
+  await expect(page.getByLabel("Synthesis result")).toContainText(
+    "urn:kide:device:camera"
+  );
+  await expect(page.getByText("Generated MNC")).toBeVisible();
+
   await page.getByRole("button", { name: "Diagram" }).click();
 
   await expect(page.getByTestId("glsp-editor")).toBeVisible();
-  await expect(page.getByText("ObserveStep", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("glsp-editor").getByText("ObserveStep", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Activity", exact: true })).toBeVisible();
   await expect(page.getByText("Connected · Eclipse GLSP graphical model")).toBeVisible();
 

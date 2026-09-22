@@ -34,7 +34,7 @@ import com.kide.enterprise.identity.AuthenticationException;
 import com.kide.enterprise.identity.AuthenticationMethod;
 import com.kide.enterprise.identity.PrincipalIdentity;
 import com.kide.enterprise.identity.PrincipalKind;
-import com.kide.enterprise.modelrepo.ServerModelRepository;
+import com.kide.enterprise.modelrepo.FileModelRepository;
 import com.kide.knowledge.EmbeddedKnowledgeRepository;
 import com.kide.knowledge.KnowledgeDataset;
 import com.kide.knowledge.KnowledgeProvenance;
@@ -43,6 +43,7 @@ import com.kide.knowledge.KnowledgeTerm;
 import com.kide.knowledge.KnowledgeTraceStore;
 import com.kide.knowledge.KnowledgeTriple;
 import com.kide.knowledge.KnowledgeVocabulary;
+import com.kide.synthesis.SynthesisVocabulary;
 
 public final class EnterpriseApiSelfCheckApplication implements IApplication {
     private volatile EnterpriseApiServer server;
@@ -85,8 +86,30 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
                     new AuthorizationEnforcer(new AuthorizationService(policies)));
 
+            Files.writeString(project.resolve("device.mncspec"),
+                    "Model Golden\n"
+                    + "InterfaceDescription Device {\n"
+                    + "  commands { Start[] }\n"
+                    + "  events { Publish Ready[] }\n"
+                    + "}\n");
+            Files.writeString(project.resolve("observe.cap"),
+                    "Capability Observe compatible component interface Device {\n"
+                    + "  providesControlCapabilities {\n"
+                    + "    fireable commands : Start\n"
+                    + "    receivable events : Ready\n"
+                    + "  }\n"
+                    + "}\n");
+            Files.writeString(project.resolve("workflow.activity"),
+                    "ActivityDiagram GoldenWorkflow\n"
+                    + "has activities {\n"
+                    + "  Activity ObserveStep {\n"
+                    + "    requireCapability : Observe { Start, Ready }\n"
+                    + "    nextActivity : ObserveStep\n"
+                    + "  }\n"
+                    + "}\n");
+
             InMemoryAuditLedger audit = new InMemoryAuditLedger(Clock.systemUTC());
-            ServerModelRepository modelRepository = new ServerModelRepository();
+            FileModelRepository modelRepository = new FileModelRepository(project);
             ProjectCollaborationService collaboration =
                     new ProjectCollaborationService(project, modelRepository, Clock.systemUTC());
             EmbeddedKnowledgeRepository knowledgeRepository =
@@ -111,12 +134,34 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                                     new KnowledgeTriple(
                                             "urn:kide:capability:Observe",
                                             KnowledgeVocabulary.LABEL,
-                                            KnowledgeTerm.literal("Observe")))),
+                                            KnowledgeTerm.literal("Observe")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            KnowledgeVocabulary.RDF_TYPE,
+                                            KnowledgeTerm.iri(KnowledgeVocabulary.DEVICE)),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            KnowledgeVocabulary.LABEL,
+                                            KnowledgeTerm.literal("Camera")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            SynthesisVocabulary.PROVIDES_CAPABILITY,
+                                            KnowledgeTerm.iri("urn:kide:capability:Observe")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            SynthesisVocabulary.PROVIDES_INTERFACE,
+                                            KnowledgeTerm.iri("urn:kide:interface:Device")),
+                                    new KnowledgeTriple(
+                                            "urn:kide:device:camera",
+                                            SynthesisVocabulary.PRIORITY,
+                                            KnowledgeTerm.literal("10")))),
                     KnowledgeRepository.MISSING_ETAG);
             ProjectKnowledgeService knowledge = new ProjectKnowledgeService(
                     knowledgeRepository,
                     new KnowledgeTraceStore(project, Clock.systemUTC()),
                     modelRepository);
+            ProjectSynthesisService synthesis = new ProjectSynthesisService(
+                    project, modelRepository, knowledgeRepository);
             server = new EnterpriseApiServer(
                     new EnterpriseApiConfig(
                             "127.0.0.1", 0, 1024 * 1024, Duration.ofSeconds(20),
@@ -135,6 +180,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     modelRepository,
                     collaboration,
                     knowledge,
+                    synthesis,
                     audit,
                     Clock.systemUTC());
             server.start();
@@ -439,17 +485,70 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 throw new AssertionError("trace identity changed during rebind");
             }
 
-            if (!audit.verify() || audit.snapshot().size() < 14) {
+            HttpResponse<String> synthesisSource = send(
+                    client, base.resolve(projectApi + "/models/workflow.activity"),
+                    "GET", "Bearer pr26-self-check", null);
+            requireStatus(synthesisSource, 200);
+            String synthesisEtag = json(synthesisSource).get("etag").getAsString();
+            String synthesisSourceBefore = Files.readString(project.resolve("workflow.activity"));
+
+            JsonObject synthesisRequest = new JsonObject();
+            synthesisRequest.addProperty("modelId", "workflow.activity");
+            synthesisRequest.addProperty("modelRevision", synthesisEtag);
+            HttpResponse<String> synthesisResponse = send(
+                    client, base.resolve(projectApi + "/synthesis"), "POST",
+                    "Bearer pr26-self-check", synthesisRequest.toString());
+            requireStatus(synthesisResponse, 200);
+            JsonObject synthesisJson = json(synthesisResponse);
+            if (!"SUCCESS".equals(synthesisJson.get("status").getAsString())
+                    || synthesisJson.getAsJsonArray("selections").size() != 1
+                    || !synthesisJson.get("generatedMnc").getAsString()
+                            .contains("Model GoldenWorkflow")) {
+                throw new AssertionError("deterministic synthesis API did not produce MNC output");
+            }
+            String synthesisFingerprint = synthesisJson.get("fingerprint").getAsString();
+
+            HttpResponse<String> repeatedSynthesis = send(
+                    client, base.resolve(projectApi + "/synthesis"), "POST",
+                    "Bearer pr26-self-check", synthesisRequest.toString());
+            requireStatus(repeatedSynthesis, 200);
+            if (!synthesisFingerprint.equals(
+                    json(repeatedSynthesis).get("fingerprint").getAsString())) {
+                throw new AssertionError("synthesis result was not deterministic");
+            }
+            if (!synthesisSourceBefore.equals(
+                    Files.readString(project.resolve("workflow.activity")))) {
+                throw new AssertionError("synthesis mutated the canonical Activity source");
+            }
+
+            JsonObject staleSynthesis = new JsonObject();
+            staleSynthesis.addProperty("modelId", "workflow.activity");
+            staleSynthesis.addProperty("modelRevision", "0".repeat(64));
+            HttpResponse<String> staleSynthesisResponse = send(
+                    client, base.resolve(projectApi + "/synthesis"), "POST",
+                    "Bearer pr26-self-check", staleSynthesis.toString());
+            requireStatus(staleSynthesisResponse, 409);
+
+            HttpResponse<String> reviewerCannotSynthesize = send(
+                    client, base.resolve(projectApi + "/synthesis"), "POST",
+                    "Bearer pr33-reviewer", synthesisRequest.toString());
+            requireStatus(reviewerCannotSynthesize, 403);
+
+            if (!audit.verify() || audit.snapshot().size() < 16) {
                 throw new AssertionError("audit evidence missing or invalid");
             }
 
             System.out.println("KIDE PR26 ENTERPRISE API SELF-CHECK OK");
             System.out.println("KIDE PR33 ENTERPRISE API COLLABORATION SELF-CHECK OK");
             System.out.println("KIDE PR35 ENTERPRISE KNOWLEDGE CATALOGUE SELF-CHECK OK");
+            System.out.println("KIDE PR36 ENTERPRISE SYNTHESIS SELF-CHECK OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
-            System.err.println("KIDE PR35 enterprise API self-check failed: "
-                    + failure.getClass().getSimpleName());
+            String detail = failure.getMessage();
+            if (detail == null || detail.isBlank()) detail = "no detail";
+            detail = detail.replace('\r', ' ').replace('\n', ' ');
+            System.err.println("KIDE PR36 enterprise API self-check failed: "
+                    + failure.getClass().getSimpleName() + " - " + detail);
             return Integer.valueOf(2);
         } finally {
             if (server != null) {

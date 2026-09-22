@@ -102,10 +102,14 @@ public final class EnterpriseApiApplication implements IApplication {
             ProjectCollaborationService collaboration =
                     new ProjectCollaborationService(
                             projectRoot, modelRepository, Clock.systemUTC());
+            EmbeddedKnowledgeRepository knowledgeRepository =
+                    new EmbeddedKnowledgeRepository(projectRoot);
             ProjectKnowledgeService knowledge = new ProjectKnowledgeService(
-                    new EmbeddedKnowledgeRepository(projectRoot),
+                    knowledgeRepository,
                     new KnowledgeTraceStore(projectRoot, Clock.systemUTC()),
                     modelRepository);
+            ProjectSynthesisService synthesis = new ProjectSynthesisService(
+                    projectRoot, modelRepository, knowledgeRepository);
             server = new EnterpriseApiServer(
                     config,
                     authenticator::authenticateAuthorizationHeader,
@@ -114,6 +118,7 @@ public final class EnterpriseApiApplication implements IApplication {
                     modelRepository,
                     collaboration,
                     knowledge,
+                    synthesis,
                     new InMemoryAuditLedger(Clock.systemUTC()),
                     Clock.systemUTC());
             server.start();

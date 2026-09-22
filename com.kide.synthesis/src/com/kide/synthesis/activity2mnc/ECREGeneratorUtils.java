@@ -1,4 +1,4 @@
-package com.smr.activity.activity2mnc.handlers;
+package com.kide.synthesis.activity2mnc;
 
 import dataModelPackage.AbstractObjectValue;
 import dataModelPackage.AbstractType;

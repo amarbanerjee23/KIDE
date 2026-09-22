@@ -60,22 +60,22 @@ The grouping follows shared code boundaries rather than feature labels:
 
 ## Current execution point
 
-PR22 through PR34 are merged and green on `main`. PR34 replaced the obsolete NeoEMF
-release dependency with the versioned knowledge-fabric core and its permanent packaged
-qualification.
+PR22 through PR35 are merged and green on `main`. PR35 delivered deterministic knowledge
+catalogue retrieval, desktop/web catalogue UX and stable revision-aware knowledge-to-model
+trace links.
 
-**PR35 is the active implementation PR.** It adds deterministic ETag-keyed catalogue
-retrieval, typed capability/device/workflow/interface/behavior/interaction views, separate
-desktop and browser catalogue experiences, revision-safe stable knowledge-to-model trace
-links, impact/broken-link diagnostics and least-privilege knowledge read/write boundaries.
-Trace provenance and knowledge/model revision evidence are derived on the server; browser
-code does not duplicate RDF or ontology semantics.
+**PR36 is the active implementation PR.** It consolidates deterministic capability/resource
+matching, the existing Activity-to-MNC supervisory-controller transformation and cross-model
+design contracts behind one headless synthesis service. Resource ranking is transparent
+and deterministic from declared knowledge properties; failed matching or contract
+validation emits diagnostics without generating or mutating engineering models.
 
-The PR35 acceptance gate requires deterministic query/cache behavior, cache invalidation on
-knowledge revision, stable trace IDs across explicit model rebinds, trace-store optimistic
-concurrency, broken/stale-link diagnostics, viewer/reviewer read-only behavior, engineer
-trace-write behavior, desktop catalogue packaging, browser unit/E2E qualification, packaged
-knowledge + enterprise API self-checks and every existing desktop/LSP/GLSP/enterprise gate.
+The PR36 acceptance gate requires deterministic repeatability, explicit ambiguity and
+no-solution evidence, resolved Capability semantics before controller generation,
+resource-conflict/contract diagnostics, preservation of the historical Activity-to-MNC
+golden snapshot, strict source-revision checks, read-only synthesis, browser thin-client
+qualification, packaged headless synthesis and every existing desktop/knowledge/API/GLSP/LSP
+release gate.
 
-PR36 follows after PR35 and consolidates deterministic capability matching,
-Activity-to-MNC synthesis, controller composition and cross-model design contracts.
+PR37 follows after PR36 and will implement deterministic dynamic reconfiguration together
+with thesis-scale 10/50/100/500/1000-device qualification and performance evidence.

@@ -14,7 +14,8 @@ import type {
   ReviewBundle,
   ReviewChangeSet,
   ReviewChangeSetList,
-  ReviewComment
+  ReviewComment,
+  SynthesisResult
 } from "./types";
 
 export class ApiClientError extends Error {
@@ -236,6 +237,21 @@ export class KideApiClient {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resolved })
+      }
+    );
+  }
+
+  synthesize(
+    projectId: string,
+    modelId: string,
+    modelRevision: string
+  ): Promise<SynthesisResult> {
+    return this.request<SynthesisResult>(
+      `/projects/${encodeURIComponent(projectId)}/synthesis`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelId, modelRevision })
       }
     );
   }

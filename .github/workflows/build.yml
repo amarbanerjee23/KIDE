@@ -125,6 +125,11 @@ jobs:
           python3 scripts/smoke_knowledge_fabric.py \
             --products releng/com.kide.repository/target/products
 
+      - name: Smoke-test packaged deterministic synthesis
+        run: |
+          python3 scripts/smoke_synthesis.py \
+            --products releng/com.kide.languageserver.repository/target/products
+
       - name: Smoke-test headless multi-DSL language server
         run: |
           python3 scripts/smoke_language_server.py \

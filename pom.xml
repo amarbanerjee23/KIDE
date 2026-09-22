@@ -86,6 +86,8 @@
     <module>com.kide.knowledge</module>
     <module>com.kide.knowledge.ui</module>
     <module>com.kide.knowledge.tests</module>
+    <module>com.kide.synthesis</module>
+    <module>com.kide.synthesis.tests</module>
     <module>releng</module>
   </modules>
 
