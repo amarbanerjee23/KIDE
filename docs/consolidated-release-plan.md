@@ -60,19 +60,10 @@ The grouping follows shared code boundaries rather than feature labels:
 
 ## Current execution point
 
-PR22 through PR30 are merged and green on main. PR30 established the separate
-React/TypeScript browser workspace without changing Eclipse desktop semantics.
+PR22 through PR32 are merged and green on main. PR32 established EMF-backed GLSP graphical editing for the separate browser client while retaining Sirius desktop over the same Xtext/EMF semantic core.
 
-**PR31 is the active implementation PR.** It connects Monaco to the existing
-authenticated Xtext WebSocket gateway, virtualizes browser project URIs without
-exposing server filesystem paths, generates TextMate lexical assets from the
-production Xtext grammars, and maps the PR13 language-service contract into Monaco.
+**PR33 is the active implementation PR.** It adds project collaboration without introducing unsafe semantic merging: expiring presence sessions, persisted review change sets/comments, exact-revision conflict review, independent reviewer approval and explicit revision-safe apply. Browser autosave conflicts are captured as review change sets rather than overwritten or merged implicitly.
 
-Required server capabilities remain governed by `product/lsp-capabilities.json`.
-The browser consumes completion, hover, navigation, references, symbols,
-formatting and rename from Xtext, and conditionally consumes folding, code actions
-and semantic tokens when those capabilities are advertised. It does not fabricate
-browser-only language semantics for deferred server capabilities.
+The acceptance gate requires two-user concurrent editing, disconnect/rejoin, authorization separation between engineer and reviewer, comments, conflict rebase, approval/apply, audit evidence, browser qualification and every existing desktop/LSP/GLSP/enterprise packaged check.
 
-PR32 follows only after PR31 passes browser protocol/E2E qualification together
-with every existing packaged desktop, enterprise, gateway and LSP parity gate.
+PR34 follows only after PR33 is green and will introduce the knowledge fabric core.
