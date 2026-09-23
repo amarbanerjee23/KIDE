@@ -1,4 +1,17 @@
 steps:
+  - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+    id: Verify Artifact Registry repository
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        if ! gcloud artifacts repositories describe "${_AR_REPOSITORY}" \
+            --project "${PROJECT_ID}" \
+            --location "${_REGION}" >/dev/null 2>&1; then
+          echo "Artifact Registry repository '${_AR_REPOSITORY}' does not exist in ${_REGION}." >&2
+          echo "Run: PROJECT_ID=${PROJECT_ID} REGION=${_REGION} AR_REPOSITORY=${_AR_REPOSITORY} bash deploy/gcp/bootstrap-cloud-build.sh" >&2
+          exit 2
+        fi
   - name: gcr.io/cloud-builders/docker
     args:
       - build
