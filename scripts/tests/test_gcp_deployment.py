@@ -61,6 +61,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             "deploy/gcp/entrypoint.sh",
             "deploy/gcp/deploy-cloud-run.sh",
             "deploy/gcp/repair-cloud-build-trigger.sh",
+            "deploy/gcp/bootstrap-cloud-build.sh",
         ):
             result = subprocess.run(
                 ["bash", "-n", str(ROOT / relative)],
@@ -83,6 +84,18 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("_AR_REPOSITORY=", repair)
         self.assertNotIn("_IMAGE=", repair)
         self.assertIn("gcloud builds triggers update github", repair)
+
+    def test_artifact_registry_bootstrap_contract(self):
+        bootstrap = self.read("deploy/gcp/bootstrap-cloud-build.sh")
+        cloudbuild = self.read("cloudbuild.yaml")
+        repair = self.read("deploy/gcp/repair-cloud-build-trigger.sh")
+
+        self.assertIn("gcloud artifacts repositories create", bootstrap)
+        self.assertIn("roles/artifactregistry.writer", bootstrap)
+        self.assertIn("roles/logging.logWriter", bootstrap)
+        self.assertIn("Verify Artifact Registry repository", cloudbuild)
+        self.assertIn("bootstrap-cloud-build.sh", cloudbuild)
+        self.assertIn("bootstrap-cloud-build.sh", repair)
 
 
 if __name__ == "__main__":

@@ -152,3 +152,33 @@ ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/kide:${BUILD_ID}
 The trigger only needs optional `_REGION` and `_AR_REPOSITORY` overrides.
 The normal deployment script may still override the internal image value when
 it needs a deterministic Git-derived image tag.
+
+
+## Artifact Registry bootstrap for triggers
+
+Artifact Registry standard repositories are not created by the first Docker
+push. Before running a Cloud Build trigger, provision the repository once and
+grant the trigger's build service account write access:
+
+```bash
+export PROJECT_ID="kide-eclipse"
+export REGION="asia-south1"
+export AR_REPOSITORY="kide"
+export TRIGGER_NAME="YOUR_CLOUD_BUILD_TRIGGER_NAME"
+export TRIGGER_REGION="global"   # use the trigger's actual region when regional
+
+bash deploy/gcp/bootstrap-cloud-build.sh
+```
+
+The bootstrap uses the operator's current `gcloud` credentials to create the
+repository and grants the resolved trigger service account only
+`roles/artifactregistry.writer` plus `roles/logging.logWriter`. Repository
+creation remains an operator action instead of permanently granting the build
+service account Artifact Registry Administrator.
+
+`repair-cloud-build-trigger.sh` now runs this bootstrap automatically before
+updating the trigger.
+
+The Cloud Build configuration also has a first-step repository preflight. If
+the repository is absent, the build now fails immediately with the bootstrap
+command instead of completing the expensive Docker build and failing at push.
