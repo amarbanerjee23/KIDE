@@ -18,9 +18,9 @@ for name in "${required[@]}"; do
   fi
 done
 
-TRIGGER_REGION="${TRIGGER_REGION:-global}"
-TRIGGER_KIND="${TRIGGER_KIND:-github}"
 REGION="${REGION:-asia-south1}"
+TRIGGER_REGION="${TRIGGER_REGION:-${REGION}}"
+TRIGGER_KIND="${TRIGGER_KIND:-github}"
 AR_REPOSITORY="${AR_REPOSITORY:-kide}"
 BUILD_CONFIG="${BUILD_CONFIG:-deploy/gcp/cloudbuild-deploy.yaml}"
 BUILD_SERVICE_ACCOUNT="${BUILD_SERVICE_ACCOUNT:-}"
