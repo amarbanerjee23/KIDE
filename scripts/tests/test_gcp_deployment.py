@@ -115,14 +115,14 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
     def test_artifact_registry_bootstrap_contract(self):
         bootstrap = self.read("deploy/gcp/bootstrap-cloud-build.sh")
         cloudbuild = self.read("cloudbuild.yaml")
-        repair = self.read("deploy/gcp/repair-cloud-build-trigger.sh")
+        configure = self.read("deploy/gcp/configure-auto-deploy.sh")
 
         self.assertIn("gcloud artifacts repositories create", bootstrap)
         self.assertIn("roles/artifactregistry.writer", bootstrap)
         self.assertIn("roles/logging.logWriter", bootstrap)
-        self.assertIn("Verify Artifact Registry repository", cloudbuild)
-        self.assertIn("bootstrap-cloud-build.sh", cloudbuild)
-        self.assertIn("bootstrap-cloud-build.sh", repair)
+        self.assertIn("Verify deployment prerequisites", cloudbuild)
+        self.assertIn("configure-auto-deploy.sh", cloudbuild)
+        self.assertIn("bootstrap-cloud-build.sh", configure)
 
 
 if __name__ == "__main__":
