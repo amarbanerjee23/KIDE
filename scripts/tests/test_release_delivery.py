@@ -43,6 +43,7 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
     def test_repository_publication_builds_and_pushes_outputs(self):
         workflow = self.read(".github/workflows/publish-build-artifacts.yml")
 
+        self.assertIn("contents: write", workflow)
         self.assertIn("packages: write", workflow)
         self.assertIn("Build Eclipse desktop products", workflow)
         self.assertIn("prepare_desktop_release.py", workflow)
@@ -57,6 +58,13 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
         self.assertIn("SOURCE_SHA:", workflow)
         self.assertIn("org.opencontainers.image.source", workflow)
         self.assertIn("kide-cloud-run-image.txt", workflow)
+        self.assertIn("Publish runnable desktop bundles to GitHub Releases", workflow)
+        self.assertIn("gh release create", workflow)
+        self.assertIn("gh release upload", workflow)
+        self.assertIn("--prerelease", workflow)
+        self.assertIn("pr45-build-", workflow)
+        self.assertIn("dist/KIDE-*.zip", workflow)
+        self.assertIn("dist/KIDE-*.tar.gz", workflow)
 
     def test_web_deployer_is_independent_from_desktop_product(self):
         dockerfile = self.read("deploy/web/Dockerfile")
