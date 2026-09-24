@@ -21,14 +21,38 @@ Useful commands:
 ```bash
 ./deploy-kide-gcp.sh doctor
 ./deploy-kide-gcp.sh status
+./deploy-kide-gcp.sh bootstrap
 ./deploy-kide-gcp.sh deploy
 ./deploy-kide-gcp.sh configure-trigger
 ```
 
-`deploy` refreshes a dedicated cached checkout of `main` and invokes the
-two-service deployment pipeline. It requires the non-secret OIDC deployment
-variables documented below. The client secret value itself remains in Secret
-Manager.
+For the **first deployment**, use:
+
+```bash
+./deploy-kide-gcp.sh bootstrap
+```
+
+The bootstrap flow:
+
+1. detects the active GCP project and region;
+2. discovers the existing Cloud Build trigger automatically;
+3. prompts only for missing OIDC configuration;
+4. reads the OIDC client secret with hidden terminal input;
+5. creates the Secret Manager secret or adds a new version without placing the
+   secret value in the command line or shell history;
+6. provisions the Artifact Registry, persistent bucket, runtime service
+   accounts and IAM through the existing bootstrap;
+7. switches the selected trigger to
+   `deploy/gcp/cloudbuild-deploy.yaml`;
+8. runs the trigger against `main`;
+9. waits for both `kide` and `kide-web` to exist and pass health checks;
+10. prints the final public web and backend URLs.
+
+After the first deployment, `deploy` refreshes a dedicated cached checkout of
+`main` and invokes the same two-service deployment pipeline directly.
+
+For non-interactive automation, provide the documented OIDC environment
+variables and point `KIDE_OIDC_CLIENT_SECRET_FILE` at a protected local file.
 
 KIDE uses two Cloud Run services when deployment is enabled:
 
@@ -99,6 +123,39 @@ The corrected model is explicit:
 
 This prevents repository changes from silently converting a build trigger into
 an infrastructure deployment trigger.
+
+## First-deployment bootstrap
+
+The first-deployment wizard is implemented in
+`deploy/gcp/bootstrap-first-deployment.sh` and is normally invoked through the
+top-level command:
+
+```bash
+./deploy-kide-gcp.sh bootstrap
+```
+
+If more than one Cloud Build trigger exists, the wizard displays the matching
+trigger candidates and asks which one to use. In non-interactive mode, set
+`TRIGGER_NAME` and `TRIGGER_REGION` explicitly.
+
+The client secret is handled separately from the non-secret OIDC configuration.
+Interactive input uses a hidden prompt and a temporary file created with
+restrictive permissions. The temporary file is removed on success or failure.
+
+The bootstrap runs the configured trigger with:
+
+```text
+branch: main
+deployment config: deploy/gcp/cloudbuild-deploy.yaml
+```
+
+and completes only after:
+
+```text
+KIDE FIRST DEPLOYMENT COMPLETE
+Web: https://...run.app
+Backend: https://...run.app
+```
 
 ## One-time automatic deployment configuration
 
