@@ -144,7 +144,7 @@ jobs:
 
 
       - name: Publish runnable desktop bundles to GitHub Releases
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
