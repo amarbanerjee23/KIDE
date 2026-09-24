@@ -1,0 +1,248 @@
+name: Publish KIDE Build Artifacts
+
+on:
+  push:
+    branches:
+      - main
+      - release/pr44-platform-launchers-web-deployer
+    paths:
+      - 'com.kide.*/**'
+      - 'releng/**'
+      - 'deploy/**'
+      - 'web/**'
+      - 'scripts/prepare_desktop_release.py'
+      - 'scripts/tests/**'
+      - 'pom.xml'
+      - '.github/workflows/publish-build-artifacts.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  desktop:
+    name: Build runnable desktop bundles
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Resolve publication metadata
+        id: meta
+        shell: bash
+        run: |
+          echo "short_sha=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+          echo "version=build-${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+
+      - name: Run repository governance tests
+        run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+
+      - name: Build Eclipse desktop products
+        run: mvn -B -ntp clean verify
+
+      - name: Stage runnable platform bundles
+        run: |
+          rm -rf dist
+          python3 scripts/prepare_desktop_release.py \
+            --products releng/com.kide.repository/target/products \
+            --output dist \
+            --version "${{ steps.meta.outputs.version }}"
+
+      - name: Verify published desktop entry points
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.meta.outputs.version }}"
+
+          python3 - <<'PY'
+          import json
+          import os
+          import tarfile
+          import zipfile
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          dist = Path("dist")
+          manifest = json.loads((dist / "release-manifest.json").read_text())
+          expected = {
+              "windows-x86_64": "KIDE.exe",
+              "linux-x86_64": "KIDE.sh",
+              "macos-x86_64": "KIDE.command",
+              "macos-aarch64": "KIDE.command",
+          }
+
+          seen = set()
+          for artifact in manifest["artifacts"]:
+              platform = artifact["platform"]
+              seen.add(platform)
+              entry = artifact["entryPoint"]
+              assert entry.endswith(expected[platform]), (platform, entry)
+              archive = dist / artifact["file"]
+              if archive.suffix == ".zip":
+                  with zipfile.ZipFile(archive) as zf:
+                      assert entry in zf.namelist(), (platform, entry)
+              else:
+                  with tarfile.open(archive, "r:gz") as tf:
+                      member = tf.getmember(entry)
+                      assert member.mode & 0o111, (platform, entry, oct(member.mode))
+
+          assert seen == set(expected), seen
+          print("Qualified desktop entry points:", expected)
+          PY
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+
+      - name: Upload runnable desktop bundles to repository artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kide-desktop-${{ steps.meta.outputs.short_sha }}
+          path: |
+            dist/KIDE-*.zip
+            dist/KIDE-*.tar.gz
+            dist/release-manifest.json
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
+  cloud-run:
+    name: Build, qualify and push Cloud Run image
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Resolve image metadata
+        id: image
+        shell: bash
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner}/kide-cloud-run"
+          short_sha="${GITHUB_SHA:0:12}"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "immutable_tag=${image}:sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+            echo "moving_tag=${image}:main" >> "$GITHUB_OUTPUT"
+          else
+            echo "moving_tag=${image}:pr44-latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build Cloud Run image
+        shell: bash
+        run: |
+          docker build \
+            --file deploy/gcp/Dockerfile \
+            --build-arg KIDE_BUILD_QUALIFIER="ci${GITHUB_SHA:0:12}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --tag "${{ steps.image.outputs.immutable_tag }}" \
+            --tag "${{ steps.image.outputs.moving_tag }}" \
+            .
+
+      - name: Boot and qualify Cloud Run image
+        shell: bash
+        run: |
+          set -euo pipefail
+          container_id="$(docker run -d \
+            -p 18080:8080 \
+            -e PORT=8080 \
+            -e KIDE_OIDC_INTROSPECTION_URL=https://127.0.0.1:19999/introspect \
+            -e KIDE_OIDC_CLIENT_ID=kide-ci \
+            -e KIDE_OIDC_CLIENT_SECRET=ci-only-placeholder \
+            -e KIDE_OIDC_ISSUER=https://issuer.example.test/ \
+            -e KIDE_OIDC_AUDIENCE=kide-ci \
+            -e KIDE_PRIMARY_PRINCIPAL=ci:administrator \
+            "${{ steps.image.outputs.immutable_tag }}")"
+
+          cleanup() {
+            docker logs "$container_id" || true
+            docker rm -f "$container_id" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for _ in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:18080/healthz >/dev/null; then
+              ready=1
+              break
+            fi
+            if ! docker inspect --format='{{.State.Running}}' "$container_id" \
+                2>/dev/null | grep -qx true; then
+              echo "Cloud Run image exited before readiness" >&2
+              exit 1
+            fi
+            sleep 1
+          done
+
+          test "$ready" -eq 1
+          curl --fail --silent http://127.0.0.1:18080/ | grep -q '<div id="root"></div>'
+          docker logs "$container_id" 2>&1 | grep -q 'KIDE CLOUD RUN READY'
+
+      - name: Authenticate to GitHub Container Registry
+        shell: bash
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+        run: |
+          printf '%s' "$GHCR_TOKEN" | \
+            docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+
+      - name: Push Cloud Run image to repository registry
+        shell: bash
+        run: |
+          docker push "${{ steps.image.outputs.immutable_tag }}"
+          docker push "${{ steps.image.outputs.moving_tag }}"
+
+      - name: Record pushed image digest
+        id: digest
+        shell: bash
+        run: |
+          docker pull "${{ steps.image.outputs.immutable_tag }}" >/dev/null
+          digest="$(docker inspect \
+            --format='{{index .RepoDigests 0}}' \
+            "${{ steps.image.outputs.immutable_tag }}")"
+          mkdir -p dist
+          {
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "commit=${GITHUB_SHA}"
+            echo "image=${{ steps.image.outputs.immutable_tag }}"
+            echo "movingTag=${{ steps.image.outputs.moving_tag }}"
+            echo "digest=${digest}"
+          } | tee dist/kide-cloud-run-image.txt
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload image publication manifest
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: kide-cloud-run-${{ steps.image.outputs.short_sha }}
+          path: dist/kide-cloud-run-image.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish job summary
+        shell: bash
+        run: |
+          {
+            echo "### KIDE Cloud Run image"
+            echo
+            echo "- Immutable tag: \`${{ steps.image.outputs.immutable_tag }}\`"
+            echo "- Moving tag: \`${{ steps.image.outputs.moving_tag }}\`"
+            echo "- Digest: \`${{ steps.digest.outputs.digest }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
