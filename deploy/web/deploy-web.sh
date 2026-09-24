@@ -36,7 +36,7 @@ gcloud run deploy "${SERVICE_NAME}"   --project "${PROJECT_ID}"   --region "${RE
 WEB_URL="$(gcloud run services describe "${SERVICE_NAME}"   --project "${PROJECT_ID}"   --region "${REGION}"   --format='value(status.url)')"
 
 if gcloud run services describe "${BACKEND_SERVICE_NAME}"     --project "${PROJECT_ID}"     --region "${REGION}" >/dev/null 2>&1; then
-  gcloud run services update "${BACKEND_SERVICE_NAME}"     --project "${PROJECT_ID}"     --region "${REGION}"     --update-env-vars "^^@^^KIDE_ALLOWED_ORIGINS=${KIDE_BACKEND_ORIGIN},${WEB_URL}"     >/dev/null
+  gcloud run services update "${BACKEND_SERVICE_NAME}"     --project "${PROJECT_ID}"     --region "${REGION}"     --update-env-vars "^@^KIDE_ALLOWED_ORIGINS=${KIDE_BACKEND_ORIGIN},${WEB_URL}"     >/dev/null
   echo "Updated backend allowed origins for ${BACKEND_SERVICE_NAME}."
 else
   echo "Backend Cloud Run service '${BACKEND_SERVICE_NAME}' was not found; configure it to allow Origin: ${WEB_URL}" >&2
