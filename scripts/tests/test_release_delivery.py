@@ -59,6 +59,7 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
         self.assertIn("org.opencontainers.image.source", workflow)
         self.assertIn("kide-cloud-run-image.txt", workflow)
         self.assertIn("Publish runnable desktop bundles to GitHub Releases", workflow)
+        self.assertIn("head.repo.full_name == github.repository", workflow)
         self.assertIn("gh release create", workflow)
         self.assertIn("gh release upload", workflow)
         self.assertIn("--prerelease", workflow)
