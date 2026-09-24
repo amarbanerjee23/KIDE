@@ -1,6 +1,17 @@
 name: Publish KIDE Build Artifacts
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'com.kide.*/**'
+      - 'releng/**'
+      - 'deploy/**'
+      - 'web/**'
+      - 'scripts/prepare_desktop_release.py'
+      - 'scripts/tests/**'
+      - 'pom.xml'
+      - '.github/workflows/publish-build-artifacts.yml'
   push:
     branches:
       - main
@@ -24,6 +35,9 @@ permissions:
   contents: read
   packages: write
 
+env:
+  SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   desktop:
     name: Build runnable desktop bundles
@@ -34,6 +48,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          ref: ${{ env.SOURCE_SHA }}
 
       - name: Set up JDK 21
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
@@ -46,8 +61,8 @@ jobs:
         id: meta
         shell: bash
         run: |
-          echo "short_sha=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
-          echo "version=build-${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SOURCE_SHA:0:12}" >> "$GITHUB_OUTPUT"
+          echo "version=build-${SOURCE_SHA:0:12}" >> "$GITHUB_OUTPUT"
 
       - name: Run repository governance tests
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
@@ -121,6 +136,7 @@ jobs:
 
   cloud-run:
     name: Build, qualify and push Cloud Run image
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -128,6 +144,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          ref: ${{ env.SOURCE_SHA }}
 
       - name: Resolve image metadata
         id: image
@@ -135,12 +152,14 @@ jobs:
         run: |
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           image="ghcr.io/${owner}/kide-cloud-run"
-          short_sha="${GITHUB_SHA:0:12}"
+          short_sha="${SOURCE_SHA:0:12}"
           echo "image=${image}" >> "$GITHUB_OUTPUT"
           echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
-          echo "immutable_tag=${image}:sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "immutable_tag=${image}:sha-${SOURCE_SHA}" >> "$GITHUB_OUTPUT"
           if [[ "$GITHUB_REF_NAME" == "main" ]]; then
             echo "moving_tag=${image}:main" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "moving_tag=${image}:pr-${{ github.event.pull_request.number }}-latest" >> "$GITHUB_OUTPUT"
           else
             echo "moving_tag=${image}:pr44-latest" >> "$GITHUB_OUTPUT"
           fi
@@ -150,9 +169,9 @@ jobs:
         run: |
           docker build \
             --file deploy/gcp/Dockerfile \
-            --build-arg KIDE_BUILD_QUALIFIER="ci${GITHUB_SHA:0:12}" \
+            --build-arg KIDE_BUILD_QUALIFIER="ci${SOURCE_SHA:0:12}" \
             --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
-            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.revision=${SOURCE_SHA}" \
             --tag "${{ steps.image.outputs.immutable_tag }}" \
             --tag "${{ steps.image.outputs.moving_tag }}" \
             .
@@ -221,7 +240,7 @@ jobs:
           mkdir -p dist
           {
             echo "repository=${GITHUB_REPOSITORY}"
-            echo "commit=${GITHUB_SHA}"
+            echo "commit=${SOURCE_SHA}"
             echo "image=${{ steps.image.outputs.immutable_tag }}"
             echo "movingTag=${{ steps.image.outputs.moving_tag }}"
             echo "digest=${digest}"
