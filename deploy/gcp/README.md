@@ -1,5 +1,35 @@
 # KIDE on Google Cloud Run
 
+## Cloud Shell quick start
+
+From a fresh Google Cloud Shell session, you no longer need to know any
+repository-relative paths.
+
+After cloning the repository once:
+
+```bash
+git clone https://github.com/amarbanerjee23/KIDE.git
+cd KIDE
+./deploy-kide-gcp.sh status
+```
+
+The `status` command works even before the first deployment and reports each
+service independently as `NOT DEPLOYED`.
+
+Useful commands:
+
+```bash
+./deploy-kide-gcp.sh doctor
+./deploy-kide-gcp.sh status
+./deploy-kide-gcp.sh deploy
+./deploy-kide-gcp.sh configure-trigger
+```
+
+`deploy` refreshes a dedicated cached checkout of `main` and invokes the
+two-service deployment pipeline. It requires the non-secret OIDC deployment
+variables documented below. The client secret value itself remains in Secret
+Manager.
+
 KIDE uses two Cloud Run services when deployment is enabled:
 
 - `kide`: backend/gateway service for the enterprise API, LSP and GLSP.
