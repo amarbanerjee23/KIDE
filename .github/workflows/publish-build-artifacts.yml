@@ -15,7 +15,7 @@ on:
   push:
     branches:
       - main
-      - release/pr44-platform-launchers-web-deployer
+      - 'release/**'
     paths:
       - 'com.kide.*/**'
       - 'releng/**'
@@ -32,7 +32,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -61,8 +61,16 @@ jobs:
         id: meta
         shell: bash
         run: |
-          echo "short_sha=${SOURCE_SHA:0:12}" >> "$GITHUB_OUTPUT"
-          echo "version=build-${SOURCE_SHA:0:12}" >> "$GITHUB_OUTPUT"
+          short_sha="${SOURCE_SHA:0:12}"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "version=build-${short_sha}" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+            echo "release_tag=build-${short_sha}" >> "$GITHUB_OUTPUT"
+            echo "release_title=KIDE Continuous Build ${short_sha}" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_tag=pr45-build-${short_sha}" >> "$GITHUB_OUTPUT"
+            echo "release_title=KIDE PR45 Build ${short_sha}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Run repository governance tests
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
@@ -134,6 +142,36 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+
+      - name: Publish runnable desktop bundles to GitHub Releases
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+          RELEASE_TITLE: ${{ steps.meta.outputs.release_title }}
+        run: |
+          set -euo pipefail
+
+          assets=(
+            dist/KIDE-*.zip
+            dist/KIDE-*.tar.gz
+            dist/release-manifest.json
+            dist/SHA256SUMS.txt
+          )
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --target "$SOURCE_SHA" \
+              --title "$RELEASE_TITLE" \
+              --prerelease \
+              --notes "Automated runnable KIDE desktop build from commit \`$SOURCE_SHA\`. This is an unsigned CI/pre-release build, not the trusted production release. It contains Windows x86_64, Linux x86_64, macOS Intel, and macOS Apple Silicon bundles plus checksums and the release manifest."
+          fi
+
+          gh release view "$RELEASE_TAG" --json url,tagName,name,isPrerelease
+
   cloud-run:
     name: Build, qualify and push Cloud Run image
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -161,7 +199,7 @@ jobs:
           elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
             echo "moving_tag=${image}:pr-${{ github.event.pull_request.number }}-latest" >> "$GITHUB_OUTPUT"
           else
-            echo "moving_tag=${image}:pr44-latest" >> "$GITHUB_OUTPUT"
+            echo "moving_tag=${image}:release-latest" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build Cloud Run image
