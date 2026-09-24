@@ -235,7 +235,10 @@ def stage_release_archive(
                 current = PurePosixPath(info.filename.replace("\\", "/").lstrip("./"))
                 if current == native_path:
                     staged_info.filename = str(entrypoint)
-                dst.writestr(staged_info, src.read(info.filename))
+                if info.is_dir():
+                    dst.writestr(staged_info, b"")
+                else:
+                    dst.writestr(staged_info, src.read(info.filename))
         return str(entrypoint)
 
     wrapper_path = release_wrapper_path(platform, native_launcher)
