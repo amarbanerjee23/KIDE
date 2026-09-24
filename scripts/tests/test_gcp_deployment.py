@@ -72,6 +72,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             "deploy/gcp/bootstrap-cloud-build.sh",
             "deploy/gcp/configure-auto-deploy.sh",
             "deploy/gcp/deployment-status.sh",
+            "deploy/gcp/bootstrap-first-deployment.sh",
             "deploy-kide-gcp.sh",
         ):
             result = subprocess.run(
@@ -99,6 +100,30 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("origin/main", script)
         self.assertIn("KIDE web: NOT DEPLOYED", status)
         self.assertIn("KIDE backend: NOT DEPLOYED", status)
+
+    def test_first_deployment_bootstrap_is_secure_and_complete(self):
+        bootstrap = self.read("deploy/gcp/bootstrap-first-deployment.sh")
+        entrypoint = self.read("deploy-kide-gcp.sh")
+
+        self.assertIn("gcloud builds triggers list", bootstrap)
+        self.assertIn("gcloud builds triggers describe", bootstrap)
+        self.assertIn("gcloud builds triggers run", bootstrap)
+        self.assertIn("--branch", bootstrap)
+        self.assertIn("read -r -s -p", bootstrap)
+        self.assertIn("mktemp", bootstrap)
+        self.assertIn("--data-file=", bootstrap)
+        self.assertIn("gcloud secrets versions add", bootstrap)
+        self.assertIn("gcloud secrets create", bootstrap)
+        self.assertIn("configure-auto-deploy.sh", bootstrap)
+        self.assertIn("wait_for_live_services", bootstrap)
+        self.assertIn('"${backend_url}/healthz"', bootstrap)
+        self.assertIn('"${web_url}/healthz"', bootstrap)
+        self.assertIn("KIDE FIRST DEPLOYMENT COMPLETE", bootstrap)
+        self.assertNotIn("echo -n \"${secret_value}\"", bootstrap)
+
+        self.assertIn("bootstrap_first_deployment", entrypoint)
+        self.assertIn("bootstrap-first-deployment.sh", entrypoint)
+        self.assertIn("bootstrap) bootstrap_first_deployment", entrypoint)
 
     def test_trigger_repair_uses_full_auto_deploy_configuration(self):
         repair = self.read("deploy/gcp/repair-cloud-build-trigger.sh")
