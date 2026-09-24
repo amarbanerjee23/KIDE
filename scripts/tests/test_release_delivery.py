@@ -67,6 +67,14 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
         self.assertIn("dist/KIDE-*.zip", workflow)
         self.assertIn("dist/KIDE-*.tar.gz", workflow)
 
+    def test_gcp_backend_image_does_not_embed_browser_bundle(self):
+        dockerfile = self.read("deploy/gcp/Dockerfile")
+        nginx = self.read("deploy/gcp/nginx.conf.template")
+
+        self.assertNotIn("FROM node:", dockerfile)
+        self.assertNotIn("web/dist", dockerfile)
+        self.assertIn("return 404;", nginx)
+
     def test_web_deployer_is_independent_from_desktop_product(self):
         dockerfile = self.read("deploy/web/Dockerfile")
         cloudbuild = self.read("deploy/web/cloudbuild.yaml")
