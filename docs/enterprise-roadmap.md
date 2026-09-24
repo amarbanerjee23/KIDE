@@ -54,20 +54,20 @@ Every production candidate must eventually prove:
 | E05 | Identity and authorization | OIDC-ready identity abstraction and least-privilege authorization | PR17-PR18 |
 | E06 | Audit and engineering event model | Append-oriented actor/action/resource/outcome evidence with correlation IDs | PR19 |
 | E07 | Service/API boundary | Versioned contracts between clients and shared enterprise services | PR20-PR21, PR26-PR29 |
-| E08 | Model gateway | Governed provider/model routing, classification, quotas, redaction and retention controls | PR42 |
+| E08 | Model gateway | Governed provider/model routing, classification, quotas, redaction and retention controls | PR48 |
 | E09 | Knowledge fabric | Project/enterprise knowledge graph, semantic retrieval, lineage and source authority | PR34-PR35 |
-| E10 | AI context and provenance | Exact source/context/model/tool provenance for generated engineering changes | PR42 |
-| E11 | Policy as code | Organization/project policies enforced in clients, services and CI with explainable decisions | PR42 |
-| E12 | Agent/tool execution | Capability registry, sandbox/bounds, timeouts, cancellation and auditable tool calls | PR42 |
-| E13 | Human approvals | Risk-tiered approval gates for engineering and production-affecting actions | PR42 |
-| E14 | Git/PR lifecycle | Traceable branches, commits, reviews and evidence links | PR41 |
-| E15 | Security evidence | SAST/SCA/secrets/IaC/container inputs, SBOMs, vulnerability evidence | PR43 |
-| E16 | Sustainability evidence | Resource/carbon measurement, regression budgets and C3-ECO-aligned evidence | PR43 |
-| E17 | Workflow execution | Durable/sandboxed execution, retries, idempotency and recovery | PR40, PR42 and PR44 |
-| E18 | Observability/support | Structured diagnostics, health checks, tracing and privacy-safe support bundles | PR43 |
-| E19 | Shared-service deployment | HA/on-prem/air-gap deployment model used by desktop and web | PR44 |
-| E20 | Connector and extension SDK | Stable versioned APIs for SCM, ALM/PLM, simulation, security and organization extensions | PR41 |
-| E21 | Enterprise qualification | Upgrade/failover/load/security/offline/compatibility qualification and release acceptance | PR46 |
+| E10 | AI context and provenance | Exact source/context/model/tool provenance for generated engineering changes | PR48 |
+| E11 | Policy as code | Organization/project policies enforced in clients, services and CI with explainable decisions | PR48 |
+| E12 | Agent/tool execution | Capability registry, sandbox/bounds, timeouts, cancellation and auditable tool calls | PR48 |
+| E13 | Human approvals | Risk-tiered approval gates for engineering and production-affecting actions | PR48 |
+| E14 | Git/PR lifecycle | Traceable branches, commits, reviews and evidence links | PR47 |
+| E15 | Security evidence | SAST/SCA/secrets/IaC/container inputs, SBOMs, vulnerability evidence | PR49 |
+| E16 | Sustainability evidence | Resource/carbon measurement, regression budgets and C3-ECO-aligned evidence | PR49 |
+| E17 | Workflow execution | Durable/sandboxed execution, retries, idempotency and recovery | PR46, PR48 and PR50 |
+| E18 | Observability/support | Structured diagnostics, health checks, tracing and privacy-safe support bundles | PR49 |
+| E19 | Shared-service deployment | HA/on-prem/air-gap deployment model used by desktop and web | PR39, PR44 and PR50 |
+| E20 | Connector and extension SDK | Stable versioned APIs for SCM, ALM/PLM, simulation, security and organization extensions | PR47 |
+| E21 | Enterprise qualification | Upgrade/failover/load/security/offline/compatibility qualification and release acceptance | PR52 |
 
 ## Completed baseline: E01-E04
 
@@ -106,17 +106,10 @@ E04 established stable organization → portfolio → project → workspace cont
 
 ## Next execution point
 
-PR22 through PR28 are merged. PR28 removed the process-exit race from embedded
-WebSocket LSP sessions, but complete qualification subsequently reproduced the
-rename NPE.
+PR22 through PR43 are merged. PR39-PR43 were allocated to deployment and
+packaging hardening work, so the older future roadmap numbers are no longer reusable.
 
-**PR29 is active as a Draft stabilization PR.** Older generated setup calls can
-downgrade Xtext's global resource-service registry for transitive dependencies.
-PR29 republishes the final IDE-aware providers after all setup side effects,
-requires rename support through both local and global registries, and reuses one
-process-wide registry provider across embedded sessions to prevent repeated
-global-registration churn.
-
-PR30 starts the separate React/TypeScript web workspace only after PR29's exact
-head is fully green across desktop packaging, enterprise runtime, ordinary LSP,
-secure WebSocket, HTTP API and LSP parity qualification.
+**PR44 is the active Draft PR: platform desktop launchers and standalone web deployer.**
+After PR44, the remaining enterprise implementation IDs are PR45 through PR52 as
+defined in `consolidated-release-plan.md`; PR45 is the next feature PR and PR52 is
+the final enterprise qualification / GA release gate.
