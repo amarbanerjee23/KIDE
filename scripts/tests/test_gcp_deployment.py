@@ -72,6 +72,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             "deploy/gcp/bootstrap-cloud-build.sh",
             "deploy/gcp/configure-auto-deploy.sh",
             "deploy/gcp/deployment-status.sh",
+            "deploy-kide-gcp.sh",
         ):
             result = subprocess.run(
                 ["bash", "-n", str(ROOT / relative)],
@@ -84,6 +85,20 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
                 0,
                 msg=f"{relative} failed bash -n: {result.stderr}",
             )
+
+    def test_cloud_shell_entrypoint_supports_status_and_deploy(self):
+        script = self.read("deploy-kide-gcp.sh")
+        status = self.read("deploy/gcp/deployment-status.sh")
+
+        self.assertIn('COMMAND="${1:-status}"', script)
+        self.assertIn("KIDE web: NOT DEPLOYED", script)
+        self.assertIn("KIDE backend: NOT DEPLOYED", script)
+        self.assertIn("deploy/gcp/deploy-cloud-run.sh", script)
+        self.assertIn("configure-auto-deploy.sh", script)
+        self.assertIn("git clone", script)
+        self.assertIn("origin/main", script)
+        self.assertIn("KIDE web: NOT DEPLOYED", status)
+        self.assertIn("KIDE backend: NOT DEPLOYED", status)
 
     def test_trigger_repair_uses_full_auto_deploy_configuration(self):
         repair = self.read("deploy/gcp/repair-cloud-build-trigger.sh")
