@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+COMMAND="${1:-status}"
+PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || true)}"
+REGION="${REGION:-asia-south1}"
+KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME:-kide}"
+KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME:-kide-web}"
+KIDE_REPOSITORY="${KIDE_REPOSITORY:-https://github.com/amarbanerjee23/KIDE.git}"
+KIDE_DEPLOY_CHECKOUT="${KIDE_DEPLOY_CHECKOUT:-${HOME}/.cache/kide-deploy/KIDE}"
+
+require_gcloud() {
+  if ! command -v gcloud >/dev/null 2>&1; then
+    echo "gcloud is required. Run this from Google Cloud Shell or install the Google Cloud CLI." >&2
+    exit 2
+  fi
+  if [[ -z "${PROJECT_ID}" || "${PROJECT_ID}" == "(unset)" ]]; then
+    echo "PROJECT_ID is not set and gcloud has no active project." >&2
+    echo "Set it with: export PROJECT_ID=kide-eclipse" >&2
+    exit 2
+  fi
+}
+
+service_url() {
+  local service="$1"
+  gcloud run services describe "${service}"     --project "${PROJECT_ID}"     --region "${REGION}"     --format='value(status.url)' 2>/dev/null || true
+}
+
+show_status() {
+  require_gcloud
+  local backend_url web_url
+  backend_url="$(service_url "${KIDE_SERVICE_NAME}")"
+  web_url="$(service_url "${KIDE_WEB_SERVICE_NAME}")"
+
+  echo "Project: ${PROJECT_ID}"
+  echo "Region: ${REGION}"
+  if [[ -n "${web_url}" ]]; then
+    echo "KIDE web: ${web_url}"
+    echo "Web health: ${web_url}/healthz"
+  else
+    echo "KIDE web: NOT DEPLOYED"
+  fi
+
+  if [[ -n "${backend_url}" ]]; then
+    echo "KIDE backend: ${backend_url}"
+    echo "Backend health: ${backend_url}/healthz"
+  else
+    echo "KIDE backend: NOT DEPLOYED"
+  fi
+}
+
+ensure_checkout() {
+  if [[ -d "${KIDE_DEPLOY_CHECKOUT}/.git" ]]; then
+    git -C "${KIDE_DEPLOY_CHECKOUT}" fetch --quiet origin main
+    git -C "${KIDE_DEPLOY_CHECKOUT}" checkout --quiet main
+    git -C "${KIDE_DEPLOY_CHECKOUT}" reset --hard --quiet origin/main
+  else
+    mkdir -p "$(dirname "${KIDE_DEPLOY_CHECKOUT}")"
+    git clone --quiet --depth 1 --branch main "${KIDE_REPOSITORY}" "${KIDE_DEPLOY_CHECKOUT}"
+  fi
+}
+
+require_deploy_environment() {
+  local required=(
+    KIDE_OIDC_INTROSPECTION_URL
+    KIDE_OIDC_CLIENT_ID
+    KIDE_OIDC_ISSUER
+    KIDE_OIDC_AUDIENCE
+    KIDE_PRIMARY_PRINCIPAL
+    KIDE_OIDC_SECRET_NAME
+  )
+  local missing=()
+  local name
+  for name in "${required[@]}"; do
+    if [[ -z "${!name:-}" ]]; then
+      missing+=("${name}")
+    fi
+  done
+
+  if (( ${#missing[@]} > 0 )); then
+    echo "Deployment configuration is incomplete. Set:" >&2
+    printf '  export %s="..."
+' "${missing[@]}" >&2
+    echo >&2
+    echo "The OIDC client secret value itself stays in Secret Manager; only set KIDE_OIDC_SECRET_NAME here." >&2
+    exit 2
+  fi
+}
+
+deploy() {
+  require_gcloud
+  require_deploy_environment
+  ensure_checkout
+
+  echo "Deploying KIDE from current main using the dedicated GCP deployment pipeline..."
+  (
+    cd "${KIDE_DEPLOY_CHECKOUT}"
+    PROJECT_ID="${PROJECT_ID}"     REGION="${REGION}"     KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME}"     KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME}"     bash deploy/gcp/deploy-cloud-run.sh
+  )
+
+  echo
+  show_status
+}
+
+configure_trigger() {
+  require_gcloud
+  require_deploy_environment
+  if [[ -z "${TRIGGER_NAME:-}" ]]; then
+    echo "TRIGGER_NAME is required for configure-trigger." >&2
+    exit 2
+  fi
+  ensure_checkout
+  (
+    cd "${KIDE_DEPLOY_CHECKOUT}"
+    PROJECT_ID="${PROJECT_ID}"     REGION="${REGION}"     TRIGGER_NAME="${TRIGGER_NAME}"     TRIGGER_REGION="${TRIGGER_REGION:-${REGION}}"     bash deploy/gcp/configure-auto-deploy.sh
+  )
+}
+
+doctor() {
+  require_gcloud
+  echo "KIDE GCP deployment doctor"
+  echo "Project: ${PROJECT_ID}"
+  echo "Region: ${REGION}"
+  echo "Account: $(gcloud config get-value account 2>/dev/null || true)"
+  echo
+
+  if gcloud artifacts repositories describe kide       --project "${PROJECT_ID}" --location "${REGION}" >/dev/null 2>&1; then
+    echo "Artifact Registry: OK"
+  else
+    echo "Artifact Registry: MISSING"
+  fi
+
+  if [[ -n "${KIDE_OIDC_SECRET_NAME:-}" ]]; then
+    if gcloud secrets describe "${KIDE_OIDC_SECRET_NAME}"         --project "${PROJECT_ID}" >/dev/null 2>&1; then
+      echo "OIDC secret: OK (${KIDE_OIDC_SECRET_NAME})"
+    else
+      echo "OIDC secret: MISSING OR NOT ACCESSIBLE (${KIDE_OIDC_SECRET_NAME})"
+    fi
+  else
+    echo "OIDC secret: NOT CONFIGURED (KIDE_OIDC_SECRET_NAME is unset)"
+  fi
+
+  echo
+  show_status
+}
+
+usage() {
+  cat <<'EOF'
+Usage: deploy-kide-gcp.sh [status|doctor|deploy|configure-trigger]
+
+status
+  Show the current kide and kide-web Cloud Run URLs. Works from any directory.
+
+doctor
+  Check the active project, Artifact Registry, optional OIDC secret and services.
+
+deploy
+  Clone/update KIDE in a private deployment cache and deploy both backend and
+  web using deploy/gcp/cloudbuild-deploy.yaml.
+
+configure-trigger
+  Configure an existing Cloud Build trigger to use the dedicated deployment
+  pipeline. Requires TRIGGER_NAME.
+
+Common variables:
+  PROJECT_ID                default: active gcloud project
+  REGION                    default: asia-south1
+  KIDE_SERVICE_NAME         default: kide
+  KIDE_WEB_SERVICE_NAME     default: kide-web
+
+Deployment variables:
+  KIDE_OIDC_INTROSPECTION_URL
+  KIDE_OIDC_CLIENT_ID
+  KIDE_OIDC_ISSUER
+  KIDE_OIDC_AUDIENCE
+  KIDE_PRIMARY_PRINCIPAL
+  KIDE_OIDC_SECRET_NAME
+EOF
+}
+
+case "${COMMAND}" in
+  status) show_status ;;
+  doctor) doctor ;;
+  deploy) deploy ;;
+  configure-trigger) configure_trigger ;;
+  help|-h|--help) usage ;;
+  *)
+    echo "Unknown command: ${COMMAND}" >&2
+    usage >&2
+    exit 2
+    ;;
+esac
