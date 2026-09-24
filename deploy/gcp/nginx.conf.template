@@ -26,8 +26,6 @@ http {
         listen ${PORT};
         listen [::]:${PORT};
         server_name _;
-        root /usr/share/nginx/html;
-        index index.html;
         client_max_body_size 16m;
 
         location = /healthz {
@@ -70,7 +68,7 @@ http {
         }
 
         location / {
-            try_files $uri $uri/ /index.html;
+            return 404;
         }
     }
 }
