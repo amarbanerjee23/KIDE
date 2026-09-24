@@ -96,8 +96,8 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn('gcloud run deploy "${_KIDE_WEB_SERVICE_NAME}"', cloudbuild)
         self.assertIn("KIDE_ALLOWED_ORIGINS=", cloudbuild)
         self.assertIn("Verify live KIDE deployment", cloudbuild)
-        self.assertIn('"${BACKEND_URL}/healthz"', cloudbuild)
-        self.assertIn('"${WEB_URL}/healthz"', cloudbuild)
+        self.assertIn('"$${BACKEND_URL}/healthz"', cloudbuild)
+        self.assertIn('"$${WEB_URL}/healthz"', cloudbuild)
         self.assertIn("KIDE DEPLOYMENT COMPLETE", cloudbuild)
 
     def test_auto_deploy_bootstrap_uses_separate_runtime_identities(self):
