@@ -28,6 +28,7 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
         mac = self.read("deploy/desktop/macos/KIDE.command")
 
         self.assertIn('"kide.exe"', prepare)
+        self.assertIn('"KIDE.exe"', prepare)
         self.assertIn('"KIDE.sh"', prepare)
         self.assertIn('"KIDE.command"', prepare)
         self.assertIn("stage_release_archive", prepare)
