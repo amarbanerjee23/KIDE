@@ -1,10 +1,3 @@
-FROM node:22-bookworm-slim AS web-builder
-WORKDIR /src/web
-COPY web/package.json ./
-RUN npm install --no-audit --no-fund
-COPY web/ ./
-RUN npm run build
-
 FROM maven:3.9.11-eclipse-temurin-21 AS kide-builder
 ARG KIDE_BUILD_QUALIFIER=container
 WORKDIR /src
@@ -31,7 +24,6 @@ RUN apt-get update \
     && mkdir -p /opt/kide /usr/share/nginx/html /data \
     && chown -R kide:kide /data /var/lib/nginx /var/log/nginx
 
-COPY --from=web-builder /src/web/dist/ /usr/share/nginx/html/
 COPY --from=kide-builder /src/releng/com.kide.languageserver.repository/target/products/com.kide.languageserver.product/linux/gtk/x86_64/ /opt/kide/
 COPY deploy/gcp/nginx.conf.template /opt/kide-cloud/nginx.conf.template
 COPY deploy/gcp/entrypoint.sh /usr/local/bin/kide-cloud-run-entrypoint

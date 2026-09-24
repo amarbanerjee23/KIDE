@@ -1,18 +1,44 @@
 steps:
   - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
-    id: Verify Artifact Registry repository
+    id: Verify deployment prerequisites
     entrypoint: bash
     args:
       - -ceu
       - |
-        if ! gcloud artifacts repositories describe "${_AR_REPOSITORY}" \
-            --project "${PROJECT_ID}" \
-            --location "${_REGION}" >/dev/null 2>&1; then
-          echo "Artifact Registry repository '${_AR_REPOSITORY}' does not exist in ${_REGION}." >&2
-          echo "Run: PROJECT_ID=${PROJECT_ID} REGION=${_REGION} AR_REPOSITORY=${_AR_REPOSITORY} bash deploy/gcp/bootstrap-cloud-build.sh" >&2
-          exit 2
-        fi
+        required_values=(
+          "${_KIDE_OIDC_INTROSPECTION_URL}"
+          "${_KIDE_OIDC_CLIENT_ID}"
+          "${_KIDE_OIDC_ISSUER}"
+          "${_KIDE_OIDC_AUDIENCE}"
+          "${_KIDE_PRIMARY_PRINCIPAL}"
+          "${_KIDE_OIDC_SECRET_NAME}"
+        )
+        for value in "$${required_values[@]}"; do
+          if [[ -z "$${value}" ]]; then
+            echo "Automatic deployment is not configured for this trigger." >&2
+            echo "Run deploy/gcp/configure-auto-deploy.sh once with the required KIDE OIDC settings." >&2
+            exit 2
+          fi
+        done
+
+        gcloud artifacts repositories describe "${_AR_REPOSITORY}" \
+          --project "${PROJECT_ID}" \
+          --location "${_REGION}" >/dev/null
+
+        gcloud storage buckets describe "gs://${_KIDE_DATA_BUCKET}" \
+          --project "${PROJECT_ID}" >/dev/null
+
+        gcloud iam service-accounts describe "${_KIDE_RUNTIME_SA}" \
+          --project "${PROJECT_ID}" >/dev/null
+
+        gcloud iam service-accounts describe "${_KIDE_WEB_RUNTIME_SA}" \
+          --project "${PROJECT_ID}" >/dev/null
+
+        gcloud secrets describe "${_KIDE_OIDC_SECRET_NAME}" \
+          --project "${PROJECT_ID}" >/dev/null
+
   - name: gcr.io/cloud-builders/docker
+    id: Build KIDE backend image
     args:
       - build
       - --file
@@ -22,18 +48,157 @@ steps:
       - --build-arg
       - KIDE_BUILD_QUALIFIER=${_KIDE_QUALIFIER}
       - .
+
   - name: gcr.io/cloud-builders/docker
+    id: Push KIDE backend image
     args:
       - push
       - ${_KIDE_IMAGE}
+
+  - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+    id: Deploy KIDE backend
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        gcloud run deploy "${_KIDE_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --image "${_KIDE_IMAGE}" \
+          --service-account "${_KIDE_RUNTIME_SA}" \
+          --allow-unauthenticated \
+          --port 8080 \
+          --cpu 2 \
+          --memory 4Gi \
+          --concurrency 20 \
+          --timeout 3600s \
+          --min 1 \
+          --max 1 \
+          --session-affinity \
+          --add-volume "mount-path=/data,type=cloud-storage,bucket=${_KIDE_DATA_BUCKET},readonly=false,mount-options=uid=10001;gid=10001" \
+          --set-env-vars "^|^KIDE_OIDC_INTROSPECTION_URL=${_KIDE_OIDC_INTROSPECTION_URL}|KIDE_OIDC_CLIENT_ID=${_KIDE_OIDC_CLIENT_ID}|KIDE_OIDC_ISSUER=${_KIDE_OIDC_ISSUER}|KIDE_OIDC_AUDIENCE=${_KIDE_OIDC_AUDIENCE}|KIDE_PRIMARY_PRINCIPAL=${_KIDE_PRIMARY_PRINCIPAL}" \
+          --set-secrets "KIDE_OIDC_CLIENT_SECRET=${_KIDE_OIDC_SECRET_NAME}:latest" \
+          --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
+          --quiet
+
+        BACKEND_URL="$(gcloud run services describe "${_KIDE_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --format='value(status.url)')"
+
+        test -n "$${BACKEND_URL}"
+        printf '%s' "$${BACKEND_URL}" > /workspace/.kide-backend-url
+        echo "KIDE backend deployed: $${BACKEND_URL}"
+
+  - name: gcr.io/cloud-builders/docker
+    id: Build KIDE web image
+    entrypoint: sh
+    args:
+      - -ceu
+      - |
+        BACKEND_URL="$(cat /workspace/.kide-backend-url)"
+        docker build \
+          --file deploy/web/Dockerfile \
+          --tag "${_KIDE_WEB_IMAGE}" \
+          --build-arg "VITE_KIDE_API_ORIGIN=$${BACKEND_URL}" \
+          --build-arg "VITE_KIDE_LSP_ORIGIN=$${BACKEND_URL}" \
+          .
+
+  - name: gcr.io/cloud-builders/docker
+    id: Push KIDE web image
+    args:
+      - push
+      - ${_KIDE_WEB_IMAGE}
+
+  - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+    id: Deploy KIDE web
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        BACKEND_URL="$(cat /workspace/.kide-backend-url)"
+
+        gcloud run deploy "${_KIDE_WEB_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --image "${_KIDE_WEB_IMAGE}" \
+          --service-account "${_KIDE_WEB_RUNTIME_SA}" \
+          --allow-unauthenticated \
+          --port 8080 \
+          --cpu 1 \
+          --memory 512Mi \
+          --concurrency 80 \
+          --timeout 300s \
+          --min 0 \
+          --max 10 \
+          --labels "kide-component=web,kide-build-id=${BUILD_ID}" \
+          --quiet
+
+        WEB_URL="$(gcloud run services describe "${_KIDE_WEB_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --format='value(status.url)')"
+
+        test -n "$${WEB_URL}"
+        printf '%s' "$${WEB_URL}" > /workspace/.kide-web-url
+
+        gcloud run services update "${_KIDE_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --update-env-vars "^|^KIDE_ALLOWED_ORIGINS=$${BACKEND_URL},$${WEB_URL}" \
+          --quiet
+
+        echo "KIDE web deployed: $${WEB_URL}"
+        echo "KIDE backend: $${BACKEND_URL}"
+
+  - name: curlimages/curl:8.12.1
+    id: Verify live KIDE deployment
+    entrypoint: sh
+    args:
+      - -ceu
+      - |
+        BACKEND_URL="$(cat /workspace/.kide-backend-url)"
+        WEB_URL="$(cat /workspace/.kide-web-url)"
+
+        curl --fail --silent --show-error \
+          --retry 12 --retry-delay 5 --retry-all-errors \
+          "$${BACKEND_URL}/healthz" >/dev/null
+
+        curl --fail --silent --show-error \
+          --retry 12 --retry-delay 5 --retry-all-errors \
+          "$${WEB_URL}/healthz" >/dev/null
+
+        curl --fail --silent --show-error "$${WEB_URL}/" \
+          | grep -q '<div id="root"></div>'
+
+        echo "KIDE DEPLOYMENT COMPLETE"
+        echo "Web: $${WEB_URL}"
+        echo "Backend: $${BACKEND_URL}"
+
 images:
   - ${_KIDE_IMAGE}
+  - ${_KIDE_WEB_IMAGE}
+
 substitutions:
   _REGION: asia-south1
   _AR_REPOSITORY: kide
+  _KIDE_SERVICE_NAME: kide
+  _KIDE_WEB_SERVICE_NAME: kide-web
   _KIDE_IMAGE: '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/kide:${BUILD_ID}'
+  _KIDE_WEB_IMAGE: '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/kide-web:${BUILD_ID}'
   _KIDE_QUALIFIER: '${BUILD_ID}'
+  _KIDE_DATA_BUCKET: '${PROJECT_ID}-kide-data'
+  _KIDE_RUNTIME_SA: 'kide-runtime@${PROJECT_ID}.iam.gserviceaccount.com'
+  _KIDE_WEB_RUNTIME_SA: 'kide-web-runtime@${PROJECT_ID}.iam.gserviceaccount.com'
+  _KIDE_OIDC_INTROSPECTION_URL: ''
+  _KIDE_OIDC_CLIENT_ID: ''
+  _KIDE_OIDC_ISSUER: ''
+  _KIDE_OIDC_AUDIENCE: ''
+  _KIDE_PRIMARY_PRINCIPAL: ''
+  _KIDE_OIDC_SECRET_NAME: ''
+
 timeout: 3600s
+
 options:
   machineType: E2_HIGHCPU_8
   logging: CLOUD_LOGGING_ONLY

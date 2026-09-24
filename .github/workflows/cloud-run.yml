@@ -63,8 +63,14 @@ jobs:
             exit 1
           fi
 
-          curl --fail --silent http://127.0.0.1:18080/ |             grep -q '<div id="root"></div>'
-          docker logs "$container_id" 2>&1 |             grep -q 'KIDE CLOUD RUN READY'
+          if curl --silent --output /dev/null --write-out '%{http_code}' \
+              http://127.0.0.1:18080/ | grep -qx 404; then
+            :
+          else
+            echo "Backend image unexpectedly serves the browser application" >&2
+            exit 1
+          fi
+          docker logs "$container_id" 2>&1 | grep -q 'KIDE CLOUD RUN READY'
 
 
       - name: Build standalone web image
