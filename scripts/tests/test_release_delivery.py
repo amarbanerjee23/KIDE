@@ -39,6 +39,23 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
         self.assert_bash_parses("deploy/desktop/linux/KIDE.sh")
         self.assert_bash_parses("deploy/desktop/macos/KIDE.command")
 
+    def test_repository_publication_builds_and_pushes_outputs(self):
+        workflow = self.read(".github/workflows/publish-build-artifacts.yml")
+
+        self.assertIn("packages: write", workflow)
+        self.assertIn("Build Eclipse desktop products", workflow)
+        self.assertIn("prepare_desktop_release.py", workflow)
+        self.assertIn("Upload runnable desktop bundles to repository artifacts", workflow)
+        self.assertIn("dist/KIDE-*.zip", workflow)
+        self.assertIn("dist/KIDE-*.tar.gz", workflow)
+        self.assertIn("ghcr.io/", workflow)
+        self.assertIn("kide-cloud-run", workflow)
+        self.assertIn("docker login ghcr.io", workflow)
+        self.assertIn("docker push", workflow)
+        self.assertIn("sha-${GITHUB_SHA}", workflow)
+        self.assertIn("org.opencontainers.image.source", workflow)
+        self.assertIn("kide-cloud-run-image.txt", workflow)
+
     def test_web_deployer_is_independent_from_desktop_product(self):
         dockerfile = self.read("deploy/web/Dockerfile")
         cloudbuild = self.read("deploy/web/cloudbuild.yaml")
