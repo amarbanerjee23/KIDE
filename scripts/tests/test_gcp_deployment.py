@@ -41,11 +41,14 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
 
     def test_deploy_contract_is_single_writer_and_websocket_ready(self):
         deploy = self.read("deploy/gcp/deploy-cloud-run.sh")
-        self.assertIn("--timeout 3600s", deploy)
-        self.assertIn("--session-affinity", deploy)
-        self.assertIn("--max 1", deploy)
-        self.assertIn("type=cloud-storage", deploy)
-        self.assertIn("--set-secrets", deploy)
+        cloudbuild = self.read("cloudbuild.yaml")
+        self.assertIn("--timeout 3600s", cloudbuild)
+        self.assertIn("--session-affinity", cloudbuild)
+        self.assertIn("--max 1", cloudbuild)
+        self.assertIn("type=cloud-storage", cloudbuild)
+        self.assertIn("--set-secrets", cloudbuild)
+        self.assertIn("gcloud builds submit", deploy)
+        self.assertIn("deployment-status.sh", deploy)
         self.assertNotIn("YOUR_OIDC_CLIENT_SECRET", deploy)
 
     def test_cloud_build_uses_dedicated_dockerfile(self):
