@@ -2,8 +2,9 @@
 set -euo pipefail
 
 COMMAND="${1:-status}"
-PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || true)}"
+PROJECT_ID="${PROJECT_ID:-}"
 REGION="${REGION:-asia-south1}"
+AR_REPOSITORY="${AR_REPOSITORY:-kide}"
 KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME:-kide}"
 KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME:-kide-web}"
 KIDE_REPOSITORY="${KIDE_REPOSITORY:-https://github.com/amarbanerjee23/KIDE.git}"
@@ -13,6 +14,9 @@ require_gcloud() {
   if ! command -v gcloud >/dev/null 2>&1; then
     echo "gcloud is required. Run this from Google Cloud Shell or install the Google Cloud CLI." >&2
     exit 2
+  fi
+  if [[ -z "${PROJECT_ID}" ]]; then
+    PROJECT_ID="$(gcloud config get-value project 2>/dev/null || true)"
   fi
   if [[ -z "${PROJECT_ID}" || "${PROJECT_ID}" == "(unset)" ]]; then
     echo "PROJECT_ID is not set and gcloud has no active project." >&2
@@ -167,6 +171,7 @@ Common variables:
   REGION                    default: asia-south1
   KIDE_SERVICE_NAME         default: kide
   KIDE_WEB_SERVICE_NAME     default: kide-web
+  AR_REPOSITORY             default: kide
 
 Deployment variables:
   KIDE_OIDC_INTROSPECTION_URL
