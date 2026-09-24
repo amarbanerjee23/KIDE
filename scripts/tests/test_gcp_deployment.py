@@ -41,7 +41,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
 
     def test_deploy_contract_is_single_writer_and_websocket_ready(self):
         deploy = self.read("deploy/gcp/deploy-cloud-run.sh")
-        cloudbuild = self.read("cloudbuild.yaml")
+        cloudbuild = self.read("deploy/gcp/cloudbuild-deploy.yaml")
         self.assertIn("--timeout 3600s", cloudbuild)
         self.assertIn("--session-affinity", cloudbuild)
         self.assertIn("--max 1", cloudbuild)
@@ -61,6 +61,8 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("${BUILD_ID}", cloudbuild)
         self.assertIn("dynamicSubstitutions: true", cloudbuild)
         self.assertIn("logging: CLOUD_LOGGING_ONLY", cloudbuild)
+        self.assertNotIn("Deploy KIDE backend", cloudbuild)
+        self.assertNotIn("_KIDE_OIDC_INTROSPECTION_URL", cloudbuild)
 
     def test_deployment_shell_scripts_parse(self):
         for relative in (
@@ -88,7 +90,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("configure-auto-deploy.sh", repair)
 
     def test_cloud_build_deploys_backend_then_web_and_checks_live_urls(self):
-        cloudbuild = self.read("cloudbuild.yaml")
+        cloudbuild = self.read("deploy/gcp/cloudbuild-deploy.yaml")
 
         self.assertIn("Deploy KIDE backend", cloudbuild)
         self.assertIn('gcloud run deploy "${_KIDE_SERVICE_NAME}"', cloudbuild)
@@ -114,18 +116,29 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("kide-web-runtime", configure)
         self.assertIn("--update-substitutions", configure)
         self.assertIn("_KIDE_OIDC_SECRET_NAME=", configure)
+        self.assertIn(
+            'BUILD_CONFIG="${BUILD_CONFIG:-deploy/gcp/cloudbuild-deploy.yaml}"',
+            configure,
+        )
 
     def test_artifact_registry_bootstrap_contract(self):
         bootstrap = self.read("deploy/gcp/bootstrap-cloud-build.sh")
-        cloudbuild = self.read("cloudbuild.yaml")
+        build = self.read("cloudbuild.yaml")
+        deploy = self.read("deploy/gcp/cloudbuild-deploy.yaml")
         configure = self.read("deploy/gcp/configure-auto-deploy.sh")
 
         self.assertIn("gcloud artifacts repositories create", bootstrap)
         self.assertIn("roles/artifactregistry.writer", bootstrap)
         self.assertIn("roles/logging.logWriter", bootstrap)
-        self.assertIn("Verify deployment prerequisites", cloudbuild)
-        self.assertIn("configure-auto-deploy.sh", cloudbuild)
+        self.assertIn("Verify Artifact Registry repository", build)
+        self.assertIn("Verify deployment prerequisites", deploy)
+        self.assertIn("configure-auto-deploy.sh", deploy)
         self.assertIn("bootstrap-cloud-build.sh", configure)
+
+        # The deployment build identity intentionally does not need broad
+        # storage/secret viewer roles simply to perform preflight checks.
+        self.assertNotIn("gcloud storage buckets describe", deploy)
+        self.assertNotIn("gcloud secrets describe", deploy)
 
 
 if __name__ == "__main__":
