@@ -106,6 +106,31 @@ deploy() {
   show_status
 }
 
+
+bootstrap_first_deployment() {
+  require_gcloud
+  ensure_checkout
+
+  echo "Starting KIDE first-deployment bootstrap..."
+  (
+    cd "${KIDE_DEPLOY_CHECKOUT}"
+    PROJECT_ID="${PROJECT_ID}" \
+    REGION="${REGION}" \
+    KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME}" \
+    KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME}" \
+    TRIGGER_NAME="${TRIGGER_NAME:-}" \
+    TRIGGER_REGION="${TRIGGER_REGION:-${REGION}}" \
+    KIDE_OIDC_INTROSPECTION_URL="${KIDE_OIDC_INTROSPECTION_URL:-}" \
+    KIDE_OIDC_CLIENT_ID="${KIDE_OIDC_CLIENT_ID:-}" \
+    KIDE_OIDC_ISSUER="${KIDE_OIDC_ISSUER:-}" \
+    KIDE_OIDC_AUDIENCE="${KIDE_OIDC_AUDIENCE:-}" \
+    KIDE_PRIMARY_PRINCIPAL="${KIDE_PRIMARY_PRINCIPAL:-}" \
+    KIDE_OIDC_SECRET_NAME="${KIDE_OIDC_SECRET_NAME:-kide-oidc-client-secret}" \
+    KIDE_OIDC_CLIENT_SECRET_FILE="${KIDE_OIDC_CLIENT_SECRET_FILE:-}" \
+    bash deploy/gcp/bootstrap-first-deployment.sh
+  )
+}
+
 configure_trigger() {
   require_gcloud
   require_deploy_environment
@@ -150,7 +175,7 @@ doctor() {
 
 usage() {
   cat <<'EOF'
-Usage: deploy-kide-gcp.sh [status|doctor|deploy|configure-trigger]
+Usage: deploy-kide-gcp.sh [status|doctor|bootstrap|deploy|configure-trigger]
 
 status
   Show the current kide and kide-web Cloud Run URLs. Works from any directory.
@@ -158,9 +183,15 @@ status
 doctor
   Check the active project, Artifact Registry, optional OIDC secret and services.
 
+bootstrap
+  First-deployment wizard. Discovers the Cloud Build trigger, prompts for
+  missing OIDC settings, stores the client secret in Secret Manager, provisions
+  required resources/IAM, switches the trigger to the deployment config, runs
+  the first deployment and verifies both live services.
+
 deploy
   Clone/update KIDE in a private deployment cache and deploy both backend and
-  web using deploy/gcp/cloudbuild-deploy.yaml.
+  web using deploy/gcp/cloudbuild-deploy.yaml. Use after bootstrap.
 
 configure-trigger
   Configure an existing Cloud Build trigger to use the dedicated deployment
@@ -186,6 +217,7 @@ EOF
 case "${COMMAND}" in
   status) show_status ;;
   doctor) doctor ;;
+  bootstrap) bootstrap_first_deployment ;;
   deploy) deploy ;;
   configure-trigger) configure_trigger ;;
   help|-h|--help) usage ;;
