@@ -1,6 +1,6 @@
 # KIDE Consolidated Enterprise Release Plan
 
-Status: authoritative implementation sequence after merged PR28, 2026-09-20.
+Status: authoritative implementation sequence after GitHub PR44 allocation, 2026-09-24.
 
 This plan supersedes the old one-feature-per-PR numbering in
 `world-class-systems-engineering-roadmap.md`. The engineering outcomes remain
@@ -34,14 +34,20 @@ qualified and documented once.
 | **PR36** | Deterministic synthesis, controller composition and design contracts | Former PR34 + PR35 + PR36 | Capability matching, Activity->MNC consolidation, controller composition, cross-model contracts/conflict diagnostics |
 | **PR37** | Dynamic reconfiguration and thesis-scale qualification | Former PR37 + PR40 | Deterministic re-planning plus 10/50/100/500/1000-device regression/performance evidence |
 | **PR38** | KRL and semantic code-generation toolchain | Former PR38 + PR39 | KRL grammar/LSP, versioned generator, target SDK, reproducible outputs and provenance manifests |
-| **PR39** | Requirements, digital thread, baselines and evidence reports | Former PR41 + PR42 + PR47 | Requirement entities, immutable baselines, impact/trace graph and deterministic evidence-pack exports |
-| **PR40** | Simulation and formal verification | Former PR43 + PR44 | Deterministic sandbox/record-replay and solver-neutral verification/counterexample mapping |
-| **PR41** | Engineering interoperability, Git lifecycle and connector SDK | Former PR45 + PR46 + PR52 | ReqIF/SysML boundary, OSLC/external adapters, Git/PR traceability and one versioned extension SDK |
-| **PR42** | Governed AI, policy, approvals and bounded agents | Former PR48 + PR49 + PR50 + PR51 | Provider-neutral model gateway, authorized context/provenance, policy-as-code, approvals and sandboxed tools |
-| **PR43** | Security, sustainability and operational evidence | Former PR53 + PR54 + PR55 | Shared evidence/telemetry pipeline for SAST/SCA/SBOM, C3-ECO measurements, health/tracing/support bundles |
-| **PR44** | Production shared-service deployment and native installers | Former PR56 + PR57 | HA/on-prem/air-gap containers/Helm, backup/restore and signed Windows/macOS/Linux installers/update path |
-| **PR45** | Product UX, accessibility and onboarding | Former PR58 | Unified thesis-flow experience, keyboard/WCAG checks, first-run health and guided sample projects on desktop+web |
-| **PR46** | Enterprise qualification and GA release | Former PR59 + PR60 | Soak/load/failover/upgrade/offline/browser/desktop matrix followed by signed downloadable release from immutable CI outputs |
+| **PR39** | Google Cloud Run hosted deployment | Deployment foundation inserted after PR38 | Production-oriented Cloud Run boundary with same-origin web/API/LSP/GLSP routing, persistent workspace storage, non-root runtime and deployment qualification |
+| **PR40** | Cloud Build trigger logging/config repair | Deployment hardening | Bind triggers to the repository Cloud Build configuration and satisfy custom-service-account logging requirements |
+| **PR41** | Cloud Build trigger-safe image naming | Deployment hardening | Self-contained, non-empty Artifact Registry image naming for trigger and manual builds |
+| **PR42** | Tycho launcher branding path repair | Desktop packaging hardening | Resolve Windows/Linux/macOS launcher branding assets deterministically and enforce them in governance tests |
+| **PR43** | Artifact Registry bootstrap for Cloud Build | Deployment hardening | Create/verify the Artifact Registry repository, apply least-privilege writer/logging roles and fail early on missing deployment prerequisites |
+| **PR44** | Platform desktop launchers and standalone web deployer | Desktop/web execution separation | Explicit Windows/Linux/macOS desktop entry points plus an independently deployable frontend-only web image and deployer |
+| **PR45** | Requirements, digital thread, baselines and evidence reports | Former planned PR39; former roadmap PR41 + PR42 + PR47 | Requirement entities, immutable baselines, impact/trace graph and deterministic evidence-pack exports |
+| **PR46** | Simulation and formal verification | Former planned PR40; former roadmap PR43 + PR44 | Deterministic sandbox/record-replay and solver-neutral verification/counterexample mapping |
+| **PR47** | Engineering interoperability, Git lifecycle and connector SDK | Former planned PR41; former roadmap PR45 + PR46 + PR52 | ReqIF/SysML boundary, OSLC/external adapters, Git/PR traceability and one versioned extension SDK |
+| **PR48** | Governed AI, policy, approvals and bounded agents | Former planned PR42; former roadmap PR48 + PR49 + PR50 + PR51 | Provider-neutral model gateway, authorized context/provenance, policy-as-code, approvals and sandboxed tools |
+| **PR49** | Security, sustainability and operational evidence | Former planned PR43; former roadmap PR53 + PR54 + PR55 | Shared evidence/telemetry pipeline for SAST/SCA/SBOM, C3-ECO measurements, health/tracing/support bundles |
+| **PR50** | Production shared-service HA/on-prem deployment and native installers | Remaining scope from former planned PR44; former roadmap PR56 + PR57 | HA/on-prem/air-gap containers/Helm, backup/restore and signed Windows/macOS/Linux installers/update path, building on PR39 and PR44 deployment foundations |
+| **PR51** | Product UX, accessibility and onboarding | Former planned PR45; former roadmap PR58 | Unified thesis-flow experience, keyboard/WCAG checks, first-run health and guided sample projects on desktop+web |
+| **PR52** | Enterprise qualification and GA release | Former planned PR46; former roadmap PR59 + PR60 | Soak/load/failover/upgrade/offline/browser/desktop matrix followed by signed downloadable release from immutable CI outputs |
 
 ## Why these PRs are clubbed
 
@@ -52,30 +58,32 @@ The grouping follows shared code boundaries rather than feature labels:
 - PR34 changes the same ontology/repository schema for acquisition, validation and provenance.
 - PR36 changes the same deterministic synthesis graph for matching, composition and contract validation.
 - PR38 changes the same language-to-generator/toolchain boundary.
-- PR39 changes the same trace/baseline data model used by requirements and reports.
-- PR42 changes the same governed execution boundary for AI, policy, approvals and tools.
-- PR43 changes the same evidence/telemetry plumbing for security, sustainability and operations.
-- PR44 changes the same deployable runtime/package/update assets.
-- PR46 uses one final qualification evidence set to gate the GA release.
+- PR39-PR44 are allocated to the deployment, Cloud Build and launcher hardening work that was actually merged/opened under those GitHub IDs.
+- PR45 changes the same trace/baseline data model used by requirements and reports.
+- PR48 changes the same governed execution boundary for AI, policy, approvals and tools.
+- PR49 changes the same evidence/telemetry plumbing for security, sustainability and operations.
+- PR50 changes the remaining HA/on-prem/air-gap runtime, installer and update assets after the PR39/PR44 deployment foundations.
+- PR52 uses one final qualification evidence set to gate the GA release.
 
 ## Current execution point
 
-PR22 through PR37 are merged and green on `main`. PR37 delivered deterministic
-minimal-disruption dynamic reconfiguration, explicit supervisory state migration/fallback
-rules, and permanent 10/50/100/500/1000-device correctness/performance evidence.
+PR22 through PR43 are merged on `main`. GitHub PR39-PR43 were used for
+deployment and packaging hardening rather than the older reserved roadmap scopes.
 
-**PR38 is the active implementation PR.** It clubs the former KRL-language and semantic
-code-generation roadmap phases behind one language/toolchain boundary. KRL is now the sixth
-production Xtext DSL across desktop, browser/LSP and secure gateway. The semantic generation
-service provides bounded deterministic knowledge queries, placeholder-only templates, a
-versioned target SDK, the maintained Java reference target, path/symlink sandboxing and a
-canonical provenance manifest tied to source/KRL/knowledge/synthesis revisions.
+**PR44 is the active Draft PR: platform desktop launchers and standalone web deployer.**
+It separates the desktop execution surface (`KIDE.exe`, `KIDE.sh`, `KIDE.command`)
+from the independently deployable browser frontend while preserving the shared backend
+services and qualification gates.
 
-The PR38 acceptance gate requires valid/invalid KRL diagnostics, full packaged LSP parity,
-sandboxed deterministic query/template execution, ambiguous-binding refusal, byte-identical
-reproduction, generated Java compilation, strict source/KRL/knowledge revision checks,
-enterprise and browser generation flows, packaged semantic-codegen evidence and every
-previous desktop/knowledge/synthesis/reconfiguration/LSP/GLSP/security gate.
+After PR44 merges, the remaining implementation sequence is reserved as:
 
-PR39 follows after PR38 and will introduce first-class requirements/objectives together with
-the digital thread, immutable baselines, impact analysis and deterministic evidence reports.
+- **PR45 — Requirements, digital thread, baselines and evidence reports**
+- **PR46 — Simulation and formal verification**
+- **PR47 — Engineering interoperability, Git lifecycle and connector SDK**
+- **PR48 — Governed AI, policy, approvals and bounded agents**
+- **PR49 — Security, sustainability and operational evidence**
+- **PR50 — Production shared-service HA/on-prem deployment and native installers**
+- **PR51 — Product UX, accessibility and onboarding**
+- **PR52 — Enterprise qualification and GA release**
+
+These IDs supersede the pre-deployment planned PR39-PR46 labels and must not be reused.
