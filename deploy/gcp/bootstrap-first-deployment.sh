@@ -11,6 +11,14 @@ KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME:-kide}"
 KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME:-kide-web}"
 WAIT_SECONDS="${WAIT_SECONDS:-1800}"
 WAIT_INTERVAL="${WAIT_INTERVAL:-10}"
+SECRET_TEMP_FILE=""
+
+cleanup_secret_temp_file() {
+  if [[ -n "${SECRET_TEMP_FILE:-}" && -f "${SECRET_TEMP_FILE}" ]]; then
+    rm -f "${SECRET_TEMP_FILE}"
+  fi
+}
+trap cleanup_secret_temp_file EXIT
 
 require_command() {
   local command_name="$1"
@@ -182,7 +190,7 @@ store_client_secret() {
 
     umask 077
     temp_file="$(mktemp)"
-    trap '[[ -n "${temp_file:-}" && "${temp_file}" == /tmp/* ]] && rm -f "${temp_file}"' EXIT
+    SECRET_TEMP_FILE="${temp_file}"
     printf '%s' "${secret_value}" > "${temp_file}"
     unset secret_value
   fi
@@ -197,9 +205,9 @@ store_client_secret() {
     gcloud secrets create "${KIDE_OIDC_SECRET_NAME}"       --project "${PROJECT_ID}"       --replication-policy=automatic       --data-file="${temp_file}" >/dev/null
   fi
 
-  if [[ -n "${temp_file}" && "${temp_file}" == /tmp/* ]]; then
-    rm -f "${temp_file}"
-    trap - EXIT
+  if [[ -n "${SECRET_TEMP_FILE}" ]]; then
+    cleanup_secret_temp_file
+    SECRET_TEMP_FILE=""
   fi
 
   echo "OIDC client secret stored in Secret Manager."
