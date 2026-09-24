@@ -1,58 +1,94 @@
 # KIDE on Google Cloud Run
 
-KIDE is deployed to Google Cloud as two independent Cloud Run services:
+KIDE uses two Cloud Run services when deployment is enabled:
 
-- **`kide` backend/gateway** — enterprise API plus secure LSP and GLSP
-  WebSocket gateways behind one Nginx ingress port.
-- **`kide-web` frontend** — the standalone React/Vite browser application
-  served by Nginx.
+- `kide`: backend/gateway service for the enterprise API, LSP and GLSP.
+- `kide-web`: standalone React/Vite browser application.
 
-The frontend is built only after the backend is deployed so its
-`VITE_KIDE_API_ORIGIN` and `VITE_KIDE_LSP_ORIGIN` values are compiled
-against the actual live backend URL. The backend then receives the final web
-URL in `KIDE_ALLOWED_ORIGINS`.
+The backend remains single-writer because current persistent and collaborative
+state is not horizontally multi-writer safe. The static web tier may scale
+independently.
 
-The backend Java services bind only to loopback. Nginx is the only backend
-process exposed on Cloud Run's public `PORT` and routes:
+## Cloud Build configurations
 
-- `/api/*` to the enterprise HTTP API;
-- `/lsp` to the secure Xtext/LSP WebSocket gateway;
-- `/glsp` to the secure GLSP WebSocket gateway;
-- `/healthz` to the enterprise API health endpoint.
+KIDE deliberately keeps **build** and **deployment** as separate Cloud Build
+contracts.
 
-The backend image deliberately does **not** contain the browser application.
-The browser is deployed only through the separate `kide-web` service.
+### Build-safe trigger
 
-## Continuous deployment
+The repository root `cloudbuild.yaml` and
+`deploy/gcp/cloudbuild.yaml` are build-only configurations.
 
-The root `cloudbuild.yaml` and `deploy/gcp/cloudbuild.yaml` are identical.
-A successful configured Cloud Build trigger now performs the complete
-deployment:
+They:
 
-1. validates Artifact Registry, Cloud Storage, runtime service accounts and the
-   configured OIDC secret;
-2. builds and pushes the KIDE backend image;
+1. verify that the Artifact Registry repository exists;
+2. build the KIDE backend image;
+3. push the image to Artifact Registry.
+
+They do **not** require OIDC deployment settings and do not deploy Cloud Run.
+This preserves the behavior of the original working Google Cloud Build trigger
+and keeps ordinary main-branch builds green before deployment has been
+explicitly configured.
+
+### Deployment trigger
+
+`deploy/gcp/cloudbuild-deploy.yaml` is the continuous-deployment
+configuration.
+
+After one-time configuration it:
+
+1. checks that required non-secret deployment substitutions are present;
+2. builds and pushes the backend image;
 3. deploys the `kide` Cloud Run service;
-4. reads the live backend URL;
-5. builds the standalone web image against that backend URL;
+4. reads its live URL;
+5. builds the standalone web image with that URL in
+   `VITE_KIDE_API_ORIGIN` and `VITE_KIDE_LSP_ORIGIN`;
 6. pushes and deploys `kide-web`;
-7. updates backend allowed origins with both live service URLs;
-8. checks `/healthz` on both deployed services and verifies the web root.
+7. updates backend allowed origins with the live backend and web URLs;
+8. verifies both live `/healthz` endpoints and the web root.
 
-A build is successful only after both live services pass those checks.
+The deployment preflight intentionally does not call Storage or Secret Manager
+`describe` operations. Resource creation/validation is performed by the
+operator bootstrap so the Cloud Build service account does not need broad
+Storage Viewer or Secret Manager Viewer roles merely for preflight checks.
 
-## One-time trigger configuration
+## Why there are two configs
 
-The actual OIDC client secret remains in Secret Manager. The trigger stores
-only non-secret deployment configuration and the Secret Manager secret name.
+PR46 changed the existing root trigger file from build/push to mandatory
+deployment while the new OIDC substitutions defaulted to empty values. An
+existing, previously successful trigger therefore failed immediately at its
+first deployment-preflight step.
 
-Before the first automatic deployment, run:
+The corrected model is explicit:
+
+- a normal trigger can always use `cloudbuild.yaml`;
+- automatic deployment is enabled only after infrastructure and IAM setup is
+  complete;
+- `configure-auto-deploy.sh` then switches that trigger to
+  `deploy/gcp/cloudbuild-deploy.yaml`.
+
+This prevents repository changes from silently converting a build trigger into
+an infrastructure deployment trigger.
+
+## One-time automatic deployment configuration
+
+Before enabling deployment, create the OIDC client secret in Secret Manager if
+it does not already exist:
+
+```bash
+printf '%s' 'YOUR_OIDC_CLIENT_SECRET' | \
+  gcloud secrets create kide-oidc-client-secret \
+  --project=kide-eclipse \
+  --data-file=-
+```
+
+Then configure the trigger:
 
 ```bash
 export PROJECT_ID="kide-eclipse"
 export TRIGGER_NAME="YOUR_CLOUD_BUILD_TRIGGER_NAME"
-export TRIGGER_REGION="global"       # or the trigger's actual region
 export REGION="asia-south1"
+# TRIGGER_REGION defaults to REGION. Override only if the trigger differs.
 
 export KIDE_OIDC_INTROSPECTION_URL="https://idp.example.com/oauth2/introspect"
 export KIDE_OIDC_CLIENT_ID="kide"
@@ -64,135 +100,91 @@ export KIDE_OIDC_SECRET_NAME="kide-oidc-client-secret"
 bash deploy/gcp/configure-auto-deploy.sh
 ```
 
-For a manual Cloud Build trigger, also set:
+The configuration script provisions or validates:
 
-```bash
-export TRIGGER_KIND="manual"
-```
+- Artifact Registry repository;
+- persistent Cloud Storage bucket;
+- `kide-runtime` backend service account;
+- `kide-web-runtime` frontend service account;
+- backend bucket access;
+- backend Secret Manager access;
+- Cloud Build Artifact Registry Writer and Logs Writer;
+- Cloud Build Cloud Run Admin;
+- Service Account User on only the two KIDE runtime identities.
 
-The configuration script:
+It then changes the selected Cloud Build trigger to use
+`deploy/gcp/cloudbuild-deploy.yaml` and supplies the required non-secret
+substitutions.
 
-- enables the required Google Cloud APIs;
-- creates the Artifact Registry repository if needed;
-- creates the persistent Cloud Storage bucket if needed;
-- creates dedicated `kide-runtime` and `kide-web-runtime` service accounts;
-- grants storage and Secret Manager access only to the backend runtime;
-- grants the Cloud Build service account Artifact Registry Writer, Logs Writer
-  and Cloud Run Admin;
-- grants the build service account Service Account User only on the two KIDE
-  runtime identities;
-- writes the deployment substitutions into the existing trigger.
+The OIDC client secret itself remains only in Secret Manager.
 
-The web runtime identity receives no storage or secret privileges.
+## Manual deployment
 
-## Secret Manager
-
-Create the OIDC client secret once:
-
-```bash
-printf '%s' 'YOUR_OIDC_CLIENT_SECRET' | \
-  gcloud secrets create kide-oidc-client-secret --data-file=-
-```
-
-If it already exists, add a version instead:
-
-```bash
-printf '%s' 'YOUR_OIDC_CLIENT_SECRET' | \
-  gcloud secrets versions add kide-oidc-client-secret --data-file=-
-```
-
-The backend runtime service account receives
-`roles/secretmanager.secretAccessor` on this secret. The build service
-account does not receive access to the secret payload.
-
-## Find the live URLs
-
-After a successful trigger build:
+The manual entry point uses the same deployment configuration:
 
 ```bash
 export PROJECT_ID="kide-eclipse"
 export REGION="asia-south1"
+export KIDE_OIDC_INTROSPECTION_URL="..."
+export KIDE_OIDC_CLIENT_ID="..."
+export KIDE_OIDC_ISSUER="..."
+export KIDE_OIDC_AUDIENCE="..."
+export KIDE_PRIMARY_PRINCIPAL="..."
+export KIDE_OIDC_SECRET_NAME="kide-oidc-client-secret"
 
+bash deploy/gcp/deploy-cloud-run.sh
+```
+
+## Find the live URLs
+
+After a successful deployment:
+
+```bash
+export PROJECT_ID="kide-eclipse"
+export REGION="asia-south1"
 bash deploy/gcp/deployment-status.sh
 ```
 
-This prints:
-
-```text
-KIDE web: https://...
-KIDE backend: https://...
-Web health: https://.../healthz
-Backend health: https://.../healthz
-```
-
-The Cloud Build log also ends with:
+The deployment Cloud Build also ends with:
 
 ```text
 KIDE DEPLOYMENT COMPLETE
-Web: https://...
-Backend: https://...
+Web: https://...run.app
+Backend: https://...run.app
 ```
 
 ## Runtime topology
 
-The backend intentionally remains single-writer:
+The backend deployment uses:
 
-- `--min 1`
-- `--max 1`
-- session affinity enabled
-- 60-minute request timeout for WebSocket IDE channels
-- persistent project/workspace state mounted from Cloud Storage at `/data`
+- minimum instances: 1;
+- maximum instances: 1;
+- session affinity;
+- 60-minute request timeout;
+- Cloud Storage mounted at `/data`;
+- dedicated `kide-runtime` identity.
 
-This is required while the model, knowledge, review and collaboration state is
-file-backed or process-local. Do not increase backend horizontal scale until
-those stores have shared transactional persistence.
+The frontend deployment uses:
 
-The static `kide-web` service is independently scalable:
+- minimum instances: 0;
+- maximum instances: 10;
+- no persistent volume;
+- no OIDC client secret;
+- dedicated `kide-web-runtime` identity.
 
-- `--min 0`
-- `--max 10`
-- no persistent volume
-- no Secret Manager access
-- dedicated unprivileged runtime service account
+Cloud Storage mounting uses Cloud Run's supported single-container
+`--add-volume mount-path=...,type=cloud-storage,...` syntax.
 
-## Cloud Build service account
+## Security
 
-KIDE uses `CLOUD_LOGGING_ONLY` for Cloud Build so custom build service
-accounts satisfy Google's explicit logging-destination requirement.
+Cloud Run terminates public TLS. The backend Nginx proxy is the only public
+container listener and forwards requests to loopback-only API/LSP/GLSP
+processes.
 
-The build identity requires deployment privileges because Cloud Build now
-deploys the already-built Artifact Registry images to Cloud Run. Runtime
-privileges stay on the runtime identities and are not inherited by the build
-service account.
+The Cloud Build identity receives deployment rights only when automatic
+deployment is explicitly enabled. Runtime data and secret access remain on the
+backend runtime identity rather than the build identity.
 
-## Existing trigger repair
-
-`deploy/gcp/repair-cloud-build-trigger.sh` is retained as a compatibility
-entry point. It now delegates to `configure-auto-deploy.sh`, because a
-build-only trigger configuration is no longer sufficient.
-
-The trigger must use **Cloud Build configuration file** mode with
-`cloudbuild.yaml`, not Dockerfile or inline configuration mode.
-
-## Manual deployment scripts
-
-`deploy/gcp/deploy-cloud-run.sh` remains available for manual backend
-deployment and `deploy/web/deploy-web.sh` remains available for manual
-frontend deployment. The Cloud Build trigger is the recommended path because
-it wires the live backend URL into the frontend automatically and validates
-both live services in one transaction.
-
-## Security notes
-
-Cloud Run terminates public TLS. The backend proxy supplies
-`X-Forwarded-Proto: https` only to loopback KIDE services, and KIDE trusts
-only configured local proxy addresses.
-
-The public Cloud Run services are intentionally unauthenticated at the Google
-Cloud ingress layer so a browser can reach the UI and API endpoints. KIDE's
-OIDC token validation and role bindings continue to protect application API,
-LSP and GLSP operations.
-
-For a horizontally scaled enterprise backend, replace file-backed persistence
-and in-memory collaboration state with shared transactional services before
-raising the backend maximum instance count.
+For horizontally scaled backend operation, first replace file-backed
+persistence and process-local collaboration state with shared transactional
+services.
