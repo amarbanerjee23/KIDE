@@ -34,7 +34,8 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
         self.assertIn("stage_release_archive", prepare)
         self.assertIn('wrapper.mode = 0o755', prepare)
         self.assertIn('NATIVE_LAUNCHER="${SCRIPT_DIR}/kide"', linux)
-        self.assertIn('KIDE.app/Contents/MacOS/kide', mac)
+        self.assertIn('APP="${SCRIPT_DIR}/KIDE.app"', mac)
+        self.assertIn('NATIVE_LAUNCHER="${APP}/Contents/MacOS/kide"', mac)
 
         self.assert_bash_parses("deploy/desktop/linux/KIDE.sh")
         self.assert_bash_parses("deploy/desktop/macos/KIDE.command")
@@ -52,7 +53,8 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
         self.assertIn("kide-cloud-run", workflow)
         self.assertIn("docker login ghcr.io", workflow)
         self.assertIn("docker push", workflow)
-        self.assertIn("sha-${GITHUB_SHA}", workflow)
+        self.assertIn("sha-${SOURCE_SHA}", workflow)
+        self.assertIn("SOURCE_SHA:", workflow)
         self.assertIn("org.opencontainers.image.source", workflow)
         self.assertIn("kide-cloud-run-image.txt", workflow)
 
