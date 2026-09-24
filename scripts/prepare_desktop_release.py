@@ -17,6 +17,7 @@ customer-facing file names and a machine-readable release manifest is emitted.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import io
 import json
@@ -222,10 +223,20 @@ def stage_release_archive(
     native_launcher = evidence["launcher"]
 
     if platform.key.startswith("windows"):
-        # Tycho already emits the real native Eclipse executable. Do not wrap or
-        # replace it with a script; the signed kide.exe remains the user entry point.
-        shutil.copy2(source, destination)
-        return str(PurePosixPath(native_launcher.lstrip("./")))
+        # Preserve Tycho's real native Eclipse launcher, but expose it with a
+        # customer-facing name in the staged release archive.
+        native_path = PurePosixPath(native_launcher.lstrip("./"))
+        entrypoint = native_path.with_name("KIDE.exe")
+        with zipfile.ZipFile(source, mode="r") as src, zipfile.ZipFile(
+            destination, mode="w"
+        ) as dst:
+            for info in src.infolist():
+                staged_info = copy.copy(info)
+                current = PurePosixPath(info.filename.replace("\\", "/").lstrip("./"))
+                if current == native_path:
+                    staged_info.filename = str(entrypoint)
+                dst.writestr(staged_info, src.read(info.filename))
+        return str(entrypoint)
 
     wrapper_path = release_wrapper_path(platform, native_launcher)
     wrapper_bytes = wrapper_source(platform).read_bytes()
