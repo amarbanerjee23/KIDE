@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'deploy/gcp/**'
+      - 'deploy/web/**'
       - 'com.kide.glsp/**'
       - 'com.kide.enterprise.server/**'
       - 'com.kide.languageserver.gateway/**'
@@ -64,3 +65,41 @@ jobs:
 
           curl --fail --silent http://127.0.0.1:18080/ |             grep -q '<div id="root"></div>'
           docker logs "$container_id" 2>&1 |             grep -q 'KIDE CLOUD RUN READY'
+
+
+      - name: Build standalone web image
+        run: |
+          docker build \
+            --file deploy/web/Dockerfile \
+            --build-arg VITE_KIDE_API_ORIGIN=https://backend.example.test \
+            --build-arg VITE_KIDE_LSP_ORIGIN=https://backend.example.test \
+            --tag kide-web:ci \
+            .
+
+      - name: Boot standalone web image
+        run: |
+          set -euo pipefail
+          container_id="$(docker run -d -p 18090:8080 -e PORT=8080 kide-web:ci)"
+
+          cleanup() {
+            docker logs "$container_id" || true
+            docker rm -f "$container_id" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for _ in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18090/healthz >/dev/null; then
+              ready=1
+              break
+            fi
+            if ! docker inspect --format='{{.State.Running}}' "$container_id" \
+                2>/dev/null | grep -qx true; then
+              echo "Standalone web image exited before readiness" >&2
+              exit 1
+            fi
+            sleep 1
+          done
+
+          test "$ready" -eq 1
+          curl --fail --silent http://127.0.0.1:18090/ | grep -q '<div id="root"></div>'

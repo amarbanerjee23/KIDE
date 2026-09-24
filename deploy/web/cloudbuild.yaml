@@ -1,0 +1,29 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --file
+      - deploy/web/Dockerfile
+      - --tag
+      - ${_KIDE_WEB_IMAGE}
+      - --build-arg
+      - VITE_KIDE_API_ORIGIN=${_KIDE_BACKEND_ORIGIN}
+      - --build-arg
+      - VITE_KIDE_LSP_ORIGIN=${_KIDE_BACKEND_ORIGIN}
+      - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_KIDE_WEB_IMAGE}
+images:
+  - ${_KIDE_WEB_IMAGE}
+substitutions:
+  _REGION: asia-south1
+  _AR_REPOSITORY: kide
+  _KIDE_WEB_IMAGE: '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/kide-web:${BUILD_ID}'
+  _KIDE_BACKEND_ORIGIN: 'https://invalid.example'
+timeout: 1800s
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
+  dynamicSubstitutions: true

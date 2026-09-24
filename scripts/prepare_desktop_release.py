@@ -17,7 +17,9 @@ customer-facing file names and a machine-readable release manifest is emitted.
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
+import io
 import json
 import shutil
 import sys
@@ -29,6 +31,8 @@ from typing import Iterable
 
 
 JUSTJ_VERSION = "17.0.20"
+ROOT = Path(__file__).resolve().parents[1]
+DESKTOP_LAUNCHERS = ROOT / "deploy" / "desktop"
 
 
 @dataclass(frozen=True)
@@ -176,6 +180,96 @@ def qualify_archive(path: Path, platform: Platform) -> dict[str, str]:
     }
 
 
+def release_wrapper_path(platform: Platform, native_launcher: str) -> PurePosixPath:
+    launcher = PurePosixPath(native_launcher.lstrip("./"))
+
+    if platform.key.startswith("linux"):
+        return launcher.parent / "KIDE.sh"
+
+    if platform.key.startswith("macos"):
+        parts = launcher.parts
+        app_index = next(
+            (index for index, part in enumerate(parts) if part.lower() == "kide.app"),
+            None,
+        )
+        if app_index is None:
+            raise QualificationError(
+                f"{platform.key}: native launcher is not inside KIDE.app: {native_launcher}"
+            )
+        return PurePosixPath(*parts[:app_index]) / "KIDE.command"
+
+    raise QualificationError(f"{platform.key}: no wrapper is defined")
+
+
+def wrapper_source(platform: Platform) -> Path:
+    if platform.key.startswith("linux"):
+        path = DESKTOP_LAUNCHERS / "linux" / "KIDE.sh"
+    elif platform.key.startswith("macos"):
+        path = DESKTOP_LAUNCHERS / "macos" / "KIDE.command"
+    else:
+        raise QualificationError(f"{platform.key}: no wrapper source is defined")
+
+    if not path.is_file():
+        raise QualificationError(f"Desktop launcher template is missing: {path}")
+    return path
+
+
+def stage_release_archive(
+    source: Path,
+    destination: Path,
+    platform: Platform,
+    evidence: dict[str, str],
+) -> str:
+    native_launcher = evidence["launcher"]
+
+    if platform.key.startswith("windows"):
+        # Preserve Tycho's real native Eclipse launcher, but expose it with a
+        # customer-facing name in the staged release archive.
+        native_path = PurePosixPath(native_launcher.lstrip("./"))
+        entrypoint = native_path.with_name("KIDE.exe")
+        with zipfile.ZipFile(source, mode="r") as src, zipfile.ZipFile(
+            destination, mode="w"
+        ) as dst:
+            for info in src.infolist():
+                staged_info = copy.copy(info)
+                current = PurePosixPath(info.filename.replace("\\", "/").lstrip("./"))
+                if current == native_path:
+                    staged_info.filename = str(entrypoint)
+                if info.is_dir():
+                    dst.writestr(staged_info, b"")
+                else:
+                    dst.writestr(staged_info, src.read(info.filename))
+        return str(entrypoint)
+
+    wrapper_path = release_wrapper_path(platform, native_launcher)
+    wrapper_bytes = wrapper_source(platform).read_bytes()
+
+    with tarfile.open(source, mode="r:gz") as src, tarfile.open(
+        destination, mode="w:gz"
+    ) as dst:
+        for member in src.getmembers():
+            fileobj = src.extractfile(member) if member.isfile() else None
+            dst.addfile(member, fileobj)
+
+        wrapper = tarfile.TarInfo(str(wrapper_path))
+        wrapper.size = len(wrapper_bytes)
+        wrapper.mode = 0o755
+        wrapper.mtime = 0
+        dst.addfile(wrapper, io.BytesIO(wrapper_bytes))
+
+    staged = archive_members(destination)
+    entrypoint = next(
+        (member for member in staged if member.path == wrapper_path),
+        None,
+    )
+    if entrypoint is None:
+        raise QualificationError(
+            f"{platform.key}: release entry point was not added: {wrapper_path}"
+        )
+    require_executable(entrypoint, f"{platform.key} release entry point")
+    return str(wrapper_path)
+
+
 def write_checksums(output_dir: Path, filenames: Iterable[str]) -> None:
     lines = []
     for filename in sorted(filenames):
@@ -231,7 +325,7 @@ def main() -> int:
     for platform, source, evidence in qualified:
         destination_name = f"KIDE-{version}-{platform.release_slug}{platform.extension}"
         destination = output_dir / destination_name
-        shutil.copy2(source, destination)
+        entrypoint = stage_release_archive(source, destination, platform, evidence)
         digest = sha256(destination)
         staged_names.append(destination_name)
         manifest["artifacts"].append(
@@ -239,6 +333,7 @@ def main() -> int:
                 "platform": platform.key,
                 "file": destination_name,
                 "sha256": digest,
+                "entryPoint": entrypoint,
                 "launcher": evidence["launcher"],
                 "runtime": evidence["runtime"],
             }
