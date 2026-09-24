@@ -5,6 +5,7 @@ import io
 from pathlib import Path
 import tarfile
 import tempfile
+import sys
 import unittest
 import zipfile
 
@@ -13,6 +14,7 @@ MODULE_PATH = ROOT / "scripts" / "prepare_desktop_release.py"
 SPEC = importlib.util.spec_from_file_location("prepare_desktop_release", MODULE_PATH)
 assert SPEC and SPEC.loader
 release = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = release
 SPEC.loader.exec_module(release)
 
 
