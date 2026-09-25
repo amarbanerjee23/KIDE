@@ -49,7 +49,7 @@ The bootstrap flow:
 10. prints the final public web and backend URLs.
 
 After the first deployment, `deploy` refreshes a dedicated cached checkout of
-`main` and invokes the same two-service deployment pipeline directly.
+`main` and invokes the same unified release/deployment pipeline directly.
 
 For non-interactive automation, provide the documented OIDC environment
 variables, point `KIDE_OIDC_CLIENT_SECRET_FILE` at a protected local file,
@@ -187,7 +187,7 @@ The bootstrap runs the configured trigger with:
 
 ```text
 branch: main
-deployment config: deploy/gcp/cloudbuild-deploy.yaml
+release/deployment config: deploy/gcp/cloudbuild-release.yaml
 ```
 
 and completes only after:
