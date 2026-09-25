@@ -72,6 +72,35 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("dynamicSubstitutions: true", cloudbuild)
         self.assertIn("logging: CLOUD_LOGGING_ONLY", cloudbuild)
 
+    def test_cloud_build_yaml_has_no_unindented_embedded_content(self):
+        allowed_top_level = (
+            "steps:",
+            "images:",
+            "substitutions:",
+            "timeout:",
+            "options:",
+        )
+        for relative in (
+            "cloudbuild.yaml",
+            "deploy/gcp/cloudbuild.yaml",
+            "deploy/gcp/cloudbuild-release.yaml",
+        ):
+            for line_number, line in enumerate(
+                self.read(relative).splitlines(),
+                start=1,
+            ):
+                if not line.strip():
+                    continue
+                if line.startswith(" "):
+                    continue
+                self.assertTrue(
+                    line.startswith(allowed_top_level),
+                    msg=(
+                        f"{relative}:{line_number} has unexpected "
+                        f"top-level content: {line!r}"
+                    ),
+                )
+
     def test_deployment_shell_scripts_parse(self):
         for relative in (
             "deploy/gcp/entrypoint.sh",
