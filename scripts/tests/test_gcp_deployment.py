@@ -48,6 +48,10 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("type=cloud-storage", cloudbuild)
         self.assertIn("--set-secrets", cloudbuild)
         self.assertIn("gcloud builds submit", deploy)
+        self.assertIn("--config deploy/gcp/cloudbuild-release.yaml", deploy)
+        self.assertIn("COMMIT_SHA=", deploy)
+        self.assertIn("SHORT_SHA=", deploy)
+        self.assertIn("_KIDE_GITHUB_TOKEN_SECRET=", deploy)
         self.assertIn("deployment-status.sh", deploy)
         self.assertNotIn("YOUR_OIDC_CLIENT_SECRET", deploy)
 
