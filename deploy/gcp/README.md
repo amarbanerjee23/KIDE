@@ -43,7 +43,7 @@ The bootstrap flow:
 6. provisions the Artifact Registry, persistent bucket, runtime service
    accounts and IAM through the existing bootstrap;
 7. switches the selected trigger to
-   `deploy/gcp/cloudbuild-deploy.yaml`;
+   `deploy/gcp/cloudbuild-release.yaml`;
 8. runs the trigger against `main`;
 9. waits for both `kide` and `kide-web` to exist and pass health checks;
 10. prints the final public web and backend URLs.
@@ -52,7 +52,9 @@ After the first deployment, `deploy` refreshes a dedicated cached checkout of
 `main` and invokes the same two-service deployment pipeline directly.
 
 For non-interactive automation, provide the documented OIDC environment
-variables and point `KIDE_OIDC_CLIENT_SECRET_FILE` at a protected local file.
+variables, point `KIDE_OIDC_CLIENT_SECRET_FILE` at a protected local file,
+and use `KIDE_GITHUB_RELEASE_TOKEN_FILE` when the GitHub release token
+Secret Manager secret has not yet been created.
 
 KIDE uses two Cloud Run services when deployment is enabled:
 
@@ -84,22 +86,28 @@ This preserves the behavior of the original working Google Cloud Build trigger
 and keeps ordinary main-branch builds green before deployment has been
 explicitly configured.
 
-### Deployment trigger
+### Unified release/deployment trigger
 
-`deploy/gcp/cloudbuild-deploy.yaml` is the continuous-deployment
+`deploy/gcp/cloudbuild-release.yaml` is the full Cloud Build release
 configuration.
 
 After one-time configuration it:
 
-1. checks that required non-secret deployment substitutions are present;
-2. builds and pushes the backend image;
-3. deploys the `kide` Cloud Run service;
-4. reads its live URL;
-5. builds the standalone web image with that URL in
-   `VITE_KIDE_API_ORIGIN` and `VITE_KIDE_LSP_ORIGIN`;
-6. pushes and deploys `kide-web`;
-7. updates backend allowed origins with the live backend and web URLs;
-8. verifies both live `/healthz` endpoints and the web root.
+1. validates the release/deployment substitutions;
+2. builds the Eclipse/Tycho desktop products;
+3. stages and qualifies Windows, Linux, macOS Intel and macOS Apple Silicon
+   runnable bundles;
+4. builds and pushes the backend image;
+5. deploys the `kide` Cloud Run service and reads its live URL;
+6. builds the standalone web image against the live backend URL;
+7. pushes and deploys `kide-web`;
+8. updates backend allowed origins;
+9. verifies both live `/healthz` endpoints and the web root;
+10. writes `KIDE-HOSTED-URL.txt` and `gcp-deployment-manifest.json`;
+11. creates/updates a commit-specific GitHub pre-release containing the
+    desktop bundles and deployment metadata.
+
+The GitHub Release notes include the clickable hosted web URL and backend URL.
 
 The deployment preflight intentionally does not call Storage or Secret Manager
 `describe` operations. Resource creation/validation is performed by the
@@ -119,10 +127,43 @@ The corrected model is explicit:
 - automatic deployment is enabled only after infrastructure and IAM setup is
   complete;
 - `configure-auto-deploy.sh` then switches that trigger to
-  `deploy/gcp/cloudbuild-deploy.yaml`.
+  `deploy/gcp/cloudbuild-release.yaml`.
 
 This prevents repository changes from silently converting a build trigger into
 an infrastructure deployment trigger.
+
+## GitHub Release publication
+
+The unified Cloud Build pipeline publishes a pre-release tagged:
+
+```text
+gcp-<SHORT_SHA>
+```
+
+The release contains:
+
+- Windows x86_64 Eclipse bundle;
+- Linux x86_64 Eclipse bundle;
+- macOS x86_64 Eclipse bundle;
+- macOS Apple Silicon Eclipse bundle;
+- `release-manifest.json`;
+- `SHA256SUMS.txt`;
+- `KIDE-HOSTED-URL.txt`;
+- `gcp-deployment-manifest.json`.
+
+The release notes also contain the live `kide-web` and backend URLs.
+
+Cloud Build reads the GitHub publishing credential only from Secret Manager.
+The default secret name is:
+
+```text
+kide-github-release-token
+```
+
+Use a fine-grained GitHub token scoped only to
+`amarbanerjee23/KIDE` with **Contents: Read and write**. The bootstrap reads
+the token with hidden input and stores it in Secret Manager; it is never
+written to the build YAML or trigger substitutions.
 
 ## First-deployment bootstrap
 
@@ -200,14 +241,15 @@ The configuration script provisions or validates:
 - Service Account User on only the two KIDE runtime identities.
 
 It then changes the selected Cloud Build trigger to use
-`deploy/gcp/cloudbuild-deploy.yaml` and supplies the required non-secret
-substitutions.
+`deploy/gcp/cloudbuild-release.yaml` and supplies the required non-secret
+substitutions. It also grants the Cloud Build service account Secret Manager
+access only to the dedicated GitHub release-token secret.
 
-The OIDC client secret itself remains only in Secret Manager.
+The OIDC client secret and GitHub release token remain only in Secret Manager.
 
 ## Manual deployment
 
-The manual entry point uses the same deployment configuration:
+The manual entry point uses the same unified release/deployment configuration:
 
 ```bash
 export PROJECT_ID="kide-eclipse"
