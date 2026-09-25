@@ -42,8 +42,8 @@ The bootstrap flow:
    secret value in the command line or shell history;
 6. provisions the Artifact Registry, persistent bucket, runtime service
    accounts and IAM through the existing bootstrap;
-7. switches the selected trigger to
-   `deploy/gcp/cloudbuild-release.yaml`;
+7. keeps the selected trigger on the canonical root `cloudbuild.yaml` and
+   enables `_KIDE_RELEASE_ENABLED=true`;
 8. runs the trigger against `main`;
 9. waits for both `kide` and `kide-web` to exist and pass health checks;
 10. prints the final public web and backend URLs.
@@ -126,11 +126,31 @@ The corrected model is explicit:
 - a normal trigger can always use `cloudbuild.yaml`;
 - automatic deployment is enabled only after infrastructure and IAM setup is
   complete;
-- `configure-auto-deploy.sh` then switches that trigger to
-  `deploy/gcp/cloudbuild-release.yaml`.
+- `configure-auto-deploy.sh` keeps that trigger on `cloudbuild.yaml` and
+  enables hosted release mode through `_KIDE_RELEASE_ENABLED=true`.
 
 This prevents repository changes from silently converting a build trigger into
 an infrastructure deployment trigger.
+
+## Canonical main-branch release ownership
+
+The root `cloudbuild.yaml`, `deploy/gcp/cloudbuild.yaml`, and
+`deploy/gcp/cloudbuild-release.yaml` now describe the same unified pipeline.
+
+Before the one-time bootstrap, `_KIDE_RELEASE_ENABLED=false` keeps deployment
+and GitHub Release publication disabled while still building:
+
+- Eclipse desktop products;
+- backend container image;
+- standalone web container image.
+
+After bootstrap, the trigger receives `_KIDE_RELEASE_ENABLED=true`. The same
+root build then deploys `kide` and `kide-web`, verifies the live URLs, and
+creates the canonical `gcp-<SHORT_SHA>` GitHub pre-release.
+
+The GitHub Actions artifact workflow no longer creates desktop-only Releases on
+`main`; it still builds and uploads Actions artifacts. This prevents a
+desktop-only Release from appearing before a hosted URL exists.
 
 ## GitHub Release publication
 
@@ -240,9 +260,9 @@ The configuration script provisions or validates:
 - Cloud Build Cloud Run Admin;
 - Service Account User on only the two KIDE runtime identities.
 
-It then changes the selected Cloud Build trigger to use
-`deploy/gcp/cloudbuild-release.yaml` and supplies the required non-secret
-substitutions. It also grants the Cloud Build service account Secret Manager
+It keeps the selected Cloud Build trigger on the canonical root
+`cloudbuild.yaml`, enables `_KIDE_RELEASE_ENABLED=true`, and supplies the
+required non-secret substitutions. It also grants the Cloud Build service account Secret Manager
 access only to the dedicated GitHub release-token secret.
 
 The OIDC client secret and GitHub release token remain only in Secret Manager.

@@ -60,7 +60,7 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
         self.assertIn("kide-cloud-run-image.txt", workflow)
         self.assertIn("Publish runnable desktop bundles to GitHub Releases", workflow)
         self.assertIn(
-            "github.event_name == 'push' || github.event_name == 'workflow_dispatch'",
+            "(github.event_name == 'push' && github.ref_name != 'main') || github.event_name == 'workflow_dispatch'",
             workflow,
         )
         self.assertIn("gh release create", workflow)

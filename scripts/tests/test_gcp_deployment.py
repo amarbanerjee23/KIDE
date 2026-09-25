@@ -55,18 +55,22 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("deployment-status.sh", deploy)
         self.assertNotIn("YOUR_OIDC_CLIENT_SECRET", deploy)
 
-    def test_cloud_build_uses_dedicated_dockerfile(self):
+    def test_cloud_build_uses_canonical_unified_release_config(self):
         cloudbuild = self.read("deploy/gcp/cloudbuild.yaml")
         root_cloudbuild = self.read("cloudbuild.yaml")
+        release = self.read("deploy/gcp/cloudbuild-release.yaml")
+
         self.assertEqual(root_cloudbuild, cloudbuild)
+        self.assertEqual(root_cloudbuild, release)
         self.assertIn("deploy/gcp/Dockerfile", cloudbuild)
-        self.assertIn("${_KIDE_IMAGE}", cloudbuild)
-        self.assertIn("_KIDE_IMAGE:", cloudbuild)
-        self.assertIn("${BUILD_ID}", cloudbuild)
+        self.assertIn("Build Eclipse desktop products", cloudbuild)
+        self.assertIn("Build KIDE web image", cloudbuild)
+        self.assertIn("Deploy KIDE backend", cloudbuild)
+        self.assertIn("Deploy KIDE web", cloudbuild)
+        self.assertIn("KIDE-HOSTED-URL.txt", cloudbuild)
+        self.assertIn("_KIDE_RELEASE_ENABLED: 'false'", cloudbuild)
         self.assertIn("dynamicSubstitutions: true", cloudbuild)
         self.assertIn("logging: CLOUD_LOGGING_ONLY", cloudbuild)
-        self.assertNotIn("Deploy KIDE backend", cloudbuild)
-        self.assertNotIn("_KIDE_OIDC_INTROSPECTION_URL", cloudbuild)
 
     def test_deployment_shell_scripts_parse(self):
         for relative in (
@@ -171,10 +175,12 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("gh release create", release)
         self.assertIn("gh release upload", release)
         self.assertIn("gh release edit", release)
-        self.assertIn("availableSecrets:", release)
         self.assertIn("_KIDE_GITHUB_TOKEN_SECRET", release)
-        self.assertIn("secretEnv:", release)
-        self.assertIn("GH_TOKEN", release)
+        self.assertIn("Resolve GitHub release token", release)
+        self.assertIn("gcloud secrets versions access latest", release)
+        self.assertIn("/workspace/.kide-github-token", release)
+        self.assertNotIn("availableSecrets:", release)
+        self.assertNotIn("secretEnv:", release)
         self.assertIn("ghcr.io/cli/cli:2.97.0", release)
 
     def test_auto_deploy_bootstrap_uses_separate_runtime_identities(self):
@@ -191,8 +197,9 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("_KIDE_GITHUB_REPOSITORY=", configure)
         self.assertIn("_KIDE_GITHUB_TOKEN_SECRET=", configure)
         self.assertIn("roles/secretmanager.secretAccessor", configure)
+        self.assertIn("_KIDE_RELEASE_ENABLED=true", configure)
         self.assertIn(
-            'BUILD_CONFIG="${BUILD_CONFIG:-deploy/gcp/cloudbuild-release.yaml}"',
+            'BUILD_CONFIG="${BUILD_CONFIG:-cloudbuild.yaml}"',
             configure,
         )
 
@@ -205,13 +212,18 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("gcloud artifacts repositories create", bootstrap)
         self.assertIn("roles/artifactregistry.writer", bootstrap)
         self.assertIn("roles/logging.logWriter", bootstrap)
-        self.assertIn("Verify Artifact Registry repository", build)
+        self.assertIn("Verify release prerequisites", build)
+        self.assertIn("_KIDE_RELEASE_ENABLED", build)
         self.assertIn("Verify deployment prerequisites", deploy)
         self.assertIn("configure-auto-deploy.sh", deploy)
         self.assertIn("bootstrap-cloud-build.sh", configure)
 
-        # The deployment build identity intentionally does not need broad
-        # storage/secret viewer roles simply to perform preflight checks.
+        # The canonical root config remains green before activation and avoids
+        # resolving the GitHub token secret until hosted release mode is enabled.
+        self.assertIn("Skipping GitHub Release publication", build)
+        self.assertNotIn("availableSecrets:", build)
+
+        # The legacy deployment-only preflight retains least privilege.
         self.assertNotIn("gcloud storage buckets describe", deploy)
         self.assertNotIn("gcloud secrets describe", deploy)
 

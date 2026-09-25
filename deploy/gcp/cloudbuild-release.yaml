@@ -5,6 +5,13 @@ steps:
     args:
       - -ceu
       - |
+        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+          echo "KIDE hosted release is not enabled for this trigger."
+          echo "Desktop, backend image and web image will still be built and pushed."
+          echo "Run ./deploy-kide-gcp.sh bootstrap once to enable Cloud Run deployment and GitHub Release publication."
+          exit 0
+        fi
+
         required_values=(
           "${_KIDE_OIDC_INTROSPECTION_URL}"
           "${_KIDE_OIDC_CLIENT_ID}"
@@ -108,6 +115,11 @@ steps:
     args:
       - -ceu
       - |
+        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+          echo "Skipping backend deployment: KIDE hosted release is not enabled."
+          exit 0
+        fi
+
         gcloud run deploy "${_KIDE_SERVICE_NAME}" \
           --project "${PROJECT_ID}" \
           --region "${_REGION}" \
@@ -143,7 +155,13 @@ steps:
     args:
       - -ceu
       - |
-        BACKEND_URL="$(cat /workspace/.kide-backend-url)"
+        if [[ "${_KIDE_RELEASE_ENABLED}" == "true" ]]; then
+          BACKEND_URL="$(cat /workspace/.kide-backend-url)"
+        else
+          BACKEND_URL=""
+          echo "Building standalone web image without a deployed backend origin."
+        fi
+
         docker build \
           --file deploy/web/Dockerfile \
           --tag "${_KIDE_WEB_IMAGE}" \
@@ -163,6 +181,11 @@ steps:
     args:
       - -ceu
       - |
+        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+          echo "Skipping web deployment: KIDE hosted release is not enabled."
+          exit 0
+        fi
+
         BACKEND_URL="$(cat /workspace/.kide-backend-url)"
 
         gcloud run deploy "${_KIDE_WEB_SERVICE_NAME}" \
@@ -204,6 +227,11 @@ steps:
     args:
       - -ceu
       - |
+        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+          echo "Skipping live verification: KIDE hosted release is not enabled."
+          exit 0
+        fi
+
         BACKEND_URL="$(cat /workspace/.kide-backend-url)"
         WEB_URL="$(cat /workspace/.kide-web-url)"
 
@@ -228,6 +256,11 @@ steps:
     args:
       - -ceu
       - |
+        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+          echo "Skipping hosted deployment metadata: KIDE hosted release is not enabled."
+          exit 0
+        fi
+
         python3 - <<'PY'
         import json
         from pathlib import Path
@@ -280,14 +313,37 @@ signed/notarized production release workflow.
         print(hosted)
         PY
 
-  - name: ghcr.io/cli/cli:2.97.0
-    id: Publish desktop builds and hosted URL to GitHub Releases
-    entrypoint: sh
-    secretEnv:
-      - GH_TOKEN
+  - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+    id: Resolve GitHub release token
+    entrypoint: bash
     args:
       - -ceu
       - |
+        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+          echo "Skipping GitHub token resolution: KIDE hosted release is not enabled."
+          exit 0
+        fi
+
+        umask 077
+        gcloud secrets versions access latest \
+          --project "${PROJECT_ID}" \
+          --secret "${_KIDE_GITHUB_TOKEN_SECRET}" \
+          > /workspace/.kide-github-token
+
+  - name: ghcr.io/cli/cli:2.97.0
+    id: Publish desktop builds and hosted URL to GitHub Releases
+    entrypoint: sh
+    args:
+      - -ceu
+      - |
+        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+          echo "Skipping GitHub Release publication: KIDE hosted release is not enabled."
+          exit 0
+        fi
+
+        export GH_TOKEN="$(cat /workspace/.kide-github-token)"
+        trap 'rm -f /workspace/.kide-github-token' EXIT
+
         RELEASE_TAG="gcp-${SHORT_SHA}"
         RELEASE_TITLE="KIDE GCP Build ${SHORT_SHA}"
 
@@ -329,6 +385,7 @@ images:
   - ${_KIDE_WEB_IMAGE}
 
 substitutions:
+  _KIDE_RELEASE_ENABLED: 'false'
   _REGION: asia-south1
   _AR_REPOSITORY: kide
   _KIDE_SERVICE_NAME: kide
@@ -347,10 +404,6 @@ substitutions:
   _KIDE_GITHUB_REPOSITORY: 'amarbanerjee23/KIDE'
   _KIDE_GITHUB_TOKEN_SECRET: 'kide-github-release-token'
 
-availableSecrets:
-  secretManager:
-    - versionName: 'projects/${PROJECT_ID}/secrets/${_KIDE_GITHUB_TOKEN_SECRET}/versions/latest'
-      env: GH_TOKEN
 
 timeout: 7200s
 
