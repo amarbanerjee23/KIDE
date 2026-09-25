@@ -68,8 +68,9 @@ jobs:
             echo "release_tag=build-${short_sha}" >> "$GITHUB_OUTPUT"
             echo "release_title=KIDE Continuous Build ${short_sha}" >> "$GITHUB_OUTPUT"
           else
-            echo "release_tag=pr45-build-${short_sha}" >> "$GITHUB_OUTPUT"
-            echo "release_title=KIDE PR45 Build ${short_sha}" >> "$GITHUB_OUTPUT"
+            branch_slug="$(printf '%s' "$GITHUB_REF_NAME" | sed -E 's/[^A-Za-z0-9._-]+/-/g')"
+            echo "release_tag=branch-${branch_slug}-build-${short_sha}" >> "$GITHUB_OUTPUT"
+            echo "release_title=KIDE Branch Build ${branch_slug} ${short_sha}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run repository governance tests
@@ -144,7 +145,7 @@ jobs:
 
 
       - name: Publish runnable desktop bundles to GitHub Releases
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
