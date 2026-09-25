@@ -316,7 +316,8 @@ signed/notarized production release workflow.
             --target "${COMMIT_SHA}" \
             --title "$${RELEASE_TITLE}" \
             --notes-file dist/gcp-release-notes.md \
-            --prerelease
+            --prerelease \
+            --latest=false
         fi
 
         gh release view "$${RELEASE_TAG}" \
