@@ -96,7 +96,7 @@ deploy() {
   require_deploy_environment
   ensure_checkout
 
-  echo "Deploying KIDE from current main using the dedicated GCP deployment pipeline..."
+  echo "Deploying KIDE from current main using the unified GCP release pipeline..."
   (
     cd "${KIDE_DEPLOY_CHECKOUT}"
     PROJECT_ID="${PROJECT_ID}"     REGION="${REGION}"     KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME}"     KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME}"     bash deploy/gcp/deploy-cloud-run.sh
@@ -127,6 +127,9 @@ bootstrap_first_deployment() {
     KIDE_PRIMARY_PRINCIPAL="${KIDE_PRIMARY_PRINCIPAL:-}" \
     KIDE_OIDC_SECRET_NAME="${KIDE_OIDC_SECRET_NAME:-kide-oidc-client-secret}" \
     KIDE_OIDC_CLIENT_SECRET_FILE="${KIDE_OIDC_CLIENT_SECRET_FILE:-}" \
+    KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY:-amarbanerjee23/KIDE}" \
+    KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET:-kide-github-release-token}" \
+    KIDE_GITHUB_RELEASE_TOKEN_FILE="${KIDE_GITHUB_RELEASE_TOKEN_FILE:-}" \
     bash deploy/gcp/bootstrap-first-deployment.sh
   )
 }
@@ -141,7 +144,7 @@ configure_trigger() {
   ensure_checkout
   (
     cd "${KIDE_DEPLOY_CHECKOUT}"
-    PROJECT_ID="${PROJECT_ID}"     REGION="${REGION}"     TRIGGER_NAME="${TRIGGER_NAME}"     TRIGGER_REGION="${TRIGGER_REGION:-${REGION}}"     bash deploy/gcp/configure-auto-deploy.sh
+    PROJECT_ID="${PROJECT_ID}"     REGION="${REGION}"     TRIGGER_NAME="${TRIGGER_NAME}"     TRIGGER_REGION="${TRIGGER_REGION:-${REGION}}"     KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY:-amarbanerjee23/KIDE}"     KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET:-kide-github-release-token}"     bash deploy/gcp/configure-auto-deploy.sh
   )
 }
 
@@ -186,16 +189,19 @@ doctor
 bootstrap
   First-deployment wizard. Discovers the Cloud Build trigger, prompts for
   missing OIDC settings, stores the client secret in Secret Manager, provisions
-  required resources/IAM, switches the trigger to the deployment config, runs
-  the first deployment and verifies both live services.
+  required resources/IAM, switches the trigger to the unified GCP release
+  pipeline, runs the first deployment, verifies both live services and
+  publishes the hosted URL plus Eclipse bundles to GitHub Releases.
 
 deploy
-  Clone/update KIDE in a private deployment cache and deploy both backend and
-  web using deploy/gcp/cloudbuild-deploy.yaml. Use after bootstrap.
+  Clone/update KIDE in a private deployment cache and run
+  deploy/gcp/cloudbuild-release.yaml. It builds the Eclipse products, deploys
+  backend/web and publishes the hosted URL plus desktop bundles to Releases.
+  Use after bootstrap.
 
 configure-trigger
-  Configure an existing Cloud Build trigger to use the dedicated deployment
-  pipeline. Requires TRIGGER_NAME.
+  Configure an existing Cloud Build trigger to use the unified GCP release
+  pipeline. Requires TRIGGER_NAME and pre-provisioned secrets.
 
 Common variables:
   PROJECT_ID                default: active gcloud project
@@ -211,6 +217,11 @@ Deployment variables:
   KIDE_OIDC_AUDIENCE
   KIDE_PRIMARY_PRINCIPAL
   KIDE_OIDC_SECRET_NAME
+
+GitHub release publishing:
+  KIDE_GITHUB_REPOSITORY        default: amarbanerjee23/KIDE
+  KIDE_GITHUB_TOKEN_SECRET      default: kide-github-release-token
+  KIDE_GITHUB_RELEASE_TOKEN_FILE
 EOF
 }
 

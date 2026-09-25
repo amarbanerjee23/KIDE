@@ -1,0 +1,360 @@
+steps:
+  - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+    id: Verify release prerequisites
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        required_values=(
+          "${_KIDE_OIDC_INTROSPECTION_URL}"
+          "${_KIDE_OIDC_CLIENT_ID}"
+          "${_KIDE_OIDC_ISSUER}"
+          "${_KIDE_OIDC_AUDIENCE}"
+          "${_KIDE_PRIMARY_PRINCIPAL}"
+          "${_KIDE_OIDC_SECRET_NAME}"
+          "${_KIDE_GITHUB_REPOSITORY}"
+          "${_KIDE_GITHUB_TOKEN_SECRET}"
+        )
+        for value in "$${required_values[@]}"; do
+          if [[ -z "$${value}" ]]; then
+            echo "KIDE release/deployment trigger is not fully configured." >&2
+            echo "Run ./deploy-kide-gcp.sh bootstrap once before using this config." >&2
+            exit 2
+          fi
+        done
+
+        if [[ -z "${COMMIT_SHA}" || -z "${SHORT_SHA}" ]]; then
+          echo "This release config must run from a source trigger with COMMIT_SHA and SHORT_SHA." >&2
+          exit 2
+        fi
+
+        echo "Release/deployment configuration is present."
+
+  - name: maven:3.9.9-eclipse-temurin-21
+    id: Build Eclipse desktop products
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        mvn -B -ntp clean verify
+
+  - name: python:3.12-slim
+    id: Stage Eclipse release bundles
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        rm -rf dist
+        python3 scripts/prepare_desktop_release.py \
+          --products releng/com.kide.repository/target/products \
+          --output dist \
+          --version "gcp-${SHORT_SHA}"
+
+        python3 - <<'PY'
+        import json
+        import tarfile
+        import zipfile
+        from pathlib import Path
+
+        dist = Path("dist")
+        manifest = json.loads((dist / "release-manifest.json").read_text())
+        expected = {
+            "windows-x86_64": "KIDE.exe",
+            "linux-x86_64": "KIDE.sh",
+            "macos-x86_64": "KIDE.command",
+            "macos-aarch64": "KIDE.command",
+        }
+
+        seen = set()
+        for artifact in manifest["artifacts"]:
+            platform = artifact["platform"]
+            seen.add(platform)
+            entry = artifact["entryPoint"]
+            assert entry.endswith(expected[platform]), (platform, entry)
+            archive = dist / artifact["file"]
+            if archive.suffix == ".zip":
+                with zipfile.ZipFile(archive) as zf:
+                    assert entry in zf.namelist(), (platform, entry)
+            else:
+                with tarfile.open(archive, "r:gz") as tf:
+                    member = tf.getmember(entry)
+                    assert member.mode & 0o111, (platform, entry, oct(member.mode))
+
+        assert seen == set(expected), seen
+        print("Qualified Eclipse desktop bundles:", sorted(seen))
+        PY
+
+  - name: gcr.io/cloud-builders/docker
+    id: Build KIDE backend image
+    args:
+      - build
+      - --file
+      - deploy/gcp/Dockerfile
+      - --tag
+      - ${_KIDE_IMAGE}
+      - --build-arg
+      - KIDE_BUILD_QUALIFIER=${SHORT_SHA}
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    id: Push KIDE backend image
+    args:
+      - push
+      - ${_KIDE_IMAGE}
+
+  - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+    id: Deploy KIDE backend
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        gcloud run deploy "${_KIDE_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --image "${_KIDE_IMAGE}" \
+          --service-account "${_KIDE_RUNTIME_SA}" \
+          --allow-unauthenticated \
+          --port 8080 \
+          --cpu 2 \
+          --memory 4Gi \
+          --concurrency 20 \
+          --timeout 3600s \
+          --min 1 \
+          --max 1 \
+          --session-affinity \
+          --add-volume "mount-path=/data,type=cloud-storage,bucket=${_KIDE_DATA_BUCKET},readonly=false,mount-options=uid=10001;gid=10001" \
+          --set-env-vars "^|^KIDE_OIDC_INTROSPECTION_URL=${_KIDE_OIDC_INTROSPECTION_URL}|KIDE_OIDC_CLIENT_ID=${_KIDE_OIDC_CLIENT_ID}|KIDE_OIDC_ISSUER=${_KIDE_OIDC_ISSUER}|KIDE_OIDC_AUDIENCE=${_KIDE_OIDC_AUDIENCE}|KIDE_PRIMARY_PRINCIPAL=${_KIDE_PRIMARY_PRINCIPAL}" \
+          --set-secrets "KIDE_OIDC_CLIENT_SECRET=${_KIDE_OIDC_SECRET_NAME}:latest" \
+          --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
+          --quiet
+
+        BACKEND_URL="$(gcloud run services describe "${_KIDE_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --format='value(status.url)')"
+
+        test -n "$${BACKEND_URL}"
+        printf '%s' "$${BACKEND_URL}" > /workspace/.kide-backend-url
+        echo "KIDE backend deployed: $${BACKEND_URL}"
+
+  - name: gcr.io/cloud-builders/docker
+    id: Build KIDE web image
+    entrypoint: sh
+    args:
+      - -ceu
+      - |
+        BACKEND_URL="$(cat /workspace/.kide-backend-url)"
+        docker build \
+          --file deploy/web/Dockerfile \
+          --tag "${_KIDE_WEB_IMAGE}" \
+          --build-arg "VITE_KIDE_API_ORIGIN=$${BACKEND_URL}" \
+          --build-arg "VITE_KIDE_LSP_ORIGIN=$${BACKEND_URL}" \
+          .
+
+  - name: gcr.io/cloud-builders/docker
+    id: Push KIDE web image
+    args:
+      - push
+      - ${_KIDE_WEB_IMAGE}
+
+  - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+    id: Deploy KIDE web
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        BACKEND_URL="$(cat /workspace/.kide-backend-url)"
+
+        gcloud run deploy "${_KIDE_WEB_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --image "${_KIDE_WEB_IMAGE}" \
+          --service-account "${_KIDE_WEB_RUNTIME_SA}" \
+          --allow-unauthenticated \
+          --port 8080 \
+          --cpu 1 \
+          --memory 512Mi \
+          --concurrency 80 \
+          --timeout 300s \
+          --min 0 \
+          --max 10 \
+          --labels "kide-component=web,kide-build-id=${BUILD_ID}" \
+          --quiet
+
+        WEB_URL="$(gcloud run services describe "${_KIDE_WEB_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --format='value(status.url)')"
+
+        test -n "$${WEB_URL}"
+        printf '%s' "$${WEB_URL}" > /workspace/.kide-web-url
+
+        gcloud run services update "${_KIDE_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --update-env-vars "^|^KIDE_ALLOWED_ORIGINS=$${BACKEND_URL},$${WEB_URL}" \
+          --quiet
+
+        echo "KIDE web deployed: $${WEB_URL}"
+        echo "KIDE backend: $${BACKEND_URL}"
+
+  - name: curlimages/curl:8.12.1
+    id: Verify live KIDE deployment
+    entrypoint: sh
+    args:
+      - -ceu
+      - |
+        BACKEND_URL="$(cat /workspace/.kide-backend-url)"
+        WEB_URL="$(cat /workspace/.kide-web-url)"
+
+        curl --fail --silent --show-error \
+          --retry 12 --retry-delay 5 --retry-all-errors \
+          "$${BACKEND_URL}/healthz" >/dev/null
+
+        curl --fail --silent --show-error \
+          --retry 12 --retry-delay 5 --retry-all-errors \
+          "$${WEB_URL}/healthz" >/dev/null
+
+        curl --fail --silent --show-error "$${WEB_URL}/" \
+          | grep -q '<div id="root"></div>'
+
+        echo "KIDE DEPLOYMENT COMPLETE"
+        echo "Web: $${WEB_URL}"
+        echo "Backend: $${BACKEND_URL}"
+
+  - name: python:3.12-slim
+    id: Write hosted deployment metadata
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        python3 - <<'PY'
+        import json
+        from pathlib import Path
+
+        dist = Path("/workspace/dist")
+        web_url = Path("/workspace/.kide-web-url").read_text().strip()
+        backend_url = Path("/workspace/.kide-backend-url").read_text().strip()
+
+        hosted = (
+            f"KIDE web: {web_url}\n"
+            f"KIDE backend: {backend_url}\n"
+            f"Web health: {web_url}/healthz\n"
+            f"Backend health: {backend_url}/healthz\n"
+        )
+        (dist / "KIDE-HOSTED-URL.txt").write_text(hosted, encoding="utf-8")
+
+        manifest = {
+            "schemaVersion": 1,
+            "repository": "${_KIDE_GITHUB_REPOSITORY}",
+            "commit": "${COMMIT_SHA}",
+            "cloudBuildId": "${BUILD_ID}",
+            "region": "${_REGION}",
+            "webService": "${_KIDE_WEB_SERVICE_NAME}",
+            "webUrl": web_url,
+            "backendService": "${_KIDE_SERVICE_NAME}",
+            "backendUrl": backend_url,
+            "backendImage": "${_KIDE_IMAGE}",
+            "webImage": "${_KIDE_WEB_IMAGE}",
+        }
+        (dist / "gcp-deployment-manifest.json").write_text(
+            json.dumps(manifest, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        notes = f"""# KIDE GCP build ${SHORT_SHA}
+
+**Hosted web application:** {web_url}
+
+**Backend:** {backend_url}
+
+This pre-release was built and deployed by Google Cloud Build from commit
+${COMMIT_SHA}.
+
+The attached desktop bundles contain the Windows, Linux, macOS Intel, and
+macOS Apple Silicon Eclipse products built in the same Cloud Build execution.
+They are unsigned CI/pre-release bundles and remain separate from the trusted
+signed/notarized production release workflow.
+"""
+        (dist / "gcp-release-notes.md").write_text(notes, encoding="utf-8")
+        print(hosted)
+        PY
+
+  - name: ghcr.io/cli/cli:2.97.0
+    id: Publish desktop builds and hosted URL to GitHub Releases
+    entrypoint: sh
+    secretEnv:
+      - GH_TOKEN
+    args:
+      - -ceu
+      - |
+        RELEASE_TAG="gcp-${SHORT_SHA}"
+        RELEASE_TITLE="KIDE GCP Build ${SHORT_SHA}"
+
+        set -- \
+          dist/KIDE-*.zip \
+          dist/KIDE-*.tar.gz \
+          dist/release-manifest.json \
+          dist/SHA256SUMS.txt \
+          dist/KIDE-HOSTED-URL.txt \
+          dist/gcp-deployment-manifest.json
+
+        if gh release view "$${RELEASE_TAG}" \
+            --repo "${_KIDE_GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+          gh release upload "$${RELEASE_TAG}" "$$@" \
+            --repo "${_KIDE_GITHUB_REPOSITORY}" \
+            --clobber
+          gh release edit "$${RELEASE_TAG}" \
+            --repo "${_KIDE_GITHUB_REPOSITORY}" \
+            --title "$${RELEASE_TITLE}" \
+            --notes-file dist/gcp-release-notes.md \
+            --prerelease \
+            --latest=false
+        else
+          gh release create "$${RELEASE_TAG}" "$$@" \
+            --repo "${_KIDE_GITHUB_REPOSITORY}" \
+            --target "${COMMIT_SHA}" \
+            --title "$${RELEASE_TITLE}" \
+            --notes-file dist/gcp-release-notes.md \
+            --prerelease \
+            --latest=false
+        fi
+
+        gh release view "$${RELEASE_TAG}" \
+          --repo "${_KIDE_GITHUB_REPOSITORY}" \
+          --json url,tagName,name,isPrerelease
+
+images:
+  - ${_KIDE_IMAGE}
+  - ${_KIDE_WEB_IMAGE}
+
+substitutions:
+  _REGION: asia-south1
+  _AR_REPOSITORY: kide
+  _KIDE_SERVICE_NAME: kide
+  _KIDE_WEB_SERVICE_NAME: kide-web
+  _KIDE_IMAGE: '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/kide:${BUILD_ID}'
+  _KIDE_WEB_IMAGE: '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPOSITORY}/kide-web:${BUILD_ID}'
+  _KIDE_DATA_BUCKET: '${PROJECT_ID}-kide-data'
+  _KIDE_RUNTIME_SA: 'kide-runtime@${PROJECT_ID}.iam.gserviceaccount.com'
+  _KIDE_WEB_RUNTIME_SA: 'kide-web-runtime@${PROJECT_ID}.iam.gserviceaccount.com'
+  _KIDE_OIDC_INTROSPECTION_URL: ''
+  _KIDE_OIDC_CLIENT_ID: ''
+  _KIDE_OIDC_ISSUER: ''
+  _KIDE_OIDC_AUDIENCE: ''
+  _KIDE_PRIMARY_PRINCIPAL: ''
+  _KIDE_OIDC_SECRET_NAME: ''
+  _KIDE_GITHUB_REPOSITORY: 'amarbanerjee23/KIDE'
+  _KIDE_GITHUB_TOKEN_SECRET: 'kide-github-release-token'
+
+availableSecrets:
+  secretManager:
+    - versionName: 'projects/${PROJECT_ID}/secrets/${_KIDE_GITHUB_TOKEN_SECRET}/versions/latest'
+      env: GH_TOKEN
+
+timeout: 7200s
+
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
+  dynamicSubstitutions: true

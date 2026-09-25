@@ -9,16 +9,22 @@ TRIGGER_NAME="${TRIGGER_NAME:-}"
 KIDE_OIDC_SECRET_NAME="${KIDE_OIDC_SECRET_NAME:-kide-oidc-client-secret}"
 KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME:-kide}"
 KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME:-kide-web}"
+KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY:-amarbanerjee23/KIDE}"
+KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET:-kide-github-release-token}"
 WAIT_SECONDS="${WAIT_SECONDS:-1800}"
 WAIT_INTERVAL="${WAIT_INTERVAL:-10}"
 SECRET_TEMP_FILE=""
+GITHUB_TOKEN_TEMP_FILE=""
 
-cleanup_secret_temp_file() {
+cleanup_secret_temp_files() {
   if [[ -n "${SECRET_TEMP_FILE:-}" && -f "${SECRET_TEMP_FILE}" ]]; then
     rm -f "${SECRET_TEMP_FILE}"
   fi
+  if [[ -n "${GITHUB_TOKEN_TEMP_FILE:-}" && -f "${GITHUB_TOKEN_TEMP_FILE}" ]]; then
+    rm -f "${GITHUB_TOKEN_TEMP_FILE}"
+  fi
 }
-trap cleanup_secret_temp_file EXIT
+trap cleanup_secret_temp_files EXIT
 
 require_command() {
   local command_name="$1"
@@ -113,7 +119,7 @@ discover_trigger() {
       filename="$(gcloud builds triggers describe "${trigger_id}"         --project "${PROJECT_ID}"         --region "${region}"         --format='value(filename)' 2>/dev/null || true)"
       line="${region}|${trigger_id}|${trigger_name}|${filename}"
       all_candidates+=("${line}")
-      if [[ "${filename}" == "cloudbuild.yaml" || "${filename}" == "deploy/gcp/cloudbuild-deploy.yaml" ]]; then
+      if [[ "${filename}" == "cloudbuild.yaml" || "${filename}" == "deploy/gcp/cloudbuild-deploy.yaml" || "${filename}" == "deploy/gcp/cloudbuild-release.yaml" ]]; then
         preferred_candidates+=("${line}")
       fi
     done < <(
@@ -206,11 +212,77 @@ store_client_secret() {
   fi
 
   if [[ -n "${SECRET_TEMP_FILE}" ]]; then
-    cleanup_secret_temp_file
+    cleanup_secret_temp_files
     SECRET_TEMP_FILE=""
   fi
 
   echo "OIDC client secret stored in Secret Manager."
+}
+
+ensure_github_release_token() {
+  local secret_exists=0
+  local token_source_file="${KIDE_GITHUB_RELEASE_TOKEN_FILE:-}"
+  local temp_file=""
+  local token_value=""
+
+  gcloud services enable secretmanager.googleapis.com --project "${PROJECT_ID}" >/dev/null
+
+  if gcloud secrets describe "${KIDE_GITHUB_TOKEN_SECRET}" \
+      --project "${PROJECT_ID}" >/dev/null 2>&1; then
+    secret_exists=1
+  fi
+
+  if [[ -z "${token_source_file}" && "${secret_exists}" -eq 1 ]]; then
+    echo "Reusing GitHub release token secret '${KIDE_GITHUB_TOKEN_SECRET}'."
+    return
+  fi
+
+  if [[ -n "${token_source_file}" ]]; then
+    if [[ ! -f "${token_source_file}" ]]; then
+      echo "KIDE_GITHUB_RELEASE_TOKEN_FILE does not exist: ${token_source_file}" >&2
+      exit 2
+    fi
+    temp_file="${token_source_file}"
+  else
+    if [[ ! -t 0 ]]; then
+      echo "KIDE_GITHUB_RELEASE_TOKEN_FILE is required in non-interactive mode when the GitHub token secret does not exist." >&2
+      exit 2
+    fi
+
+    echo "GitHub release publishing requires a fine-grained token with Contents: Read and write for ${KIDE_GITHUB_REPOSITORY}."
+    read -r -s -p "GitHub release token (hidden): " token_value
+    echo
+    if [[ -z "${token_value}" ]]; then
+      echo "GitHub release token cannot be empty." >&2
+      exit 2
+    fi
+
+    umask 077
+    temp_file="$(mktemp)"
+    GITHUB_TOKEN_TEMP_FILE="${temp_file}"
+    printf '%s' "${token_value}" > "${temp_file}"
+    unset token_value
+  fi
+
+  if [[ "${secret_exists}" -eq 1 ]]; then
+    echo "Adding a new version to GitHub release token secret '${KIDE_GITHUB_TOKEN_SECRET}'..."
+    gcloud secrets versions add "${KIDE_GITHUB_TOKEN_SECRET}" \
+      --project "${PROJECT_ID}" \
+      --data-file="${temp_file}" >/dev/null
+  else
+    echo "Creating GitHub release token secret '${KIDE_GITHUB_TOKEN_SECRET}'..."
+    gcloud secrets create "${KIDE_GITHUB_TOKEN_SECRET}" \
+      --project "${PROJECT_ID}" \
+      --replication-policy=automatic \
+      --data-file="${temp_file}" >/dev/null
+  fi
+
+  if [[ -n "${GITHUB_TOKEN_TEMP_FILE}" ]]; then
+    cleanup_secret_temp_files
+    GITHUB_TOKEN_TEMP_FILE=""
+  fi
+
+  echo "GitHub release token stored in Secret Manager."
 }
 
 service_url() {
@@ -264,10 +336,11 @@ echo "Cloud Build trigger: ${TRIGGER_NAME}"
 echo "Trigger region: ${TRIGGER_REGION}"
 
 store_client_secret
+ensure_github_release_token
 
 echo
-echo "Provisioning GCP resources/IAM and switching the trigger to the deployment pipeline..."
-PROJECT_ID="${PROJECT_ID}" REGION="${REGION}" TRIGGER_NAME="${TRIGGER_NAME}" TRIGGER_REGION="${TRIGGER_REGION}" KIDE_OIDC_INTROSPECTION_URL="${KIDE_OIDC_INTROSPECTION_URL}" KIDE_OIDC_CLIENT_ID="${KIDE_OIDC_CLIENT_ID}" KIDE_OIDC_ISSUER="${KIDE_OIDC_ISSUER}" KIDE_OIDC_AUDIENCE="${KIDE_OIDC_AUDIENCE}" KIDE_PRIMARY_PRINCIPAL="${KIDE_PRIMARY_PRINCIPAL}" KIDE_OIDC_SECRET_NAME="${KIDE_OIDC_SECRET_NAME}" bash deploy/gcp/configure-auto-deploy.sh
+echo "Provisioning GCP resources/IAM and switching the trigger to the unified release pipeline..."
+PROJECT_ID="${PROJECT_ID}" REGION="${REGION}" TRIGGER_NAME="${TRIGGER_NAME}" TRIGGER_REGION="${TRIGGER_REGION}" KIDE_OIDC_INTROSPECTION_URL="${KIDE_OIDC_INTROSPECTION_URL}" KIDE_OIDC_CLIENT_ID="${KIDE_OIDC_CLIENT_ID}" KIDE_OIDC_ISSUER="${KIDE_OIDC_ISSUER}" KIDE_OIDC_AUDIENCE="${KIDE_OIDC_AUDIENCE}" KIDE_PRIMARY_PRINCIPAL="${KIDE_PRIMARY_PRINCIPAL}" KIDE_OIDC_SECRET_NAME="${KIDE_OIDC_SECRET_NAME}" KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY}" KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET}" bash deploy/gcp/configure-auto-deploy.sh
 
 echo
 echo "Starting the first deployment from branch '${DEPLOY_BRANCH}'..."

@@ -48,6 +48,10 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("type=cloud-storage", cloudbuild)
         self.assertIn("--set-secrets", cloudbuild)
         self.assertIn("gcloud builds submit", deploy)
+        self.assertIn("--config deploy/gcp/cloudbuild-release.yaml", deploy)
+        self.assertIn("COMMIT_SHA=", deploy)
+        self.assertIn("SHORT_SHA=", deploy)
+        self.assertIn("_KIDE_GITHUB_TOKEN_SECRET=", deploy)
         self.assertIn("deployment-status.sh", deploy)
         self.assertNotIn("YOUR_OIDC_CLIENT_SECRET", deploy)
 
@@ -119,6 +123,10 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn('"${backend_url}/healthz"', bootstrap)
         self.assertIn('"${web_url}/healthz"', bootstrap)
         self.assertIn("KIDE FIRST DEPLOYMENT COMPLETE", bootstrap)
+        self.assertIn("KIDE_GITHUB_TOKEN_SECRET", bootstrap)
+        self.assertIn("KIDE_GITHUB_RELEASE_TOKEN_FILE", bootstrap)
+        self.assertIn("GitHub release token (hidden)", bootstrap)
+        self.assertIn("gcloud secrets versions add", bootstrap)
         self.assertNotIn("echo -n \"${secret_value}\"", bootstrap)
 
         self.assertIn("bootstrap_first_deployment", entrypoint)
@@ -145,6 +153,30 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn('"$${WEB_URL}/healthz"', cloudbuild)
         self.assertIn("KIDE DEPLOYMENT COMPLETE", cloudbuild)
 
+    def test_unified_gcp_release_pipeline_builds_deploys_and_publishes(self):
+        release = self.read("deploy/gcp/cloudbuild-release.yaml")
+
+        self.assertIn("maven:3.9.9-eclipse-temurin-21", release)
+        self.assertIn("Build Eclipse desktop products", release)
+        self.assertIn("mvn -B -ntp clean verify", release)
+        self.assertIn("prepare_desktop_release.py", release)
+        self.assertIn("KIDE.exe", release)
+        self.assertIn("KIDE.command", release)
+        self.assertIn("Deploy KIDE backend", release)
+        self.assertIn("Build KIDE web image", release)
+        self.assertIn("Deploy KIDE web", release)
+        self.assertIn("Verify live KIDE deployment", release)
+        self.assertIn("KIDE-HOSTED-URL.txt", release)
+        self.assertIn("gcp-deployment-manifest.json", release)
+        self.assertIn("gh release create", release)
+        self.assertIn("gh release upload", release)
+        self.assertIn("gh release edit", release)
+        self.assertIn("availableSecrets:", release)
+        self.assertIn("_KIDE_GITHUB_TOKEN_SECRET", release)
+        self.assertIn("secretEnv:", release)
+        self.assertIn("GH_TOKEN", release)
+        self.assertIn("ghcr.io/cli/cli:2.97.0", release)
+
     def test_auto_deploy_bootstrap_uses_separate_runtime_identities(self):
         configure = self.read("deploy/gcp/configure-auto-deploy.sh")
 
@@ -156,8 +188,11 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("kide-web-runtime", configure)
         self.assertIn("--update-substitutions", configure)
         self.assertIn("_KIDE_OIDC_SECRET_NAME=", configure)
+        self.assertIn("_KIDE_GITHUB_REPOSITORY=", configure)
+        self.assertIn("_KIDE_GITHUB_TOKEN_SECRET=", configure)
+        self.assertIn("roles/secretmanager.secretAccessor", configure)
         self.assertIn(
-            'BUILD_CONFIG="${BUILD_CONFIG:-deploy/gcp/cloudbuild-deploy.yaml}"',
+            'BUILD_CONFIG="${BUILD_CONFIG:-deploy/gcp/cloudbuild-release.yaml}"',
             configure,
         )
 
