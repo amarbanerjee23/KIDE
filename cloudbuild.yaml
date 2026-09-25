@@ -295,20 +295,17 @@ steps:
             encoding="utf-8",
         )
 
-        notes = f"""# KIDE GCP build ${SHORT_SHA}
-
-**Hosted web application:** {web_url}
-
-**Backend:** {backend_url}
-
-This pre-release was built and deployed by Google Cloud Build from commit
-${COMMIT_SHA}.
-
-The attached desktop bundles contain the Windows, Linux, macOS Intel, and
-macOS Apple Silicon Eclipse products built in the same Cloud Build execution.
-They are unsigned CI/pre-release bundles and remain separate from the trusted
-signed/notarized production release workflow.
-"""
+        notes = (
+            "# KIDE GCP build ${SHORT_SHA}\n\n"
+            f"**Hosted web application:** {web_url}\n\n"
+            f"**Backend:** {backend_url}\n\n"
+            "This pre-release was built and deployed by Google Cloud Build from commit\n"
+            "${COMMIT_SHA}.\n\n"
+            "The attached desktop bundles contain the Windows, Linux, macOS Intel, and\n"
+            "macOS Apple Silicon Eclipse products built in the same Cloud Build execution.\n"
+            "They are unsigned CI/pre-release bundles and remain separate from the trusted\n"
+            "signed/notarized production release workflow.\n"
+        )
         (dist / "gcp-release-notes.md").write_text(notes, encoding="utf-8")
         print(hosted)
         PY
