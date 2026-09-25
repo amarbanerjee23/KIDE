@@ -127,6 +127,9 @@ bootstrap_first_deployment() {
     KIDE_PRIMARY_PRINCIPAL="${KIDE_PRIMARY_PRINCIPAL:-}" \
     KIDE_OIDC_SECRET_NAME="${KIDE_OIDC_SECRET_NAME:-kide-oidc-client-secret}" \
     KIDE_OIDC_CLIENT_SECRET_FILE="${KIDE_OIDC_CLIENT_SECRET_FILE:-}" \
+    KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY:-amarbanerjee23/KIDE}" \
+    KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET:-kide-github-release-token}" \
+    KIDE_GITHUB_RELEASE_TOKEN_FILE="${KIDE_GITHUB_RELEASE_TOKEN_FILE:-}" \
     bash deploy/gcp/bootstrap-first-deployment.sh
   )
 }
@@ -186,8 +189,9 @@ doctor
 bootstrap
   First-deployment wizard. Discovers the Cloud Build trigger, prompts for
   missing OIDC settings, stores the client secret in Secret Manager, provisions
-  required resources/IAM, switches the trigger to the deployment config, runs
-  the first deployment and verifies both live services.
+  required resources/IAM, switches the trigger to the unified GCP release
+  pipeline, runs the first deployment, verifies both live services and
+  publishes the hosted URL plus Eclipse bundles to GitHub Releases.
 
 deploy
   Clone/update KIDE in a private deployment cache and deploy both backend and
@@ -211,6 +215,11 @@ Deployment variables:
   KIDE_OIDC_AUDIENCE
   KIDE_PRIMARY_PRINCIPAL
   KIDE_OIDC_SECRET_NAME
+
+GitHub release publishing:
+  KIDE_GITHUB_REPOSITORY        default: amarbanerjee23/KIDE
+  KIDE_GITHUB_TOKEN_SECRET      default: kide-github-release-token
+  KIDE_GITHUB_RELEASE_TOKEN_FILE
 EOF
 }
 
