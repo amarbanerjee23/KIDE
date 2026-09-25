@@ -273,6 +273,8 @@ ${COMMIT_SHA}.
 
 The attached desktop bundles contain the Windows, Linux, macOS Intel, and
 macOS Apple Silicon Eclipse products built in the same Cloud Build execution.
+They are unsigned CI/pre-release bundles and remain separate from the trusted
+signed/notarized production release workflow.
 """
         (dist / "gcp-release-notes.md").write_text(notes, encoding="utf-8")
         print(hosted)
@@ -306,7 +308,8 @@ macOS Apple Silicon Eclipse products built in the same Cloud Build execution.
             --repo "${_KIDE_GITHUB_REPOSITORY}" \
             --title "$${RELEASE_TITLE}" \
             --notes-file dist/gcp-release-notes.md \
-            --prerelease
+            --prerelease \
+            --latest=false
         else
           gh release create "$${RELEASE_TAG}" "$$@" \
             --repo "${_KIDE_GITHUB_REPOSITORY}" \
