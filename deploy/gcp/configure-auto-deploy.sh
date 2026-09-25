@@ -126,4 +126,4 @@ echo "Build service account: ${BUILD_SERVICE_ACCOUNT_EMAIL}"
 echo "Backend runtime service account: ${RUNTIME_SA}"
 echo "Web runtime service account: ${WEB_RUNTIME_SA}"
 echo
-echo "The next successful trigger build will deploy both Cloud Run services."
+echo "Hosted release mode is enabled. The next successful root Cloud Build will deploy both Cloud Run services and publish the hosted URL to GitHub Releases."
