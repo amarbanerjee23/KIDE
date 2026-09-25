@@ -16,7 +16,7 @@ WAIT_INTERVAL="${WAIT_INTERVAL:-10}"
 SECRET_TEMP_FILE=""
 GITHUB_TOKEN_TEMP_FILE=""
 
-cleanup_secret_temp_filess() {
+cleanup_secret_temp_files() {
   if [[ -n "${SECRET_TEMP_FILE:-}" && -f "${SECRET_TEMP_FILE}" ]]; then
     rm -f "${SECRET_TEMP_FILE}"
   fi
@@ -24,7 +24,7 @@ cleanup_secret_temp_filess() {
     rm -f "${GITHUB_TOKEN_TEMP_FILE}"
   fi
 }
-trap cleanup_secret_temp_filess EXIT
+trap cleanup_secret_temp_files EXIT
 
 require_command() {
   local command_name="$1"
@@ -119,7 +119,7 @@ discover_trigger() {
       filename="$(gcloud builds triggers describe "${trigger_id}"         --project "${PROJECT_ID}"         --region "${region}"         --format='value(filename)' 2>/dev/null || true)"
       line="${region}|${trigger_id}|${trigger_name}|${filename}"
       all_candidates+=("${line}")
-      if [[ "${filename}" == "cloudbuild.yaml" || "${filename}" == "deploy/gcp/cloudbuild-deploy.yaml" ]]; then
+      if [[ "${filename}" == "cloudbuild.yaml" || "${filename}" == "deploy/gcp/cloudbuild-deploy.yaml" || "${filename}" == "deploy/gcp/cloudbuild-release.yaml" ]]; then
         preferred_candidates+=("${line}")
       fi
     done < <(
