@@ -22,10 +22,12 @@ REGION="${REGION:-asia-south1}"
 TRIGGER_REGION="${TRIGGER_REGION:-${REGION}}"
 TRIGGER_KIND="${TRIGGER_KIND:-github}"
 AR_REPOSITORY="${AR_REPOSITORY:-kide}"
-BUILD_CONFIG="${BUILD_CONFIG:-deploy/gcp/cloudbuild-deploy.yaml}"
+BUILD_CONFIG="${BUILD_CONFIG:-deploy/gcp/cloudbuild-release.yaml}"
 BUILD_SERVICE_ACCOUNT="${BUILD_SERVICE_ACCOUNT:-}"
 KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME:-kide}"
 KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME:-kide-web}"
+KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY:-amarbanerjee23/KIDE}"
+KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET:-kide-github-release-token}"
 DATA_BUCKET="${DATA_BUCKET:-${PROJECT_ID}-kide-data}"
 RUNTIME_SA_NAME="${RUNTIME_SA_NAME:-kide-runtime}"
 WEB_RUNTIME_SA_NAME="${WEB_RUNTIME_SA_NAME:-kide-web-runtime}"
@@ -79,13 +81,16 @@ gcloud storage buckets add-iam-policy-binding "gs://${DATA_BUCKET}" --project "$
 gcloud secrets describe "${KIDE_OIDC_SECRET_NAME}" --project "${PROJECT_ID}" >/dev/null
 gcloud secrets add-iam-policy-binding "${KIDE_OIDC_SECRET_NAME}" --project "${PROJECT_ID}" --member="serviceAccount:${RUNTIME_SA}" --role="roles/secretmanager.secretAccessor" >/dev/null
 
+gcloud secrets describe "${KIDE_GITHUB_TOKEN_SECRET}" --project "${PROJECT_ID}" >/dev/null
+gcloud secrets add-iam-policy-binding "${KIDE_GITHUB_TOKEN_SECRET}" --project "${PROJECT_ID}" --member="serviceAccount:${BUILD_SERVICE_ACCOUNT_EMAIL}" --role="roles/secretmanager.secretAccessor" >/dev/null
+
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" --member="serviceAccount:${BUILD_SERVICE_ACCOUNT_EMAIL}" --role="roles/run.admin" >/dev/null
 
 for service_account in "${RUNTIME_SA}" "${WEB_RUNTIME_SA}"; do
   gcloud iam service-accounts add-iam-policy-binding "${service_account}" --project "${PROJECT_ID}" --member="serviceAccount:${BUILD_SERVICE_ACCOUNT_EMAIL}" --role="roles/iam.serviceAccountUser" >/dev/null
 done
 
-substitutions="_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_SERVICE_NAME=${KIDE_SERVICE_NAME},_KIDE_WEB_SERVICE_NAME=${KIDE_WEB_SERVICE_NAME},_KIDE_DATA_BUCKET=${DATA_BUCKET},_KIDE_RUNTIME_SA=${RUNTIME_SA},_KIDE_WEB_RUNTIME_SA=${WEB_RUNTIME_SA},_KIDE_OIDC_INTROSPECTION_URL=${KIDE_OIDC_INTROSPECTION_URL},_KIDE_OIDC_CLIENT_ID=${KIDE_OIDC_CLIENT_ID},_KIDE_OIDC_ISSUER=${KIDE_OIDC_ISSUER},_KIDE_OIDC_AUDIENCE=${KIDE_OIDC_AUDIENCE},_KIDE_PRIMARY_PRINCIPAL=${KIDE_PRIMARY_PRINCIPAL},_KIDE_OIDC_SECRET_NAME=${KIDE_OIDC_SECRET_NAME}"
+substitutions="_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_SERVICE_NAME=${KIDE_SERVICE_NAME},_KIDE_WEB_SERVICE_NAME=${KIDE_WEB_SERVICE_NAME},_KIDE_DATA_BUCKET=${DATA_BUCKET},_KIDE_RUNTIME_SA=${RUNTIME_SA},_KIDE_WEB_RUNTIME_SA=${WEB_RUNTIME_SA},_KIDE_OIDC_INTROSPECTION_URL=${KIDE_OIDC_INTROSPECTION_URL},_KIDE_OIDC_CLIENT_ID=${KIDE_OIDC_CLIENT_ID},_KIDE_OIDC_ISSUER=${KIDE_OIDC_ISSUER},_KIDE_OIDC_AUDIENCE=${KIDE_OIDC_AUDIENCE},_KIDE_PRIMARY_PRINCIPAL=${KIDE_PRIMARY_PRINCIPAL},_KIDE_OIDC_SECRET_NAME=${KIDE_OIDC_SECRET_NAME},_KIDE_GITHUB_REPOSITORY=${KIDE_GITHUB_REPOSITORY},_KIDE_GITHUB_TOKEN_SECRET=${KIDE_GITHUB_TOKEN_SECRET}"
 
 common=(
   "${TRIGGER_NAME}"
@@ -115,6 +120,8 @@ echo "Project: ${PROJECT_ID}"
 echo "Region: ${REGION}"
 echo "Backend service: ${KIDE_SERVICE_NAME}"
 echo "Web service: ${KIDE_WEB_SERVICE_NAME}"
+echo "GitHub release repository: ${KIDE_GITHUB_REPOSITORY}"
+echo "GitHub token secret: ${KIDE_GITHUB_TOKEN_SECRET}"
 echo "Build service account: ${BUILD_SERVICE_ACCOUNT_EMAIL}"
 echo "Backend runtime service account: ${RUNTIME_SA}"
 echo "Web runtime service account: ${WEB_RUNTIME_SA}"
