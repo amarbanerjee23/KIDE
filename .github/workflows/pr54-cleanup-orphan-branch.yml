@@ -1,0 +1,35 @@
+name: PR54 Cleanup Orphan Branch
+
+on:
+  push:
+    branches:
+      - release/pr54-posix-cloudbuild-guards
+
+permissions:
+  contents: write
+
+jobs:
+  delete-orphan-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete stray PR54 branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          api="https://api.github.com/repos/${REPOSITORY}/git/refs/heads/deploy/pr54-cloud-sql-auth"
+          status="$(curl --silent --show-error             --output /tmp/delete-response.txt             --write-out '%{http_code}'             --request DELETE             --header "Accept: application/vnd.github+json"             --header "Authorization: Bearer ${GH_TOKEN}"             --header "X-GitHub-Api-Version: 2022-11-28"             "${api}")"
+
+          case "${status}" in
+            204|404)
+              echo "Stray branch deleted or already absent."
+              ;;
+            *)
+              cat /tmp/delete-response.txt >&2
+              echo "Failed to delete stray branch; HTTP ${status}." >&2
+              exit 1
+              ;;
+          esac
