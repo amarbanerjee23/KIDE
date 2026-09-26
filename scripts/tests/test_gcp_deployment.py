@@ -68,7 +68,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("Deploy KIDE backend", cloudbuild)
         self.assertIn("Deploy KIDE web", cloudbuild)
         self.assertIn("KIDE-HOSTED-URL.txt", cloudbuild)
-        self.assertIn("_KIDE_RELEASE_ENABLED: 'false'", cloudbuild)
+        self.assertIn("_KIDE_RELEASE_ENABLED: 'true'", cloudbuild)
         self.assertIn("dynamicSubstitutions: true", cloudbuild)
         self.assertIn("logging: CLOUD_LOGGING_ONLY", cloudbuild)
 
