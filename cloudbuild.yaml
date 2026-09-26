@@ -375,7 +375,7 @@ images:
   - ${_KIDE_WEB_IMAGE}
 
 substitutions:
-  _KIDE_RELEASE_ENABLED: 'false'
+  _KIDE_RELEASE_ENABLED: 'true'
   _REGION: asia-south1
   _AR_REPOSITORY: kide
   _KIDE_SERVICE_NAME: kide
