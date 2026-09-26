@@ -5,7 +5,7 @@ steps:
     args:
       - -ceu
       - |
-        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
           echo "KIDE hosted release is not enabled for this trigger."
           echo "Desktop, backend image and web image will still be built and pushed."
           echo "Run ./deploy-kide-gcp.sh bootstrap once to enable Cloud Run deployment and GitHub Release publication."
@@ -115,7 +115,7 @@ steps:
     args:
       - -ceu
       - |
-        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
           echo "Skipping backend deployment: KIDE hosted release is not enabled."
           exit 0
         fi
@@ -155,7 +155,7 @@ steps:
     args:
       - -ceu
       - |
-        if [[ "${_KIDE_RELEASE_ENABLED}" == "true" ]]; then
+        if [ "${_KIDE_RELEASE_ENABLED}" = "true" ]; then
           BACKEND_URL="$(cat /workspace/.kide-backend-url)"
         else
           BACKEND_URL=""
@@ -181,7 +181,7 @@ steps:
     args:
       - -ceu
       - |
-        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
           echo "Skipping web deployment: KIDE hosted release is not enabled."
           exit 0
         fi
@@ -227,7 +227,7 @@ steps:
     args:
       - -ceu
       - |
-        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
           echo "Skipping live verification: KIDE hosted release is not enabled."
           exit 0
         fi
@@ -256,7 +256,7 @@ steps:
     args:
       - -ceu
       - |
-        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
           echo "Skipping hosted deployment metadata: KIDE hosted release is not enabled."
           exit 0
         fi
@@ -316,7 +316,7 @@ steps:
     args:
       - -ceu
       - |
-        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
           echo "Skipping GitHub token resolution: KIDE hosted release is not enabled."
           exit 0
         fi
@@ -333,7 +333,7 @@ steps:
     args:
       - -ceu
       - |
-        if [[ "${_KIDE_RELEASE_ENABLED}" != "true" ]]; then
+        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
           echo "Skipping GitHub Release publication: KIDE hosted release is not enabled."
           exit 0
         fi
