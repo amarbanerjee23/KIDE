@@ -338,6 +338,24 @@ steps:
           exit 0
         fi
 
+        test -s dist/gcp-release-notes.md || {
+          echo "Hosted release metadata is missing: dist/gcp-release-notes.md" >&2
+          echo "The hosted deployment metadata step must complete before release publication." >&2
+          exit 2
+        }
+        test -s dist/KIDE-HOSTED-URL.txt || {
+          echo "Hosted URL asset is missing: dist/KIDE-HOSTED-URL.txt" >&2
+          exit 2
+        }
+        test -s dist/gcp-deployment-manifest.json || {
+          echo "Deployment manifest is missing: dist/gcp-deployment-manifest.json" >&2
+          exit 2
+        }
+        test -s /workspace/.kide-github-token || {
+          echo "GitHub release token was not resolved." >&2
+          exit 2
+        }
+
         python3 scripts/publish_github_release.py \
           --repository "${_KIDE_GITHUB_REPOSITORY}" \
           --tag "gcp-${SHORT_SHA}" \
