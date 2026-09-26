@@ -68,7 +68,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("Deploy KIDE backend", cloudbuild)
         self.assertIn("Deploy KIDE web", cloudbuild)
         self.assertIn("KIDE-HOSTED-URL.txt", cloudbuild)
-        self.assertIn("_KIDE_RELEASE_ENABLED: 'false'", cloudbuild)
+        self.assertIn("_KIDE_RELEASE_ENABLED: 'true'", cloudbuild)
         self.assertIn("dynamicSubstitutions: true", cloudbuild)
         self.assertIn("logging: CLOUD_LOGGING_ONLY", cloudbuild)
 
@@ -100,6 +100,30 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
                         f"top-level content: {line!r}"
                     ),
                 )
+
+    def test_cloud_build_sh_steps_use_posix_condition_syntax(self):
+        for relative in (
+            "cloudbuild.yaml",
+            "deploy/gcp/cloudbuild.yaml",
+            "deploy/gcp/cloudbuild-release.yaml",
+        ):
+            lines = self.read(relative).splitlines()
+            for index, line in enumerate(lines):
+                if line.strip() != "entrypoint: sh":
+                    continue
+                block = "\n".join(lines[index : index + 45])
+                self.assertNotIn(
+                    "[[",
+                    block,
+                    msg=f"{relative} uses Bash-only [[ in an sh step",
+                )
+
+    def test_release_publisher_requires_hosted_metadata(self):
+        release = self.read("deploy/gcp/cloudbuild-release.yaml")
+        self.assertIn("test -s dist/gcp-release-notes.md", release)
+        self.assertIn("test -s dist/KIDE-HOSTED-URL.txt", release)
+        self.assertIn("test -s dist/gcp-deployment-manifest.json", release)
+        self.assertIn("test -s /workspace/.kide-github-token", release)
 
     def test_deployment_shell_scripts_parse(self):
         for relative in (
