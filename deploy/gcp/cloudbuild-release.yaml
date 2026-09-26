@@ -327,7 +327,7 @@ steps:
           --secret "${_KIDE_GITHUB_TOKEN_SECRET}" \
           > /workspace/.kide-github-token
 
-  - name: ghcr.io/cli/cli:2.97.0
+  - name: python:3.12-slim
     id: Publish desktop builds and hosted URL to GitHub Releases
     entrypoint: sh
     args:
@@ -338,44 +338,19 @@ steps:
           exit 0
         fi
 
-        export GH_TOKEN="$(cat /workspace/.kide-github-token)"
-        trap 'rm -f /workspace/.kide-github-token' EXIT
-
-        RELEASE_TAG="gcp-${SHORT_SHA}"
-        RELEASE_TITLE="KIDE GCP Build ${SHORT_SHA}"
-
-        set -- \
-          dist/KIDE-*.zip \
-          dist/KIDE-*.tar.gz \
-          dist/release-manifest.json \
-          dist/SHA256SUMS.txt \
-          dist/KIDE-HOSTED-URL.txt \
-          dist/gcp-deployment-manifest.json
-
-        if gh release view "$${RELEASE_TAG}" \
-            --repo "${_KIDE_GITHUB_REPOSITORY}" >/dev/null 2>&1; then
-          gh release upload "$${RELEASE_TAG}" "$$@" \
-            --repo "${_KIDE_GITHUB_REPOSITORY}" \
-            --clobber
-          gh release edit "$${RELEASE_TAG}" \
-            --repo "${_KIDE_GITHUB_REPOSITORY}" \
-            --title "$${RELEASE_TITLE}" \
-            --notes-file dist/gcp-release-notes.md \
-            --prerelease \
-            --latest=false
-        else
-          gh release create "$${RELEASE_TAG}" "$$@" \
-            --repo "${_KIDE_GITHUB_REPOSITORY}" \
-            --target "${COMMIT_SHA}" \
-            --title "$${RELEASE_TITLE}" \
-            --notes-file dist/gcp-release-notes.md \
-            --prerelease \
-            --latest=false
-        fi
-
-        gh release view "$${RELEASE_TAG}" \
-          --repo "${_KIDE_GITHUB_REPOSITORY}" \
-          --json url,tagName,name,isPrerelease
+        python3 scripts/publish_github_release.py \
+          --repository "${_KIDE_GITHUB_REPOSITORY}" \
+          --tag "gcp-${SHORT_SHA}" \
+          --title "KIDE GCP Build ${SHORT_SHA}" \
+          --target "${COMMIT_SHA}" \
+          --notes dist/gcp-release-notes.md \
+          --token-file /workspace/.kide-github-token \
+          --asset-glob 'dist/KIDE-*.zip' \
+          --asset-glob 'dist/KIDE-*.tar.gz' \
+          --asset-glob dist/release-manifest.json \
+          --asset-glob dist/SHA256SUMS.txt \
+          --asset-glob dist/KIDE-HOSTED-URL.txt \
+          --asset-glob dist/gcp-deployment-manifest.json
 
 images:
   - ${_KIDE_IMAGE}
