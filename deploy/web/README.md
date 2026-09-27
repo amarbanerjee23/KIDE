@@ -13,6 +13,8 @@ KIDE API/LSP/GLSP service.
 export PROJECT_ID="kide-eclipse"
 export KIDE_BACKEND_ORIGIN="https://YOUR-KIDE-BACKEND-URL"
 export REGION="asia-south1"
+export KIDE_FIREBASE_PROJECT_ID="kide-eclipse"
+export KIDE_FIREBASE_API_KEY="YOUR_FIREBASE_WEB_API_KEY"
 
 bash deploy/web/deploy-web.sh
 ```
@@ -32,3 +34,18 @@ project and region.
 The browser build receives the backend origin through both
 `VITE_KIDE_API_ORIGIN` and `VITE_KIDE_LSP_ORIGIN`. GLSP follows the same
 gateway origin used by the browser workspace.
+
+## Firebase Authentication
+
+The static web build uses Firebase Authentication and therefore requires:
+
+- `KIDE_FIREBASE_PROJECT_ID` (defaults to `PROJECT_ID` in the deploy script);
+- `KIDE_FIREBASE_API_KEY` (the Firebase web-app API key).
+
+The values are compiled into the Vite application as
+`VITE_FIREBASE_PROJECT_ID` and `VITE_FIREBASE_API_KEY`. The API key is
+Firebase web configuration, not a server-side credential.
+
+The browser signs in through Firebase Authentication and sends the resulting ID
+token to the separately deployed KIDE backend over the existing bearer-token
+HTTP/WebSocket transports.
