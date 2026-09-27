@@ -139,9 +139,7 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
     }
   );
 
-  await page.goto("/");
-  await page.getByLabel("Access token").fill("browser-test-token");
-  await page.getByRole("button", { name: "Connect API" }).click();
+  await signInFirebase(page);
   await expect(page.getByText("UP · API v1")).toBeVisible();
   await expect(page.getByText("Golden Project")).toBeVisible();
 
@@ -502,9 +500,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
     }
   );
 
-  await page.goto("/");
-  await page.getByLabel("Access token").fill("browser-test-token");
-  await page.getByRole("button", { name: "Connect API" }).click();
+  await signInFirebase(page);
   await page.getByRole("button", { name: "Open" }).click();
 
   await page.getByLabel("Model ID").fill("flow.activity");
@@ -556,6 +552,32 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   expect(requestedSourceUri).toBe("kide-workspace:/flow.activity");
   expect(requestedDiagramType).toBe("kide-activity-diagram");
 });
+
+
+async function signInFirebase(page: import("@playwright/test").Page) {
+  await page.route(
+    "**/v1/accounts:signInWithPassword?*",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          localId: "firebase-browser-user",
+          email: "browser@example.test",
+          idToken: "browser-test-token",
+          refreshToken: "browser-refresh-token",
+          expiresIn: "3600"
+        })
+      });
+    }
+  );
+
+  await page.goto("/");
+  await page.getByLabel("Firebase email").fill("browser@example.test");
+  await page.getByLabel("Firebase password").fill("password");
+  await page.getByRole("button", { name: "Sign in with Firebase" }).click();
+  await expect(page.getByText("Signed in · browser@example.test")).toBeVisible();
+}
 
 
 async function mockCollaboration(page: import("@playwright/test").Page) {
