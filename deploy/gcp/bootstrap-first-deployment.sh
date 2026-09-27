@@ -13,10 +13,14 @@ KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET:-kide-github-release-token}
 WAIT_SECONDS="${WAIT_SECONDS:-1800}"
 WAIT_INTERVAL="${WAIT_INTERVAL:-10}"
 GITHUB_TOKEN_TEMP_FILE=""
+FIREBASE_ENV_TEMP_FILE=""
 
 cleanup_secret_temp_files() {
   if [[ -n "${GITHUB_TOKEN_TEMP_FILE:-}" && -f "${GITHUB_TOKEN_TEMP_FILE}" ]]; then
     rm -f "${GITHUB_TOKEN_TEMP_FILE}"
+  fi
+  if [[ -n "${FIREBASE_ENV_TEMP_FILE:-}" && -f "${FIREBASE_ENV_TEMP_FILE}" ]]; then
+    rm -f "${FIREBASE_ENV_TEMP_FILE}"
   fi
 }
 trap cleanup_secret_temp_files EXIT
@@ -32,6 +36,7 @@ require_command() {
 require_command gcloud
 require_command git
 require_command curl
+require_command python3
 
 if [[ -z "${PROJECT_ID}" ]]; then
   PROJECT_ID="$(gcloud config get-value project 2>/dev/null || true)"
@@ -45,40 +50,30 @@ gcloud config set project "${PROJECT_ID}" >/dev/null
 KIDE_FIREBASE_PROJECT_ID="${KIDE_FIREBASE_PROJECT_ID:-${PROJECT_ID}}"
 export KIDE_FIREBASE_PROJECT_ID
 
-prompt_value() {
-  local variable="$1"
-  local label="$2"
-  local default_value="${3:-}"
-  local current_value="${!variable:-}"
-  local entered=""
+bootstrap_firebase_auth() {
+  umask 077
+  FIREBASE_ENV_TEMP_FILE="$(mktemp)"
 
-  if [[ -n "${current_value}" ]]; then
-    return
-  fi
+  python3 scripts/bootstrap_firebase_auth.py \
+    --project-id "${KIDE_FIREBASE_PROJECT_ID}" \
+    --output "${FIREBASE_ENV_TEMP_FILE}"
 
-  if [[ ! -t 0 ]]; then
-    echo "${variable} is required in non-interactive mode." >&2
-    exit 2
-  fi
+  # The generated file contains only the Firebase project ID, public Web API
+  # key, and initial administrator UID. It never contains the administrator
+  # password or an ID/refresh token.
+  # shellcheck disable=SC1090
+  source "${FIREBASE_ENV_TEMP_FILE}"
+  export KIDE_FIREBASE_PROJECT_ID KIDE_FIREBASE_API_KEY KIDE_FIREBASE_ADMIN_UID
 
-  if [[ -n "${default_value}" ]]; then
-    read -r -p "${label} [${default_value}]: " entered
-    entered="${entered:-${default_value}}"
-  else
-    read -r -p "${label}: " entered
-  fi
+  rm -f "${FIREBASE_ENV_TEMP_FILE}"
+  FIREBASE_ENV_TEMP_FILE=""
 
-  if [[ -z "${entered}" ]]; then
-    echo "${variable} cannot be empty." >&2
-    exit 2
-  fi
-
-  printf -v "${variable}" '%s' "${entered}"
-  export "${variable}"
+  echo "Firebase project: ${KIDE_FIREBASE_PROJECT_ID}"
+  echo "Firebase administrator UID: ${KIDE_FIREBASE_ADMIN_UID}"
 }
 
-prompt_value KIDE_FIREBASE_API_KEY "Firebase Web API key"
-prompt_value KIDE_FIREBASE_ADMIN_UID "Firebase UID for the initial KIDE administrator"
+bootstrap_firebase_auth
+
 
 discover_trigger() {
   local requested="${TRIGGER_NAME}"
