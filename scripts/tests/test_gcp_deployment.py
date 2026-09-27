@@ -302,6 +302,9 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("_KIDE_GITHUB_TOKEN_SECRET=", configure)
         self.assertIn("roles/secretmanager.secretAccessor", configure)
         self.assertIn("_KIDE_RELEASE_ENABLED=true", configure)
+        self.assertIn("read_trigger_substitution", configure)
+        self.assertIn("Cloud Build trigger Firebase configuration verification failed.", configure)
+        self.assertIn("The deployment build will not be started with incomplete Firebase substitutions.", configure)
         self.assertIn(
             'BUILD_CONFIG="${BUILD_CONFIG:-cloudbuild.yaml}"',
             configure,
