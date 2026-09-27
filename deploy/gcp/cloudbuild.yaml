@@ -21,7 +21,7 @@ steps:
           secretmanager.googleapis.com \
           --project "${PROJECT_ID}"
         BUILD_SERVICE_ACCOUNT="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' | head -n1)"
-        if [[ -z "${BUILD_SERVICE_ACCOUNT}" ]]; then
+        if [[ -z "$${BUILD_SERVICE_ACCOUNT}" ]]; then
           echo "Could not determine the active Cloud Build service account." >&2
           exit 2
         fi
@@ -40,10 +40,10 @@ steps:
 
           if ! gcloud iam service-accounts add-iam-policy-binding "${email}" \
               --project "${PROJECT_ID}" \
-              --member="serviceAccount:${BUILD_SERVICE_ACCOUNT}" \
+              --member="serviceAccount:$${BUILD_SERVICE_ACCOUNT}" \
               --role="roles/iam.serviceAccountUser" >/dev/null; then
             echo "Cloud Build cannot grant iam.serviceAccounts.actAs on ${email}." >&2
-            echo "Active build identity: ${BUILD_SERVICE_ACCOUNT}" >&2
+            echo "Active build identity: $${BUILD_SERVICE_ACCOUNT}" >&2
             echo "Grant this build identity permission to manage the runtime service account IAM policy, then rerun the build." >&2
             exit 2
           fi
@@ -53,7 +53,7 @@ steps:
         ensure_runtime_service_account "${_KIDE_WEB_RUNTIME_SA}" "KIDE web runtime"
 
         echo "Cloud Build runtime identity bindings are ready."
-        echo "Build service account: ${BUILD_SERVICE_ACCOUNT}"
+        echo "Build service account: $${BUILD_SERVICE_ACCOUNT}"
 
         umask 077
         if gcloud secrets describe "$${PASSWORD_SECRET}" \
