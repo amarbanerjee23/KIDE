@@ -253,6 +253,57 @@ def ensure_web_app(
     return config
 
 
+def ensure_auth_configuration(project_id: str, token: str) -> None:
+    config_url = f"{IDENTITY_ADMIN_API}/projects/{project_id}/config"
+    current = request_json(
+        "GET",
+        config_url,
+        token=token,
+        project_id=project_id,
+        allow_404=True,
+    )
+    if current is not None:
+        print("Firebase Authentication configuration is already initialized.")
+        return
+
+    initialize_url = (
+        "https://identitytoolkit.googleapis.com/v2/"
+        f"projects/{project_id}/identityPlatform:initializeAuth"
+    )
+    try:
+        request_json(
+            "POST",
+            initialize_url,
+            token=token,
+            project_id=project_id,
+            payload={},
+        )
+        print("Initialized Firebase Authentication configuration.")
+    except BootstrapError as exc:
+        # Another actor may have initialized Authentication after our GET.
+        # Treat an already-exists race as success, but surface all other errors.
+        if "HTTP 409" not in str(exc):
+            raise
+
+    deadline = time.monotonic() + 120
+    while time.monotonic() < deadline:
+        current = request_json(
+            "GET",
+            config_url,
+            token=token,
+            project_id=project_id,
+            allow_404=True,
+        )
+        if current is not None:
+            return
+        time.sleep(2)
+
+    raise BootstrapError(
+        "Firebase Authentication configuration did not become available "
+        "after initializeAuth."
+    )
+
+
 def enable_email_password(project_id: str, token: str) -> None:
     query = urlencode({"updateMask": "signIn.email"})
     url = f"{IDENTITY_ADMIN_API}/projects/{project_id}/config?{query}"
@@ -416,6 +467,7 @@ def main() -> int:
     token = access_token(project_id)
     ensure_firebase_project(project_id, token)
     config = ensure_web_app(project_id, token, args.web_app_display_name)
+    ensure_auth_configuration(project_id, token)
     enable_email_password(project_id, token)
 
     api_key = str(config["apiKey"]).strip()
