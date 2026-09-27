@@ -116,9 +116,9 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
 
     def test_cloud_build_uses_firebase_without_oidc_introspection(self):
         build = self.read("cloudbuild.yaml")
-        self.assertIn("Verify Firebase release prerequisites", build)
+        self.assertIn("Bootstrap Firebase hosted deployment", build)
         self.assertIn("_KIDE_FIREBASE_PROJECT_ID", build)
-        self.assertIn("_KIDE_FIREBASE_API_KEY", build)
+        self.assertIn("KIDE_FIREBASE_API_KEY", build)
         self.assertIn("_KIDE_FIREBASE_ADMIN_UID", build)
         self.assertIn("VITE_FIREBASE_API_KEY", build)
         self.assertIn("VITE_FIREBASE_PROJECT_ID", build)
@@ -129,6 +129,37 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertNotIn("KIDE_OIDC_", build)
         self.assertNotIn("OIDC_CLIENT_SECRET", build)
 
+    def test_canonical_cloud_build_self_bootstraps_and_deploys(self):
+        build = self.read("cloudbuild.yaml")
+
+        self.assertIn("Bootstrap Firebase hosted deployment", build)
+        self.assertIn("scripts/bootstrap_firebase_auth.py", build)
+        self.assertIn("kide-firebase-admin-password", build)
+        self.assertIn("gcloud secrets create", build)
+        self.assertIn("/workspace/.kide-firebase.env", build)
+        self.assertIn('source /workspace/.kide-firebase.env', build)
+        self.assertIn('. /workspace/.kide-firebase.env', build)
+        self.assertIn("VITE_FIREBASE_API_KEY=${KIDE_FIREBASE_API_KEY}", build)
+        self.assertIn(
+            "KIDE_FIREBASE_ADMIN_UID=${KIDE_FIREBASE_ADMIN_UID}",
+            build,
+        )
+        self.assertIn('gcloud run deploy "${_KIDE_SERVICE_NAME}"', build)
+        self.assertIn('gcloud run deploy "${_KIDE_WEB_SERVICE_NAME}"', build)
+        self.assertIn("KIDE DEPLOYMENT COMPLETE", build)
+        self.assertIn('echo "Web: ${WEB_URL}"', build)
+        self.assertNotIn(
+            "Skipping backend deployment: KIDE hosted release is not enabled.",
+            build,
+        )
+        self.assertNotIn(
+            "Skipping web deployment: KIDE hosted release is not enabled.",
+            build,
+        )
+        self.assertNotIn(
+            "Skipping hosted deployment metadata: KIDE hosted release is not enabled.",
+            build,
+        )
     def test_cloud_build_sh_steps_use_posix_condition_syntax(self):
         for relative in (
             "cloudbuild.yaml",
