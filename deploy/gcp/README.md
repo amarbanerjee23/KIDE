@@ -66,13 +66,16 @@ export REGION=asia-south1
 ./deploy-kide-gcp.sh bootstrap
 ```
 
-The bootstrap discovers the Cloud Build trigger and prompts for:
+The bootstrap discovers the Cloud Build trigger and automatically configures
+Firebase. On a new administrator account it prompts for:
 
 ```text
-Firebase Web API key
-Firebase UID for the initial KIDE administrator
+Firebase administrator email
+Firebase administrator password (hidden)
 GitHub release token (hidden, only if its Secret Manager secret does not exist)
 ```
+
+The Firebase Web API key and administrator UID are resolved automatically.
 
 The GitHub release token remains in Secret Manager. Firebase Authentication does
 not require a KIDE backend client secret.
@@ -83,13 +86,16 @@ not require a KIDE backend client secret.
 export PROJECT_ID=kide-eclipse
 export REGION=asia-south1
 export KIDE_FIREBASE_PROJECT_ID=kide-eclipse
-export KIDE_FIREBASE_API_KEY='...'
-export KIDE_FIREBASE_ADMIN_UID='...'
+export KIDE_FIREBASE_ADMIN_EMAIL='admin@example.com'
+export KIDE_FIREBASE_ADMIN_PASSWORD_FILE=/path/to/protected/firebase-admin-password
 export TRIGGER_NAME='...'
 export KIDE_GITHUB_RELEASE_TOKEN_FILE=/path/to/protected/github-token
 
 ./deploy-kide-gcp.sh bootstrap
 ```
+
+If the administrator UID is already known, set
+`KIDE_FIREBASE_ADMIN_UID` and omit the administrator email/password inputs.
 
 After the GitHub release-token secret exists,
 `KIDE_GITHUB_RELEASE_TOKEN_FILE` can be omitted.
