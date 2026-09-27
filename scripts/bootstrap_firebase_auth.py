@@ -179,7 +179,7 @@ def ensure_firebase_project(project_id: str, token: str) -> None:
 
     operation = request_json(
         "POST",
-        f"{project_url}:addFirebase",
+        f"{FIREBASE_API}/projects/{project_id}:addFirebase",
         token=token,
         project_id=project_id,
         payload={},
