@@ -74,6 +74,17 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("dynamicSubstitutions: true", cloudbuild)
         self.assertIn("logging: CLOUD_LOGGING_ONLY", cloudbuild)
 
+    def test_cloud_build_escapes_runtime_backend_url(self):
+        for relative in (
+            "cloudbuild.yaml",
+            "deploy/gcp/cloudbuild.yaml",
+            "deploy/gcp/cloudbuild-release.yaml",
+            "deploy/gcp/cloudbuild-deploy.yaml",
+        ):
+            cloudbuild = self.read(relative)
+            self.assertIn("VITE_KIDE_LSP_ORIGIN=$${BACKEND_URL}", cloudbuild)
+            self.assertNotIn("VITE_KIDE_LSP_ORIGIN=${BACKEND_URL}", cloudbuild)
+
     def test_cloud_build_yaml_has_no_unindented_embedded_content(self):
         allowed_top_level = (
             "steps:",
