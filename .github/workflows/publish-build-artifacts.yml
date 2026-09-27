@@ -254,7 +254,8 @@ jobs:
             echo "Backend image unexpectedly serves the browser application" >&2
             exit 1
           fi
-          docker logs "$container_id" 2>&1 | grep -q 'KIDE CLOUD RUN READY'
+          container_logs="$(docker logs "$container_id" 2>&1)"
+          grep -q 'KIDE CLOUD RUN READY' <<< "$container_logs"
 
       - name: Authenticate to GitHub Container Registry
         shell: bash
