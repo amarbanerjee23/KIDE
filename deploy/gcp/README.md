@@ -107,6 +107,31 @@ The deployment preflight intentionally does not call Storage or Secret Manager
 operator bootstrap so the Cloud Build service account does not need broad
 Storage Viewer or Secret Manager Viewer roles merely for preflight checks.
 
+## Self-healing trigger configuration
+
+Normal main-branch Cloud Build runs no longer fail immediately just because the
+Cloud Build trigger lost the non-secret OIDC substitutions.
+
+Step 0 resolves configuration in this order:
+
+1. use trigger substitutions when present;
+2. for missing non-secret OIDC values, inspect the existing `kide` Cloud Run
+   service and reuse its currently deployed environment values;
+3. use the stable Secret Manager name
+   `kide-oidc-client-secret` when no explicit OIDC secret-name substitution is
+   supplied;
+4. if values are still missing, print the exact missing variable names and fail
+   before any build/deployment work begins.
+
+The resolved values are written to a private workspace environment file and are
+consumed by the backend deployment step. The OIDC client secret value itself is
+never copied from Cloud Run or written into the build configuration; it remains
+in Secret Manager.
+
+This recovery path is intended for already-provisioned deployments. A genuinely
+new project with no existing `kide` service still requires the one-time
+`./deploy-kide-gcp.sh bootstrap` flow.
+
 ## Deployment activation and prerequisites
 
 `configure-auto-deploy.sh` keeps the trigger on the canonical root
