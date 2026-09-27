@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FirebaseAuthClient, FirebaseAuthError } from "../src/firebaseAuth";
+import { FirebaseAuthClient } from "../src/firebaseAuth";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -84,10 +84,6 @@ describe("FirebaseAuthClient", () => {
     const auth = new FirebaseAuthClient("web-api-key");
     await expect(
       auth.signInWithEmailPassword("user@example.test", "wrong")
-    ).rejects.toEqual(
-      expect.objectContaining<FirebaseAuthError>({
-        message: "Email or password is incorrect."
-      })
-    );
+    ).rejects.toThrow("Email or password is incorrect.");
   });
 });
