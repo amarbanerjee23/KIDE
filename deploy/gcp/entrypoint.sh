@@ -67,11 +67,15 @@ fi
 if [[ -n "${KIDE_ROLE_BINDINGS:-}" ]]; then
   role_bindings="${KIDE_ROLE_BINDINGS}"
 else
-  if [[ -z "${KIDE_PRIMARY_PRINCIPAL:-}" ]]; then
-    echo "KIDE_PRIMARY_PRINCIPAL or KIDE_ROLE_BINDINGS is required" >&2
-    exit 2
+  primary_principal="${KIDE_PRIMARY_PRINCIPAL:-}"
+  if [[ -z "${primary_principal}" ]]; then
+    if [[ -z "${KIDE_FIREBASE_PROJECT_ID:-}" || -z "${KIDE_FIREBASE_ADMIN_UID:-}" ]]; then
+      echo "KIDE_FIREBASE_PROJECT_ID and KIDE_FIREBASE_ADMIN_UID (or KIDE_ROLE_BINDINGS) are required" >&2
+      exit 2
+    fi
+    primary_principal="firebase:${KIDE_FIREBASE_PROJECT_ID}#${KIDE_FIREBASE_ADMIN_UID}"
   fi
-  role_bindings="${KIDE_PRIMARY_PRINCIPAL}|ADMINISTRATOR|${project_id}"
+  role_bindings="${primary_principal}|ADMINISTRATOR|${project_id}"
 fi
 
 allowed_origins="${KIDE_ALLOWED_ORIGINS:-}"

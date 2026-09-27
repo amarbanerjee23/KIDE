@@ -1,6 +1,5 @@
 package com.kide.enterprise.server;
 
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -27,15 +26,16 @@ import com.kide.enterprise.context.EnterpriseContextResult;
 import com.kide.enterprise.context.EnterpriseContextStore;
 import com.kide.enterprise.context.EnterpriseId;
 import com.kide.enterprise.context.EnterpriseScope;
-import com.kide.enterprise.identity.OidcIntrospectionAuthenticator;
-import com.kide.enterprise.identity.OidcIntrospectionConfig;
+import com.kide.enterprise.identity.FirebaseIdTokenAuthenticator;
+import com.kide.enterprise.identity.FirebaseIdTokenConfig;
+import com.kide.enterprise.identity.GoogleFirebaseKeyProvider;
 import com.kide.enterprise.modelrepo.FileModelRepository;
 import com.kide.knowledge.EmbeddedKnowledgeRepository;
 import com.kide.knowledge.KnowledgeTraceStore;
 
 public final class EnterpriseApiApplication implements IApplication {
     private volatile EnterpriseApiServer server;
-    private volatile OidcIntrospectionConfig oidcConfig;
+    private volatile FirebaseIdTokenConfig firebaseConfig;
 
     @Override
     public Object start(IApplicationContext applicationContext) {
@@ -77,25 +77,20 @@ public final class EnterpriseApiApplication implements IApplication {
                             new AuthorizationService(
                                     new InMemoryAuthorizationPolicyStore(bindings))));
 
-            char[] clientSecret = required(env, "KIDE_OIDC_CLIENT_SECRET").toCharArray();
-            try {
-                oidcConfig = new OidcIntrospectionConfig(
-                        URI.create(required(env, "KIDE_OIDC_INTROSPECTION_URL")),
-                        required(env, "KIDE_OIDC_CLIENT_ID"),
-                        clientSecret,
-                        required(env, "KIDE_OIDC_ISSUER"),
-                        required(env, "KIDE_OIDC_AUDIENCE"),
-                        Duration.ofSeconds(integer(env, "KIDE_OIDC_TIMEOUT_SECONDS", 10)));
-            } finally {
-                Arrays.fill(clientSecret, '\0');
-            }
-            OidcIntrospectionAuthenticator authenticator =
-                    new OidcIntrospectionAuthenticator(
-                            oidcConfig,
-                            HttpClient.newBuilder()
-                                    .connectTimeout(Duration.ofSeconds(
-                                            integer(env, "KIDE_OIDC_CONNECT_TIMEOUT_SECONDS", 10)))
-                                    .build(),
+            firebaseConfig = new FirebaseIdTokenConfig(
+                    required(env, "KIDE_FIREBASE_PROJECT_ID"),
+                    Duration.ofSeconds(integer(env, "KIDE_FIREBASE_KEYS_TIMEOUT_SECONDS", 10)));
+            HttpClient firebaseHttpClient = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(
+                            integer(env, "KIDE_FIREBASE_CONNECT_TIMEOUT_SECONDS", 10)))
+                    .build();
+            FirebaseIdTokenAuthenticator authenticator =
+                    new FirebaseIdTokenAuthenticator(
+                            firebaseConfig,
+                            new GoogleFirebaseKeyProvider(
+                                    firebaseConfig,
+                                    firebaseHttpClient,
+                                    Clock.systemUTC()),
                             Clock.systemUTC());
 
             FileModelRepository modelRepository = new FileModelRepository(projectRoot);
@@ -236,8 +231,6 @@ public final class EnterpriseApiApplication implements IApplication {
     }
 
     private synchronized void closeConfig() {
-        OidcIntrospectionConfig current = oidcConfig;
-        oidcConfig = null;
-        if (current != null) current.close();
+        firebaseConfig = null;
     }
 }

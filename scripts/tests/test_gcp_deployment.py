@@ -46,14 +46,16 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("--session-affinity", cloudbuild)
         self.assertIn("--max 1", cloudbuild)
         self.assertIn("type=cloud-storage", cloudbuild)
-        self.assertIn("--set-secrets", cloudbuild)
+        self.assertIn("KIDE_FIREBASE_PROJECT_ID=", cloudbuild)
+        self.assertIn("KIDE_FIREBASE_ADMIN_UID=", cloudbuild)
+        self.assertNotIn("KIDE_OIDC_", cloudbuild)
         self.assertIn("gcloud builds submit", deploy)
         self.assertIn("--config deploy/gcp/cloudbuild-release.yaml", deploy)
         self.assertIn("COMMIT_SHA=", deploy)
         self.assertIn("SHORT_SHA=", deploy)
         self.assertIn("_KIDE_GITHUB_TOKEN_SECRET=", deploy)
         self.assertIn("deployment-status.sh", deploy)
-        self.assertNotIn("YOUR_OIDC_CLIENT_SECRET", deploy)
+        self.assertNotIn("KIDE_OIDC_", deploy)
 
     def test_cloud_build_uses_canonical_unified_release_config(self):
         cloudbuild = self.read("deploy/gcp/cloudbuild.yaml")
@@ -101,28 +103,20 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
                     ),
                 )
 
-    def test_cloud_build_recovers_missing_oidc_from_existing_service(self):
+    def test_cloud_build_uses_firebase_without_oidc_introspection(self):
         build = self.read("cloudbuild.yaml")
-        self.assertIn("gcloud run services describe", build)
-        self.assertIn("/workspace/.kide-existing-service.json", build)
-        self.assertIn("Recovered ", build)
-        self.assertIn("from existing Cloud Run service.", build)
-        self.assertIn("/workspace/.kide-deployment-env", build)
-        self.assertIn("source /workspace/.kide-deployment-env", build)
-        self.assertIn("Missing values:", build)
+        self.assertIn("Verify Firebase release prerequisites", build)
+        self.assertIn("_KIDE_FIREBASE_PROJECT_ID", build)
+        self.assertIn("_KIDE_FIREBASE_API_KEY", build)
+        self.assertIn("_KIDE_FIREBASE_ADMIN_UID", build)
+        self.assertIn("VITE_FIREBASE_API_KEY", build)
+        self.assertIn("VITE_FIREBASE_PROJECT_ID", build)
         self.assertIn(
-            "_KIDE_OIDC_SECRET_NAME: 'kide-oidc-client-secret'",
+            '--set-env-vars "^|^KIDE_FIREBASE_PROJECT_ID=',
             build,
         )
-        self.assertIn(
-            '--set-env-vars "^|^KIDE_OIDC_INTROSPECTION_URL=',
-            build,
-        )
-        self.assertIn("|KIDE_OIDC_CLIENT_ID=", build)
-        self.assertIn(
-            '--set-secrets "KIDE_OIDC_CLIENT_SECRET=',
-            build,
-        )
+        self.assertNotIn("KIDE_OIDC_", build)
+        self.assertNotIn("OIDC_CLIENT_SECRET", build)
 
     def test_cloud_build_sh_steps_use_posix_condition_syntax(self):
         for relative in (
@@ -196,6 +190,8 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("read -r -s -p", bootstrap)
         self.assertIn("mktemp", bootstrap)
         self.assertIn("--data-file=", bootstrap)
+        self.assertIn("KIDE_FIREBASE_API_KEY", bootstrap)
+        self.assertIn("KIDE_FIREBASE_ADMIN_UID", bootstrap)
         self.assertIn("gcloud secrets versions add", bootstrap)
         self.assertIn("gcloud secrets create", bootstrap)
         self.assertIn("configure-auto-deploy.sh", bootstrap)
@@ -207,7 +203,8 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("KIDE_GITHUB_RELEASE_TOKEN_FILE", bootstrap)
         self.assertIn("GitHub release token (hidden)", bootstrap)
         self.assertIn("gcloud secrets versions add", bootstrap)
-        self.assertNotIn("echo -n \"${secret_value}\"", bootstrap)
+        self.assertNotIn("KIDE_OIDC_", bootstrap)
+        self.assertNotIn("OIDC client secret", bootstrap)
 
         self.assertIn("bootstrap_first_deployment", entrypoint)
         self.assertIn("bootstrap-first-deployment.sh", entrypoint)
@@ -269,7 +266,10 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("kide-runtime", configure)
         self.assertIn("kide-web-runtime", configure)
         self.assertIn("--update-substitutions", configure)
-        self.assertIn("_KIDE_OIDC_SECRET_NAME=", configure)
+        self.assertIn("_KIDE_FIREBASE_PROJECT_ID=", configure)
+        self.assertIn("_KIDE_FIREBASE_API_KEY=", configure)
+        self.assertIn("_KIDE_FIREBASE_ADMIN_UID=", configure)
+        self.assertNotIn("KIDE_OIDC_", configure)
         self.assertIn("_KIDE_GITHUB_REPOSITORY=", configure)
         self.assertIn("_KIDE_GITHUB_TOKEN_SECRET=", configure)
         self.assertIn("roles/secretmanager.secretAccessor", configure)
@@ -288,7 +288,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("gcloud artifacts repositories create", bootstrap)
         self.assertIn("roles/artifactregistry.writer", bootstrap)
         self.assertIn("roles/logging.logWriter", bootstrap)
-        self.assertIn("Verify and resolve release prerequisites", build)
+        self.assertIn("Verify Firebase release prerequisites", build)
         self.assertIn("_KIDE_RELEASE_ENABLED", build)
         self.assertIn("Verify deployment prerequisites", deploy)
         self.assertIn("configure-auto-deploy.sh", deploy)

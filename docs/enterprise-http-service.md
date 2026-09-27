@@ -11,9 +11,10 @@ client while the browser uses a separately deployable service runtime.
 
 ## Security
 
-Production startup requires OIDC bearer-token introspection. The introspection
-implementation now lives in `com.kide.enterprise.identity` and is shared by the
-HTTP API and the LSP WebSocket gateway.
+Hosted production startup verifies Firebase Authentication ID tokens. The
+verification implementation lives in `com.kide.enterprise.identity` and is
+shared by the HTTP API, LSP WebSocket gateway and GLSP gateway. Tokens are
+verified locally against Google's cached Firebase signing certificates.
 
 The API:
 
@@ -52,11 +53,7 @@ Required context/authentication settings:
 - `KIDE_API_WORKSPACE_ROOT`
 - `KIDE_API_PROJECT_ROOT`
 - `KIDE_API_ROLE_BINDINGS=principal|ROLE|scopeId;...`
-- `KIDE_OIDC_INTROSPECTION_URL`
-- `KIDE_OIDC_CLIENT_ID`
-- `KIDE_OIDC_CLIENT_SECRET`
-- `KIDE_OIDC_ISSUER`
-- `KIDE_OIDC_AUDIENCE`
+- `KIDE_FIREBASE_PROJECT_ID`
 
 Transport controls include `KIDE_API_BIND`, `KIDE_API_PORT`,
 `KIDE_API_ALLOWED_ORIGINS`, `KIDE_API_TRUST_FORWARDED_PROTO` and

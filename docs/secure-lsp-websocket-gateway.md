@@ -42,33 +42,32 @@ translation does not broaden the workspace boundary.
 
 ## Authentication
 
-Production gateway startup uses OAuth 2/OIDC token introspection over HTTPS.
+Hosted production startup verifies Firebase Authentication ID tokens.
 
-Required environment settings:
+Required hosted environment setting:
 
-- `KIDE_OIDC_INTROSPECTION_URL`
-- `KIDE_OIDC_CLIENT_ID`
-- `KIDE_OIDC_CLIENT_SECRET`
-- `KIDE_OIDC_ISSUER`
-- `KIDE_OIDC_AUDIENCE`
+- `KIDE_FIREBASE_PROJECT_ID`
 
-Native/service clients may authenticate with `Authorization: Bearer ...`.
+Native/service clients authenticate with `Authorization: Bearer <firebase-id-token>`.
 
 Browser WebSocket APIs cannot set arbitrary Authorization headers. Direct browser
 clients therefore request the public subprotocol `kide.lsp.v1` plus a credential
-subprotocol `kide.bearer.<base64url(access-token)>`. The server decodes the
-credential for the same introspection path but negotiates only `kide.lsp.v1`
-back to the browser; the credential value is never placed in the WebSocket URL or
-echoed as the negotiated protocol. Reverse proxies must treat
+subprotocol `kide.bearer.<base64url(firebase-id-token)>`. The server decodes the
+credential for the same Firebase verifier but negotiates only `kide.lsp.v1` back
+to the browser; the credential value is never placed in the WebSocket URL or
+returned as the negotiated protocol. Reverse proxies must treat
 `Sec-WebSocket-Protocol` as sensitive request metadata and must not log its raw
 value.
 
-Introspection must return an active token, the configured issuer and audience, a
-subject, and a future expiry. The access token exists only in the authentication
-session and is zeroized through the PR17 token container when the WebSocket closes.
+The shared verifier requires Firebase's RS256 signature, a trusted Google
+signing-key ID, issuer `https://securetoken.google.com/<project-id>`, audience
+equal to the Firebase project ID, a non-empty subject/UID, valid expiry and
+non-future issued/authentication times. Signing certificates are cached according
+to Google's `Cache-Control` max-age.
 
-KIDE does not implement custom JWT signature parsing in this gateway. Provider-side
-introspection remains the trust boundary.
+The ID token remains in the existing PR17 token container and is zeroized when
+the authenticated session closes. Generic desktop OIDC support remains separate
+from this hosted Firebase trust boundary.
 
 ## Authorization
 

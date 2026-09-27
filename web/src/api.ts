@@ -45,7 +45,7 @@ export class KideApiClient {
 
   constructor(
     serviceOrigin: string,
-    private readonly accessToken: () => string
+    private readonly accessToken: () => string | Promise<string>
   ) {
     const normalized = serviceOrigin.trim().replace(/\/+$/, "");
     if (!normalized) throw new Error("Service origin is required");
@@ -426,7 +426,7 @@ export class KideApiClient {
     headers.set("X-Request-Id", crypto.randomUUID());
 
     if (requireAuthentication) {
-      const token = this.accessToken().trim();
+      const token = (await this.accessToken()).trim();
       if (!token) throw new ApiClientError("An access token is required.", 401);
       headers.set("Authorization", `Bearer ${token}`);
     }

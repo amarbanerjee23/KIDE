@@ -6,20 +6,15 @@ REGION="${REGION:-asia-south1}"
 TRIGGER_REGION="${TRIGGER_REGION:-${REGION}}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-main}"
 TRIGGER_NAME="${TRIGGER_NAME:-}"
-KIDE_OIDC_SECRET_NAME="${KIDE_OIDC_SECRET_NAME:-kide-oidc-client-secret}"
 KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME:-kide}"
 KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME:-kide-web}"
 KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY:-amarbanerjee23/KIDE}"
 KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET:-kide-github-release-token}"
 WAIT_SECONDS="${WAIT_SECONDS:-1800}"
 WAIT_INTERVAL="${WAIT_INTERVAL:-10}"
-SECRET_TEMP_FILE=""
 GITHUB_TOKEN_TEMP_FILE=""
 
 cleanup_secret_temp_files() {
-  if [[ -n "${SECRET_TEMP_FILE:-}" && -f "${SECRET_TEMP_FILE}" ]]; then
-    rm -f "${SECRET_TEMP_FILE}"
-  fi
   if [[ -n "${GITHUB_TOKEN_TEMP_FILE:-}" && -f "${GITHUB_TOKEN_TEMP_FILE}" ]]; then
     rm -f "${GITHUB_TOKEN_TEMP_FILE}"
   fi
@@ -47,6 +42,8 @@ if [[ -z "${PROJECT_ID}" || "${PROJECT_ID}" == "(unset)" ]]; then
 fi
 
 gcloud config set project "${PROJECT_ID}" >/dev/null
+KIDE_FIREBASE_PROJECT_ID="${KIDE_FIREBASE_PROJECT_ID:-${PROJECT_ID}}"
+export KIDE_FIREBASE_PROJECT_ID
 
 prompt_value() {
   local variable="$1"
@@ -80,12 +77,8 @@ prompt_value() {
   export "${variable}"
 }
 
-prompt_value KIDE_OIDC_INTROSPECTION_URL "OIDC introspection URL"
-prompt_value KIDE_OIDC_CLIENT_ID "OIDC client ID"
-prompt_value KIDE_OIDC_ISSUER "OIDC issuer URL"
-prompt_value KIDE_OIDC_AUDIENCE "OIDC audience"
-prompt_value KIDE_PRIMARY_PRINCIPAL "KIDE primary principal"
-export KIDE_OIDC_SECRET_NAME
+prompt_value KIDE_FIREBASE_API_KEY "Firebase Web API key"
+prompt_value KIDE_FIREBASE_ADMIN_UID "Firebase UID for the initial KIDE administrator"
 
 discover_trigger() {
   local requested="${TRIGGER_NAME}"
@@ -168,55 +161,6 @@ discover_trigger() {
 
   IFS='|' read -r TRIGGER_REGION TRIGGER_NAME _ _ <<< "${candidates[selection-1]}"
   export TRIGGER_REGION TRIGGER_NAME
-}
-
-store_client_secret() {
-  local temp_file=""
-  local secret_value=""
-  local secret_source_file="${KIDE_OIDC_CLIENT_SECRET_FILE:-}"
-
-  if [[ -n "${secret_source_file}" ]]; then
-    if [[ ! -f "${secret_source_file}" ]]; then
-      echo "KIDE_OIDC_CLIENT_SECRET_FILE does not exist: ${secret_source_file}" >&2
-      exit 2
-    fi
-    temp_file="${secret_source_file}"
-  else
-    if [[ ! -t 0 ]]; then
-      echo "KIDE_OIDC_CLIENT_SECRET_FILE is required in non-interactive mode." >&2
-      exit 2
-    fi
-
-    read -r -s -p "OIDC client secret (hidden): " secret_value
-    echo
-    if [[ -z "${secret_value}" ]]; then
-      echo "OIDC client secret cannot be empty." >&2
-      exit 2
-    fi
-
-    umask 077
-    temp_file="$(mktemp)"
-    SECRET_TEMP_FILE="${temp_file}"
-    printf '%s' "${secret_value}" > "${temp_file}"
-    unset secret_value
-  fi
-
-  gcloud services enable secretmanager.googleapis.com --project "${PROJECT_ID}" >/dev/null
-
-  if gcloud secrets describe "${KIDE_OIDC_SECRET_NAME}"       --project "${PROJECT_ID}" >/dev/null 2>&1; then
-    echo "Adding a new version to Secret Manager secret '${KIDE_OIDC_SECRET_NAME}'..."
-    gcloud secrets versions add "${KIDE_OIDC_SECRET_NAME}"       --project "${PROJECT_ID}"       --data-file="${temp_file}" >/dev/null
-  else
-    echo "Creating Secret Manager secret '${KIDE_OIDC_SECRET_NAME}'..."
-    gcloud secrets create "${KIDE_OIDC_SECRET_NAME}"       --project "${PROJECT_ID}"       --replication-policy=automatic       --data-file="${temp_file}" >/dev/null
-  fi
-
-  if [[ -n "${SECRET_TEMP_FILE}" ]]; then
-    cleanup_secret_temp_files
-    SECRET_TEMP_FILE=""
-  fi
-
-  echo "OIDC client secret stored in Secret Manager."
 }
 
 ensure_github_release_token() {
@@ -335,12 +279,11 @@ discover_trigger
 echo "Cloud Build trigger: ${TRIGGER_NAME}"
 echo "Trigger region: ${TRIGGER_REGION}"
 
-store_client_secret
 ensure_github_release_token
 
 echo
 echo "Provisioning GCP resources/IAM and switching the trigger to the unified release pipeline..."
-PROJECT_ID="${PROJECT_ID}" REGION="${REGION}" TRIGGER_NAME="${TRIGGER_NAME}" TRIGGER_REGION="${TRIGGER_REGION}" KIDE_OIDC_INTROSPECTION_URL="${KIDE_OIDC_INTROSPECTION_URL}" KIDE_OIDC_CLIENT_ID="${KIDE_OIDC_CLIENT_ID}" KIDE_OIDC_ISSUER="${KIDE_OIDC_ISSUER}" KIDE_OIDC_AUDIENCE="${KIDE_OIDC_AUDIENCE}" KIDE_PRIMARY_PRINCIPAL="${KIDE_PRIMARY_PRINCIPAL}" KIDE_OIDC_SECRET_NAME="${KIDE_OIDC_SECRET_NAME}" KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY}" KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET}" bash deploy/gcp/configure-auto-deploy.sh
+PROJECT_ID="${PROJECT_ID}" REGION="${REGION}" TRIGGER_NAME="${TRIGGER_NAME}" TRIGGER_REGION="${TRIGGER_REGION}" KIDE_FIREBASE_PROJECT_ID="${KIDE_FIREBASE_PROJECT_ID}" KIDE_FIREBASE_API_KEY="${KIDE_FIREBASE_API_KEY}" KIDE_FIREBASE_ADMIN_UID="${KIDE_FIREBASE_ADMIN_UID}" KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY}" KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET}" bash deploy/gcp/configure-auto-deploy.sh
 
 echo
 echo "Starting the first deployment from branch '${DEPLOY_BRANCH}'..."

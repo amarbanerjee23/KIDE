@@ -66,12 +66,8 @@ ensure_checkout() {
 
 require_deploy_environment() {
   local required=(
-    KIDE_OIDC_INTROSPECTION_URL
-    KIDE_OIDC_CLIENT_ID
-    KIDE_OIDC_ISSUER
-    KIDE_OIDC_AUDIENCE
-    KIDE_PRIMARY_PRINCIPAL
-    KIDE_OIDC_SECRET_NAME
+    KIDE_FIREBASE_API_KEY
+    KIDE_FIREBASE_ADMIN_UID
   )
   local missing=()
   local name
@@ -86,7 +82,7 @@ require_deploy_environment() {
     printf '  export %s="..."
 ' "${missing[@]}" >&2
     echo >&2
-    echo "The OIDC client secret value itself stays in Secret Manager; only set KIDE_OIDC_SECRET_NAME here." >&2
+    echo "Firebase Authentication must be enabled and the administrator UID must already exist." >&2
     exit 2
   fi
 }
@@ -99,7 +95,7 @@ deploy() {
   echo "Deploying KIDE from current main using the unified GCP release pipeline..."
   (
     cd "${KIDE_DEPLOY_CHECKOUT}"
-    PROJECT_ID="${PROJECT_ID}"     REGION="${REGION}"     KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME}"     KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME}"     bash deploy/gcp/deploy-cloud-run.sh
+    PROJECT_ID="${PROJECT_ID}"     REGION="${REGION}"     KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME}"     KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME}"     KIDE_FIREBASE_PROJECT_ID="${KIDE_FIREBASE_PROJECT_ID:-${PROJECT_ID}}"     KIDE_FIREBASE_API_KEY="${KIDE_FIREBASE_API_KEY}"     KIDE_FIREBASE_ADMIN_UID="${KIDE_FIREBASE_ADMIN_UID}"     KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY:-amarbanerjee23/KIDE}"     KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET:-kide-github-release-token}"     bash deploy/gcp/deploy-cloud-run.sh
   )
 
   echo
@@ -120,13 +116,9 @@ bootstrap_first_deployment() {
     KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME}" \
     TRIGGER_NAME="${TRIGGER_NAME:-}" \
     TRIGGER_REGION="${TRIGGER_REGION:-${REGION}}" \
-    KIDE_OIDC_INTROSPECTION_URL="${KIDE_OIDC_INTROSPECTION_URL:-}" \
-    KIDE_OIDC_CLIENT_ID="${KIDE_OIDC_CLIENT_ID:-}" \
-    KIDE_OIDC_ISSUER="${KIDE_OIDC_ISSUER:-}" \
-    KIDE_OIDC_AUDIENCE="${KIDE_OIDC_AUDIENCE:-}" \
-    KIDE_PRIMARY_PRINCIPAL="${KIDE_PRIMARY_PRINCIPAL:-}" \
-    KIDE_OIDC_SECRET_NAME="${KIDE_OIDC_SECRET_NAME:-kide-oidc-client-secret}" \
-    KIDE_OIDC_CLIENT_SECRET_FILE="${KIDE_OIDC_CLIENT_SECRET_FILE:-}" \
+    KIDE_FIREBASE_PROJECT_ID="${KIDE_FIREBASE_PROJECT_ID:-${PROJECT_ID}}" \
+    KIDE_FIREBASE_API_KEY="${KIDE_FIREBASE_API_KEY:-}" \
+    KIDE_FIREBASE_ADMIN_UID="${KIDE_FIREBASE_ADMIN_UID:-}" \
     KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY:-amarbanerjee23/KIDE}" \
     KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET:-kide-github-release-token}" \
     KIDE_GITHUB_RELEASE_TOKEN_FILE="${KIDE_GITHUB_RELEASE_TOKEN_FILE:-}" \
@@ -144,7 +136,7 @@ configure_trigger() {
   ensure_checkout
   (
     cd "${KIDE_DEPLOY_CHECKOUT}"
-    PROJECT_ID="${PROJECT_ID}"     REGION="${REGION}"     TRIGGER_NAME="${TRIGGER_NAME}"     TRIGGER_REGION="${TRIGGER_REGION:-${REGION}}"     KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY:-amarbanerjee23/KIDE}"     KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET:-kide-github-release-token}"     bash deploy/gcp/configure-auto-deploy.sh
+    PROJECT_ID="${PROJECT_ID}"     REGION="${REGION}"     TRIGGER_NAME="${TRIGGER_NAME}"     TRIGGER_REGION="${TRIGGER_REGION:-${REGION}}"     KIDE_FIREBASE_PROJECT_ID="${KIDE_FIREBASE_PROJECT_ID:-${PROJECT_ID}}"     KIDE_FIREBASE_API_KEY="${KIDE_FIREBASE_API_KEY}"     KIDE_FIREBASE_ADMIN_UID="${KIDE_FIREBASE_ADMIN_UID}"     KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY:-amarbanerjee23/KIDE}"     KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET:-kide-github-release-token}"     bash deploy/gcp/configure-auto-deploy.sh
   )
 }
 
@@ -162,14 +154,16 @@ doctor() {
     echo "Artifact Registry: MISSING"
   fi
 
-  if [[ -n "${KIDE_OIDC_SECRET_NAME:-}" ]]; then
-    if gcloud secrets describe "${KIDE_OIDC_SECRET_NAME}"         --project "${PROJECT_ID}" >/dev/null 2>&1; then
-      echo "OIDC secret: OK (${KIDE_OIDC_SECRET_NAME})"
-    else
-      echo "OIDC secret: MISSING OR NOT ACCESSIBLE (${KIDE_OIDC_SECRET_NAME})"
-    fi
+  echo "Firebase project: ${KIDE_FIREBASE_PROJECT_ID:-${PROJECT_ID}}"
+  if [[ -n "${KIDE_FIREBASE_API_KEY:-}" ]]; then
+    echo "Firebase Web API key: CONFIGURED"
   else
-    echo "OIDC secret: NOT CONFIGURED (KIDE_OIDC_SECRET_NAME is unset)"
+    echo "Firebase Web API key: NOT CONFIGURED"
+  fi
+  if [[ -n "${KIDE_FIREBASE_ADMIN_UID:-}" ]]; then
+    echo "Firebase administrator UID: CONFIGURED"
+  else
+    echo "Firebase administrator UID: NOT CONFIGURED"
   fi
 
   echo
@@ -184,12 +178,12 @@ status
   Show the current kide and kide-web Cloud Run URLs. Works from any directory.
 
 doctor
-  Check the active project, Artifact Registry, optional OIDC secret and services.
+  Check the active project, Artifact Registry, Firebase configuration and services.
 
 bootstrap
   First-deployment wizard. Discovers the Cloud Build trigger, prompts for
-  missing OIDC settings, stores the client secret in Secret Manager, provisions
-  required resources/IAM, switches the trigger to the unified GCP release
+  Firebase Web API key and initial administrator UID, provisions required
+  resources/IAM, switches the trigger to the unified GCP release
   pipeline, runs the first deployment, verifies both live services and
   publishes the hosted URL plus Eclipse bundles to GitHub Releases.
 
@@ -210,13 +204,10 @@ Common variables:
   KIDE_WEB_SERVICE_NAME     default: kide-web
   AR_REPOSITORY             default: kide
 
-Deployment variables:
-  KIDE_OIDC_INTROSPECTION_URL
-  KIDE_OIDC_CLIENT_ID
-  KIDE_OIDC_ISSUER
-  KIDE_OIDC_AUDIENCE
-  KIDE_PRIMARY_PRINCIPAL
-  KIDE_OIDC_SECRET_NAME
+Firebase deployment variables:
+  KIDE_FIREBASE_PROJECT_ID      default: PROJECT_ID
+  KIDE_FIREBASE_API_KEY
+  KIDE_FIREBASE_ADMIN_UID
 
 GitHub release publishing:
   KIDE_GITHUB_REPOSITORY        default: amarbanerjee23/KIDE

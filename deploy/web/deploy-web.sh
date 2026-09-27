@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-required=(PROJECT_ID KIDE_BACKEND_ORIGIN)
+required=(PROJECT_ID KIDE_BACKEND_ORIGIN KIDE_FIREBASE_API_KEY)
 for name in "${required[@]}"; do
   if [[ -z "${!name:-}" ]]; then
     echo "${name} is required" >&2
@@ -10,6 +10,7 @@ for name in "${required[@]}"; do
 done
 
 REGION="${REGION:-asia-south1}"
+KIDE_FIREBASE_PROJECT_ID="${KIDE_FIREBASE_PROJECT_ID:-${PROJECT_ID}}"
 SERVICE_NAME="${SERVICE_NAME:-kide-web}"
 BACKEND_SERVICE_NAME="${BACKEND_SERVICE_NAME:-kide}"
 AR_REPOSITORY="${AR_REPOSITORY:-kide}"
@@ -29,7 +30,7 @@ gcloud config set project "${PROJECT_ID}" >/dev/null
 export PROJECT_ID REGION AR_REPOSITORY
 bash deploy/gcp/bootstrap-cloud-build.sh
 
-gcloud builds submit .   --config deploy/web/cloudbuild.yaml   --substitutions="_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_WEB_IMAGE=${IMAGE},_KIDE_BACKEND_ORIGIN=${KIDE_BACKEND_ORIGIN}"
+gcloud builds submit .   --config deploy/web/cloudbuild.yaml   --substitutions="_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_WEB_IMAGE=${IMAGE},_KIDE_BACKEND_ORIGIN=${KIDE_BACKEND_ORIGIN},_KIDE_FIREBASE_API_KEY=${KIDE_FIREBASE_API_KEY},_KIDE_FIREBASE_PROJECT_ID=${KIDE_FIREBASE_PROJECT_ID}"
 
 gcloud run deploy "${SERVICE_NAME}"   --project "${PROJECT_ID}"   --region "${REGION}"   --image "${IMAGE}"   --allow-unauthenticated   --port 8080   --cpu 1   --memory 512Mi   --concurrency 80   --timeout 300s   --min 0   --max 10
 

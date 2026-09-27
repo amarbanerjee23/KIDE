@@ -1,104 +1,39 @@
 steps:
   - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
-    id: Verify and resolve release prerequisites
+    id: Verify Firebase release prerequisites
     entrypoint: bash
     args:
       - -ceu
       - |
         if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
           echo "KIDE hosted release is not enabled for this trigger."
-          echo "Desktop, backend image and web image will still be built and pushed."
           exit 0
         fi
 
-        KIDE_OIDC_INTROSPECTION_URL="${_KIDE_OIDC_INTROSPECTION_URL}"
-        KIDE_OIDC_CLIENT_ID="${_KIDE_OIDC_CLIENT_ID}"
-        KIDE_OIDC_ISSUER="${_KIDE_OIDC_ISSUER}"
-        KIDE_OIDC_AUDIENCE="${_KIDE_OIDC_AUDIENCE}"
-        KIDE_PRIMARY_PRINCIPAL="${_KIDE_PRIMARY_PRINCIPAL}"
-        KIDE_OIDC_SECRET_NAME="${_KIDE_OIDC_SECRET_NAME}"
-
-        # Trigger substitutions are authoritative when present. If they are
-        # absent, reuse the last successfully deployed backend's non-secret
-        # OIDC configuration. This makes normal main builds resilient to a
-        # trigger losing substitutions while keeping secrets in Secret Manager.
-        if gcloud run services describe "${_KIDE_SERVICE_NAME}" \
-            --project "${PROJECT_ID}" \
-            --region "${_REGION}" \
-            --format=json >/workspace/.kide-existing-service.json 2>/dev/null; then
-          eval "$(
-            python3 - <<'PY'
-        import json
-        import shlex
-        from pathlib import Path
-
-        service = json.loads(
-            Path("/workspace/.kide-existing-service.json").read_text(encoding="utf-8")
-        )
-        containers = (
-            service.get("spec", {})
-            .get("template", {})
-            .get("spec", {})
-            .get("containers", [])
-        )
-        env = containers[0].get("env", []) if containers else []
-        wanted = {
-            "KIDE_OIDC_INTROSPECTION_URL",
-            "KIDE_OIDC_CLIENT_ID",
-            "KIDE_OIDC_ISSUER",
-            "KIDE_OIDC_AUDIENCE",
-            "KIDE_PRIMARY_PRINCIPAL",
-        }
-        for item in env:
-            name = item.get("name")
-            value = item.get("value")
-            if name in wanted and isinstance(value, str) and value:
-                print(f"EXISTING_{name}={shlex.quote(value)}")
-        PY
-          )"
-
-          for name in \
-            KIDE_OIDC_INTROSPECTION_URL \
-            KIDE_OIDC_CLIENT_ID \
-            KIDE_OIDC_ISSUER \
-            KIDE_OIDC_AUDIENCE \
-            KIDE_PRIMARY_PRINCIPAL; do
-            existing_name="EXISTING_$${name}"
-            if [[ -z "$${!name}" && -n "$${!existing_name:-}" ]]; then
-              printf -v "$${name}" '%s' "$${!existing_name}"
-              echo "Recovered $${name} from existing Cloud Run service."
-            fi
-          done
-        else
-          echo "No existing ${_KIDE_SERVICE_NAME} Cloud Run service was available for configuration recovery."
-        fi
-
         missing=()
-        for name in \
-          KIDE_OIDC_INTROSPECTION_URL \
-          KIDE_OIDC_CLIENT_ID \
-          KIDE_OIDC_ISSUER \
-          KIDE_OIDC_AUDIENCE \
-          KIDE_PRIMARY_PRINCIPAL \
-          KIDE_OIDC_SECRET_NAME; do
-          if [[ -z "$${!name}" ]]; then
-            missing+=("$${name}")
+        for value_name in \
+          _KIDE_FIREBASE_PROJECT_ID \
+          _KIDE_FIREBASE_API_KEY \
+          _KIDE_FIREBASE_ADMIN_UID \
+          _KIDE_GITHUB_REPOSITORY \
+          _KIDE_GITHUB_TOKEN_SECRET; do
+          case "$${value_name}" in
+            _KIDE_FIREBASE_PROJECT_ID) value="${_KIDE_FIREBASE_PROJECT_ID}" ;;
+            _KIDE_FIREBASE_API_KEY) value="${_KIDE_FIREBASE_API_KEY}" ;;
+            _KIDE_FIREBASE_ADMIN_UID) value="${_KIDE_FIREBASE_ADMIN_UID}" ;;
+            _KIDE_GITHUB_REPOSITORY) value="${_KIDE_GITHUB_REPOSITORY}" ;;
+            _KIDE_GITHUB_TOKEN_SECRET) value="${_KIDE_GITHUB_TOKEN_SECRET}" ;;
+          esac
+          if [[ -z "$${value}" ]]; then
+            missing+=("$${value_name}")
           fi
         done
 
-        if [[ -z "${_KIDE_GITHUB_REPOSITORY}" ]]; then
-          missing+=("_KIDE_GITHUB_REPOSITORY")
-        fi
-        if [[ -z "${_KIDE_GITHUB_TOKEN_SECRET}" ]]; then
-          missing+=("_KIDE_GITHUB_TOKEN_SECRET")
-        fi
-
         if (( $${#missing[@]} > 0 )); then
-          echo "KIDE release/deployment configuration is incomplete." >&2
+          echo "KIDE Firebase release/deployment configuration is incomplete." >&2
           echo "Missing values:" >&2
           printf '  - %s\n' "$${missing[@]}" >&2
-          echo >&2
-          echo "Run ./deploy-kide-gcp.sh bootstrap once only if these values cannot be recovered from an existing deployment." >&2
+          echo "Run ./deploy-kide-gcp.sh bootstrap after enabling Firebase Authentication." >&2
           exit 2
         fi
 
@@ -107,17 +42,7 @@ steps:
           exit 2
         fi
 
-        {
-          printf 'KIDE_OIDC_INTROSPECTION_URL=%q\n' "$${KIDE_OIDC_INTROSPECTION_URL}"
-          printf 'KIDE_OIDC_CLIENT_ID=%q\n' "$${KIDE_OIDC_CLIENT_ID}"
-          printf 'KIDE_OIDC_ISSUER=%q\n' "$${KIDE_OIDC_ISSUER}"
-          printf 'KIDE_OIDC_AUDIENCE=%q\n' "$${KIDE_OIDC_AUDIENCE}"
-          printf 'KIDE_PRIMARY_PRINCIPAL=%q\n' "$${KIDE_PRIMARY_PRINCIPAL}"
-          printf 'KIDE_OIDC_SECRET_NAME=%q\n' "$${KIDE_OIDC_SECRET_NAME}"
-        } > /workspace/.kide-deployment-env
-        chmod 600 /workspace/.kide-deployment-env
-
-        echo "Release/deployment configuration is present."
+        echo "Firebase hosted release configuration is present."
 
   - name: maven:3.9.9-eclipse-temurin-21
     id: Build Eclipse desktop products
@@ -202,13 +127,6 @@ steps:
           exit 0
         fi
 
-        if [[ ! -s /workspace/.kide-deployment-env ]]; then
-          echo "Resolved deployment configuration is missing." >&2
-          exit 2
-        fi
-        # shellcheck disable=SC1091
-        source /workspace/.kide-deployment-env
-
         gcloud run deploy "${_KIDE_SERVICE_NAME}" \
           --project "${PROJECT_ID}" \
           --region "${_REGION}" \
@@ -224,8 +142,7 @@ steps:
           --max 1 \
           --session-affinity \
           --add-volume "mount-path=/data,type=cloud-storage,bucket=${_KIDE_DATA_BUCKET},readonly=false,mount-options=uid=10001;gid=10001" \
-          --set-env-vars "^|^KIDE_OIDC_INTROSPECTION_URL=$${KIDE_OIDC_INTROSPECTION_URL}|KIDE_OIDC_CLIENT_ID=$${KIDE_OIDC_CLIENT_ID}|KIDE_OIDC_ISSUER=$${KIDE_OIDC_ISSUER}|KIDE_OIDC_AUDIENCE=$${KIDE_OIDC_AUDIENCE}|KIDE_PRIMARY_PRINCIPAL=$${KIDE_PRIMARY_PRINCIPAL}" \
-          --set-secrets "KIDE_OIDC_CLIENT_SECRET=$${KIDE_OIDC_SECRET_NAME}:latest" \
+          --set-env-vars "^|^KIDE_FIREBASE_PROJECT_ID=${_KIDE_FIREBASE_PROJECT_ID}|KIDE_FIREBASE_ADMIN_UID=${_KIDE_FIREBASE_ADMIN_UID}" \
           --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
           --quiet
 
@@ -255,7 +172,9 @@ steps:
           --file deploy/web/Dockerfile \
           --tag "${_KIDE_WEB_IMAGE}" \
           --build-arg "VITE_KIDE_API_ORIGIN=$${BACKEND_URL}" \
-          --build-arg "VITE_KIDE_LSP_ORIGIN=$${BACKEND_URL}" \
+          --build-arg "VITE_KIDE_LSP_ORIGIN=${BACKEND_URL}" \
+          --build-arg "VITE_FIREBASE_API_KEY=${_KIDE_FIREBASE_API_KEY}" \
+          --build-arg "VITE_FIREBASE_PROJECT_ID=${_KIDE_FIREBASE_PROJECT_ID}" \
           .
 
   - name: gcr.io/cloud-builders/docker
@@ -474,12 +393,9 @@ substitutions:
   _KIDE_DATA_BUCKET: '${PROJECT_ID}-kide-data'
   _KIDE_RUNTIME_SA: 'kide-runtime@${PROJECT_ID}.iam.gserviceaccount.com'
   _KIDE_WEB_RUNTIME_SA: 'kide-web-runtime@${PROJECT_ID}.iam.gserviceaccount.com'
-  _KIDE_OIDC_INTROSPECTION_URL: ''
-  _KIDE_OIDC_CLIENT_ID: ''
-  _KIDE_OIDC_ISSUER: ''
-  _KIDE_OIDC_AUDIENCE: ''
-  _KIDE_PRIMARY_PRINCIPAL: ''
-  _KIDE_OIDC_SECRET_NAME: 'kide-oidc-client-secret'
+  _KIDE_FIREBASE_PROJECT_ID: '${PROJECT_ID}'
+  _KIDE_FIREBASE_API_KEY: ''
+  _KIDE_FIREBASE_ADMIN_UID: ''
   _KIDE_GITHUB_REPOSITORY: 'amarbanerjee23/KIDE'
   _KIDE_GITHUB_TOKEN_SECRET: 'kide-github-release-token'
 
