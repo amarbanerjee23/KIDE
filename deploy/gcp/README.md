@@ -65,31 +65,24 @@ The backend remains single-writer because current persistent and collaborative
 state is not horizontally multi-writer safe. The static web tier may scale
 independently.
 
-## Cloud Build configurations
+## Cloud Build configuration
 
-KIDE deliberately keeps **build** and **deployment** as separate Cloud Build
-contracts.
+KIDE uses one canonical unified Cloud Build contract. The following files are
+kept identical:
 
-### Build-safe trigger
+- `cloudbuild.yaml`;
+- `deploy/gcp/cloudbuild.yaml`;
+- `deploy/gcp/cloudbuild-release.yaml`.
 
-The repository root `cloudbuild.yaml` and
-`deploy/gcp/cloudbuild.yaml` are build-only configurations.
+The canonical config defaults `_KIDE_RELEASE_ENABLED=true`, so a normal main
+Cloud Build is expected to build the Eclipse products, deploy the hosted KIDE
+services, verify them, and publish the hosted URL to GitHub Releases.
 
-They:
+If required OIDC or release configuration is missing, Step 0 fails immediately
+with the missing prerequisite instead of silently degrading to a build-only
+run.
 
-1. verify that the Artifact Registry repository exists;
-2. build the KIDE backend image;
-3. push the image to Artifact Registry.
-
-They do **not** require OIDC deployment settings and do not deploy Cloud Run.
-This preserves the behavior of the original working Google Cloud Build trigger
-and keeps ordinary main-branch builds green before deployment has been
-explicitly configured.
-
-### Unified release/deployment trigger
-
-`deploy/gcp/cloudbuild-release.yaml` is the full Cloud Build release
-configuration.
+### Unified release/deployment flow
 
 After one-time configuration it:
 
@@ -114,39 +107,27 @@ The deployment preflight intentionally does not call Storage or Secret Manager
 operator bootstrap so the Cloud Build service account does not need broad
 Storage Viewer or Secret Manager Viewer roles merely for preflight checks.
 
-## Why there are two configs
+## Deployment activation and prerequisites
 
-PR46 changed the existing root trigger file from build/push to mandatory
-deployment while the new OIDC substitutions defaulted to empty values. An
-existing, previously successful trigger therefore failed immediately at its
-first deployment-preflight step.
+`configure-auto-deploy.sh` keeps the trigger on the canonical root
+`cloudbuild.yaml` and writes the required non-secret substitutions, including
+`_KIDE_RELEASE_ENABLED=true`.
 
-The corrected model is explicit:
-
-- a normal trigger can always use `cloudbuild.yaml`;
-- automatic deployment is enabled only after infrastructure and IAM setup is
-  complete;
-- `configure-auto-deploy.sh` keeps that trigger on `cloudbuild.yaml` and
-  enables hosted release mode through `_KIDE_RELEASE_ENABLED=true`.
-
-This prevents repository changes from silently converting a build trigger into
-an infrastructure deployment trigger.
+The root config itself also defaults hosted release mode to `true`. Therefore
+a main Cloud Build never reports a misleading successful build while silently
+skipping the hosted deployment. If the required deployment configuration has
+not been provisioned, the build fails in Step 0 with an actionable error.
 
 ## Canonical main-branch release ownership
 
 The root `cloudbuild.yaml`, `deploy/gcp/cloudbuild.yaml`, and
 `deploy/gcp/cloudbuild-release.yaml` now describe the same unified pipeline.
 
-Before the one-time bootstrap, `_KIDE_RELEASE_ENABLED=false` keeps deployment
-and GitHub Release publication disabled while still building:
-
-- Eclipse desktop products;
-- backend container image;
-- standalone web container image.
-
-After bootstrap, the trigger receives `_KIDE_RELEASE_ENABLED=true`. The same
-root build then deploys `kide` and `kide-web`, verifies the live URLs, and
-creates the canonical `gcp-<SHORT_SHA>` GitHub pre-release.
+The canonical config defaults `_KIDE_RELEASE_ENABLED=true`. Bootstrap ensures
+the trigger also carries that value together with the required OIDC,
+Secret Manager, service-account and GitHub release settings. The root build
+then deploys `kide` and `kide-web`, verifies the live URLs, and creates the
+canonical `gcp-<SHORT_SHA>` GitHub pre-release.
 
 The GitHub Actions artifact workflow no longer creates desktop-only Releases on
 `main`; it still builds and uploads Actions artifacts. This prevents a
@@ -330,9 +311,9 @@ Cloud Run terminates public TLS. The backend Nginx proxy is the only public
 container listener and forwards requests to loopback-only API/LSP/GLSP
 processes.
 
-The Cloud Build identity receives deployment rights only when automatic
-deployment is explicitly enabled. Runtime data and secret access remain on the
-backend runtime identity rather than the build identity.
+The Cloud Build identity receives only the deployment and release-publication
+permissions provisioned by the bootstrap. Runtime data and OIDC secret access
+remain on the backend runtime identity rather than the build identity.
 
 For horizontally scaled backend operation, first replace file-backed
 persistence and process-local collaboration state with shared transactional
