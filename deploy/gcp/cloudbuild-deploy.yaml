@@ -86,7 +86,7 @@ steps:
           --file deploy/web/Dockerfile \
           --tag "${_KIDE_WEB_IMAGE}" \
           --build-arg "VITE_KIDE_API_ORIGIN=$${BACKEND_URL}" \
-          --build-arg "VITE_KIDE_LSP_ORIGIN=${BACKEND_URL}" \
+          --build-arg "VITE_KIDE_LSP_ORIGIN=$${BACKEND_URL}" \
           --build-arg "VITE_FIREBASE_API_KEY=${_KIDE_FIREBASE_API_KEY}" \
           --build-arg "VITE_FIREBASE_PROJECT_ID=${_KIDE_FIREBASE_PROJECT_ID}" \
           .
