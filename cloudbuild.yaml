@@ -1,48 +1,66 @@
 steps:
   - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
-    id: Verify Firebase release prerequisites
+    id: Bootstrap Firebase hosted deployment
     entrypoint: bash
     args:
       - -ceu
       - |
-        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
-          echo "KIDE hosted release is not enabled for this trigger."
-          exit 0
+        FIREBASE_PROJECT_ID="${_KIDE_FIREBASE_PROJECT_ID}"
+        if [[ -z "$${FIREBASE_PROJECT_ID}" ]]; then
+          FIREBASE_PROJECT_ID="${PROJECT_ID}"
         fi
 
-        missing=()
-        for value_name in \
-          _KIDE_FIREBASE_PROJECT_ID \
-          _KIDE_FIREBASE_API_KEY \
-          _KIDE_FIREBASE_ADMIN_UID \
-          _KIDE_GITHUB_REPOSITORY \
-          _KIDE_GITHUB_TOKEN_SECRET; do
-          case "$${value_name}" in
-            _KIDE_FIREBASE_PROJECT_ID) value="${_KIDE_FIREBASE_PROJECT_ID}" ;;
-            _KIDE_FIREBASE_API_KEY) value="${_KIDE_FIREBASE_API_KEY}" ;;
-            _KIDE_FIREBASE_ADMIN_UID) value="${_KIDE_FIREBASE_ADMIN_UID}" ;;
-            _KIDE_GITHUB_REPOSITORY) value="${_KIDE_GITHUB_REPOSITORY}" ;;
-            _KIDE_GITHUB_TOKEN_SECRET) value="${_KIDE_GITHUB_TOKEN_SECRET}" ;;
-          esac
-          if [[ -z "$${value}" ]]; then
-            missing+=("$${value_name}")
-          fi
-        done
+        ADMIN_EMAIL="${_KIDE_FIREBASE_ADMIN_EMAIL}"
+        PASSWORD_SECRET="${_KIDE_FIREBASE_ADMIN_PASSWORD_SECRET}"
+        FIREBASE_ENV_FILE="/workspace/.kide-firebase.env"
+        PASSWORD_FILE="/workspace/.kide-firebase-admin-password"
 
-        if (( $${#missing[@]} > 0 )); then
-          echo "KIDE Firebase release/deployment configuration is incomplete." >&2
-          echo "Missing values:" >&2
-          printf '  - %s\n' "$${missing[@]}" >&2
-          echo "Run ./deploy-kide-gcp.sh bootstrap after enabling Firebase Authentication." >&2
-          exit 2
+        gcloud services enable \
+          firebase.googleapis.com \
+          identitytoolkit.googleapis.com \
+          secretmanager.googleapis.com \
+          --project "${PROJECT_ID}"
+
+        umask 077
+        if gcloud secrets describe "$${PASSWORD_SECRET}" \
+            --project "${PROJECT_ID}" >/dev/null 2>&1; then
+          gcloud secrets versions access latest \
+            --project "${PROJECT_ID}" \
+            --secret "$${PASSWORD_SECRET}" \
+            > "$${PASSWORD_FILE}"
+          echo "Reusing Firebase administrator password from Secret Manager."
+        else
+          python3 - <<'PY' > /workspace/.kide-firebase-admin-password
+        import secrets
+        print(secrets.token_urlsafe(32))
+        PY
+          gcloud secrets create "$${PASSWORD_SECRET}" \
+            --project "${PROJECT_ID}" \
+            --replication-policy=automatic \
+            --data-file="$${PASSWORD_FILE}" >/dev/null
+          echo "Created Firebase administrator password secret '$${PASSWORD_SECRET}'."
         fi
 
-        if [[ -z "${COMMIT_SHA}" || -z "${SHORT_SHA}" ]]; then
-          echo "This release config must run from a source trigger with COMMIT_SHA and SHORT_SHA." >&2
-          exit 2
+        export KIDE_FIREBASE_PROJECT_ID="$${FIREBASE_PROJECT_ID}"
+        export KIDE_FIREBASE_ADMIN_EMAIL="$${ADMIN_EMAIL}"
+        export KIDE_FIREBASE_ADMIN_PASSWORD_FILE="$${PASSWORD_FILE}"
+        if [[ -n "${_KIDE_FIREBASE_ADMIN_UID}" ]]; then
+          export KIDE_FIREBASE_ADMIN_UID="${_KIDE_FIREBASE_ADMIN_UID}"
+        else
+          unset KIDE_FIREBASE_ADMIN_UID || true
         fi
 
-        echo "Firebase hosted release configuration is present."
+        python3 scripts/bootstrap_firebase_auth.py \
+          --project-id "$${FIREBASE_PROJECT_ID}" \
+          --output "$${FIREBASE_ENV_FILE}"
+
+        source "$${FIREBASE_ENV_FILE}"
+        test -n "$${KIDE_FIREBASE_API_KEY}"
+        test -n "$${KIDE_FIREBASE_ADMIN_UID}"
+
+        echo "Firebase hosted deployment configuration is ready."
+        echo "Firebase project: $${KIDE_FIREBASE_PROJECT_ID}"
+        echo "Firebase administrator UID: $${KIDE_FIREBASE_ADMIN_UID}"
 
   - name: maven:3.9.9-eclipse-temurin-21
     id: Build Eclipse desktop products
@@ -122,10 +140,7 @@ steps:
     args:
       - -ceu
       - |
-        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
-          echo "Skipping backend deployment: KIDE hosted release is not enabled."
-          exit 0
-        fi
+        source /workspace/.kide-firebase.env
 
         gcloud run deploy "${_KIDE_SERVICE_NAME}" \
           --project "${PROJECT_ID}" \
@@ -142,7 +157,7 @@ steps:
           --max 1 \
           --session-affinity \
           --add-volume "mount-path=/data,type=cloud-storage,bucket=${_KIDE_DATA_BUCKET},readonly=false,mount-options=uid=10001;gid=10001" \
-          --set-env-vars "^|^KIDE_FIREBASE_PROJECT_ID=${_KIDE_FIREBASE_PROJECT_ID}|KIDE_FIREBASE_ADMIN_UID=${_KIDE_FIREBASE_ADMIN_UID}" \
+          --set-env-vars "^|^KIDE_FIREBASE_PROJECT_ID=$${KIDE_FIREBASE_PROJECT_ID}|KIDE_FIREBASE_ADMIN_UID=$${KIDE_FIREBASE_ADMIN_UID}" \
           --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
           --quiet
 
@@ -161,20 +176,16 @@ steps:
     args:
       - -ceu
       - |
-        if [ "${_KIDE_RELEASE_ENABLED}" = "true" ]; then
-          BACKEND_URL="$(cat /workspace/.kide-backend-url)"
-        else
-          BACKEND_URL=""
-          echo "Building standalone web image without a deployed backend origin."
-        fi
+        BACKEND_URL="$(cat /workspace/.kide-backend-url)"
+        . /workspace/.kide-firebase.env
 
         docker build \
           --file deploy/web/Dockerfile \
           --tag "${_KIDE_WEB_IMAGE}" \
           --build-arg "VITE_KIDE_API_ORIGIN=$${BACKEND_URL}" \
           --build-arg "VITE_KIDE_LSP_ORIGIN=$${BACKEND_URL}" \
-          --build-arg "VITE_FIREBASE_API_KEY=${_KIDE_FIREBASE_API_KEY}" \
-          --build-arg "VITE_FIREBASE_PROJECT_ID=${_KIDE_FIREBASE_PROJECT_ID}" \
+          --build-arg "VITE_FIREBASE_API_KEY=$${KIDE_FIREBASE_API_KEY}" \
+          --build-arg "VITE_FIREBASE_PROJECT_ID=$${KIDE_FIREBASE_PROJECT_ID}" \
           .
 
   - name: gcr.io/cloud-builders/docker
@@ -189,11 +200,6 @@ steps:
     args:
       - -ceu
       - |
-        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
-          echo "Skipping web deployment: KIDE hosted release is not enabled."
-          exit 0
-        fi
-
         BACKEND_URL="$(cat /workspace/.kide-backend-url)"
 
         gcloud run deploy "${_KIDE_WEB_SERVICE_NAME}" \
@@ -235,11 +241,6 @@ steps:
     args:
       - -ceu
       - |
-        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
-          echo "Skipping live verification: KIDE hosted release is not enabled."
-          exit 0
-        fi
-
         BACKEND_URL="$(cat /workspace/.kide-backend-url)"
         WEB_URL="$(cat /workspace/.kide-web-url)"
 
@@ -264,11 +265,6 @@ steps:
     args:
       - -ceu
       - |
-        if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
-          echo "Skipping hosted deployment metadata: KIDE hosted release is not enabled."
-          exit 0
-        fi
-
         python3 - <<'PY'
         import json
         from pathlib import Path
@@ -325,7 +321,7 @@ steps:
       - -ceu
       - |
         if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
-          echo "Skipping GitHub token resolution: KIDE hosted release is not enabled."
+          echo "Skipping GitHub token resolution: GitHub Release publication is not enabled."
           exit 0
         fi
 
@@ -342,7 +338,7 @@ steps:
       - -ceu
       - |
         if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
-          echo "Skipping GitHub Release publication: KIDE hosted release is not enabled."
+          echo "Skipping GitHub Release publication: publication is not enabled."
           exit 0
         fi
 
@@ -394,7 +390,8 @@ substitutions:
   _KIDE_RUNTIME_SA: 'kide-runtime@${PROJECT_ID}.iam.gserviceaccount.com'
   _KIDE_WEB_RUNTIME_SA: 'kide-web-runtime@${PROJECT_ID}.iam.gserviceaccount.com'
   _KIDE_FIREBASE_PROJECT_ID: '${PROJECT_ID}'
-  _KIDE_FIREBASE_API_KEY: ''
+  _KIDE_FIREBASE_ADMIN_EMAIL: 'kide-admin@${PROJECT_ID}.firebaseapp.com'
+  _KIDE_FIREBASE_ADMIN_PASSWORD_SECRET: 'kide-firebase-admin-password'
   _KIDE_FIREBASE_ADMIN_UID: ''
   _KIDE_GITHUB_REPOSITORY: 'amarbanerjee23/KIDE'
   _KIDE_GITHUB_TOKEN_SECRET: 'kide-github-release-token'
