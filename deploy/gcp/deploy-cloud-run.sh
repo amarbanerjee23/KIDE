@@ -3,12 +3,8 @@ set -euo pipefail
 
 required=(
   PROJECT_ID
-  KIDE_OIDC_INTROSPECTION_URL
-  KIDE_OIDC_CLIENT_ID
-  KIDE_OIDC_ISSUER
-  KIDE_OIDC_AUDIENCE
-  KIDE_PRIMARY_PRINCIPAL
-  KIDE_OIDC_SECRET_NAME
+  KIDE_FIREBASE_API_KEY
+  KIDE_FIREBASE_ADMIN_UID
 )
 for name in "${required[@]}"; do
   if [[ -z "${!name:-}" ]]; then
@@ -18,6 +14,7 @@ for name in "${required[@]}"; do
 done
 
 REGION="${REGION:-asia-south1}"
+KIDE_FIREBASE_PROJECT_ID="${KIDE_FIREBASE_PROJECT_ID:-${PROJECT_ID}}"
 KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME:-kide}"
 KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME:-kide-web}"
 KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY:-amarbanerjee23/KIDE}"
@@ -64,9 +61,6 @@ ensure_service_account "${RUNTIME_SA}" "${RUNTIME_SA_NAME}" "KIDE backend runtim
 ensure_service_account "${WEB_RUNTIME_SA}" "${WEB_RUNTIME_SA_NAME}" "KIDE web runtime"
 
 gcloud storage buckets add-iam-policy-binding "gs://${DATA_BUCKET}" --project "${PROJECT_ID}" --member="serviceAccount:${RUNTIME_SA}" --role="roles/storage.objectUser" >/dev/null
-gcloud secrets describe "${KIDE_OIDC_SECRET_NAME}" --project "${PROJECT_ID}" >/dev/null
-gcloud secrets add-iam-policy-binding "${KIDE_OIDC_SECRET_NAME}" --project "${PROJECT_ID}" --member="serviceAccount:${RUNTIME_SA}" --role="roles/secretmanager.secretAccessor" >/dev/null
-
 gcloud secrets describe "${KIDE_GITHUB_TOKEN_SECRET}" --project "${PROJECT_ID}" >/dev/null
 gcloud secrets add-iam-policy-binding "${KIDE_GITHUB_TOKEN_SECRET}" --project "${PROJECT_ID}" --member="serviceAccount:${BUILD_SERVICE_ACCOUNT_EMAIL}" --role="roles/secretmanager.secretAccessor" >/dev/null
 
@@ -75,6 +69,6 @@ for service_account in "${RUNTIME_SA}" "${WEB_RUNTIME_SA}"; do
   gcloud iam service-accounts add-iam-policy-binding "${service_account}" --project "${PROJECT_ID}" --member="serviceAccount:${BUILD_SERVICE_ACCOUNT_EMAIL}" --role="roles/iam.serviceAccountUser" >/dev/null
 done
 
-gcloud builds submit .   --config deploy/gcp/cloudbuild-release.yaml   --substitutions="COMMIT_SHA=${SOURCE_SHA},SHORT_SHA=${SOURCE_SHORT_SHA},_KIDE_RELEASE_ENABLED=true,_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_SERVICE_NAME=${KIDE_SERVICE_NAME},_KIDE_WEB_SERVICE_NAME=${KIDE_WEB_SERVICE_NAME},_KIDE_IMAGE=${BACKEND_IMAGE},_KIDE_WEB_IMAGE=${WEB_IMAGE},_KIDE_DATA_BUCKET=${DATA_BUCKET},_KIDE_RUNTIME_SA=${RUNTIME_SA},_KIDE_WEB_RUNTIME_SA=${WEB_RUNTIME_SA},_KIDE_OIDC_INTROSPECTION_URL=${KIDE_OIDC_INTROSPECTION_URL},_KIDE_OIDC_CLIENT_ID=${KIDE_OIDC_CLIENT_ID},_KIDE_OIDC_ISSUER=${KIDE_OIDC_ISSUER},_KIDE_OIDC_AUDIENCE=${KIDE_OIDC_AUDIENCE},_KIDE_PRIMARY_PRINCIPAL=${KIDE_PRIMARY_PRINCIPAL},_KIDE_OIDC_SECRET_NAME=${KIDE_OIDC_SECRET_NAME},_KIDE_GITHUB_REPOSITORY=${KIDE_GITHUB_REPOSITORY},_KIDE_GITHUB_TOKEN_SECRET=${KIDE_GITHUB_TOKEN_SECRET}"
+gcloud builds submit .   --config deploy/gcp/cloudbuild-release.yaml   --substitutions="COMMIT_SHA=${SOURCE_SHA},SHORT_SHA=${SOURCE_SHORT_SHA},_KIDE_RELEASE_ENABLED=true,_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_SERVICE_NAME=${KIDE_SERVICE_NAME},_KIDE_WEB_SERVICE_NAME=${KIDE_WEB_SERVICE_NAME},_KIDE_IMAGE=${BACKEND_IMAGE},_KIDE_WEB_IMAGE=${WEB_IMAGE},_KIDE_DATA_BUCKET=${DATA_BUCKET},_KIDE_RUNTIME_SA=${RUNTIME_SA},_KIDE_WEB_RUNTIME_SA=${WEB_RUNTIME_SA},_KIDE_FIREBASE_PROJECT_ID=${KIDE_FIREBASE_PROJECT_ID},_KIDE_FIREBASE_API_KEY=${KIDE_FIREBASE_API_KEY},_KIDE_FIREBASE_ADMIN_UID=${KIDE_FIREBASE_ADMIN_UID},_KIDE_GITHUB_REPOSITORY=${KIDE_GITHUB_REPOSITORY},_KIDE_GITHUB_TOKEN_SECRET=${KIDE_GITHUB_TOKEN_SECRET}"
 
 PROJECT_ID="${PROJECT_ID}" REGION="${REGION}" KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME}" KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME}"   bash deploy/gcp/deployment-status.sh
