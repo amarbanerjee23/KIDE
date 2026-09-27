@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import type * as monaco from "monaco-editor";
 import { KideApiClient, ApiClientError } from "./api";
+import { FirebaseAuthClient, FirebaseAuthError } from "./firebaseAuth";
 import {
   editableText,
   exportProjectArchive,
@@ -40,17 +41,28 @@ const SERVICE_ORIGIN =
   import.meta.env.VITE_KIDE_API_ORIGIN ?? window.location.origin;
 const GATEWAY_ORIGIN =
   import.meta.env.VITE_KIDE_LSP_ORIGIN ?? SERVICE_ORIGIN;
+const FIREBASE_API_KEY = import.meta.env.VITE_FIREBASE_API_KEY ?? "";
+const FIREBASE_PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "";
 
 export default function App() {
   const [serviceOrigin, setServiceOrigin] = useState(SERVICE_ORIGIN);
   const [gatewayOrigin, setGatewayOrigin] = useState(GATEWAY_ORIGIN);
+  const firebaseAuth = useMemo(
+    () => new FirebaseAuthClient(FIREBASE_API_KEY),
+    []
+  );
+  const [firebaseEmail, setFirebaseEmail] = useState("");
+  const [firebasePassword, setFirebasePassword] = useState("");
+  const [authStatus, setAuthStatus] = useState(
+    FIREBASE_PROJECT_ID ? "Not signed in" : "Firebase configuration missing"
+  );
   const [token, setToken] = useState("");
   const tokenRef = useRef("");
   tokenRef.current = token;
 
   const client = useMemo(
-    () => new KideApiClient(serviceOrigin, () => tokenRef.current),
-    [serviceOrigin]
+    () => new KideApiClient(serviceOrigin, () => firebaseAuth.idToken()),
+    [firebaseAuth, serviceOrigin]
   );
   const clientRef = useRef(client);
   clientRef.current = client;
@@ -152,12 +164,63 @@ export default function App() {
   }, [workspace]);
 
   useEffect(() => {
+    const timer = globalThis.setInterval(() => {
+      if (!firebaseAuth.user) return;
+      void firebaseAuth.idToken()
+        .then((nextToken) => {
+          if (nextToken !== tokenRef.current) setToken(nextToken);
+        })
+        .catch((error) => {
+          firebaseAuth.signOut();
+          setToken("");
+          setAuthStatus("Session expired");
+          setNotice(error instanceof Error ? error.message : "Firebase session expired.");
+        });
+    }, 5 * 60 * 1000);
+    return () => globalThis.clearInterval(timer);
+  }, [firebaseAuth]);
+
+  useEffect(() => {
     setViewMode("text");
     setSynthesisResult(undefined);
     setReconfigurationResult(undefined);
     setGenerationResult(undefined);
     collaboration.current?.setModel(selectedPath);
   }, [selectedPath]);
+
+  async function signInFirebase() {
+    setNotice("");
+    try {
+      const user = await firebaseAuth.signInWithEmailPassword(
+        firebaseEmail,
+        firebasePassword
+      );
+      const nextToken = await firebaseAuth.idToken();
+      setToken(nextToken);
+      setFirebasePassword("");
+      setAuthStatus(`Signed in · ${user.email}`);
+      await connect();
+    } catch (error) {
+      setToken("");
+      setAuthStatus("Sign-in failed");
+      setNotice(
+        error instanceof FirebaseAuthError || error instanceof Error
+          ? error.message
+          : "Firebase sign-in failed."
+      );
+    }
+  }
+
+  async function signOutFirebase() {
+    firebaseAuth.signOut();
+    setToken("");
+    setProjects([]);
+    await resetProjectWorkspace();
+    setServiceStatus("Not connected");
+    setLspStatus("Not connected");
+    setAuthStatus("Not signed in");
+    setNotice("Signed out.");
+  }
 
   async function connect() {
     setNotice("");
@@ -195,9 +258,12 @@ export default function App() {
       setLspStatus("Unavailable · workspace ID missing");
       return;
     }
-    const accessToken = tokenRef.current.trim();
-    if (!accessToken) {
-      setLspStatus("Unavailable · access token required");
+    let accessToken = "";
+    try {
+      accessToken = (await firebaseAuth.idToken()).trim();
+      if (accessToken !== tokenRef.current) setToken(accessToken);
+    } catch {
+      setLspStatus("Unavailable · Firebase sign-in required");
       return;
     }
 
@@ -1004,17 +1070,40 @@ export default function App() {
           />
         </label>
         <label>
-          Access token
+          Firebase email
           <input
-            aria-label="Access token"
-            type="password"
-            autoComplete="off"
-            value={token}
-            onChange={(event) => setToken(event.target.value)}
-            placeholder="Held in memory only"
+            aria-label="Firebase email"
+            type="email"
+            autoComplete="username"
+            value={firebaseEmail}
+            onChange={(event) => setFirebaseEmail(event.target.value)}
+            placeholder="you@example.com"
           />
         </label>
-        <button onClick={() => void connect()}>Connect API</button>
+        <label>
+          Firebase password
+          <input
+            aria-label="Firebase password"
+            type="password"
+            autoComplete="current-password"
+            value={firebasePassword}
+            onChange={(event) => setFirebasePassword(event.target.value)}
+          />
+        </label>
+        <span className="service-state" aria-live="polite">{authStatus}</span>
+        {firebaseAuth.user ? (
+          <>
+            <button onClick={() => void connect()}>Connect API</button>
+            <button onClick={() => void signOutFirebase()}>Sign out</button>
+          </>
+        ) : (
+          <button
+            disabled={!FIREBASE_PROJECT_ID}
+            onClick={() => void signInFirebase()}
+          >
+            Sign in with Firebase
+          </button>
+        )}
         <label className="import-button">
           Import project ZIP
           <input
