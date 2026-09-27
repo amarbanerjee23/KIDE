@@ -6,7 +6,7 @@ steps:
       - -ceu
       - |
         FIREBASE_PROJECT_ID="${_KIDE_FIREBASE_PROJECT_ID}"
-        if [[ -z "${FIREBASE_PROJECT_ID}" ]]; then
+        if [[ -z "$${FIREBASE_PROJECT_ID}" ]]; then
           FIREBASE_PROJECT_ID="${PROJECT_ID}"
         fi
 
@@ -22,28 +22,28 @@ steps:
           --project "${PROJECT_ID}"
 
         umask 077
-        if gcloud secrets describe "${PASSWORD_SECRET}" \
+        if gcloud secrets describe "$${PASSWORD_SECRET}" \
             --project "${PROJECT_ID}" >/dev/null 2>&1; then
           gcloud secrets versions access latest \
             --project "${PROJECT_ID}" \
-            --secret "${PASSWORD_SECRET}" \
-            > "${PASSWORD_FILE}"
+            --secret "$${PASSWORD_SECRET}" \
+            > "$${PASSWORD_FILE}"
           echo "Reusing Firebase administrator password from Secret Manager."
         else
           python3 - <<'PY' > "${PASSWORD_FILE}"
-import secrets
-print(secrets.token_urlsafe(32))
-PY
-          gcloud secrets create "${PASSWORD_SECRET}" \
+        import secrets
+        print(secrets.token_urlsafe(32))
+        PY
+          gcloud secrets create "$${PASSWORD_SECRET}" \
             --project "${PROJECT_ID}" \
             --replication-policy=automatic \
-            --data-file="${PASSWORD_FILE}" >/dev/null
-          echo "Created Firebase administrator password secret '${PASSWORD_SECRET}'."
+            --data-file="$${PASSWORD_FILE}" >/dev/null
+          echo "Created Firebase administrator password secret '$${PASSWORD_SECRET}'."
         fi
 
-        export KIDE_FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}"
-        export KIDE_FIREBASE_ADMIN_EMAIL="${ADMIN_EMAIL}"
-        export KIDE_FIREBASE_ADMIN_PASSWORD_FILE="${PASSWORD_FILE}"
+        export KIDE_FIREBASE_PROJECT_ID="$${FIREBASE_PROJECT_ID}"
+        export KIDE_FIREBASE_ADMIN_EMAIL="$${ADMIN_EMAIL}"
+        export KIDE_FIREBASE_ADMIN_PASSWORD_FILE="$${PASSWORD_FILE}"
         if [[ -n "${_KIDE_FIREBASE_ADMIN_UID}" ]]; then
           export KIDE_FIREBASE_ADMIN_UID="${_KIDE_FIREBASE_ADMIN_UID}"
         else
@@ -51,16 +51,16 @@ PY
         fi
 
         python3 scripts/bootstrap_firebase_auth.py \
-          --project-id "${FIREBASE_PROJECT_ID}" \
-          --output "${FIREBASE_ENV_FILE}"
+          --project-id "$${FIREBASE_PROJECT_ID}" \
+          --output "$${FIREBASE_ENV_FILE}"
 
-        source "${FIREBASE_ENV_FILE}"
-        test -n "${KIDE_FIREBASE_API_KEY}"
-        test -n "${KIDE_FIREBASE_ADMIN_UID}"
+        source "$${FIREBASE_ENV_FILE}"
+        test -n "$${KIDE_FIREBASE_API_KEY}"
+        test -n "$${KIDE_FIREBASE_ADMIN_UID}"
 
         echo "Firebase hosted deployment configuration is ready."
-        echo "Firebase project: ${KIDE_FIREBASE_PROJECT_ID}"
-        echo "Firebase administrator UID: ${KIDE_FIREBASE_ADMIN_UID}"
+        echo "Firebase project: $${KIDE_FIREBASE_PROJECT_ID}"
+        echo "Firebase administrator UID: $${KIDE_FIREBASE_ADMIN_UID}"
 
   - name: maven:3.9.9-eclipse-temurin-21
     id: Build Eclipse desktop products
@@ -157,7 +157,7 @@ PY
           --max 1 \
           --session-affinity \
           --add-volume "mount-path=/data,type=cloud-storage,bucket=${_KIDE_DATA_BUCKET},readonly=false,mount-options=uid=10001;gid=10001" \
-          --set-env-vars "^|^KIDE_FIREBASE_PROJECT_ID=${KIDE_FIREBASE_PROJECT_ID}|KIDE_FIREBASE_ADMIN_UID=${KIDE_FIREBASE_ADMIN_UID}" \
+          --set-env-vars "^|^KIDE_FIREBASE_PROJECT_ID=$${KIDE_FIREBASE_PROJECT_ID}|KIDE_FIREBASE_ADMIN_UID=$${KIDE_FIREBASE_ADMIN_UID}" \
           --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
           --quiet
 
@@ -177,15 +177,15 @@ PY
       - -ceu
       - |
         BACKEND_URL="$(cat /workspace/.kide-backend-url)"
-        source /workspace/.kide-firebase.env
+        . /workspace/.kide-firebase.env
 
         docker build \
           --file deploy/web/Dockerfile \
           --tag "${_KIDE_WEB_IMAGE}" \
           --build-arg "VITE_KIDE_API_ORIGIN=$${BACKEND_URL}" \
           --build-arg "VITE_KIDE_LSP_ORIGIN=$${BACKEND_URL}" \
-          --build-arg "VITE_FIREBASE_API_KEY=${KIDE_FIREBASE_API_KEY}" \
-          --build-arg "VITE_FIREBASE_PROJECT_ID=${KIDE_FIREBASE_PROJECT_ID}" \
+          --build-arg "VITE_FIREBASE_API_KEY=$${KIDE_FIREBASE_API_KEY}" \
+          --build-arg "VITE_FIREBASE_PROJECT_ID=$${KIDE_FIREBASE_PROJECT_ID}" \
           .
 
   - name: gcr.io/cloud-builders/docker
