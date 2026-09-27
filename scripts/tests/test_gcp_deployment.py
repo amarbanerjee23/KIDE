@@ -115,11 +115,12 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             build,
         )
         self.assertIn(
-            "KIDE_OIDC_INTROSPECTION_URL=${KIDE_OIDC_INTROSPECTION_URL}",
+            '--set-env-vars "^|^KIDE_OIDC_INTROSPECTION_URL=',
             build,
         )
+        self.assertIn("|KIDE_OIDC_CLIENT_ID=", build)
         self.assertIn(
-            "KIDE_OIDC_CLIENT_SECRET=${KIDE_OIDC_SECRET_NAME}:latest",
+            '--set-secrets "KIDE_OIDC_CLIENT_SECRET=',
             build,
         )
 
