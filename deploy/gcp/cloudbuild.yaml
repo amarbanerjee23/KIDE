@@ -1,6 +1,6 @@
 steps:
   - name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
-    id: Verify release prerequisites
+    id: Verify and resolve release prerequisites
     entrypoint: bash
     args:
       - -ceu
@@ -8,32 +8,114 @@ steps:
         if [ "${_KIDE_RELEASE_ENABLED}" != "true" ]; then
           echo "KIDE hosted release is not enabled for this trigger."
           echo "Desktop, backend image and web image will still be built and pushed."
-          echo "Run ./deploy-kide-gcp.sh bootstrap once to enable Cloud Run deployment and GitHub Release publication."
           exit 0
         fi
 
-        required_values=(
-          "${_KIDE_OIDC_INTROSPECTION_URL}"
-          "${_KIDE_OIDC_CLIENT_ID}"
-          "${_KIDE_OIDC_ISSUER}"
-          "${_KIDE_OIDC_AUDIENCE}"
-          "${_KIDE_PRIMARY_PRINCIPAL}"
-          "${_KIDE_OIDC_SECRET_NAME}"
-          "${_KIDE_GITHUB_REPOSITORY}"
-          "${_KIDE_GITHUB_TOKEN_SECRET}"
+        KIDE_OIDC_INTROSPECTION_URL="${_KIDE_OIDC_INTROSPECTION_URL}"
+        KIDE_OIDC_CLIENT_ID="${_KIDE_OIDC_CLIENT_ID}"
+        KIDE_OIDC_ISSUER="${_KIDE_OIDC_ISSUER}"
+        KIDE_OIDC_AUDIENCE="${_KIDE_OIDC_AUDIENCE}"
+        KIDE_PRIMARY_PRINCIPAL="${_KIDE_PRIMARY_PRINCIPAL}"
+        KIDE_OIDC_SECRET_NAME="${_KIDE_OIDC_SECRET_NAME}"
+
+        # Trigger substitutions are authoritative when present. If they are
+        # absent, reuse the last successfully deployed backend's non-secret
+        # OIDC configuration. This makes normal main builds resilient to a
+        # trigger losing substitutions while keeping secrets in Secret Manager.
+        if gcloud run services describe "${_KIDE_SERVICE_NAME}" \
+            --project "${PROJECT_ID}" \
+            --region "${_REGION}" \
+            --format=json >/workspace/.kide-existing-service.json 2>/dev/null; then
+          eval "$(
+            python3 - <<'PY'
+        import json
+        import shlex
+        from pathlib import Path
+
+        service = json.loads(
+            Path("/workspace/.kide-existing-service.json").read_text(encoding="utf-8")
         )
-        for value in "$${required_values[@]}"; do
-          if [[ -z "$${value}" ]]; then
-            echo "KIDE release/deployment trigger is not fully configured." >&2
-            echo "Run ./deploy-kide-gcp.sh bootstrap once before using this config." >&2
-            exit 2
+        containers = (
+            service.get("spec", {})
+            .get("template", {})
+            .get("spec", {})
+            .get("containers", [])
+        )
+        env = containers[0].get("env", []) if containers else []
+        wanted = {
+            "KIDE_OIDC_INTROSPECTION_URL",
+            "KIDE_OIDC_CLIENT_ID",
+            "KIDE_OIDC_ISSUER",
+            "KIDE_OIDC_AUDIENCE",
+            "KIDE_PRIMARY_PRINCIPAL",
+        }
+        for item in env:
+            name = item.get("name")
+            value = item.get("value")
+            if name in wanted and isinstance(value, str) and value:
+                print(f"EXISTING_{name}={shlex.quote(value)}")
+        PY
+          )"
+
+          for name in \
+            KIDE_OIDC_INTROSPECTION_URL \
+            KIDE_OIDC_CLIENT_ID \
+            KIDE_OIDC_ISSUER \
+            KIDE_OIDC_AUDIENCE \
+            KIDE_PRIMARY_PRINCIPAL; do
+            existing_name="EXISTING_$${name}"
+            if [[ -z "$${!name}" && -n "$${!existing_name:-}" ]]; then
+              printf -v "$${name}" '%s' "$${!existing_name}"
+              echo "Recovered $${name} from existing Cloud Run service."
+            fi
+          done
+        else
+          echo "No existing ${_KIDE_SERVICE_NAME} Cloud Run service was available for configuration recovery."
+        fi
+
+        missing=()
+        for name in \
+          KIDE_OIDC_INTROSPECTION_URL \
+          KIDE_OIDC_CLIENT_ID \
+          KIDE_OIDC_ISSUER \
+          KIDE_OIDC_AUDIENCE \
+          KIDE_PRIMARY_PRINCIPAL \
+          KIDE_OIDC_SECRET_NAME; do
+          if [[ -z "$${!name}" ]]; then
+            missing+=("$${name}")
           fi
         done
+
+        if [[ -z "${_KIDE_GITHUB_REPOSITORY}" ]]; then
+          missing+=("_KIDE_GITHUB_REPOSITORY")
+        fi
+        if [[ -z "${_KIDE_GITHUB_TOKEN_SECRET}" ]]; then
+          missing+=("_KIDE_GITHUB_TOKEN_SECRET")
+        fi
+
+        if (( $${#missing[@]} > 0 )); then
+          echo "KIDE release/deployment configuration is incomplete." >&2
+          echo "Missing values:" >&2
+          printf '  - %s\n' "$${missing[@]}" >&2
+          echo >&2
+          echo "Run ./deploy-kide-gcp.sh bootstrap once only if these values cannot be recovered from an existing deployment." >&2
+          exit 2
+        fi
 
         if [[ -z "${COMMIT_SHA}" || -z "${SHORT_SHA}" ]]; then
           echo "This release config must run from a source trigger with COMMIT_SHA and SHORT_SHA." >&2
           exit 2
         fi
+
+        {
+          printf 'KIDE_OIDC_INTROSPECTION_URL=%q\n' "$${KIDE_OIDC_INTROSPECTION_URL}"
+          printf 'KIDE_OIDC_CLIENT_ID=%q\n' "$${KIDE_OIDC_CLIENT_ID}"
+          printf 'KIDE_OIDC_ISSUER=%q\n' "$${KIDE_OIDC_ISSUER}"
+          printf 'KIDE_OIDC_AUDIENCE=%q\n' "$${KIDE_OIDC_AUDIENCE}"
+          printf 'KIDE_PRIMARY_PRINCIPAL=%q\n' "$${KIDE_PRIMARY_PRINCIPAL}"
+          printf 'KIDE_OIDC_SECRET_NAME=%q\n' "$${KIDE_OIDC_SECRET_NAME}"
+        } > /workspace/.kide-deployment-env
+        chmod 600 /workspace/.kide-deployment-env
 
         echo "Release/deployment configuration is present."
 
@@ -120,6 +202,13 @@ steps:
           exit 0
         fi
 
+        if [[ ! -s /workspace/.kide-deployment-env ]]; then
+          echo "Resolved deployment configuration is missing." >&2
+          exit 2
+        fi
+        # shellcheck disable=SC1091
+        source /workspace/.kide-deployment-env
+
         gcloud run deploy "${_KIDE_SERVICE_NAME}" \
           --project "${PROJECT_ID}" \
           --region "${_REGION}" \
@@ -135,8 +224,8 @@ steps:
           --max 1 \
           --session-affinity \
           --add-volume "mount-path=/data,type=cloud-storage,bucket=${_KIDE_DATA_BUCKET},readonly=false,mount-options=uid=10001;gid=10001" \
-          --set-env-vars "^|^KIDE_OIDC_INTROSPECTION_URL=${_KIDE_OIDC_INTROSPECTION_URL}|KIDE_OIDC_CLIENT_ID=${_KIDE_OIDC_CLIENT_ID}|KIDE_OIDC_ISSUER=${_KIDE_OIDC_ISSUER}|KIDE_OIDC_AUDIENCE=${_KIDE_OIDC_AUDIENCE}|KIDE_PRIMARY_PRINCIPAL=${_KIDE_PRIMARY_PRINCIPAL}" \
-          --set-secrets "KIDE_OIDC_CLIENT_SECRET=${_KIDE_OIDC_SECRET_NAME}:latest" \
+          --set-env-vars "^|^KIDE_OIDC_INTROSPECTION_URL=$${KIDE_OIDC_INTROSPECTION_URL}|KIDE_OIDC_CLIENT_ID=$${KIDE_OIDC_CLIENT_ID}|KIDE_OIDC_ISSUER=$${KIDE_OIDC_ISSUER}|KIDE_OIDC_AUDIENCE=$${KIDE_OIDC_AUDIENCE}|KIDE_PRIMARY_PRINCIPAL=$${KIDE_PRIMARY_PRINCIPAL}" \
+          --set-secrets "KIDE_OIDC_CLIENT_SECRET=$${KIDE_OIDC_SECRET_NAME}:latest" \
           --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
           --quiet
 
@@ -390,7 +479,7 @@ substitutions:
   _KIDE_OIDC_ISSUER: ''
   _KIDE_OIDC_AUDIENCE: ''
   _KIDE_PRIMARY_PRINCIPAL: ''
-  _KIDE_OIDC_SECRET_NAME: ''
+  _KIDE_OIDC_SECRET_NAME: 'kide-oidc-client-secret'
   _KIDE_GITHUB_REPOSITORY: 'amarbanerjee23/KIDE'
   _KIDE_GITHUB_TOKEN_SECRET: 'kide-github-release-token'
 
