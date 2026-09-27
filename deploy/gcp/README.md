@@ -1,306 +1,198 @@
 # KIDE on Google Cloud Run
 
+KIDE's hosted runtime uses Firebase Authentication for browser users and one
+canonical Google Cloud Build pipeline for Eclipse desktop builds, Cloud Run
+deployment, live verification and GitHub Release publication.
+
+## Hosted authentication
+
+The hosted API, LSP gateway and GLSP gateway accept Firebase Authentication ID
+tokens.
+
+Backend configuration:
+
+- `KIDE_FIREBASE_PROJECT_ID`
+
+The expected token issuer and audience are derived from that project ID:
+
+```text
+issuer   = https://securetoken.google.com/<project-id>
+audience = <project-id>
+```
+
+There is no hosted OIDC introspection endpoint, OAuth client ID or OAuth client
+secret. Google/Firebase signing certificates are fetched over HTTPS and cached
+according to their `Cache-Control` lifetime.
+
+The web application uses Firebase email/password authentication through the
+Firebase Authentication REST API and keeps the ID/refresh tokens in browser
+memory only.
+
+Web build configuration:
+
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_PROJECT_ID`
+
+The Firebase Web API key is normal Firebase web configuration, not a backend
+credential.
+
+## Firebase prerequisites
+
+Before the first KIDE deployment:
+
+1. add/enable Firebase for the GCP project;
+2. enable **Email/Password** in Firebase Authentication;
+3. create the first KIDE user;
+4. copy the Firebase **Web API key** from the Firebase web-app configuration;
+5. copy the first user's Firebase **UID** from Authentication > Users.
+
+The initial administrator principal is derived as:
+
+```text
+firebase:<project-id>#<firebase-uid>
+```
+
+The UID is used for authorization; email is only a display/safe identity claim.
+
 ## Cloud Shell quick start
-
-From a fresh Google Cloud Shell session, you no longer need to know any
-repository-relative paths.
-
-After cloning the repository once:
 
 ```bash
 git clone https://github.com/amarbanerjee23/KIDE.git
 cd KIDE
-./deploy-kide-gcp.sh status
-```
 
-The `status` command works even before the first deployment and reports each
-service independently as `NOT DEPLOYED`.
+export PROJECT_ID=kide-eclipse
+export REGION=asia-south1
 
-Useful commands:
-
-```bash
-./deploy-kide-gcp.sh doctor
-./deploy-kide-gcp.sh status
-./deploy-kide-gcp.sh bootstrap
-./deploy-kide-gcp.sh deploy
-./deploy-kide-gcp.sh configure-trigger
-```
-
-For the **first deployment**, use:
-
-```bash
 ./deploy-kide-gcp.sh bootstrap
 ```
 
-The bootstrap flow:
+The bootstrap discovers the Cloud Build trigger and prompts for:
 
-1. detects the active GCP project and region;
-2. discovers the existing Cloud Build trigger automatically;
-3. prompts only for missing OIDC configuration;
-4. reads the OIDC client secret with hidden terminal input;
-5. creates the Secret Manager secret or adds a new version without placing the
-   secret value in the command line or shell history;
-6. provisions the Artifact Registry, persistent bucket, runtime service
-   accounts and IAM through the existing bootstrap;
-7. keeps the selected trigger on the canonical root `cloudbuild.yaml` and
-   enables `_KIDE_RELEASE_ENABLED=true`;
-8. runs the trigger against `main`;
-9. waits for both `kide` and `kide-web` to exist and pass health checks;
-10. prints the final public web and backend URLs.
+```text
+Firebase Web API key
+Firebase UID for the initial KIDE administrator
+GitHub release token (hidden, only if its Secret Manager secret does not exist)
+```
 
-After the first deployment, `deploy` refreshes a dedicated cached checkout of
-`main` and invokes the same unified release/deployment pipeline directly.
+The GitHub release token remains in Secret Manager. Firebase Authentication does
+not require a KIDE backend client secret.
 
-For non-interactive automation, provide the documented OIDC environment
-variables, point `KIDE_OIDC_CLIENT_SECRET_FILE` at a protected local file,
-and use `KIDE_GITHUB_RELEASE_TOKEN_FILE` when the GitHub release token
-Secret Manager secret has not yet been created.
+## Non-interactive bootstrap
 
-KIDE uses two Cloud Run services when deployment is enabled:
+```bash
+export PROJECT_ID=kide-eclipse
+export REGION=asia-south1
+export KIDE_FIREBASE_PROJECT_ID=kide-eclipse
+export KIDE_FIREBASE_API_KEY='...'
+export KIDE_FIREBASE_ADMIN_UID='...'
+export TRIGGER_NAME='...'
+export KIDE_GITHUB_RELEASE_TOKEN_FILE=/path/to/protected/github-token
 
-- `kide`: backend/gateway service for the enterprise API, LSP and GLSP.
-- `kide-web`: standalone React/Vite browser application.
+./deploy-kide-gcp.sh bootstrap
+```
 
-The backend remains single-writer because current persistent and collaborative
-state is not horizontally multi-writer safe. The static web tier may scale
-independently.
+After the GitHub release-token secret exists,
+`KIDE_GITHUB_RELEASE_TOKEN_FILE` can be omitted.
 
 ## Cloud Build configuration
 
-KIDE uses one canonical unified Cloud Build contract. The following files are
-kept identical:
+These canonical configs are kept identical:
 
-- `cloudbuild.yaml`;
-- `deploy/gcp/cloudbuild.yaml`;
-- `deploy/gcp/cloudbuild-release.yaml`.
+- `cloudbuild.yaml`
+- `deploy/gcp/cloudbuild.yaml`
+- `deploy/gcp/cloudbuild-release.yaml`
 
-The canonical config defaults `_KIDE_RELEASE_ENABLED=true`, so a normal main
-Cloud Build is expected to build the Eclipse products, deploy the hosted KIDE
-services, verify them, and publish the hosted URL to GitHub Releases.
+The release pipeline:
 
-If required OIDC or release configuration is missing, Step 0 fails immediately
-with the missing prerequisite instead of silently degrading to a build-only
-run.
-
-### Unified release/deployment flow
-
-After one-time configuration it:
-
-1. validates the release/deployment substitutions;
+1. verifies Firebase and release substitutions;
 2. builds the Eclipse/Tycho desktop products;
-3. stages and qualifies Windows, Linux, macOS Intel and macOS Apple Silicon
-   runnable bundles;
-4. builds and pushes the backend image;
-5. deploys the `kide` Cloud Run service and reads its live URL;
-6. builds the standalone web image against the live backend URL;
-7. pushes and deploys `kide-web`;
-8. updates backend allowed origins;
-9. verifies both live `/healthz` endpoints and the web root;
-10. writes `KIDE-HOSTED-URL.txt` and `gcp-deployment-manifest.json`;
-11. creates/updates a commit-specific GitHub pre-release containing the
-    desktop bundles and deployment metadata.
+3. stages Windows, Linux, macOS Intel and macOS Apple Silicon bundles;
+4. builds and pushes the KIDE backend image;
+5. deploys `kide`;
+6. discovers the live backend URL;
+7. builds the standalone web image with:
+   - live backend API/LSP origin;
+   - Firebase Web API key;
+   - Firebase project ID;
+8. deploys `kide-web`;
+9. updates backend allowed origins;
+10. verifies both live health endpoints and the web root;
+11. writes `KIDE-HOSTED-URL.txt` and
+    `gcp-deployment-manifest.json`;
+12. creates/updates `gcp-<SHORT_SHA>` in GitHub Releases.
 
-The GitHub Release notes include the clickable hosted web URL and backend URL.
+The GitHub Release notes and `KIDE-HOSTED-URL.txt` contain the live web and
+backend URLs.
 
-The deployment preflight intentionally does not call Storage or Secret Manager
-`describe` operations. Resource creation/validation is performed by the
-operator bootstrap so the Cloud Build service account does not need broad
-Storage Viewer or Secret Manager Viewer roles merely for preflight checks.
+## Trigger substitutions
 
-## Self-healing trigger configuration
-
-Normal main-branch Cloud Build runs no longer fail immediately just because the
-Cloud Build trigger lost the non-secret OIDC substitutions.
-
-Step 0 resolves configuration in this order:
-
-1. use trigger substitutions when present;
-2. for missing non-secret OIDC values, inspect the existing `kide` Cloud Run
-   service and reuse its currently deployed environment values;
-3. use the stable Secret Manager name
-   `kide-oidc-client-secret` when no explicit OIDC secret-name substitution is
-   supplied;
-4. if values are still missing, print the exact missing variable names and fail
-   before any build/deployment work begins.
-
-The resolved values are written to a private workspace environment file and are
-consumed by the backend deployment step. The OIDC client secret value itself is
-never copied from Cloud Run or written into the build configuration; it remains
-in Secret Manager.
-
-This recovery path is intended for already-provisioned deployments. A genuinely
-new project with no existing `kide` service still requires the one-time
-`./deploy-kide-gcp.sh bootstrap` flow.
-
-## Deployment activation and prerequisites
-
-`configure-auto-deploy.sh` keeps the trigger on the canonical root
-`cloudbuild.yaml` and writes the required non-secret substitutions, including
-`_KIDE_RELEASE_ENABLED=true`.
-
-The root config itself also defaults hosted release mode to `true`. Therefore
-a main Cloud Build never reports a misleading successful build while silently
-skipping the hosted deployment. If the required deployment configuration has
-not been provisioned, the build fails in Step 0 with an actionable error.
-
-## Canonical main-branch release ownership
-
-The root `cloudbuild.yaml`, `deploy/gcp/cloudbuild.yaml`, and
-`deploy/gcp/cloudbuild-release.yaml` now describe the same unified pipeline.
-
-The canonical config defaults `_KIDE_RELEASE_ENABLED=true`. Bootstrap ensures
-the trigger also carries that value together with the required OIDC,
-Secret Manager, service-account and GitHub release settings. The root build
-then deploys `kide` and `kide-web`, verifies the live URLs, and creates the
-canonical `gcp-<SHORT_SHA>` GitHub pre-release.
-
-The GitHub Actions artifact workflow no longer creates desktop-only Releases on
-`main`; it still builds and uploads Actions artifacts. This prevents a
-desktop-only Release from appearing before a hosted URL exists.
-
-## GitHub Release publication
-
-The unified Cloud Build pipeline publishes a pre-release tagged:
+The hosted release trigger uses:
 
 ```text
-gcp-<SHORT_SHA>
+_KIDE_RELEASE_ENABLED=true
+_KIDE_FIREBASE_PROJECT_ID=<firebase/gcp-project-id>
+_KIDE_FIREBASE_API_KEY=<firebase-web-api-key>
+_KIDE_FIREBASE_ADMIN_UID=<initial-admin-firebase-uid>
+_KIDE_GITHUB_REPOSITORY=amarbanerjee23/KIDE
+_KIDE_GITHUB_TOKEN_SECRET=kide-github-release-token
 ```
 
-The release contains:
+No `_KIDE_OIDC_*` substitutions are used by the hosted runtime.
 
-- Windows x86_64 Eclipse bundle;
-- Linux x86_64 Eclipse bundle;
-- macOS x86_64 Eclipse bundle;
-- macOS Apple Silicon Eclipse bundle;
-- `release-manifest.json`;
-- `SHA256SUMS.txt`;
-- `KIDE-HOSTED-URL.txt`;
-- `gcp-deployment-manifest.json`.
+## Runtime identities
 
-The release notes also contain the live `kide-web` and backend URLs.
+The deployment maintains two Cloud Run service accounts:
 
-Cloud Build reads the GitHub publishing credential only from Secret Manager.
-The default secret name is:
+- `kide-runtime`: backend API/LSP/GLSP service;
+- `kide-web-runtime`: static web service.
 
-```text
-kide-github-release-token
-```
+The backend remains single-writer:
 
-Use a fine-grained GitHub token scoped only to
-`amarbanerjee23/KIDE` with **Contents: Read and write**. The bootstrap reads
-the token with hidden input and stores it in Secret Manager; it is never
-written to the build YAML or trigger substitutions.
+- minimum instances: 1;
+- maximum instances: 1;
+- session affinity enabled;
+- persistent Cloud Storage mounted at `/data`.
 
-## First-deployment bootstrap
+The static web tier may scale independently.
 
-The first-deployment wizard is implemented in
-`deploy/gcp/bootstrap-first-deployment.sh` and is normally invoked through the
-top-level command:
+Cloud Build requires:
 
-```bash
-./deploy-kide-gcp.sh bootstrap
-```
+- Artifact Registry Writer;
+- Logs Writer;
+- Cloud Run Admin;
+- Service Account User on the two KIDE runtime identities;
+- Secret Manager Secret Accessor only on the GitHub release-token secret.
 
-If more than one Cloud Build trigger exists, the wizard displays the matching
-trigger candidates and asks which one to use. In non-interactive mode, set
-`TRIGGER_NAME` and `TRIGGER_REGION` explicitly.
-
-The client secret is handled separately from the non-secret OIDC configuration.
-Interactive input uses a hidden prompt and a temporary file created with
-restrictive permissions. The temporary file is removed on success or failure.
-
-The bootstrap runs the configured trigger with:
-
-```text
-branch: main
-release/deployment config: deploy/gcp/cloudbuild-release.yaml
-```
-
-and completes only after:
-
-```text
-KIDE FIRST DEPLOYMENT COMPLETE
-Web: https://...run.app
-Backend: https://...run.app
-```
-
-## One-time automatic deployment configuration
-
-Before enabling deployment, create the OIDC client secret in Secret Manager if
-it does not already exist:
-
-```bash
-printf '%s' 'YOUR_OIDC_CLIENT_SECRET' | \
-  gcloud secrets create kide-oidc-client-secret \
-  --project=kide-eclipse \
-  --data-file=-
-```
-
-Then configure the trigger:
-
-```bash
-export PROJECT_ID="kide-eclipse"
-export TRIGGER_NAME="YOUR_CLOUD_BUILD_TRIGGER_NAME"
-export REGION="asia-south1"
-# TRIGGER_REGION defaults to REGION. Override only if the trigger differs.
-
-export KIDE_OIDC_INTROSPECTION_URL="https://idp.example.com/oauth2/introspect"
-export KIDE_OIDC_CLIENT_ID="kide"
-export KIDE_OIDC_ISSUER="https://idp.example.com/"
-export KIDE_OIDC_AUDIENCE="kide"
-export KIDE_PRIMARY_PRINCIPAL="your-principal-id"
-export KIDE_OIDC_SECRET_NAME="kide-oidc-client-secret"
-
-bash deploy/gcp/configure-auto-deploy.sh
-```
-
-The configuration script provisions or validates:
-
-- Artifact Registry repository;
-- persistent Cloud Storage bucket;
-- `kide-runtime` backend service account;
-- `kide-web-runtime` frontend service account;
-- backend bucket access;
-- backend Secret Manager access;
-- Cloud Build Artifact Registry Writer and Logs Writer;
-- Cloud Build Cloud Run Admin;
-- Service Account User on only the two KIDE runtime identities.
-
-It keeps the selected Cloud Build trigger on the canonical root
-`cloudbuild.yaml`, enables `_KIDE_RELEASE_ENABLED=true`, and supplies the
-required non-secret substitutions. It also grants the Cloud Build service account Secret Manager
-access only to the dedicated GitHub release-token secret.
-
-The OIDC client secret and GitHub release token remain only in Secret Manager.
+The backend no longer needs Secret Manager access for an OIDC client secret.
 
 ## Manual deployment
 
-The manual entry point uses the same unified release/deployment configuration:
-
 ```bash
-export PROJECT_ID="kide-eclipse"
-export REGION="asia-south1"
-export KIDE_OIDC_INTROSPECTION_URL="..."
-export KIDE_OIDC_CLIENT_ID="..."
-export KIDE_OIDC_ISSUER="..."
-export KIDE_OIDC_AUDIENCE="..."
-export KIDE_PRIMARY_PRINCIPAL="..."
-export KIDE_OIDC_SECRET_NAME="kide-oidc-client-secret"
+export PROJECT_ID=kide-eclipse
+export REGION=asia-south1
+export KIDE_FIREBASE_PROJECT_ID=kide-eclipse
+export KIDE_FIREBASE_API_KEY='...'
+export KIDE_FIREBASE_ADMIN_UID='...'
 
 bash deploy/gcp/deploy-cloud-run.sh
 ```
 
-## Find the live URLs
-
-After a successful deployment:
+## Status and live URLs
 
 ```bash
-export PROJECT_ID="kide-eclipse"
-export REGION="asia-south1"
+export PROJECT_ID=kide-eclipse
+export REGION=asia-south1
+
+./deploy-kide-gcp.sh status
+```
+
+or:
+
+```bash
 bash deploy/gcp/deployment-status.sh
 ```
 
-The deployment Cloud Build also ends with:
+A successful unified build ends with:
 
 ```text
 KIDE DEPLOYMENT COMPLETE
@@ -308,38 +200,9 @@ Web: https://...run.app
 Backend: https://...run.app
 ```
 
-## Runtime topology
+## Desktop authentication
 
-The backend deployment uses:
-
-- minimum instances: 1;
-- maximum instances: 1;
-- session affinity;
-- 60-minute request timeout;
-- Cloud Storage mounted at `/data`;
-- dedicated `kide-runtime` identity.
-
-The frontend deployment uses:
-
-- minimum instances: 0;
-- maximum instances: 10;
-- no persistent volume;
-- no OIDC client secret;
-- dedicated `kide-web-runtime` identity.
-
-Cloud Storage mounting uses Cloud Run's supported single-container
-`--add-volume mount-path=...,type=cloud-storage,...` syntax.
-
-## Security
-
-Cloud Run terminates public TLS. The backend Nginx proxy is the only public
-container listener and forwards requests to loopback-only API/LSP/GLSP
-processes.
-
-The Cloud Build identity receives only the deployment and release-publication
-permissions provisioned by the bootstrap. Runtime data and OIDC secret access
-remain on the backend runtime identity rather than the build identity.
-
-For horizontally scaled backend operation, first replace file-backed
-persistence and process-local collaboration state with shared transactional
-services.
+The generic OIDC PKCE/device/client-credentials code in
+`com.kide.enterprise.identity` remains available for the Eclipse desktop
+product and enterprise integrations. PR57 changes the **hosted** server trust
+boundary only.
