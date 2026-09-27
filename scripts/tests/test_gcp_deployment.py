@@ -101,6 +101,27 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
                     ),
                 )
 
+    def test_cloud_build_recovers_missing_oidc_from_existing_service(self):
+        build = self.read("cloudbuild.yaml")
+        self.assertIn("gcloud run services describe", build)
+        self.assertIn("/workspace/.kide-existing-service.json", build)
+        self.assertIn("Recovered ${name} from existing Cloud Run service.", build)
+        self.assertIn("/workspace/.kide-deployment-env", build)
+        self.assertIn("source /workspace/.kide-deployment-env", build)
+        self.assertIn("Missing values:", build)
+        self.assertIn(
+            "_KIDE_OIDC_SECRET_NAME: 'kide-oidc-client-secret'",
+            build,
+        )
+        self.assertIn(
+            "KIDE_OIDC_INTROSPECTION_URL=${KIDE_OIDC_INTROSPECTION_URL}",
+            build,
+        )
+        self.assertIn(
+            "KIDE_OIDC_CLIENT_SECRET=${KIDE_OIDC_SECRET_NAME}:latest",
+            build,
+        )
+
     def test_cloud_build_sh_steps_use_posix_condition_syntax(self):
         for relative in (
             "cloudbuild.yaml",
@@ -265,7 +286,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("gcloud artifacts repositories create", bootstrap)
         self.assertIn("roles/artifactregistry.writer", bootstrap)
         self.assertIn("roles/logging.logWriter", bootstrap)
-        self.assertIn("Verify release prerequisites", build)
+        self.assertIn("Verify and resolve release prerequisites", build)
         self.assertIn("_KIDE_RELEASE_ENABLED", build)
         self.assertIn("Verify deployment prerequisites", deploy)
         self.assertIn("configure-auto-deploy.sh", deploy)
