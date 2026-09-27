@@ -30,7 +30,7 @@ steps:
             > "$${PASSWORD_FILE}"
           echo "Reusing Firebase administrator password from Secret Manager."
         else
-          python3 - <<'PY' > "${PASSWORD_FILE}"
+          python3 - <<'PY' > /workspace/.kide-firebase-admin-password
         import secrets
         print(secrets.token_urlsafe(32))
         PY
