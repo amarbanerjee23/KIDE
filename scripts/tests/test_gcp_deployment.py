@@ -190,8 +190,12 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("read -r -s -p", bootstrap)
         self.assertIn("mktemp", bootstrap)
         self.assertIn("--data-file=", bootstrap)
+        self.assertIn("scripts/bootstrap_firebase_auth.py", bootstrap)
         self.assertIn("KIDE_FIREBASE_API_KEY", bootstrap)
         self.assertIn("KIDE_FIREBASE_ADMIN_UID", bootstrap)
+        self.assertIn('source "${FIREBASE_ENV_TEMP_FILE}"', bootstrap)
+        self.assertNotIn('prompt_value KIDE_FIREBASE_API_KEY', bootstrap)
+        self.assertNotIn('prompt_value KIDE_FIREBASE_ADMIN_UID', bootstrap)
         self.assertIn("gcloud secrets versions add", bootstrap)
         self.assertIn("gcloud secrets create", bootstrap)
         self.assertIn("configure-auto-deploy.sh", bootstrap)
@@ -209,6 +213,19 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("bootstrap_first_deployment", entrypoint)
         self.assertIn("bootstrap-first-deployment.sh", entrypoint)
         self.assertIn("bootstrap) bootstrap_first_deployment", entrypoint)
+
+    def test_firebase_bootstrap_provisions_web_app_and_admin(self):
+        helper = self.read("scripts/bootstrap_firebase_auth.py")
+        self.assertIn("projects/{project_id}:addFirebase", helper)
+        self.assertIn("/webApps", helper)
+        self.assertIn("/config", helper)
+        self.assertIn("updateMask", helper)
+        self.assertIn("signIn.email", helper)
+        self.assertIn("signInWithPassword", helper)
+        self.assertIn("signUp", helper)
+        self.assertIn("KIDE_FIREBASE_ADMIN_PASSWORD_FILE", helper)
+        self.assertIn("serviceusage.services.enable", helper)
+        self.assertNotIn("KIDE_OIDC_", helper)
 
     def test_trigger_repair_uses_full_auto_deploy_configuration(self):
         repair = self.read("deploy/gcp/repair-cloud-build-trigger.sh")
