@@ -6,17 +6,14 @@ steps:
       - -ceu
       - |
         required_values=(
-          "${_KIDE_OIDC_INTROSPECTION_URL}"
-          "${_KIDE_OIDC_CLIENT_ID}"
-          "${_KIDE_OIDC_ISSUER}"
-          "${_KIDE_OIDC_AUDIENCE}"
-          "${_KIDE_PRIMARY_PRINCIPAL}"
-          "${_KIDE_OIDC_SECRET_NAME}"
+          "${_KIDE_FIREBASE_PROJECT_ID}"
+          "${_KIDE_FIREBASE_API_KEY}"
+          "${_KIDE_FIREBASE_ADMIN_UID}"
         )
         for value in "$${required_values[@]}"; do
           if [[ -z "$${value}" ]]; then
             echo "Automatic deployment is not configured for this trigger." >&2
-            echo "Run deploy/gcp/configure-auto-deploy.sh once with the required KIDE OIDC settings." >&2
+            echo "Run deploy/gcp/configure-auto-deploy.sh once with the required Firebase settings." >&2
             exit 2
           fi
         done
@@ -65,8 +62,7 @@ steps:
           --max 1 \
           --session-affinity \
           --add-volume "mount-path=/data,type=cloud-storage,bucket=${_KIDE_DATA_BUCKET},readonly=false,mount-options=uid=10001;gid=10001" \
-          --set-env-vars "^|^KIDE_OIDC_INTROSPECTION_URL=${_KIDE_OIDC_INTROSPECTION_URL}|KIDE_OIDC_CLIENT_ID=${_KIDE_OIDC_CLIENT_ID}|KIDE_OIDC_ISSUER=${_KIDE_OIDC_ISSUER}|KIDE_OIDC_AUDIENCE=${_KIDE_OIDC_AUDIENCE}|KIDE_PRIMARY_PRINCIPAL=${_KIDE_PRIMARY_PRINCIPAL}" \
-          --set-secrets "KIDE_OIDC_CLIENT_SECRET=${_KIDE_OIDC_SECRET_NAME}:latest" \
+          --set-env-vars "^|^KIDE_FIREBASE_PROJECT_ID=${_KIDE_FIREBASE_PROJECT_ID}|KIDE_FIREBASE_ADMIN_UID=${_KIDE_FIREBASE_ADMIN_UID}" \
           --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
           --quiet
 
@@ -90,7 +86,9 @@ steps:
           --file deploy/web/Dockerfile \
           --tag "${_KIDE_WEB_IMAGE}" \
           --build-arg "VITE_KIDE_API_ORIGIN=$${BACKEND_URL}" \
-          --build-arg "VITE_KIDE_LSP_ORIGIN=$${BACKEND_URL}" \
+          --build-arg "VITE_KIDE_LSP_ORIGIN=${BACKEND_URL}" \
+          --build-arg "VITE_FIREBASE_API_KEY=${_KIDE_FIREBASE_API_KEY}" \
+          --build-arg "VITE_FIREBASE_PROJECT_ID=${_KIDE_FIREBASE_PROJECT_ID}" \
           .
 
   - name: gcr.io/cloud-builders/docker
@@ -179,12 +177,9 @@ substitutions:
   _KIDE_DATA_BUCKET: '${PROJECT_ID}-kide-data'
   _KIDE_RUNTIME_SA: 'kide-runtime@${PROJECT_ID}.iam.gserviceaccount.com'
   _KIDE_WEB_RUNTIME_SA: 'kide-web-runtime@${PROJECT_ID}.iam.gserviceaccount.com'
-  _KIDE_OIDC_INTROSPECTION_URL: ''
-  _KIDE_OIDC_CLIENT_ID: ''
-  _KIDE_OIDC_ISSUER: ''
-  _KIDE_OIDC_AUDIENCE: ''
-  _KIDE_PRIMARY_PRINCIPAL: ''
-  _KIDE_OIDC_SECRET_NAME: ''
+  _KIDE_FIREBASE_PROJECT_ID: '${PROJECT_ID}'
+  _KIDE_FIREBASE_API_KEY: ''
+  _KIDE_FIREBASE_ADMIN_UID: ''
 
 timeout: 3600s
 
