@@ -37,11 +37,7 @@ export class FirebaseAuthClient {
   private expiresAt = 0;
   private userValue: FirebaseSignedInUser | undefined;
 
-  constructor(private readonly apiKey: string) {
-    if (!apiKey.trim()) {
-      throw new Error("VITE_FIREBASE_API_KEY is required.");
-    }
-  }
+  constructor(private readonly apiKey: string) {}
 
   get user(): FirebaseSignedInUser | undefined {
     return this.userValue;
@@ -51,6 +47,9 @@ export class FirebaseAuthClient {
     email: string,
     password: string
   ): Promise<FirebaseSignedInUser> {
+    if (!this.apiKey.trim()) {
+      throw new FirebaseAuthError("Firebase Web API key is not configured.");
+    }
     if (!email.trim() || !password) {
       throw new FirebaseAuthError("Email and password are required.");
     }
@@ -94,6 +93,9 @@ export class FirebaseAuthClient {
   }
 
   async idToken(): Promise<string> {
+    if (!this.apiKey.trim()) {
+      throw new FirebaseAuthError("Firebase Web API key is not configured.");
+    }
     if (!this.userValue || !this.refreshTokenValue) {
       throw new FirebaseAuthError("Sign in to Firebase first.");
     }
