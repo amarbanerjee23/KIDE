@@ -70,7 +70,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("Deploy KIDE backend", cloudbuild)
         self.assertIn("Deploy KIDE web", cloudbuild)
         self.assertIn("KIDE-HOSTED-URL.txt", cloudbuild)
-        self.assertIn("_KIDE_RELEASE_ENABLED: 'true'", cloudbuild)
+        self.assertIn("_KIDE_RELEASE_ENABLED: 'false'", cloudbuild)
         self.assertIn("dynamicSubstitutions: true", cloudbuild)
         self.assertIn("logging: CLOUD_LOGGING_ONLY", cloudbuild)
 
@@ -302,6 +302,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("_KIDE_GITHUB_TOKEN_SECRET=", configure)
         self.assertIn("roles/secretmanager.secretAccessor", configure)
         self.assertIn("_KIDE_RELEASE_ENABLED=true", configure)
+        self.assertIn("--update-substitutions", configure)
         self.assertIn("read_trigger_substitution", configure)
         self.assertIn("Cloud Build trigger Firebase configuration verification failed.", configure)
         self.assertIn("The deployment build will not be started with incomplete Firebase substitutions.", configure)
