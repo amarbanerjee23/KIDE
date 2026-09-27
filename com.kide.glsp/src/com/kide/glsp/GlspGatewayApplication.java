@@ -1,6 +1,5 @@
 package com.kide.glsp;
 
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -30,8 +29,9 @@ import com.kide.languageserver.gateway.GatewayAuthenticator;
 import com.kide.languageserver.gateway.GatewayConfig;
 import com.kide.languageserver.gateway.GatewayWorkspaceBinding;
 import com.kide.languageserver.gateway.InMemoryGatewayWorkspaceCatalog;
-import com.kide.languageserver.gateway.OidcIntrospectionAuthenticator;
-import com.kide.languageserver.gateway.OidcIntrospectionConfig;
+import com.kide.enterprise.identity.FirebaseIdTokenAuthenticator;
+import com.kide.enterprise.identity.FirebaseIdTokenConfig;
+import com.kide.enterprise.identity.GoogleFirebaseKeyProvider;
 
 /**
  * Production entry point for the secure GLSP WebSocket gateway.
@@ -42,7 +42,7 @@ import com.kide.languageserver.gateway.OidcIntrospectionConfig;
  */
 public final class GlspGatewayApplication implements IApplication {
     private volatile SecureGlspWebSocketGateway gateway;
-    private volatile OidcIntrospectionConfig oidcConfig;
+    private volatile FirebaseIdTokenConfig firebaseConfig;
 
     @Override
     public Object start(IApplicationContext context) {
@@ -85,31 +85,24 @@ public final class GlspGatewayApplication implements IApplication {
                             new AuthorizationService(
                                     new InMemoryAuthorizationPolicyStore(bindings))));
 
-            char[] clientSecret =
-                    required(env, "KIDE_OIDC_CLIENT_SECRET").toCharArray();
-            try {
-                oidcConfig = new OidcIntrospectionConfig(
-                        URI.create(required(env, "KIDE_OIDC_INTROSPECTION_URL")),
-                        required(env, "KIDE_OIDC_CLIENT_ID"),
-                        clientSecret,
-                        required(env, "KIDE_OIDC_ISSUER"),
-                        required(env, "KIDE_OIDC_AUDIENCE"),
-                        Duration.ofSeconds(integer(
-                                env, "KIDE_OIDC_TIMEOUT_SECONDS", 10)));
-            } finally {
-                Arrays.fill(clientSecret, '\0');
-            }
-
-            GatewayAuthenticator authenticator =
-                    new OidcIntrospectionAuthenticator(
-                            oidcConfig,
-                            HttpClient.newBuilder()
-                                    .connectTimeout(Duration.ofSeconds(integer(
-                                            env,
-                                            "KIDE_OIDC_CONNECT_TIMEOUT_SECONDS",
-                                            10)))
-                                    .build(),
+            firebaseConfig = new FirebaseIdTokenConfig(
+                    required(env, "KIDE_FIREBASE_PROJECT_ID"),
+                    Duration.ofSeconds(integer(
+                            env, "KIDE_FIREBASE_KEYS_TIMEOUT_SECONDS", 10)));
+            HttpClient firebaseHttpClient = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(integer(
+                            env, "KIDE_FIREBASE_CONNECT_TIMEOUT_SECONDS", 10)))
+                    .build();
+            FirebaseIdTokenAuthenticator firebaseAuthenticator =
+                    new FirebaseIdTokenAuthenticator(
+                            firebaseConfig,
+                            new GoogleFirebaseKeyProvider(
+                                    firebaseConfig,
+                                    firebaseHttpClient,
+                                    Clock.systemUTC()),
                             Clock.systemUTC());
+            GatewayAuthenticator authenticator =
+                    firebaseAuthenticator::authenticateAuthorizationHeader;
 
             gateway = new SecureGlspWebSocketGateway(
                     config,
@@ -256,8 +249,6 @@ public final class GlspGatewayApplication implements IApplication {
     }
 
     private synchronized void closeConfig() {
-        OidcIntrospectionConfig current = oidcConfig;
-        oidcConfig = null;
-        if (current != null) current.close();
+        firebaseConfig = null;
     }
 }
