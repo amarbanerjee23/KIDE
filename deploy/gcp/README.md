@@ -66,13 +66,16 @@ export REGION=asia-south1
 ./deploy-kide-gcp.sh bootstrap
 ```
 
-The bootstrap discovers the Cloud Build trigger and prompts for:
+The bootstrap discovers the Cloud Build trigger and automatically configures
+Firebase. On a new administrator account it prompts for:
 
 ```text
-Firebase Web API key
-Firebase UID for the initial KIDE administrator
+Firebase administrator email
+Firebase administrator password (hidden)
 GitHub release token (hidden, only if its Secret Manager secret does not exist)
 ```
+
+The Firebase Web API key and administrator UID are resolved automatically.
 
 The GitHub release token remains in Secret Manager. Firebase Authentication does
 not require a KIDE backend client secret.
@@ -83,16 +86,67 @@ not require a KIDE backend client secret.
 export PROJECT_ID=kide-eclipse
 export REGION=asia-south1
 export KIDE_FIREBASE_PROJECT_ID=kide-eclipse
-export KIDE_FIREBASE_API_KEY='...'
-export KIDE_FIREBASE_ADMIN_UID='...'
+export KIDE_FIREBASE_ADMIN_EMAIL='admin@example.com'
+export KIDE_FIREBASE_ADMIN_PASSWORD_FILE=/path/to/protected/firebase-admin-password
 export TRIGGER_NAME='...'
 export KIDE_GITHUB_RELEASE_TOKEN_FILE=/path/to/protected/github-token
 
 ./deploy-kide-gcp.sh bootstrap
 ```
 
+If the administrator UID is already known, set
+`KIDE_FIREBASE_ADMIN_UID` and omit the administrator email/password inputs.
+
 After the GitHub release-token secret exists,
 `KIDE_GITHUB_RELEASE_TOKEN_FILE` can be omitted.
+
+## Automated Firebase Authentication bootstrap
+
+The first-deployment flow now provisions the Firebase application configuration
+instead of asking the operator to manually copy the Web API key and UID from
+the Firebase console.
+
+Running:
+
+```bash
+./deploy-kide-gcp.sh bootstrap
+```
+
+performs the following Firebase setup using the authenticated Cloud Shell user:
+
+1. enables `firebase.googleapis.com` and
+   `identitytoolkit.googleapis.com` when permitted;
+2. adds Firebase services to the existing GCP project if necessary;
+3. creates or reuses the `KIDE Web` Firebase Web App;
+4. reads the Firebase Web App configuration and resolves its public API key;
+5. enables email/password authentication with passwords required;
+6. signs in the initial administrator account, or creates it when it does not
+   yet exist;
+7. captures the resulting immutable Firebase UID;
+8. writes only the project ID, public Web API key and administrator UID into a
+   private temporary environment file;
+9. configures the Cloud Build trigger with those three non-secret values.
+
+The administrator password is never written to the repository, Cloud Build
+substitutions, Secret Manager or the generated environment file. Interactive
+bootstrap reads it with hidden terminal input.
+
+For non-interactive automation, provide:
+
+```bash
+export KIDE_FIREBASE_ADMIN_EMAIL='admin@example.com'
+export KIDE_FIREBASE_ADMIN_PASSWORD_FILE='/secure/path/firebase-admin-password'
+```
+
+If the administrator already exists and you do not want bootstrap to sign in
+with a password, set `KIDE_FIREBASE_ADMIN_UID` explicitly; in that mode no
+administrator password is requested.
+
+Creating Firebase resources and enabling the two APIs requires an operator with
+the corresponding project permissions, including
+`serviceusage.services.enable` for first-time API enablement. This is a
+one-time administrator action; the Cloud Build runtime itself does not need
+permission to enable APIs.
 
 ## Cloud Build configuration
 

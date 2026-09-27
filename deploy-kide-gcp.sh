@@ -181,10 +181,11 @@ doctor
   Check the active project, Artifact Registry, Firebase configuration and services.
 
 bootstrap
-  First-deployment wizard. Discovers the Cloud Build trigger, prompts for
-  Firebase Web API key and initial administrator UID, provisions required
-  resources/IAM, switches the trigger to the unified GCP release
-  pipeline, runs the first deployment, verifies both live services and
+  First-deployment wizard. Adds/reuses Firebase for the active GCP project,
+  creates/reuses a Firebase Web App, resolves its Web API key automatically,
+  enables email/password authentication, signs in or creates the initial
+  administrator to resolve its Firebase UID, configures the Cloud Build
+  trigger, runs the first deployment, verifies both live services and
   publishes the hosted URL plus Eclipse bundles to GitHub Releases.
 
 deploy
@@ -205,9 +206,13 @@ Common variables:
   AR_REPOSITORY             default: kide
 
 Firebase deployment variables:
-  KIDE_FIREBASE_PROJECT_ID      default: PROJECT_ID
-  KIDE_FIREBASE_API_KEY
-  KIDE_FIREBASE_ADMIN_UID
+  KIDE_FIREBASE_PROJECT_ID          default: PROJECT_ID
+  KIDE_FIREBASE_ADMIN_UID           optional override; otherwise bootstrap derives it
+  KIDE_FIREBASE_ADMIN_EMAIL         bootstrap account email
+  KIDE_FIREBASE_ADMIN_PASSWORD_FILE non-interactive bootstrap password file
+  KIDE_FIREBASE_WEB_APP_NAME        default: KIDE Web
+
+The Firebase Web API key is discovered from the Firebase Web App automatically.
 
 GitHub release publishing:
   KIDE_GITHUB_REPOSITORY        default: amarbanerjee23/KIDE
