@@ -181,6 +181,11 @@ export default function App() {
   }, [firebaseAuth]);
 
   useEffect(() => {
+    if (!token || !projectRef.current) return;
+    void connectLanguageServices(projectRef.current);
+  }, [token]);
+
+  useEffect(() => {
     setViewMode("text");
     setSynthesisResult(undefined);
     setReconfigurationResult(undefined);
@@ -1098,7 +1103,7 @@ export default function App() {
           </>
         ) : (
           <button
-            disabled={!FIREBASE_PROJECT_ID}
+            disabled={!FIREBASE_PROJECT_ID || !FIREBASE_API_KEY}
             onClick={() => void signInFirebase()}
           >
             Sign in with Firebase
