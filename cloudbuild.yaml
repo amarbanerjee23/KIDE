@@ -63,10 +63,10 @@ steps:
             KIDE_OIDC_ISSUER \
             KIDE_OIDC_AUDIENCE \
             KIDE_PRIMARY_PRINCIPAL; do
-            existing_name="EXISTING_${name}"
-            if [[ -z "${!name}" && -n "${!existing_name:-}" ]]; then
-              printf -v "${name}" '%s' "${!existing_name}"
-              echo "Recovered ${name} from existing Cloud Run service."
+            existing_name="EXISTING_$${name}"
+            if [[ -z "$${!name}" && -n "$${!existing_name:-}" ]]; then
+              printf -v "$${name}" '%s' "$${!existing_name}"
+              echo "Recovered $${name} from existing Cloud Run service."
             fi
           done
         else
@@ -81,8 +81,8 @@ steps:
           KIDE_OIDC_AUDIENCE \
           KIDE_PRIMARY_PRINCIPAL \
           KIDE_OIDC_SECRET_NAME; do
-          if [[ -z "${!name}" ]]; then
-            missing+=("${name}")
+          if [[ -z "$${!name}" ]]; then
+            missing+=("$${name}")
           fi
         done
 
@@ -93,10 +93,10 @@ steps:
           missing+=("_KIDE_GITHUB_TOKEN_SECRET")
         fi
 
-        if (( ${#missing[@]} > 0 )); then
+        if (( $${#missing[@]} > 0 )); then
           echo "KIDE release/deployment configuration is incomplete." >&2
           echo "Missing values:" >&2
-          printf '  - %s\n' "${missing[@]}" >&2
+          printf '  - %s\n' "$${missing[@]}" >&2
           echo >&2
           echo "Run ./deploy-kide-gcp.sh bootstrap once only if these values cannot be recovered from an existing deployment." >&2
           exit 2
@@ -108,12 +108,12 @@ steps:
         fi
 
         {
-          printf 'KIDE_OIDC_INTROSPECTION_URL=%q\n' "${KIDE_OIDC_INTROSPECTION_URL}"
-          printf 'KIDE_OIDC_CLIENT_ID=%q\n' "${KIDE_OIDC_CLIENT_ID}"
-          printf 'KIDE_OIDC_ISSUER=%q\n' "${KIDE_OIDC_ISSUER}"
-          printf 'KIDE_OIDC_AUDIENCE=%q\n' "${KIDE_OIDC_AUDIENCE}"
-          printf 'KIDE_PRIMARY_PRINCIPAL=%q\n' "${KIDE_PRIMARY_PRINCIPAL}"
-          printf 'KIDE_OIDC_SECRET_NAME=%q\n' "${KIDE_OIDC_SECRET_NAME}"
+          printf 'KIDE_OIDC_INTROSPECTION_URL=%q\n' "$${KIDE_OIDC_INTROSPECTION_URL}"
+          printf 'KIDE_OIDC_CLIENT_ID=%q\n' "$${KIDE_OIDC_CLIENT_ID}"
+          printf 'KIDE_OIDC_ISSUER=%q\n' "$${KIDE_OIDC_ISSUER}"
+          printf 'KIDE_OIDC_AUDIENCE=%q\n' "$${KIDE_OIDC_AUDIENCE}"
+          printf 'KIDE_PRIMARY_PRINCIPAL=%q\n' "$${KIDE_PRIMARY_PRINCIPAL}"
+          printf 'KIDE_OIDC_SECRET_NAME=%q\n' "$${KIDE_OIDC_SECRET_NAME}"
         } > /workspace/.kide-deployment-env
         chmod 600 /workspace/.kide-deployment-env
 
@@ -224,8 +224,8 @@ steps:
           --max 1 \
           --session-affinity \
           --add-volume "mount-path=/data,type=cloud-storage,bucket=${_KIDE_DATA_BUCKET},readonly=false,mount-options=uid=10001;gid=10001" \
-          --set-env-vars "^|^KIDE_OIDC_INTROSPECTION_URL=${KIDE_OIDC_INTROSPECTION_URL}|KIDE_OIDC_CLIENT_ID=${KIDE_OIDC_CLIENT_ID}|KIDE_OIDC_ISSUER=${KIDE_OIDC_ISSUER}|KIDE_OIDC_AUDIENCE=${KIDE_OIDC_AUDIENCE}|KIDE_PRIMARY_PRINCIPAL=${KIDE_PRIMARY_PRINCIPAL}" \
-          --set-secrets "KIDE_OIDC_CLIENT_SECRET=${KIDE_OIDC_SECRET_NAME}:latest" \
+          --set-env-vars "^|^KIDE_OIDC_INTROSPECTION_URL=$${KIDE_OIDC_INTROSPECTION_URL}|KIDE_OIDC_CLIENT_ID=$${KIDE_OIDC_CLIENT_ID}|KIDE_OIDC_ISSUER=$${KIDE_OIDC_ISSUER}|KIDE_OIDC_AUDIENCE=$${KIDE_OIDC_AUDIENCE}|KIDE_PRIMARY_PRINCIPAL=$${KIDE_PRIMARY_PRINCIPAL}" \
+          --set-secrets "KIDE_OIDC_CLIENT_SECRET=$${KIDE_OIDC_SECRET_NAME}:latest" \
           --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
           --quiet
 
