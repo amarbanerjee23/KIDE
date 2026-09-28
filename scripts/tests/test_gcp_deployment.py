@@ -158,6 +158,17 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             "Skipping hosted deployment metadata: KIDE hosted release is not enabled.",
             build,
         )
+    def test_cloud_build_bootstraps_runtime_service_account_iam(self):
+        build = self.read("cloudbuild.yaml")
+
+        self.assertIn("gcloud auth list --filter=status:ACTIVE", build)
+        self.assertIn("ensure_runtime_service_account", build)
+        self.assertIn("gcloud iam service-accounts create", build)
+        self.assertIn("gcloud iam service-accounts add-iam-policy-binding", build)
+        self.assertIn("roles/iam.serviceAccountUser", build)
+        self.assertIn("_KIDE_RUNTIME_SA", build)
+        self.assertIn("_KIDE_WEB_RUNTIME_SA", build)
+        self.assertIn("Cloud Build runtime identity bindings are ready.", build)
     def test_cloud_build_sh_steps_use_posix_condition_syntax(self):
         for relative in (
             "cloudbuild.yaml",
