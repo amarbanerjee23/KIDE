@@ -51,6 +51,16 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertLess(nginx_start, lsp_wait)
         self.assertLess(nginx_start, ready_log)
         self.assertIn("Cloud Run requires the container to bind to $PORT promptly", entrypoint)
+    def test_container_qualification_waits_for_full_kide_readiness(self):
+        for relative in (
+            ".github/workflows/cloud-run.yml",
+            ".github/workflows/publish-build-artifacts.yml",
+        ):
+            workflow = self.read(relative)
+            self.assertIn("fully_ready=0", workflow)
+            self.assertIn("KIDE CLOUD RUN READY", workflow)
+            self.assertIn("Cloud Run image became healthy but did not reach full KIDE readiness", workflow)
+            self.assertNotIn("docker logs \"$container_id\" 2>&1 | grep -q 'KIDE CLOUD RUN READY'", workflow)
     def test_deploy_contract_is_single_writer_and_websocket_ready(self):
         deploy = self.read("deploy/gcp/deploy-cloud-run.sh")
         cloudbuild = self.read("deploy/gcp/cloudbuild-deploy.yaml")
