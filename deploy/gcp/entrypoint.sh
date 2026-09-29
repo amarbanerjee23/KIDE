@@ -139,6 +139,17 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+# Cloud Run requires the container to bind to $PORT promptly. Start nginx
+# before waiting for the internal Eclipse applications so the platform's
+# startup probe can establish a TCP connection while API/LSP/GLSP finish
+# booting. /healthz will naturally return an upstream error until the API is
+# ready, and the build's live verification still waits for full readiness.
+mkdir -p /tmp/nginx-client /tmp/nginx-proxy /tmp/nginx-fastcgi \
+  /tmp/nginx-uwsgi /tmp/nginx-scgi
+envsubst '$PORT' < /opt/kide-cloud/nginx.conf.template > /tmp/nginx.conf
+nginx -c /tmp/nginx.conf -g 'daemon off;' &
+nginx_pid=$!
+
 for _ in $(seq 1 60); do
   if ! kill -0 "${api_pid}" 2>/dev/null; then
     cat /tmp/kide-api.log >&2
@@ -188,12 +199,6 @@ wait_listener lsp "${lsp_pid}" \
 wait_listener glsp "${glsp_pid}" \
   "http://127.0.0.1:18083/glsp?workspaceId=${workspace_id}" \
   /tmp/kide-glsp.log
-
-mkdir -p /tmp/nginx-client /tmp/nginx-proxy /tmp/nginx-fastcgi \
-  /tmp/nginx-uwsgi /tmp/nginx-scgi
-envsubst '$PORT' < /opt/kide-cloud/nginx.conf.template > /tmp/nginx.conf
-nginx -c /tmp/nginx.conf -g 'daemon off;' &
-nginx_pid=$!
 
 echo "KIDE CLOUD RUN READY port=${PORT} workspaceId=${workspace_id}"
 set +e
