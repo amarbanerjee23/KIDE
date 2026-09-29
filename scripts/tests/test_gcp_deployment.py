@@ -61,6 +61,22 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             self.assertIn("KIDE CLOUD RUN READY", workflow)
             self.assertIn("Cloud Run image became healthy but did not reach full KIDE readiness", workflow)
             self.assertNotIn("docker logs \"$container_id\" 2>&1 | grep -q 'KIDE CLOUD RUN READY'", workflow)
+    def test_cloud_run_deployment_matches_gcp_runtime_contract(self):
+        nginx = self.read("deploy/gcp/nginx.conf.template")
+        build = self.read("cloudbuild.yaml")
+        deploy = self.read("deploy/gcp/cloudbuild-deploy.yaml")
+
+        self.assertIn("listen 0.0.0.0:${PORT};", nginx)
+        self.assertIn("storage.googleapis.com", build)
+        self.assertIn("gcloud storage buckets create", build)
+        self.assertIn("roles/storage.objectUser", build)
+        self.assertIn("_KIDE_DATA_BUCKET", build)
+        self.assertIn("httpGet.path=/healthz", build)
+        self.assertIn("httpGet.port=8080", build)
+        self.assertIn("periodSeconds=10", build)
+        self.assertIn("failureThreshold=60", build)
+        self.assertIn("--cpu-boost", build)
+        self.assertIn("httpGet.path=/healthz", deploy)
     def test_deploy_contract_is_single_writer_and_websocket_ready(self):
         deploy = self.read("deploy/gcp/deploy-cloud-run.sh")
         cloudbuild = self.read("deploy/gcp/cloudbuild-deploy.yaml")
