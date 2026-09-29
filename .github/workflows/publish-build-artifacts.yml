@@ -254,8 +254,25 @@ jobs:
             echo "Backend image unexpectedly serves the browser application" >&2
             exit 1
           fi
-          container_logs="$(docker logs "$container_id" 2>&1)"
-          grep -q 'KIDE CLOUD RUN READY' <<< "$container_logs"
+          fully_ready=0
+          for _ in $(seq 1 120); do
+            container_logs="$(docker logs "$container_id" 2>&1)"
+            if grep -q 'KIDE CLOUD RUN READY' <<< "$container_logs"; then
+              fully_ready=1
+              break
+            fi
+            if ! docker inspect --format='{{.State.Running}}' "$container_id" \
+                2>/dev/null | grep -qx true; then
+              echo "Cloud Run image exited before full KIDE readiness" >&2
+              exit 1
+            fi
+            sleep 1
+          done
+
+          if [[ "$fully_ready" -ne 1 ]]; then
+            echo "Cloud Run image became healthy but did not reach full KIDE readiness" >&2
+            exit 1
+          fi
 
       - name: Authenticate to GitHub Container Registry
         shell: bash
