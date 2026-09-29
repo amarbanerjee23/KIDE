@@ -16,6 +16,9 @@ steps:
         PASSWORD_FILE="/workspace/.kide-firebase-admin-password"
 
         gcloud services enable \
+          run.googleapis.com \
+          artifactregistry.googleapis.com \
+          storage.googleapis.com \
           firebase.googleapis.com \
           identitytoolkit.googleapis.com \
           secretmanager.googleapis.com \
@@ -51,6 +54,21 @@ steps:
 
         ensure_runtime_service_account "${_KIDE_RUNTIME_SA}" "KIDE backend runtime"
         ensure_runtime_service_account "${_KIDE_WEB_RUNTIME_SA}" "KIDE web runtime"
+
+        if ! gcloud storage buckets describe "gs://${_KIDE_DATA_BUCKET}" \
+            --project "${PROJECT_ID}" >/dev/null 2>&1; then
+          gcloud storage buckets create "gs://${_KIDE_DATA_BUCKET}" \
+            --project "${PROJECT_ID}" \
+            --location "${_REGION}" \
+            --uniform-bucket-level-access
+        fi
+
+        gcloud storage buckets add-iam-policy-binding "gs://${_KIDE_DATA_BUCKET}" \
+          --project "${PROJECT_ID}" \
+          --member="serviceAccount:${_KIDE_RUNTIME_SA}" \
+          --role="roles/storage.objectUser" >/dev/null
+
+        echo "KIDE data bucket and runtime storage access are ready."
 
         echo "Cloud Build runtime identity bindings are ready."
         echo "Build service account: $${BUILD_SERVICE_ACCOUNT}"
@@ -183,6 +201,8 @@ steps:
           --service-account "${_KIDE_RUNTIME_SA}" \
           --allow-unauthenticated \
           --port 8080 \
+          --startup-probe "httpGet.path=/healthz,httpGet.port=8080,initialDelaySeconds=5,timeoutSeconds=5,periodSeconds=5,failureThreshold=60" \
+          --cpu-boost \
           --cpu 2 \
           --memory 4Gi \
           --concurrency 20 \
