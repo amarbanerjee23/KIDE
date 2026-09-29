@@ -201,7 +201,7 @@ steps:
           --service-account "${_KIDE_RUNTIME_SA}" \
           --allow-unauthenticated \
           --port 8080 \
-          --startup-probe "httpGet.path=/healthz,httpGet.port=8080,initialDelaySeconds=5,timeoutSeconds=5,periodSeconds=5,failureThreshold=60" \
+          --startup-probe "httpGet.path=/healthz,httpGet.port=8080,initialDelaySeconds=10,timeoutSeconds=5,periodSeconds=10,failureThreshold=60" \
           --cpu-boost \
           --cpu 2 \
           --memory 4Gi \
