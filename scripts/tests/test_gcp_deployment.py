@@ -39,6 +39,18 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertNotIn("FROM node:", dockerfile)
         self.assertNotIn("/src/web/dist", dockerfile)
 
+    def test_cloud_run_entrypoint_binds_public_port_before_readiness_waits(self):
+        entrypoint = self.read("deploy/gcp/entrypoint.sh")
+
+        nginx_start = entrypoint.index("nginx -c /tmp/nginx.conf -g 'daemon off;' &")
+        api_wait = entrypoint.index("for _ in $(seq 1 60); do")
+        lsp_wait = entrypoint.index("wait_listener lsp")
+        ready_log = entrypoint.index("KIDE CLOUD RUN READY")
+
+        self.assertLess(nginx_start, api_wait)
+        self.assertLess(nginx_start, lsp_wait)
+        self.assertLess(nginx_start, ready_log)
+        self.assertIn("Cloud Run requires the container to bind to $PORT promptly", entrypoint)
     def test_deploy_contract_is_single_writer_and_websocket_ready(self):
         deploy = self.read("deploy/gcp/deploy-cloud-run.sh")
         cloudbuild = self.read("deploy/gcp/cloudbuild-deploy.yaml")
