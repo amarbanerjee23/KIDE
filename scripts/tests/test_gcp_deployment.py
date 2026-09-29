@@ -73,7 +73,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("_KIDE_DATA_BUCKET", build)
         self.assertIn("httpGet.path=/healthz", build)
         self.assertIn("httpGet.port=8080", build)
-        self.assertIn("failureThreshold=60", build)
+        self.assertIn("periodSeconds=10", build)\n        self.assertIn("failureThreshold=60", build)
         self.assertIn("--cpu-boost", build)
         self.assertIn("httpGet.path=/healthz", deploy)
     def test_deploy_contract_is_single_writer_and_websocket_ready(self):
