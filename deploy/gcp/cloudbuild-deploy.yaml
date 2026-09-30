@@ -69,12 +69,11 @@ steps:
           --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
           --quiet
 
-        BACKEND_URL="$(gcloud run services describe "${_KIDE_SERVICE_NAME}" \
-          --project "${PROJECT_ID}" \
-          --region "${_REGION}" \
-          --format='value(status.url)')"
+        PROJECT_NUMBER="$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')"
+        test -n "${PROJECT_NUMBER}"
+        BACKEND_URL="https://${_KIDE_SERVICE_NAME}-${PROJECT_NUMBER}.${_REGION}.run.app"
 
-        test -n "$${BACKEND_URL}"
+        test -n "${BACKEND_URL}"
         printf '%s' "$${BACKEND_URL}" > /workspace/.kide-backend-url
         echo "KIDE backend deployed: $${BACKEND_URL}"
 
@@ -125,12 +124,11 @@ steps:
           --labels "kide-component=web,kide-build-id=${BUILD_ID}" \
           --quiet
 
-        WEB_URL="$(gcloud run services describe "${_KIDE_WEB_SERVICE_NAME}" \
-          --project "${PROJECT_ID}" \
-          --region "${_REGION}" \
-          --format='value(status.url)')"
+        PROJECT_NUMBER="$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')"
+        test -n "${PROJECT_NUMBER}"
+        WEB_URL="https://${_KIDE_WEB_SERVICE_NAME}-${PROJECT_NUMBER}.${_REGION}.run.app"
 
-        test -n "$${WEB_URL}"
+        test -n "${WEB_URL}"
         printf '%s' "$${WEB_URL}" > /workspace/.kide-web-url
 
         gcloud run services update "${_KIDE_SERVICE_NAME}" \
