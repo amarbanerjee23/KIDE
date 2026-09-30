@@ -53,6 +53,7 @@ steps:
           --image "${_KIDE_IMAGE}" \
           --service-account "${_KIDE_RUNTIME_SA}" \
           --allow-unauthenticated \
+          --ingress all \
           --port 8080 \
           --startup-probe "httpGet.path=/healthz,httpGet.port=8080,initialDelaySeconds=10,timeoutSeconds=5,periodSeconds=10,failureThreshold=60" \
           --cpu-boost \
@@ -113,6 +114,7 @@ steps:
           --image "${_KIDE_WEB_IMAGE}" \
           --service-account "${_KIDE_WEB_RUNTIME_SA}" \
           --allow-unauthenticated \
+          --ingress all \
           --port 8080 \
           --cpu 1 \
           --memory 512Mi \
