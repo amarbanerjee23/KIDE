@@ -54,6 +54,7 @@ steps:
           --service-account "${_KIDE_RUNTIME_SA}" \
           --allow-unauthenticated \
           --ingress all \
+          --default-url \
           --port 8080 \
           --startup-probe "httpGet.path=/healthz,httpGet.port=8080,initialDelaySeconds=10,timeoutSeconds=5,periodSeconds=10,failureThreshold=60" \
           --cpu-boost \
@@ -69,11 +70,14 @@ steps:
           --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
           --quiet
 
-        BACKEND_URL="https://${_KIDE_SERVICE_NAME}-${PROJECT_NUMBER}.${_REGION}.run.app"
+        BACKEND_URL="$(gcloud run services describe "${_KIDE_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --format='value(status.url)')"
 
-        test -n "$${BACKEND_URL}"
-        printf '%s' "$${BACKEND_URL}" > /workspace/.kide-backend-url
-        echo "KIDE backend deployed: $${BACKEND_URL}"
+        test -n "${BACKEND_URL}"
+        printf '%s' "${BACKEND_URL}" > /workspace/.kide-backend-url
+        echo "KIDE backend deployed: ${BACKEND_URL}"
 
   - name: gcr.io/cloud-builders/docker
     id: Build KIDE web image
@@ -112,6 +116,7 @@ steps:
           --service-account "${_KIDE_WEB_RUNTIME_SA}" \
           --allow-unauthenticated \
           --ingress all \
+          --default-url \
           --port 8080 \
           --cpu 1 \
           --memory 512Mi \
@@ -122,19 +127,40 @@ steps:
           --labels "kide-component=web,kide-build-id=${BUILD_ID}" \
           --quiet
 
-        WEB_URL="https://${_KIDE_WEB_SERVICE_NAME}-${PROJECT_NUMBER}.${_REGION}.run.app"
+        WEB_URL="$(gcloud run services describe "${_KIDE_WEB_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --format='value(status.url)')"
 
-        test -n "$${WEB_URL}"
-        printf '%s' "$${WEB_URL}" > /workspace/.kide-web-url
+        test -n "${WEB_URL}"
+        printf '%s' "${WEB_URL}" > /workspace/.kide-web-url
 
         gcloud run services update "${_KIDE_SERVICE_NAME}" \
           --project "${PROJECT_ID}" \
           --region "${_REGION}" \
-          --update-env-vars "^|^KIDE_ALLOWED_ORIGINS=$${BACKEND_URL},$${WEB_URL}" \
+          --default-url \
+          --update-env-vars "^|^KIDE_ALLOWED_ORIGINS=${BACKEND_URL},${WEB_URL}" \
           --quiet
 
-        echo "KIDE web deployed: $${WEB_URL}"
-        echo "KIDE backend: $${BACKEND_URL}"
+        BACKEND_URL="$(gcloud run services describe "${_KIDE_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --format='value(status.url)')"
+        test -n "${BACKEND_URL}"
+        printf '%s' "${BACKEND_URL}" > /workspace/.kide-backend-url
+
+        echo "KIDE web deployed: ${WEB_URL}"
+        echo "KIDE backend: ${BACKEND_URL}"
+        echo "Cloud Run backend routing:"
+        gcloud run services describe "${_KIDE_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --format='yaml(status.url,status.latestReadyRevisionName,status.traffic)'
+        echo "Cloud Run web routing:"
+        gcloud run services describe "${_KIDE_WEB_SERVICE_NAME}" \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --format='yaml(status.url,status.latestReadyRevisionName,status.traffic)'
 
   - name: curlimages/curl:8.12.1
     id: Verify live KIDE deployment
@@ -145,16 +171,57 @@ steps:
         BACKEND_URL="$(cat /workspace/.kide-backend-url)"
         WEB_URL="$(cat /workspace/.kide-web-url)"
 
-        curl --fail --silent --show-error \
-          --retry 12 --retry-delay 5 --retry-all-errors \
-          "$${BACKEND_URL}/healthz" >/dev/null
+        check_url() {
+          name="$1"
+          url="$2"
+          body_file="$3"
+          attempts=13
+          attempt=1
 
-        curl --fail --silent --show-error \
-          --retry 12 --retry-delay 5 --retry-all-errors \
-          "$${WEB_URL}/healthz" >/dev/null
+          while [ "${attempt}" -le "${attempts}" ]; do
+            if status="$(curl --silent --show-error --location \
+                --connect-timeout 10 --max-time 30 \
+                --output "${body_file}" \
+                --write-out '%{http_code}' \
+                "${url}")"; then
+              case "${status}" in
+                2??|3??)
+                  echo "${name}: HTTP ${status} ${url}"
+                  return 0
+                  ;;
+              esac
+            else
+              status=000
+            fi
 
-        curl --fail --silent --show-error "$${WEB_URL}/" \
-          | grep -q '<div id="root"></div>'
+            echo "${name}: attempt ${attempt}/${attempts} returned HTTP ${status} from ${url}" >&2
+            if [ "${attempt}" -lt "${attempts}" ]; then
+              sleep 5
+            fi
+            attempt=$((attempt + 1))
+          done
+
+          echo "${name} verification failed: ${url}" >&2
+          echo "Last HTTP status: ${status}" >&2
+          echo "Response body (first 2048 bytes):" >&2
+          head -c 2048 "${body_file}" >&2 || true
+          echo >&2
+          return 1
+        }
+
+        check_url "KIDE backend root" "${BACKEND_URL}/" /tmp/kide-backend-root
+        grep -q '"service":"kide-backend"' /tmp/kide-backend-root
+
+        check_url "KIDE backend health" "${BACKEND_URL}/healthz" /tmp/kide-backend-health
+        grep -q '"status":"UP"' /tmp/kide-backend-health
+
+        check_url "KIDE API health" "${BACKEND_URL}/api/v1/health" /tmp/kide-api-health
+        grep -q '"status":"UP"' /tmp/kide-api-health
+
+        check_url "KIDE web health" "${WEB_URL}/healthz" /tmp/kide-web-health
+
+        check_url "KIDE web root" "${WEB_URL}/" /tmp/kide-web-root
+        grep -q '<div id="root"></div>' /tmp/kide-web-root
 
         echo "KIDE DEPLOYMENT COMPLETE"
         echo "Web: $${WEB_URL}"
