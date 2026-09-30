@@ -98,6 +98,24 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
     });
   });
   await page.route(
+    "**/api/v1/projects/P04-001/models",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          items: [{
+            id: "selfcheck.dml",
+            revision: "7",
+            etag: "etag-7",
+            mediaType: "text/x-kide-dml"
+          }]
+        })
+      });
+    }
+  );
+
+  await page.route(
     "**/api/v1/projects/P04-001/models/selfcheck.dml",
     async (route) => {
       await route.fulfill({
@@ -145,11 +163,16 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
 
   await page.getByRole("button", { name: "Open" }).click();
   await expect(page.getByText("Connected · Xtext LSP")).toBeVisible();
+  await expect(page.getByText("1 project file(s) discovered.")).toBeVisible();
   expect(initializeRootUri).toBe("kide-workspace:/");
 
-  await page.getByLabel("Model ID").fill("selfcheck.dml");
-  await page.getByRole("button", { name: "Load model" }).click();
   await expect(page.getByTestId("monaco-editor")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Completion" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Definition" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "References" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Rename" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Quick Fix" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Format" })).toBeVisible();
   await expect.poll(() => didOpenUri).toBe("kide-workspace:/selfcheck.dml");
 
   await page.getByLabel("Symbol query").fill("Self");
@@ -351,6 +374,32 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
     });
   });
   await page.route(
+    "**/api/v1/projects/P04-001/models",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          items: [
+            {
+              id: "flow.activity",
+              revision: "4",
+              etag: "etag-4",
+              mediaType: "text/x-kide-activity"
+            },
+            {
+              id: "bindings.krl",
+              revision: "2",
+              etag: "d".repeat(64),
+              mediaType: "text/x-kide-krl"
+            }
+          ]
+        })
+      });
+    }
+  );
+
+  await page.route(
     "**/api/v1/projects/P04-001/models/flow.activity",
     async (route) => {
       await route.fulfill({
@@ -502,11 +551,11 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
 
   await signInFirebase(page);
   await page.getByRole("button", { name: "Open" }).click();
+  await expect(page.getByText("flow.activity", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("monaco-editor")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Synthesize", exact: true })).toBeVisible();
 
-  await page.getByLabel("Model ID").fill("flow.activity");
-  await page.getByRole("button", { name: "Load model" }).click();
-
-  await page.getByRole("button", { name: "Synthesize" }).click();
+  await page.getByRole("button", { name: "Synthesize", exact: true }).click();
   await expect(page.getByLabel("Synthesis result")).toContainText("SUCCESS");
   await expect(page.getByLabel("Synthesis result")).toContainText(
     "urn:kide:device:camera"
