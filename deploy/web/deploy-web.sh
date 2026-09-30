@@ -45,4 +45,4 @@ fi
 
 echo "KIDE web deployed: ${WEB_URL}"
 echo "Backend: ${KIDE_BACKEND_ORIGIN}"
-echo "Health: ${WEB_URL}/healthz"
+echo "Health: ${WEB_URL}/health"
