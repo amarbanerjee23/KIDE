@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -74,6 +75,30 @@ public final class FileModelRepository implements ModelRepository {
             return Optional.of(new ModelSnapshot(path, new ModelRevision(version, etag), content));
         } catch (IOException e) {
             throw new ModelRepositoryException("model read failed", e);
+        }
+    }
+
+    @Override
+    public synchronized List<ModelPath> list() {
+        Path internalRoot = root.resolve(".kide");
+        try (java.util.stream.Stream<Path> stream = Files.walk(root)) {
+            List<ModelPath> paths = stream
+                    .filter(path -> !path.equals(root))
+                    .filter(path -> !path.startsWith(internalRoot))
+                    .filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+                    .filter(path -> !Files.isSymbolicLink(path))
+                    .map(root::relativize)
+                    .map(path -> path.toString().replace(java.io.File.separatorChar, '/'))
+                    .map(ModelPath::new)
+                    .sorted(Comparator.comparing(ModelPath::value))
+                    .limit(RepositoryLimits.MAX_LISTED_MODELS + 1L)
+                    .toList();
+            if (paths.size() > RepositoryLimits.MAX_LISTED_MODELS) {
+                throw new ModelRepositoryException("model listing exceeds supported size limit");
+            }
+            return List.copyOf(paths);
+        } catch (IOException e) {
+            throw new ModelRepositoryException("model listing failed", e);
         }
     }
 
