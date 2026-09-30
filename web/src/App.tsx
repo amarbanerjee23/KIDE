@@ -983,21 +983,50 @@ export default function App() {
     }
   }
 
-  function exportArchive() {
+  async function exportArchive() {
     if (!entriesRef.current.length) return;
-    const materialized = entriesRef.current.map((entry) => {
-      const current = workspace.text(entry.path);
-      return current === undefined ? entry : withText(entry, current);
-    });
-    const bytes = exportProjectArchive(materialized);
-    const blob = new Blob([bytes as BlobPart], { type: "application/zip" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `${safeName(projectRef.current?.displayName ?? "kide-project")}.zip`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    setNotice("Exported current project files as a ZIP archive.");
+    setNotice("");
+
+    try {
+      const currentProject = projectRef.current;
+      const complete: WorkspaceEntry[] = [];
+      for (const entry of entriesRef.current) {
+        if (
+          entry.source === "remote" &&
+          entry.loaded === false &&
+          currentProject
+        ) {
+          const model = await clientRef.current.getModel(
+            currentProject.id,
+            entry.path
+          );
+          complete.push(remoteEntry(currentProject.id, model));
+        } else {
+          complete.push(entry);
+        }
+      }
+
+      if (complete.some((entry) => entry.source === "remote" && entry.loaded === false)) {
+        throw new Error("One or more remote project files could not be materialized for export.");
+      }
+
+      updateEntries(() => complete);
+      const materialized = complete.map((entry) => {
+        const current = workspace.text(entry.path);
+        return current === undefined ? entry : withText(entry, current);
+      });
+      const bytes = exportProjectArchive(materialized);
+      const blob = new Blob([bytes as BlobPart], { type: "application/zip" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${safeName(currentProject?.displayName ?? "kide-project")}.zip`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setNotice("Exported the complete current project as a ZIP archive.");
+    } catch (error) {
+      showError(error);
+    }
   }
 
   async function searchSymbols() {
@@ -1186,7 +1215,7 @@ export default function App() {
             onChange={(event) => void importArchive(event)}
           />
         </label>
-        <button disabled={!entries.length} onClick={exportArchive}>Export ZIP</button>
+        <button disabled={!entries.length} onClick={() => void exportArchive()}>Export ZIP</button>
       </section>
 
       {notice && <div className="notice" role="status">{notice}</div>}
