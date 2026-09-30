@@ -261,6 +261,23 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             }
 
             String projectApi = "/api/v1/projects/" + context.project().id().value();
+            HttpResponse<String> modelList = send(
+                    client, base.resolve(projectApi + "/models"),
+                    "GET", "Bearer pr26-self-check", null);
+            requireStatus(modelList, 200);
+            boolean listed = false;
+            for (var item : json(modelList).getAsJsonArray("items")) {
+                JsonObject modelItem = item.getAsJsonObject();
+                if ("selfcheck.dml".equals(modelItem.get("id").getAsString())
+                        && etag.equals(modelItem.get("etag").getAsString())) {
+                    listed = true;
+                    break;
+                }
+            }
+            if (!listed) {
+                throw new AssertionError("model listing did not expose the canonical model");
+            }
+
             String presenceUri = projectApi + "/collaboration/sessions";
 
             JsonObject joinEngineer = new JsonObject();
