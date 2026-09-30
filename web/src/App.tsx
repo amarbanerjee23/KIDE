@@ -26,6 +26,7 @@ import type {
   KnowledgeImpactResult,
   KnowledgeTraceList,
   Model,
+  ModelSummary,
   PresenceSession,
   Project,
   ReviewBundle,
@@ -80,7 +81,6 @@ export default function App() {
   const [selectedPath, setSelectedPath] = useState<string>();
   const selectedPathRef = useRef<string | undefined>(undefined);
   selectedPathRef.current = selectedPath;
-  const [modelId, setModelId] = useState("selfcheck.dml");
   const [saveState, setSaveState] = useState<SaveState>("clean");
   const [notice, setNotice] = useState("");
   const [conflict, setConflict] = useState<string>();
@@ -247,10 +247,46 @@ export default function App() {
       const opened = await client.getProject(item.id);
       await resetProjectWorkspace();
       setProjectState(opened);
-      setNotice(`Opened server project ${opened.displayName}.`);
+
+      const modelList = await client.listModels(opened.id);
+      updateEntries(() =>
+        modelList.items.map((model) => remoteSummaryEntry(opened.id, model))
+      );
+
       await connectLanguageServices(opened);
       await connectCollaboration(opened);
       await refreshKnowledgeTraces(opened.id);
+
+      const preferred = preferredModel(modelList.items);
+      if (preferred) {
+        await loadSpecificModel(preferred.id);
+        setNotice(
+          `Opened ${opened.displayName} · ${modelList.items.length} project file(s) · ${preferred.id} ready.`
+        );
+      } else {
+        setNotice(
+          `Opened ${opened.displayName}, but no editable DSL models are present yet.`
+        );
+      }
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function refreshProjectModels() {
+    const currentProject = projectRef.current;
+    if (!currentProject) return;
+    setNotice("");
+    try {
+      const modelList = await clientRef.current.listModels(currentProject.id);
+      updateEntries((current) =>
+        mergeRemoteModelListing(currentProject.id, current, modelList.items)
+      );
+      if (!selectedPathRef.current) {
+        const preferred = preferredModel(modelList.items);
+        if (preferred) await loadSpecificModel(preferred.id);
+      }
+      setNotice(`Refreshed ${modelList.items.length} project file(s).`);
     } catch (error) {
       showError(error);
     }
@@ -601,11 +637,6 @@ export default function App() {
     }
   }
 
-  async function loadModel() {
-    if (!projectRef.current) return;
-    await loadSpecificModel(modelId.trim(), true);
-  }
-
   async function loadSpecificModel(id: string, announce = false) {
     const currentProject = projectRef.current;
     if (!currentProject || !id) return;
@@ -863,6 +894,10 @@ export default function App() {
   }
 
   function selectEntry(entry: WorkspaceEntry) {
+    if (entry.source === "remote" && entry.loaded === false) {
+      void loadSpecificModel(entry.path, true);
+      return;
+    }
     setSelectedPath(entry.path);
     setRevealRange(undefined);
     setSaveState(entry.dirty ? "pending" : "clean");
@@ -1150,22 +1185,16 @@ export default function App() {
             <div className="model-loader">
               <h3>{project.displayName}</h3>
               <p className="muted">
-                Textual intelligence is served by the shared Xtext LSP. Model indexing remains a later server phase, so a known model ID is still used here.
+                {entries.length} project file(s) discovered. Production DSLs open with the shared Xtext language services; Activity and MNC models also expose graphical editing.
               </p>
-              <button onClick={() => void connectLanguageServices()}>
-                Reconnect language services
-              </button>
-              <label>
-                Model ID
-                <input
-                  aria-label="Model ID"
-                  value={modelId}
-                  onChange={(event) => setModelId(event.target.value)}
-                />
-              </label>
-              <button disabled={!modelId.trim()} onClick={() => void loadModel()}>
-                Load model
-              </button>
+              <div className="project-actions">
+                <button onClick={() => void refreshProjectModels()}>
+                  Refresh project files
+                </button>
+                <button onClick={() => void connectLanguageServices()}>
+                  Reconnect language services
+                </button>
+              </div>
             </div>
           )}
 
@@ -1503,6 +1532,17 @@ export default function App() {
               {selected?.revision && <span>revision {selected.revision}</span>}
             </div>
             <div className="editor-actions">
+              {project &&
+              selected?.source === "remote" &&
+              selected.path.endsWith(".activity") && (
+                <button
+                  className="primary-action"
+                  disabled={!selected.etag || selected.dirty}
+                  onClick={() => void runSynthesis()}
+                >
+                  Synthesize
+                </button>
+              )}
               {diagramAvailable && (
                 <div className="view-toggle" aria-label="Editor view">
                   <button
@@ -1673,8 +1713,50 @@ function remoteEntry(projectId: string, model: Model): WorkspaceEntry {
     projectId,
     etag: model.etag,
     revision: model.revision,
-    dirty: false
+    dirty: false,
+    loaded: true
   };
+}
+
+function remoteSummaryEntry(
+  projectId: string,
+  model: ModelSummary
+): WorkspaceEntry {
+  return {
+    path: model.id,
+    bytes: new Uint8Array(),
+    mediaType: model.mediaType ?? mediaTypeFor(model.id),
+    source: "remote",
+    projectId,
+    etag: model.etag,
+    revision: model.revision,
+    dirty: false,
+    loaded: false
+  };
+}
+
+function mergeRemoteModelListing(
+  projectId: string,
+  current: WorkspaceEntry[],
+  models: ModelSummary[]
+): WorkspaceEntry[] {
+  return models
+    .map((model) => {
+      const existing = current.find(
+        (entry) => entry.source === "remote" && entry.path === model.id
+      );
+      return existing ?? remoteSummaryEntry(projectId, model);
+    })
+    .sort((a, b) => a.path.localeCompare(b.path));
+}
+
+function preferredModel(models: ModelSummary[]): ModelSummary | undefined {
+  const extensions = [".activity", ".dml", ".cap", ".mncspec", ".operation", ".krl"];
+  for (const extension of extensions) {
+    const match = models.find((model) => model.id.toLowerCase().endsWith(extension));
+    if (match) return match;
+  }
+  return models[0];
 }
 
 function upsert(
