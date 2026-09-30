@@ -240,13 +240,13 @@ wait_for_live_services() {
     web_url="$(service_url "${KIDE_WEB_SERVICE_NAME}")"
 
     if [[ -n "${backend_url}" && -n "${web_url}" ]]; then
-      if curl --fail --silent --show-error "${backend_url}/healthz" >/dev/null 2>&1           && curl --fail --silent --show-error "${web_url}/healthz" >/dev/null 2>&1           && curl --fail --silent --show-error "${web_url}/" | grep -q '<div id="root"></div>'; then
+      if curl --fail --silent --show-error "${backend_url}/health" >/dev/null 2>&1           && curl --fail --silent --show-error "${web_url}/health" >/dev/null 2>&1           && curl --fail --silent --show-error "${web_url}/" | grep -q '<div id="root"></div>'; then
         echo
         echo "KIDE FIRST DEPLOYMENT COMPLETE"
         echo "Web: ${web_url}"
         echo "Backend: ${backend_url}"
-        echo "Web health: ${web_url}/healthz"
-        echo "Backend health: ${backend_url}/healthz"
+        echo "Web health: ${web_url}/health"
+        echo "Backend health: ${backend_url}/health"
         return
       fi
     fi
