@@ -1319,7 +1319,7 @@ export default function App() {
                   disabled={!selected.etag || selected.dirty}
                   onClick={() => void runSynthesis()}
                 >
-                  Synthesize
+                  Run synthesis
                 </button>
               </div>
               <p className="muted">
