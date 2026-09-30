@@ -40,9 +40,9 @@ wait_for_http() {
   return 1
 }
 
-wait_for_http "${BASE_URL}/healthz" 120
+wait_for_http "${BASE_URL}/health" 120
 
-health_body="$(curl --fail --silent --show-error "${BASE_URL}/healthz")"
+health_body="$(curl --fail --silent --show-error "${BASE_URL}/health")"
 api_health_body="$(curl --fail --silent --show-error "${BASE_URL}/api/v1/health")"
 root_body="$(curl --fail --silent --show-error "${BASE_URL}/")"
 
@@ -57,7 +57,7 @@ api_health = json.loads(sys.argv[3])
 assert root == {
     "service": "kide-backend",
     "status": "UP",
-    "health": "/healthz",
+    "health": "/health",
     "api": "/api/v1",
 }, root
 

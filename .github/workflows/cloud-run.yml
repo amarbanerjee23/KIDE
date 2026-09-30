@@ -60,7 +60,7 @@ jobs:
 
           ready=0
           for _ in $(seq 1 30); do
-            if curl --fail --silent http://127.0.0.1:18090/healthz >/dev/null; then
+            if curl --fail --silent http://127.0.0.1:18090/health >/dev/null; then
               ready=1
               break
             fi

@@ -20,14 +20,14 @@ WEB_URL="$(service_url "${KIDE_WEB_SERVICE_NAME}")"
 
 if [[ -n "${WEB_URL}" ]]; then
   echo "KIDE web: ${WEB_URL}"
-  echo "Web health: ${WEB_URL}/healthz"
+  echo "Web health: ${WEB_URL}/health"
 else
   echo "KIDE web: NOT DEPLOYED"
 fi
 
 if [[ -n "${BACKEND_URL}" ]]; then
   echo "KIDE backend: ${BACKEND_URL}"
-  echo "Backend health: ${BACKEND_URL}/healthz"
+  echo "Backend health: ${BACKEND_URL}/health"
 else
   echo "KIDE backend: NOT DEPLOYED"
 fi

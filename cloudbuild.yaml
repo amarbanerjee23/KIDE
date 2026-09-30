@@ -203,7 +203,7 @@ steps:
           --ingress all \
           --default-url \
           --port 8080 \
-          --startup-probe "httpGet.path=/healthz,httpGet.port=8080,initialDelaySeconds=10,timeoutSeconds=5,periodSeconds=10,failureThreshold=60" \
+          --startup-probe "httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=10,timeoutSeconds=5,periodSeconds=10,failureThreshold=60" \
           --cpu-boost \
           --cpu 2 \
           --memory 4Gi \
@@ -360,13 +360,13 @@ steps:
         check_url "KIDE backend root" "$${BACKEND_URL}/" /tmp/kide-backend-root
         grep -q '"service":"kide-backend"' /tmp/kide-backend-root
 
-        check_url "KIDE backend health" "$${BACKEND_URL}/healthz" /tmp/kide-backend-health
+        check_url "KIDE backend health" "$${BACKEND_URL}/health" /tmp/kide-backend-health
         grep -q '"status":"UP"' /tmp/kide-backend-health
 
         check_url "KIDE API health" "$${BACKEND_URL}/api/v1/health" /tmp/kide-api-health
         grep -q '"status":"UP"' /tmp/kide-api-health
 
-        check_url "KIDE web health" "$${WEB_URL}/healthz" /tmp/kide-web-health
+        check_url "KIDE web health" "$${WEB_URL}/health" /tmp/kide-web-health
 
         check_url "KIDE web root" "$${WEB_URL}/" /tmp/kide-web-root
         grep -q '<div id="root"></div>' /tmp/kide-web-root
@@ -392,8 +392,8 @@ steps:
         hosted = (
             f"KIDE web: {web_url}\n"
             f"KIDE backend: {backend_url}\n"
-            f"Web health: {web_url}/healthz\n"
-            f"Backend health: {backend_url}/healthz\n"
+            f"Web health: {web_url}/health\n"
+            f"Backend health: {backend_url}/health\n"
         )
         (dist / "KIDE-HOSTED-URL.txt").write_text(hosted, encoding="utf-8")
 

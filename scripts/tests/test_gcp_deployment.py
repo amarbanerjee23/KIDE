@@ -74,12 +74,43 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("gcloud storage buckets create", build)
         self.assertIn("roles/storage.objectUser", build)
         self.assertIn("_KIDE_DATA_BUCKET", build)
-        self.assertIn("httpGet.path=/healthz", build)
+        self.assertIn("httpGet.path=/health", build)
         self.assertIn("httpGet.port=8080", build)
         self.assertIn("periodSeconds=10", build)
         self.assertIn("failureThreshold=60", build)
         self.assertIn("--cpu-boost", build)
-        self.assertIn("httpGet.path=/healthz", deploy)
+        self.assertIn("httpGet.path=/health", deploy)
+    def test_cloud_run_health_endpoint_avoids_reserved_z_paths(self):
+        deployment_files = (
+            "deploy/gcp/nginx.conf.template",
+            "deploy/web/nginx.conf.template",
+            "scripts/qualify-cloud-run-backend.sh",
+            "deploy/gcp/entrypoint.sh",
+            "deploy/gcp/deployment-status.sh",
+            "deploy-kide-gcp.sh",
+            "deploy/gcp/bootstrap-first-deployment.sh",
+            "deploy/web/deploy-web.sh",
+            ".github/workflows/cloud-run.yml",
+            "cloudbuild.yaml",
+            "deploy/gcp/cloudbuild.yaml",
+            "deploy/gcp/cloudbuild-release.yaml",
+            "deploy/gcp/cloudbuild-deploy.yaml",
+        )
+        for relative in deployment_files:
+            content = self.read(relative)
+            self.assertNotIn(
+                "/healthz",
+                content,
+                msg=f"{relative} uses a Cloud Run reserved-style health path",
+            )
+
+        backend_nginx = self.read("deploy/gcp/nginx.conf.template")
+        web_nginx = self.read("deploy/web/nginx.conf.template")
+        self.assertIn("location = /health {", backend_nginx)
+        self.assertIn("location = /health {", web_nginx)
+        self.assertIn('"health":"/health"', backend_nginx)
+        self.assertIn("default_type application/json;", backend_nginx)
+        self.assertIn("default_type text/plain;", web_nginx)
     def test_cloud_run_services_are_explicitly_public(self):
         for relative in (
             "cloudbuild.yaml",
@@ -107,7 +138,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
 
         self.assertIn('location = / {', nginx)
         self.assertIn('"service":"kide-backend"', nginx)
-        self.assertIn('"health":"/healthz"', nginx)
+        self.assertIn('"health":"/health"', nginx)
         self.assertIn("default_type application/json;", nginx)
     def test_image_qualification_uses_one_robust_backend_contract(self):
         qualifier = self.read("scripts/qualify-cloud-run-backend.sh")
@@ -125,7 +156,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
 
         self.assertIn('"service": "kide-backend"', qualifier)
         self.assertIn('"status": "UP"', qualifier)
-        self.assertIn('"health": "/healthz"', qualifier)
+        self.assertIn('"health": "/health"', qualifier)
         self.assertIn('"api": "/api/v1"', qualifier)
         self.assertIn("/api/v1/health", qualifier)
         self.assertIn("json.loads", qualifier)
@@ -423,8 +454,8 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("gcloud secrets create", bootstrap)
         self.assertIn("configure-auto-deploy.sh", bootstrap)
         self.assertIn("wait_for_live_services", bootstrap)
-        self.assertIn('"${backend_url}/healthz"', bootstrap)
-        self.assertIn('"${web_url}/healthz"', bootstrap)
+        self.assertIn('"${backend_url}/health"', bootstrap)
+        self.assertIn('"${web_url}/health"', bootstrap)
         self.assertIn("KIDE FIRST DEPLOYMENT COMPLETE", bootstrap)
         self.assertIn("KIDE_GITHUB_TOKEN_SECRET", bootstrap)
         self.assertIn("KIDE_GITHUB_RELEASE_TOKEN_FILE", bootstrap)
@@ -469,8 +500,8 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn('gcloud run deploy "${_KIDE_WEB_SERVICE_NAME}"', cloudbuild)
         self.assertIn("KIDE_ALLOWED_ORIGINS=", cloudbuild)
         self.assertIn("Verify live KIDE deployment", cloudbuild)
-        self.assertIn('"$${BACKEND_URL}/healthz"', cloudbuild)
-        self.assertIn('"$${WEB_URL}/healthz"', cloudbuild)
+        self.assertIn('"$${BACKEND_URL}/health"', cloudbuild)
+        self.assertIn('"$${WEB_URL}/health"', cloudbuild)
         self.assertIn("KIDE DEPLOYMENT COMPLETE", cloudbuild)
 
     def test_unified_gcp_release_pipeline_builds_deploys_and_publishes(self):

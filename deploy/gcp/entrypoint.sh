@@ -142,7 +142,7 @@ trap cleanup EXIT INT TERM
 # Cloud Run requires the container to bind to $PORT promptly. Start nginx
 # before waiting for the internal Eclipse applications so the platform's
 # startup probe can establish a TCP connection while API/LSP/GLSP finish
-# booting. /healthz will naturally return an upstream error until the API is
+# booting. /health will naturally return an upstream error until the API is
 # ready, and the build's live verification still waits for full readiness.
 mkdir -p /tmp/nginx-client /tmp/nginx-proxy /tmp/nginx-fastcgi \
   /tmp/nginx-uwsgi /tmp/nginx-scgi
