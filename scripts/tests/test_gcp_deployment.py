@@ -99,10 +99,11 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             "deploy/gcp/cloudbuild-deploy.yaml",
         ):
             build = self.read(relative)
-            self.assertIn("gcloud projects describe", build)
-            self.assertIn("value(projectNumber)", build)
+            self.assertIn("${PROJECT_NUMBER}", build)
             self.assertIn(".${_REGION}.run.app", build)
             self.assertNotIn("value(status.url)", build)
+            self.assertNotIn("value(projectNumber)", build)
+            self.assertNotIn("gcloud projects describe", build)
 
         self.assertIn('location = / {', nginx)
         self.assertIn('"service":"kide-backend"', nginx)
