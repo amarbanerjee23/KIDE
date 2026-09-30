@@ -200,6 +200,37 @@ public class ModelRepositoryTest {
     }
 
     @Test
+    public void modelListingIsSortedAndExcludesInternalState() throws Exception {
+        Path root = Files.createTempDirectory("kide-pr72-list-");
+        try {
+            FileModelRepository repository = new FileModelRepository(root);
+            try (ModelTransaction tx = repository.beginTransaction()) {
+                tx.write(new ModelPath("models/zeta.activity"), bytes("activity"), MISSING);
+                tx.write(new ModelPath("models/alpha.dml"), bytes("domain"), MISSING);
+                tx.commit();
+            }
+            Files.createDirectories(root.resolve(".kide/collaboration"));
+            Files.writeString(root.resolve(".kide/collaboration/review-state-v1.json"), "{}");
+
+            assertEquals(
+                    java.util.List.of("models/alpha.dml", "models/zeta.activity"),
+                    repository.list().stream().map(ModelPath::value).toList());
+
+            ServerModelRepository server = new ServerModelRepository();
+            try (ModelTransaction tx = server.beginTransaction()) {
+                tx.write(new ModelPath("b.capability"), bytes("b"), MISSING);
+                tx.write(new ModelPath("a.operation"), bytes("a"), MISSING);
+                tx.commit();
+            }
+            assertEquals(
+                    java.util.List.of("a.operation", "b.capability"),
+                    server.list().stream().map(ModelPath::value).toList());
+        } finally {
+            deleteTree(root);
+        }
+    }
+
+    @Test
     public void deleteUsesOptimisticRevisionAndIsTransactional() throws Exception {
         Path root = Files.createTempDirectory("kide-pr21-delete-");
         try {
