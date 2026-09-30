@@ -67,6 +67,12 @@ http {
             proxy_pass http://127.0.0.1:18083;
         }
 
+        location = / {
+            access_log off;
+            default_type application/json;
+            return 200 '{"service":"kide-backend","status":"UP","health":"/healthz","api":"/api/v1"}\n';
+        }
+
         location / {
             return 404;
         }

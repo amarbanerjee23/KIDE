@@ -13,6 +13,7 @@ on:
       - 'pom.xml'
       - 'releng/com.kide.languageserver.feature/**'
       - '.github/workflows/cloud-run.yml'
+      - 'scripts/qualify-cloud-run-backend.sh'
   workflow_dispatch:
 
 concurrency:
@@ -34,63 +35,8 @@ jobs:
       - name: Build Cloud Run image
         run: docker build --file deploy/gcp/Dockerfile --build-arg KIDE_BUILD_QUALIFIER=ci${GITHUB_SHA:0:12} --tag kide-cloud-run:ci .
 
-      - name: Boot Cloud Run image
-        run: |
-          set -euo pipefail
-          container_id="$(docker run -d             -p 18080:8080             -e PORT=8080             -e KIDE_FIREBASE_PROJECT_ID=kide-ci \
-            -e KIDE_FIREBASE_ADMIN_UID=ci-administrator             kide-cloud-run:ci)"
-
-          cleanup() {
-            docker logs "$container_id" || true
-            docker rm -f "$container_id" >/dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-
-          ready=0
-          for _ in $(seq 1 90); do
-            if curl --fail --silent http://127.0.0.1:18080/healthz >/dev/null; then
-              ready=1
-              break
-            fi
-            if ! docker inspect --format='{{.State.Running}}' "$container_id"                 2>/dev/null | grep -qx true; then
-              echo "Cloud Run image exited before readiness" >&2
-              exit 1
-            fi
-            sleep 1
-          done
-
-          if [[ "$ready" -ne 1 ]]; then
-            echo "Cloud Run image did not become healthy" >&2
-            exit 1
-          fi
-
-          if curl --silent --output /dev/null --write-out '%{http_code}' \
-              http://127.0.0.1:18080/ | grep -qx 404; then
-            :
-          else
-            echo "Backend image unexpectedly serves the browser application" >&2
-            exit 1
-          fi
-          fully_ready=0
-          for _ in $(seq 1 120); do
-            container_logs="$(docker logs "$container_id" 2>&1)"
-            if grep -q 'KIDE CLOUD RUN READY' <<< "$container_logs"; then
-              fully_ready=1
-              break
-            fi
-            if ! docker inspect --format='{{.State.Running}}' "$container_id" \
-                2>/dev/null | grep -qx true; then
-              echo "Cloud Run image exited before full KIDE readiness" >&2
-              exit 1
-            fi
-            sleep 1
-          done
-
-          if [[ "$fully_ready" -ne 1 ]]; then
-            echo "Cloud Run image became healthy but did not reach full KIDE readiness" >&2
-            exit 1
-          fi
-
+      - name: Boot and qualify Cloud Run image
+        run: bash scripts/qualify-cloud-run-backend.sh kide-cloud-run:ci
 
       - name: Build standalone web image
         run: |

@@ -52,15 +52,17 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertLess(nginx_start, ready_log)
         self.assertIn("Cloud Run requires the container to bind to $PORT promptly", entrypoint)
     def test_container_qualification_waits_for_full_kide_readiness(self):
-        for relative in (
-            ".github/workflows/cloud-run.yml",
-            ".github/workflows/publish-build-artifacts.yml",
-        ):
-            workflow = self.read(relative)
-            self.assertIn("fully_ready=0", workflow)
-            self.assertIn("KIDE CLOUD RUN READY", workflow)
-            self.assertIn("Cloud Run image became healthy but did not reach full KIDE readiness", workflow)
-            self.assertNotIn("docker logs \"$container_id\" 2>&1 | grep -q 'KIDE CLOUD RUN READY'", workflow)
+        qualifier = self.read("scripts/qualify-cloud-run-backend.sh")
+        self.assertIn("fully_ready=0", qualifier)
+        self.assertIn("KIDE CLOUD RUN READY", qualifier)
+        self.assertIn(
+            "Cloud Run image became HTTP healthy but did not reach full KIDE readiness",
+            qualifier,
+        )
+        self.assertNotIn(
+            "docker logs \"$container_id\" 2>&1 | grep -q 'KIDE CLOUD RUN READY'",
+            qualifier,
+        )
     def test_cloud_run_deployment_matches_gcp_runtime_contract(self):
         nginx = self.read("deploy/gcp/nginx.conf.template")
         build = self.read("cloudbuild.yaml")
@@ -87,6 +89,48 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             build = self.read(relative)
             self.assertGreaterEqual(build.count("--ingress all"), 2)
             self.assertGreaterEqual(build.count("--allow-unauthenticated"), 2)
+    def test_cloud_run_urls_are_deterministic_and_backend_root_is_informative(self):
+        nginx = self.read("deploy/gcp/nginx.conf.template")
+        for relative in (
+            "cloudbuild.yaml",
+            "deploy/gcp/cloudbuild.yaml",
+            "deploy/gcp/cloudbuild-release.yaml",
+            "deploy/gcp/cloudbuild-deploy.yaml",
+        ):
+            build = self.read(relative)
+            self.assertIn("gcloud projects describe", build)
+            self.assertIn("value(projectNumber)", build)
+            self.assertIn(".${_REGION}.run.app", build)
+            self.assertNotIn("value(status.url)", build)
+
+        self.assertIn('location = / {', nginx)
+        self.assertIn('"service":"kide-backend"', nginx)
+        self.assertIn('"health":"/healthz"', nginx)
+        self.assertIn("default_type application/json;", nginx)
+    def test_image_qualification_uses_one_robust_backend_contract(self):
+        qualifier = self.read("scripts/qualify-cloud-run-backend.sh")
+
+        for relative in (
+            ".github/workflows/cloud-run.yml",
+            ".github/workflows/publish-build-artifacts.yml",
+        ):
+            workflow = self.read(relative)
+            self.assertIn("scripts/qualify-cloud-run-backend.sh", workflow)
+            self.assertNotIn(
+                "Backend image unexpectedly serves the browser application",
+                workflow,
+            )
+
+        self.assertIn('"service": "kide-backend"', qualifier)
+        self.assertIn('"status": "UP"', qualifier)
+        self.assertIn('"health": "/healthz"', qualifier)
+        self.assertIn('"api": "/api/v1"', qualifier)
+        self.assertIn("/api/v1/health", qualifier)
+        self.assertIn("json.loads", qualifier)
+        self.assertIn('payload.get("version") == "v1"', qualifier)
+        self.assertIn("definitely-not-a-kide-route", qualifier)
+        self.assertIn("expected 404", qualifier)
+        self.assertIn("expected application/json", qualifier)
     def test_deploy_contract_is_single_writer_and_websocket_ready(self):
         deploy = self.read("deploy/gcp/deploy-cloud-run.sh")
         cloudbuild = self.read("deploy/gcp/cloudbuild-deploy.yaml")
@@ -251,6 +295,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             "deploy/gcp/deployment-status.sh",
             "deploy/gcp/bootstrap-first-deployment.sh",
             "deploy-kide-gcp.sh",
+            "scripts/qualify-cloud-run-backend.sh",
         ):
             result = subprocess.run(
                 ["bash", "-n", str(ROOT / relative)],
