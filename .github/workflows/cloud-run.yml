@@ -64,11 +64,9 @@ jobs:
             exit 1
           fi
 
-          if curl --silent --output /dev/null --write-out '%{http_code}' \
-              http://127.0.0.1:18080/ | grep -qx 404; then
-            :
-          else
-            echo "Backend image unexpectedly serves the browser application" >&2
+          root_body="$(curl --fail --silent http://127.0.0.1:18080/)"
+          if ! grep -q '"service":"kide-backend"' <<< "$root_body"; then
+            echo "Backend root did not return the KIDE service status document" >&2
             exit 1
           fi
           fully_ready=0
