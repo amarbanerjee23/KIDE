@@ -69,7 +69,7 @@ http {
 
         location = / {
             access_log off;
-            add_header Content-Type application/json;
+            default_type application/json;
             return 200 '{"service":"kide-backend","status":"UP","health":"/healthz","api":"/api/v1"}\n';
         }
 
