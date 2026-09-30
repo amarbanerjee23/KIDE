@@ -71,7 +71,7 @@ steps:
 
         BACKEND_URL="https://${_KIDE_SERVICE_NAME}-${PROJECT_NUMBER}.${_REGION}.run.app"
 
-        test -n "${BACKEND_URL}"
+        test -n "$${BACKEND_URL}"
         printf '%s' "$${BACKEND_URL}" > /workspace/.kide-backend-url
         echo "KIDE backend deployed: $${BACKEND_URL}"
 
@@ -124,7 +124,7 @@ steps:
 
         WEB_URL="https://${_KIDE_WEB_SERVICE_NAME}-${PROJECT_NUMBER}.${_REGION}.run.app"
 
-        test -n "${WEB_URL}"
+        test -n "$${WEB_URL}"
         printf '%s' "$${WEB_URL}" > /workspace/.kide-web-url
 
         gcloud run services update "${_KIDE_SERVICE_NAME}" \
