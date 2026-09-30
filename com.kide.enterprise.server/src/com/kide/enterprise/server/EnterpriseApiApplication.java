@@ -31,7 +31,14 @@ import com.kide.enterprise.identity.FirebaseIdTokenConfig;
 import com.kide.enterprise.identity.GoogleFirebaseKeyProvider;
 import com.kide.enterprise.modelrepo.FileModelRepository;
 import com.kide.knowledge.EmbeddedKnowledgeRepository;
+import com.kide.knowledge.KnowledgeDataset;
+import com.kide.knowledge.KnowledgeProvenance;
+import com.kide.knowledge.KnowledgeRepository;
+import com.kide.knowledge.KnowledgeTerm;
 import com.kide.knowledge.KnowledgeTraceStore;
+import com.kide.knowledge.KnowledgeTriple;
+import com.kide.knowledge.KnowledgeVocabulary;
+import com.kide.synthesis.SynthesisVocabulary;
 
 public final class EnterpriseApiApplication implements IApplication {
     private volatile EnterpriseApiServer server;
@@ -99,6 +106,12 @@ public final class EnterpriseApiApplication implements IApplication {
                             projectRoot, modelRepository, Clock.systemUTC());
             EmbeddedKnowledgeRepository knowledgeRepository =
                     new EmbeddedKnowledgeRepository(projectRoot);
+            if (bool(env, "KIDE_API_BOOTSTRAP_STARTER_KNOWLEDGE", false)
+                    && knowledgeRepository.snapshot().isEmpty()) {
+                knowledgeRepository.replace(
+                        starterKnowledge(context),
+                        KnowledgeRepository.MISSING_ETAG);
+            }
             ProjectKnowledgeService knowledge = new ProjectKnowledgeService(
                     knowledgeRepository,
                     new KnowledgeTraceStore(projectRoot, Clock.systemUTC()),
@@ -145,6 +158,51 @@ public final class EnterpriseApiApplication implements IApplication {
             }
         }
         closeConfig();
+    }
+
+    private static KnowledgeDataset starterKnowledge(EnterpriseContext context) {
+        String capability = "urn:kide:capability:Observe";
+        String device = "urn:kide:device:camera";
+        return new KnowledgeDataset(
+                KnowledgeDataset.CURRENT_SCHEMA,
+                "kide-starter",
+                "PROJECT",
+                context.project().id().value(),
+                new KnowledgeProvenance(
+                        "urn:kide:starter:catalogue",
+                        "KIDE",
+                        "kide-runtime",
+                        Clock.systemUTC().millis(),
+                        "INTERNAL"),
+                List.of(
+                        new KnowledgeTriple(
+                                capability,
+                                KnowledgeVocabulary.RDF_TYPE,
+                                KnowledgeTerm.iri(KnowledgeVocabulary.CAPABILITY)),
+                        new KnowledgeTriple(
+                                capability,
+                                KnowledgeVocabulary.LABEL,
+                                KnowledgeTerm.literal("Observe")),
+                        new KnowledgeTriple(
+                                device,
+                                KnowledgeVocabulary.RDF_TYPE,
+                                KnowledgeTerm.iri(KnowledgeVocabulary.DEVICE)),
+                        new KnowledgeTriple(
+                                device,
+                                KnowledgeVocabulary.LABEL,
+                                KnowledgeTerm.literal("Camera")),
+                        new KnowledgeTriple(
+                                device,
+                                SynthesisVocabulary.PROVIDES_CAPABILITY,
+                                KnowledgeTerm.iri(capability)),
+                        new KnowledgeTriple(
+                                device,
+                                SynthesisVocabulary.PROVIDES_INTERFACE,
+                                KnowledgeTerm.iri("urn:kide:interface:Device")),
+                        new KnowledgeTriple(
+                                device,
+                                SynthesisVocabulary.PRIORITY,
+                                KnowledgeTerm.literal("10"))));
     }
 
     private static List<RoleBinding> parseBindings(String raw, EnterpriseContext context) {
