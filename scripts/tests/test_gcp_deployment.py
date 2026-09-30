@@ -104,6 +104,15 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn('location = / {', nginx)
         self.assertIn('"service":"kide-backend"', nginx)
         self.assertIn('"health":"/healthz"', nginx)
+    def test_image_qualification_accepts_backend_status_root(self):
+        for relative in (
+            ".github/workflows/cloud-run.yml",
+            ".github/workflows/publish-build-artifacts.yml",
+        ):
+            workflow = self.read(relative)
+            self.assertIn('"service":"kide-backend"', workflow)
+            self.assertIn("Backend root did not return the KIDE service status document", workflow)
+            self.assertNotIn("Backend image unexpectedly serves the browser application", workflow)
     def test_deploy_contract_is_single_writer_and_websocket_ready(self):
         deploy = self.read("deploy/gcp/deploy-cloud-run.sh")
         cloudbuild = self.read("deploy/gcp/cloudbuild-deploy.yaml")
