@@ -43,6 +43,46 @@ class WebWorkspaceContractTest(unittest.TestCase):
 
         self.assertNotIn('"operation"', archive)
 
+    def test_hosted_workspace_exposes_discovery_and_engineering_actions(self):
+        app = (ROOT / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
+        api = (ROOT / "web" / "src" / "api.ts").read_text(encoding="utf-8")
+        editor = (ROOT / "web" / "src" / "MonacoEditor.tsx").read_text(
+            encoding="utf-8"
+        )
+        server = (
+            ROOT
+            / "com.kide.enterprise.server"
+            / "src"
+            / "com"
+            / "kide"
+            / "enterprise"
+            / "server"
+            / "EnterpriseApiServer.java"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("listModels(projectId", api)
+        self.assertIn("createStarterModels(projectId", api)
+        self.assertIn("Create starter engineering models", app)
+        self.assertIn("Refresh project files", app)
+        self.assertIn("Synthesize", app)
+        self.assertIn("Diagram", app)
+        for command in (
+            "Completion",
+            "Definition",
+            "References",
+            "Rename",
+            "Quick Fix",
+            "Format",
+        ):
+            self.assertIn(command, editor)
+
+        self.assertIn('"model.list"', server)
+        self.assertIn('"model.starter.create"', server)
+        self.assertNotIn(
+            "Model listing awaits the repository index phase.",
+            server,
+        )
+
     def test_browser_is_a_separate_client_of_shared_semantics(self):
         app = (ROOT / "web" / "src" / "App.tsx").read_text(
             encoding="utf-8"
