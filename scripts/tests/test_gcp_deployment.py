@@ -90,7 +90,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             build = self.read(relative)
             self.assertGreaterEqual(build.count("--ingress all"), 2)
             self.assertGreaterEqual(build.count("--allow-unauthenticated"), 2)
-    def test_cloud_run_urls_are_deterministic_and_backend_root_is_informative(self):
+    def test_cloud_run_uses_reported_service_urls_and_informative_backend_root(self):
         nginx = self.read("deploy/gcp/nginx.conf.template")
         for relative in (
             "cloudbuild.yaml",
@@ -99,11 +99,11 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             "deploy/gcp/cloudbuild-deploy.yaml",
         ):
             build = self.read(relative)
-            self.assertIn("${PROJECT_NUMBER}", build)
-            self.assertIn(".${_REGION}.run.app", build)
-            self.assertNotIn("value(status.url)", build)
+            self.assertGreaterEqual(build.count("value(status.url)"), 3)
+            self.assertNotIn(".${_REGION}.run.app", build)
             self.assertNotIn("value(projectNumber)", build)
             self.assertNotIn("gcloud projects describe", build)
+            self.assertGreaterEqual(build.count("--default-url"), 3)
 
         self.assertIn('location = / {', nginx)
         self.assertIn('"service":"kide-backend"', nginx)
@@ -232,13 +232,30 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
                 msg=f"{relative} references undefined custom substitutions",
             )
 
-            self.assertIn("${PROJECT_NUMBER}", cloudbuild)
-            self.assertIn("$${BACKEND_URL}", cloudbuild)
-            self.assertIn("$${WEB_URL}", cloudbuild)
+            self.assertIn("${BACKEND_URL}", cloudbuild)
+            self.assertIn("${WEB_URL}", cloudbuild)
+            self.assertIn("value(status.url)", cloudbuild)
             self.assertNotIn(
                 'gcloud projects describe "${PROJECT_ID}" --format=\'value(projectNumber)\'',
                 cloudbuild,
             )
+    def test_live_deployment_verification_is_diagnostic_and_complete(self):
+        for relative in (
+            "cloudbuild.yaml",
+            "deploy/gcp/cloudbuild.yaml",
+            "deploy/gcp/cloudbuild-release.yaml",
+            "deploy/gcp/cloudbuild-deploy.yaml",
+        ):
+            build = self.read(relative)
+            self.assertIn('check_url "KIDE backend root"', build)
+            self.assertIn('check_url "KIDE backend health"', build)
+            self.assertIn('check_url "KIDE API health"', build)
+            self.assertIn('check_url "KIDE web health"', build)
+            self.assertIn('check_url "KIDE web root"', build)
+            self.assertIn("Last HTTP status:", build)
+            self.assertIn("Response body (first 2048 bytes):", build)
+            self.assertIn("status.latestReadyRevisionName", build)
+            self.assertIn("status.traffic", build)
     def test_cloud_build_yaml_has_no_unindented_embedded_content(self):
         allowed_top_level = (
             "steps:",
