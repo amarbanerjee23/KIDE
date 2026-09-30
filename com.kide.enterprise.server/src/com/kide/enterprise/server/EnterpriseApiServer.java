@@ -274,8 +274,24 @@ public final class EnterpriseApiServer implements AutoCloseable {
             if (segments.length == 3 && "models".equals(segments[2])) {
                 authorization.requireModelRead(session, context);
                 if ("GET".equals(request.getMethod())) {
-                    unavailable(response, callback, requestId,
-                            "Model listing awaits the repository index phase.");
+                    JsonObject body = new JsonObject();
+                    com.google.gson.JsonArray items = new com.google.gson.JsonArray();
+                    for (ModelPath path : models.list()) {
+                        ModelSnapshot snapshot = models.read(path).orElse(null);
+                        if (snapshot == null) continue;
+                        JsonObject item = new JsonObject();
+                        item.addProperty("id", path.value());
+                        item.addProperty(
+                                "revision",
+                                Long.toString(snapshot.revision().version()));
+                        item.addProperty("etag", snapshot.revision().etag());
+                        item.addProperty("mediaType", "text/plain");
+                        items.add(item);
+                    }
+                    body.add("items", items);
+                    audit(session, requestId, "model.list", "project", segments[1],
+                            AuditOutcome.SUCCESS, Integer.toString(items.size()));
+                    writeJson(response, callback, 200, body);
                 } else {
                     methodNotAllowed(response, callback, requestId);
                 }
