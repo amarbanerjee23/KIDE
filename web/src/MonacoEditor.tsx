@@ -67,5 +67,45 @@ export function MonacoEditor({
     instance.focus();
   }, [revealRange]);
 
-  return <div className="editor-host" data-testid="monaco-editor" ref={host} />;
+  async function runEditorAction(actionId: string) {
+    const instance = editor.current;
+    if (!instance) return;
+    await instance.getAction(actionId)?.run();
+    instance.focus();
+  }
+
+  return (
+    <div className="monaco-shell">
+      <div className="monaco-commandbar" aria-label="Text editor commands">
+        <button onClick={() => void runEditorAction("editor.action.triggerSuggest")}>
+          Completion
+        </button>
+        <button onClick={() => void runEditorAction("editor.action.revealDefinition")}>
+          Definition
+        </button>
+        <button onClick={() => void runEditorAction("editor.action.referenceSearch.trigger")}>
+          References
+        </button>
+        <button
+          disabled={readOnly}
+          onClick={() => void runEditorAction("editor.action.rename")}
+        >
+          Rename
+        </button>
+        <button
+          disabled={readOnly}
+          onClick={() => void runEditorAction("editor.action.quickFix")}
+        >
+          Quick Fix
+        </button>
+        <button
+          disabled={readOnly}
+          onClick={() => void runEditorAction("editor.action.formatDocument")}
+        >
+          Format
+        </button>
+      </div>
+      <div className="editor-host" data-testid="monaco-editor" ref={host} />
+    </div>
+  );
 }
