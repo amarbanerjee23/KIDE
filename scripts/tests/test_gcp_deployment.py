@@ -77,6 +77,16 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("failureThreshold=60", build)
         self.assertIn("--cpu-boost", build)
         self.assertIn("httpGet.path=/healthz", deploy)
+    def test_cloud_run_services_are_explicitly_public(self):
+        for relative in (
+            "cloudbuild.yaml",
+            "deploy/gcp/cloudbuild.yaml",
+            "deploy/gcp/cloudbuild-release.yaml",
+            "deploy/gcp/cloudbuild-deploy.yaml",
+        ):
+            build = self.read(relative)
+            self.assertGreaterEqual(build.count("--ingress all"), 2)
+            self.assertGreaterEqual(build.count("--allow-unauthenticated"), 2)
     def test_deploy_contract_is_single_writer_and_websocket_ready(self):
         deploy = self.read("deploy/gcp/deploy-cloud-run.sh")
         cloudbuild = self.read("deploy/gcp/cloudbuild-deploy.yaml")
