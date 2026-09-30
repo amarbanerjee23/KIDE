@@ -38,13 +38,15 @@ core:
 - deterministic OpenAPI publication at `GET /api/v1/openapi.json`;
 - project listing and project read for the configured E04 context, including the
   stable E04 workspace ID needed to select the authorized LSP workspace;
-- revision-safe model read/write through PR21 `ModelRepository`; and
-- PR19 audit events for successful project/model operations.
+- bounded, revision-safe model listing/read/write through `ModelRepository`;
+- atomic creation of the canonical starter DSL model set for an empty project;
+- knowledge catalogue/trace operations;
+- deterministic synthesis, reconfiguration and semantic generation; and
+- audit events for successful project/model/engineering operations.
 
-Project creation, model indexing, knowledge, synthesis and evidence indexing are
-not mocked. Until their owning PRs land, those contract surfaces return a typed
-`SERVICE_UNAVAILABLE` response. This keeps the web client honest and prevents a
-second implementation of KIDE semantics.
+Project creation and evidence indexing remain unavailable where their owning
+services are not installed. The browser does not replace those missing server
+semantics with local substitutes.
 
 ## Production configuration
 
@@ -57,7 +59,9 @@ Required context/authentication settings:
 
 Transport controls include `KIDE_API_BIND`, `KIDE_API_PORT`,
 `KIDE_API_ALLOWED_ORIGINS`, `KIDE_API_TRUST_FORWARDED_PROTO` and
-`KIDE_API_TRUSTED_PROXY_ADDRESSES`.
+`KIDE_API_TRUSTED_PROXY_ADDRESSES`. Hosted Cloud Run also opts into
+`KIDE_API_BOOTSTRAP_STARTER_KNOWLEDGE=true`, which seeds a minimal starter
+catalogue only when the project knowledge repository is empty.
 
 ## Qualification
 

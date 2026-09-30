@@ -272,10 +272,21 @@ public final class EnterpriseApiServer implements AutoCloseable {
             }
 
             if (segments.length == 3 && "models".equals(segments[2])) {
-                authorization.requireModelRead(session, context);
                 if ("GET".equals(request.getMethod())) {
-                    unavailable(response, callback, requestId,
-                            "Model listing awaits the repository index phase.");
+                    authorization.requireModelRead(session, context);
+                    JsonObject body = modelListJson();
+                    audit(session, requestId, "model.list", "project", segments[1],
+                            AuditOutcome.SUCCESS,
+                            Integer.toString(body.getAsJsonArray("items").size()));
+                    writeJson(response, callback, 200, body);
+                } else if ("POST".equals(request.getMethod())) {
+                    authorization.requireModelWrite(session, context);
+                    createStarterModels();
+                    JsonObject body = modelListJson();
+                    audit(session, requestId, "model.starter.create", "project", segments[1],
+                            AuditOutcome.SUCCESS,
+                            Integer.toString(body.getAsJsonArray("items").size()));
+                    writeJson(response, callback, 201, body);
                 } else {
                     methodNotAllowed(response, callback, requestId);
                 }
@@ -779,6 +790,97 @@ public final class EnterpriseApiServer implements AutoCloseable {
         project.addProperty("portfolioId", context.portfolio().id().value());
         project.addProperty("workspaceId", context.workspace().id().value());
         return project;
+    }
+
+    private JsonObject modelListJson() {
+        JsonObject body = new JsonObject();
+        com.google.gson.JsonArray items = new com.google.gson.JsonArray();
+        for (ModelPath path : models.list()) {
+            ModelSnapshot snapshot = models.read(path).orElse(null);
+            if (snapshot == null) continue;
+            JsonObject item = new JsonObject();
+            item.addProperty("id", path.value());
+            item.addProperty("revision", Long.toString(snapshot.revision().version()));
+            item.addProperty("etag", snapshot.revision().etag());
+            item.addProperty("mediaType", modelMediaType(path.value()));
+            items.add(item);
+        }
+        body.add("items", items);
+        return body;
+    }
+
+    private void createStarterModels() {
+        java.util.LinkedHashMap<ModelPath, String> starter = new java.util.LinkedHashMap<>();
+        starter.put(new ModelPath("starter.dml"),
+                "Package Starter\n"
+                + "DataModel Payload {\n"
+                + "  primitives { int value }\n"
+                + "}\n");
+        starter.put(new ModelPath("inspect.op"),
+                "Operation Inspect() {\n"
+                + "}\n");
+        starter.put(new ModelPath("device.mncspec"),
+                "Model Starter\n"
+                + "InterfaceDescription Device {\n"
+                + "  commands { Start[] }\n"
+                + "  events { Publish Ready[] }\n"
+                + "}\n");
+        starter.put(new ModelPath("observe.cap"),
+                "Capability Observe compatible component interface Device {\n"
+                + "  providesControlCapabilities {\n"
+                + "    fireable commands : Start\n"
+                + "    receivable events : Ready\n"
+                + "  }\n"
+                + "}\n");
+        starter.put(new ModelPath("workflow.activity"),
+                "ActivityDiagram StarterWorkflow\n"
+                + "has activities {\n"
+                + "  Activity ObserveStep {\n"
+                + "    requireCapability : Observe { Start, Ready }\n"
+                + "    nextActivity : ObserveStep\n"
+                + "  }\n"
+                + "}\n");
+        starter.put(new ModelPath("bindings.krl"),
+                "knowledge StarterKnowledge {\n"
+                + "  namespace kide = \"https://kide.dev/ontology/v1#\";\n"
+                + "  fact kide:Camera kide:providesCapability iri "
+                + "\"urn:kide:capability:Observe\";\n"
+                + "  query FindObserve(capability: iri) {\n"
+                + "    match ?device kide:providesCapability ?capability;\n"
+                + "    select ?device;\n"
+                + "  }\n"
+                + "  template Binding(name: string, resource: iri) for java\n"
+                + "    body \"public final class ${name} { public static final String RESOURCE = \\\"${resource}\\\"; }\";\n"
+                + "  target Observe type java {\n"
+                + "    template Binding;\n"
+                + "    output \"generated/ObserveBinding.java\";\n"
+                + "    bind name: string = string \"ObserveBinding\";\n"
+                + "    bind resource: iri = query FindObserve(iri "
+                + "\"urn:kide:capability:Observe\").device;\n"
+                + "  }\n"
+                + "}\n");
+
+        try (ModelTransaction tx = models.beginTransaction()) {
+            for (Map.Entry<ModelPath, String> item : starter.entrySet()) {
+                tx.write(
+                        item.getKey(),
+                        item.getValue().getBytes(StandardCharsets.UTF_8),
+                        MISSING_ETAG);
+            }
+            tx.commit();
+        }
+    }
+
+    private static String modelMediaType(String modelId) {
+        String lower = modelId.toLowerCase(java.util.Locale.ROOT);
+        if (lower.endsWith(".dml")) return "text/x-kide-dml";
+        if (lower.endsWith(".op")) return "text/x-kide-operation";
+        if (lower.endsWith(".mncspec")) return "text/x-kide-mnc";
+        if (lower.endsWith(".cap")) return "text/x-kide-capability";
+        if (lower.endsWith(".activity")) return "text/x-kide-activity";
+        if (lower.endsWith(".krl")) return "text/x-kide-krl";
+        if (lower.endsWith(".json")) return "application/json";
+        return "text/plain";
     }
 
     private JsonObject modelJson(ModelSnapshot snapshot, String mediaType) {

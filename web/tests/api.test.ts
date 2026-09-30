@@ -26,6 +26,33 @@ describe("KideApiClient", () => {
     await expect(client.listProjects()).resolves.toEqual({ items: [] });
   });
 
+  it("lists project models and creates the canonical starter set through the collection endpoint", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://kide.example/api/v1/projects/p1/models");
+      expect(["GET", "POST"]).toContain(init?.method);
+      return new Response(JSON.stringify({
+        items: [{
+          id: "workflow.activity",
+          revision: "1",
+          etag: "a".repeat(64),
+          mediaType: "text/x-kide-activity"
+        }]
+      }), {
+        status: init?.method === "POST" ? 201 : 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new KideApiClient("https://kide.example", () => "token-value");
+    await expect(client.listModels("p1")).resolves.toMatchObject({
+      items: [{ id: "workflow.activity" }]
+    });
+    await expect(client.createStarterModels("p1")).resolves.toMatchObject({
+      items: [{ id: "workflow.activity" }]
+    });
+  });
+
   it("surfaces typed revision conflicts without rewriting them", async () => {
     vi.stubGlobal(
       "fetch",

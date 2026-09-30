@@ -3,6 +3,7 @@ package com.kide.enterprise.modelrepo;
 public final class RepositoryLimits {
     public static final int MAX_MODEL_BYTES = 8 * 1024 * 1024;
     public static final int MAX_TRANSACTION_MUTATIONS = 256;
+    public static final int MAX_LISTED_MODELS = 4096;
 
     private RepositoryLimits() { }
 

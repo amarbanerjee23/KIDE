@@ -98,6 +98,24 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
     });
   });
   await page.route(
+    "**/api/v1/projects/P04-001/models",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          items: [{
+            id: "selfcheck.dml",
+            revision: "7",
+            etag: "etag-7",
+            mediaType: "text/x-kide-dml"
+          }]
+        })
+      });
+    }
+  );
+
+  await page.route(
     "**/api/v1/projects/P04-001/models/selfcheck.dml",
     async (route) => {
       await route.fulfill({
@@ -145,11 +163,16 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
 
   await page.getByRole("button", { name: "Open" }).click();
   await expect(page.getByText("Connected · Xtext LSP")).toBeVisible();
+  await expect(page.getByText("1 project file(s) discovered.")).toBeVisible();
   expect(initializeRootUri).toBe("kide-workspace:/");
 
-  await page.getByLabel("Model ID").fill("selfcheck.dml");
-  await page.getByRole("button", { name: "Load model" }).click();
   await expect(page.getByTestId("monaco-editor")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Completion" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Definition" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "References" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Rename" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Quick Fix" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Format" })).toBeVisible();
   await expect.poll(() => didOpenUri).toBe("kide-workspace:/selfcheck.dml");
 
   await page.getByLabel("Symbol query").fill("Self");
@@ -351,6 +374,32 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
     });
   });
   await page.route(
+    "**/api/v1/projects/P04-001/models",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          items: [
+            {
+              id: "flow.activity",
+              revision: "4",
+              etag: "etag-4",
+              mediaType: "text/x-kide-activity"
+            },
+            {
+              id: "bindings.krl",
+              revision: "2",
+              etag: "d".repeat(64),
+              mediaType: "text/x-kide-krl"
+            }
+          ]
+        })
+      });
+    }
+  );
+
+  await page.route(
     "**/api/v1/projects/P04-001/models/flow.activity",
     async (route) => {
       await route.fulfill({
@@ -502,11 +551,11 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
 
   await signInFirebase(page);
   await page.getByRole("button", { name: "Open" }).click();
+  await expect(page.locator(".file-list").getByText("flow.activity", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("monaco-editor")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Synthesize", exact: true })).toBeVisible();
 
-  await page.getByLabel("Model ID").fill("flow.activity");
-  await page.getByRole("button", { name: "Load model" }).click();
-
-  await page.getByRole("button", { name: "Synthesize" }).click();
+  await page.getByRole("button", { name: "Synthesize", exact: true }).click();
   await expect(page.getByLabel("Synthesis result")).toContainText("SUCCESS");
   await expect(page.getByLabel("Synthesis result")).toContainText(
     "urn:kide:device:camera"
@@ -551,6 +600,145 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   expect(glspSessionId).not.toBe("");
   expect(requestedSourceUri).toBe("kide-workspace:/flow.activity");
   expect(requestedDiagramType).toBe("kide-activity-diagram");
+});
+
+
+test("creates starter engineering models for an empty hosted project", async ({ page }) => {
+  await page.routeWebSocket("**/lsp?*", (ws) => {
+    ws.onMessage((message) => {
+      const request = JSON.parse(String(message));
+      if (request.method === "initialize") {
+        ws.send(JSON.stringify({
+          jsonrpc: "2.0",
+          id: request.id,
+          result: {
+            capabilities: {
+              completionProvider: {},
+              hoverProvider: true,
+              definitionProvider: true,
+              referencesProvider: true,
+              documentFormattingProvider: true,
+              renameProvider: true
+            }
+          }
+        }));
+      } else if (typeof request.id === "number") {
+        ws.send(JSON.stringify({
+          jsonrpc: "2.0",
+          id: request.id,
+          result: null
+        }));
+      }
+    });
+  });
+
+  await mockCollaboration(page);
+
+  await page.route("**/api/v1/health", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ status: "UP", version: "v1", dependencies: {} })
+    });
+  });
+  await page.route("**/api/v1/projects", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [{
+          id: "P04-001",
+          displayName: "Empty Cloud Project",
+          revision: "1",
+          workspaceId: "W04-001"
+        }]
+      })
+    });
+  });
+  await page.route("**/api/v1/projects/P04-001", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "P04-001",
+        displayName: "Empty Cloud Project",
+        revision: "1",
+        workspaceId: "W04-001"
+      })
+    });
+  });
+
+  const starterModels = [
+    { id: "starter.dml", mediaType: "text/x-kide-dml" },
+    { id: "inspect.op", mediaType: "text/x-kide-operation" },
+    { id: "device.mncspec", mediaType: "text/x-kide-mnc" },
+    { id: "observe.cap", mediaType: "text/x-kide-capability" },
+    { id: "workflow.activity", mediaType: "text/x-kide-activity" },
+    { id: "bindings.krl", mediaType: "text/x-kide-krl" }
+  ].map((model, index) => ({
+    ...model,
+    revision: "1",
+    etag: String(index + 1).repeat(64).slice(0, 64)
+  }));
+
+  let starterCreated = false;
+  await page.route("**/api/v1/projects/P04-001/models", async (route) => {
+    if (route.request().method() === "POST") {
+      starterCreated = true;
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({ items: starterModels })
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items: [] })
+    });
+  });
+
+  await page.route(
+    "**/api/v1/projects/P04-001/models/workflow.activity",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "workflow.activity",
+          content: "ActivityDiagram StarterWorkflow\nhas activities {\n  Activity ObserveStep {\n    requireCapability : Observe { Start, Ready }\n    nextActivity : ObserveStep\n  }\n}\n",
+          revision: "1",
+          etag: starterModels.find((model) => model.id === "workflow.activity")!.etag,
+          mediaType: "text/x-kide-activity"
+        })
+      });
+    }
+  );
+
+  await signInFirebase(page);
+  await page.getByRole("button", { name: "Open" }).click();
+
+  const createStarter = page.getByRole("button", {
+    name: "Create starter engineering models"
+  });
+  await expect(createStarter).toBeEnabled();
+  await expect(page.getByText(/no editable DSL models are present yet/i)).toBeVisible();
+
+  await createStarter.click();
+
+  await expect.poll(() => starterCreated).toBe(true);
+  await expect(
+    page.locator(".file-list").getByText("workflow.activity", { exact: true })
+  ).toBeVisible();
+  await expect(
+    page.locator(".file-list").getByText("inspect.op", { exact: true })
+  ).toBeVisible();
+  await expect(page.getByTestId("monaco-editor")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Synthesize", exact: true })
+  ).toBeVisible();
+  await expect(createStarter).toBeDisabled();
 });
 
 

@@ -1,6 +1,9 @@
 package com.kide.enterprise.modelrepo;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -15,6 +18,16 @@ public final class ServerModelRepository implements ModelRepository {
     public synchronized Optional<ModelSnapshot> read(ModelPath path) {
         Entry entry = entries.get(path);
         return entry == null ? Optional.empty() : Optional.of(entry.snapshot(path));
+    }
+
+    @Override
+    public synchronized List<ModelPath> list() {
+        if (entries.size() > RepositoryLimits.MAX_LISTED_MODELS) {
+            throw new ModelRepositoryException("model listing exceeds supported size limit");
+        }
+        ArrayList<ModelPath> paths = new ArrayList<>(entries.keySet());
+        paths.sort(Comparator.comparing(ModelPath::value));
+        return List.copyOf(paths);
     }
 
     @Override

@@ -36,12 +36,20 @@ export interface ProjectList {
   nextCursor?: string;
 }
 
-export interface Model {
+export interface ModelSummary {
   id: string;
-  content: string;
   revision: string;
   etag: string;
   mediaType?: string;
+}
+
+export interface Model extends ModelSummary {
+  content: string;
+}
+
+export interface ModelList {
+  items: ModelSummary[];
+  nextCursor?: string;
 }
 
 export type SaveState = "clean" | "pending" | "saving" | "saved" | "conflict" | "error";
@@ -55,6 +63,7 @@ export interface WorkspaceEntry {
   etag?: string;
   revision?: string;
   dirty: boolean;
+  loaded?: boolean;
 }
 
 

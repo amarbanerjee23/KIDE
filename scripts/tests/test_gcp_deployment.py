@@ -111,6 +111,23 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn('"health":"/health"', backend_nginx)
         self.assertIn("default_type application/json;", backend_nginx)
         self.assertIn("default_type text/plain;", web_nginx)
+    def test_cloud_run_bootstraps_starter_knowledge_for_first_use(self):
+        entrypoint = self.read("deploy/gcp/entrypoint.sh")
+        application = self.read(
+            "com.kide.enterprise.server/src/com/kide/enterprise/server/"
+            "EnterpriseApiApplication.java"
+        )
+
+        self.assertIn(
+            'KIDE_API_BOOTSTRAP_STARTER_KNOWLEDGE="${'
+            'KIDE_API_BOOTSTRAP_STARTER_KNOWLEDGE:-true}"',
+            entrypoint,
+        )
+        self.assertIn("KIDE_API_BOOTSTRAP_STARTER_KNOWLEDGE", application)
+        self.assertIn("knowledgeRepository.snapshot().isEmpty()", application)
+        self.assertIn("starterKnowledge(context)", application)
+        self.assertIn("KnowledgeRepository.MISSING_ETAG", application)
+
     def test_cloud_run_services_are_explicitly_public(self):
         for relative in (
             "cloudbuild.yaml",
