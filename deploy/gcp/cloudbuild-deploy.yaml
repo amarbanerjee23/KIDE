@@ -138,7 +138,6 @@ steps:
         gcloud run services update "${_KIDE_SERVICE_NAME}" \
           --project "${PROJECT_ID}" \
           --region "${_REGION}" \
-          --default-url \
           --update-env-vars "^|^KIDE_ALLOWED_ORIGINS=${BACKEND_URL},${WEB_URL}" \
           --quiet
 
