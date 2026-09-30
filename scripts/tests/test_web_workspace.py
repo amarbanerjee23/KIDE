@@ -25,6 +25,24 @@ class WebWorkspaceContractTest(unittest.TestCase):
             "playwright test", manifest["scripts"]["test:e2e"]
         )
 
+    def test_browser_text_extensions_match_product_language_registry(self):
+        languages = json.loads(
+            (ROOT / "product" / "languages.json").read_text(encoding="utf-8")
+        )["languages"]
+        archive = (ROOT / "web" / "src" / "archive.ts").read_text(
+            encoding="utf-8"
+        )
+
+        for language in languages:
+            extension = language["extension"]
+            self.assertIn(
+                f'"{extension}"',
+                archive,
+                f"browser workspace must recognize {language['id']} (*.{extension})",
+            )
+
+        self.assertNotIn('"operation"', archive)
+
     def test_browser_is_a_separate_client_of_shared_semantics(self):
         app = (ROOT / "web" / "src" / "App.tsx").read_text(
             encoding="utf-8"
