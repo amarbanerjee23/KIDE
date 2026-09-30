@@ -9,20 +9,25 @@ TypeScript.
 The browser consumes the existing shared service boundaries:
 
 - '/api/v1' for authenticated project/model operations;
-- the secure '/lsp' WebSocket gateway for Xtext language services in PR31; and
-- the future GLSP service boundary for graphical editing in PR32.
+- the secure '/lsp' WebSocket gateway for shared Xtext language services; and
+- the secure '/glsp' boundary for Activity/MNC graphical editing.
 
-PR30 deliberately does **not** implement a TypeScript parser, validator, scoper,
-completion engine, model index or synthesis engine. Monaco is present only as the
-editor foundation in this PR. Textual semantic parity is wired to the existing
-Xtext LSP in PR31.
+The browser deliberately does **not** implement a TypeScript parser, validator,
+scoper, completion engine, synthesis engine or graphical semantic model. Monaco
+delegates textual semantics to the packaged Xtext LSP, GLSP delegates graphical
+semantics to the Java service, and engineering actions use the versioned
+enterprise API.
 
 ## Workspace behavior
 
 The browser can:
 
 - connect to the enterprise HTTP runtime and list/open authorized projects;
-- load a known model ID through the revision-safe model API;
+- discover canonical project models through the revision-safe repository index;
+- automatically open a production DSL and expose Monaco/Xtext editor actions;
+- create the six canonical starter DSL models in an empty hosted project;
+- edit Activity/MNC diagrams through the shared GLSP boundary;
+- run synthesis, reconfiguration and semantic generation through the shared API;
 - autosave server-backed text models with the last observed ETag;
 - stop on HTTP 409 revision conflicts without silently overwriting another edit;
 - import a bounded ZIP of canonical project files into a local browser workspace;
@@ -33,9 +38,10 @@ The browser can:
 The access token is held in React memory only. It is not written to local storage,
 project files, URLs or logs.
 
-The server intentionally does not yet provide model indexing or project creation.
-The web UI exposes those states honestly instead of inventing parallel browser
-semantics.
+The hosted runtime provides bounded model enumeration and starter-model creation.
+It still does not duplicate Eclipse workspace metadata or desktop UI contributions:
+the browser remains a separate client over shared model, LSP, GLSP, synthesis and
+generation semantics.
 
 ## Archive safety
 
@@ -50,7 +56,9 @@ identity metadata are canonical project content.
 ## Qualification
 
 The web job in Build KIDE runs TypeScript/Vitest tests, a production Vite build,
-and a Playwright Chromium smoke test. Unit coverage proves archive round-trip/path
-guards, API authentication/error handling and revision-aware autosave conflict
-behavior. The browser smoke verifies project open and model load against mocked
-HTTP responses at the real '/api/v1' boundary.
+and Playwright Chromium qualification. Unit coverage proves archive round-trip/path
+guards, API authentication/error handling, authoritative DSL-extension parity and
+revision-aware autosave conflict behavior. Browser qualification verifies automatic
+project-model discovery, Monaco/Xtext command visibility, synthesis, generation,
+reconfiguration and GLSP editing against the real '/api/v1', '/lsp' and '/glsp'
+client boundaries.
