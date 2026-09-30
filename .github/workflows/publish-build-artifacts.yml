@@ -12,6 +12,7 @@ on:
       - 'scripts/tests/**'
       - 'pom.xml'
       - '.github/workflows/publish-build-artifacts.yml'
+      - 'scripts/qualify-cloud-run-backend.sh'
   push:
     branches:
       - main
@@ -217,60 +218,7 @@ jobs:
 
       - name: Boot and qualify Cloud Run image
         shell: bash
-        run: |
-          set -euo pipefail
-          container_id="$(docker run -d \
-            -p 18080:8080 \
-            -e PORT=8080 \
-            -e KIDE_FIREBASE_PROJECT_ID=kide-ci \
-            -e KIDE_FIREBASE_ADMIN_UID=ci-administrator \
-            "${{ steps.image.outputs.immutable_tag }}")"
-
-          cleanup() {
-            docker logs "$container_id" || true
-            docker rm -f "$container_id" >/dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-
-          ready=0
-          for _ in $(seq 1 90); do
-            if curl --fail --silent http://127.0.0.1:18080/healthz >/dev/null; then
-              ready=1
-              break
-            fi
-            if ! docker inspect --format='{{.State.Running}}' "$container_id" \
-                2>/dev/null | grep -qx true; then
-              echo "Cloud Run image exited before readiness" >&2
-              exit 1
-            fi
-            sleep 1
-          done
-
-          test "$ready" -eq 1
-          root_body="$(curl --fail --silent http://127.0.0.1:18080/)"
-          if ! grep -q '"service":"kide-backend"' <<< "$root_body"; then
-            echo "Backend root did not return the KIDE service status document" >&2
-            exit 1
-          fi
-          fully_ready=0
-          for _ in $(seq 1 120); do
-            container_logs="$(docker logs "$container_id" 2>&1)"
-            if grep -q 'KIDE CLOUD RUN READY' <<< "$container_logs"; then
-              fully_ready=1
-              break
-            fi
-            if ! docker inspect --format='{{.State.Running}}' "$container_id" \
-                2>/dev/null | grep -qx true; then
-              echo "Cloud Run image exited before full KIDE readiness" >&2
-              exit 1
-            fi
-            sleep 1
-          done
-
-          if [[ "$fully_ready" -ne 1 ]]; then
-            echo "Cloud Run image became healthy but did not reach full KIDE readiness" >&2
-            exit 1
-          fi
+        run: bash scripts/qualify-cloud-run-backend.sh "${{ steps.image.outputs.immutable_tag }}"
 
       - name: Authenticate to GitHub Container Registry
         shell: bash
