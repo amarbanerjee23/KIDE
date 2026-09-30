@@ -40,14 +40,14 @@ show_status() {
   echo "Region: ${REGION}"
   if [[ -n "${web_url}" ]]; then
     echo "KIDE web: ${web_url}"
-    echo "Web health: ${web_url}/healthz"
+    echo "Web health: ${web_url}/health"
   else
     echo "KIDE web: NOT DEPLOYED"
   fi
 
   if [[ -n "${backend_url}" ]]; then
     echo "KIDE backend: ${backend_url}"
-    echo "Backend health: ${backend_url}/healthz"
+    echo "Backend health: ${backend_url}/health"
   else
     echo "KIDE backend: NOT DEPLOYED"
   fi
