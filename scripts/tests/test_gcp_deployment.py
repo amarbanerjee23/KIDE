@@ -106,6 +106,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn('location = / {', nginx)
         self.assertIn('"service":"kide-backend"', nginx)
         self.assertIn('"health":"/healthz"', nginx)
+        self.assertIn("default_type application/json;", nginx)
     def test_image_qualification_uses_one_robust_backend_contract(self):
         qualifier = self.read("scripts/qualify-cloud-run-backend.sh")
 
