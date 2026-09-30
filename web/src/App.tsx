@@ -252,6 +252,10 @@ export default function App() {
       updateEntries(() =>
         modelList.items.map((model) => remoteSummaryEntry(opened.id, model))
       );
+      const krl = modelList.items.find((model) =>
+        model.id.toLowerCase().endsWith(".krl")
+      );
+      if (krl) setGenerationKrlModelId(krl.id);
 
       await connectLanguageServices(opened);
       await connectCollaboration(opened);
@@ -273,6 +277,31 @@ export default function App() {
     }
   }
 
+  async function createStarterEngineeringModels() {
+    const currentProject = projectRef.current;
+    if (!currentProject) return;
+    setNotice("");
+    setConflict(undefined);
+    try {
+      const modelList = await clientRef.current.createStarterModels(currentProject.id);
+      updateEntries(() =>
+        modelList.items.map((model) => remoteSummaryEntry(currentProject.id, model))
+      );
+      const krl = modelList.items.find((model) =>
+        model.id.toLowerCase().endsWith(".krl")
+      );
+      if (krl) setGenerationKrlModelId(krl.id);
+
+      const preferred = preferredModel(modelList.items);
+      if (preferred) await loadSpecificModel(preferred.id);
+      setNotice(
+        `Created ${modelList.items.length} canonical starter model(s) atomically.`
+      );
+    } catch (error) {
+      showError(error);
+    }
+  }
+
   async function refreshProjectModels() {
     const currentProject = projectRef.current;
     if (!currentProject) return;
@@ -282,6 +311,10 @@ export default function App() {
       updateEntries((current) =>
         mergeRemoteModelListing(currentProject.id, current, modelList.items)
       );
+      const krl = modelList.items.find((model) =>
+        model.id.toLowerCase().endsWith(".krl")
+      );
+      if (krl) setGenerationKrlModelId(krl.id);
       if (!selectedPathRef.current) {
         const preferred = preferredModel(modelList.items);
         if (preferred) await loadSpecificModel(preferred.id);
@@ -1188,6 +1221,12 @@ export default function App() {
                 {entries.length} project file(s) discovered. Production DSLs open with the shared Xtext language services; Activity and MNC models also expose graphical editing.
               </p>
               <div className="project-actions">
+                <button
+                  disabled={entries.some((entry) => isProductionDslPath(entry.path))}
+                  onClick={() => void createStarterEngineeringModels()}
+                >
+                  Create starter engineering models
+                </button>
                 <button onClick={() => void refreshProjectModels()}>
                   Refresh project files
                 </button>
@@ -1750,13 +1789,20 @@ function mergeRemoteModelListing(
     .sort((a, b) => a.path.localeCompare(b.path));
 }
 
+function isProductionDslPath(path: string): boolean {
+  const lower = path.toLowerCase();
+  return [".activity", ".dml", ".cap", ".mncspec", ".op", ".krl"].some(
+    (extension) => lower.endsWith(extension)
+  );
+}
+
 function preferredModel(models: ModelSummary[]): ModelSummary | undefined {
   const extensions = [".activity", ".dml", ".cap", ".mncspec", ".op", ".krl"];
   for (const extension of extensions) {
     const match = models.find((model) => model.id.toLowerCase().endsWith(extension));
     if (match) return match;
   }
-  return models[0];
+  return undefined;
 }
 
 function upsert(
