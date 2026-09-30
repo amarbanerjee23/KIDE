@@ -1751,7 +1751,7 @@ function mergeRemoteModelListing(
 }
 
 function preferredModel(models: ModelSummary[]): ModelSummary | undefined {
-  const extensions = [".activity", ".dml", ".cap", ".mncspec", ".operation", ".krl"];
+  const extensions = [".activity", ".dml", ".cap", ".mncspec", ".op", ".krl"];
   for (const extension of extensions) {
     const match = models.find((model) => model.id.toLowerCase().endsWith(extension));
     if (match) return match;
