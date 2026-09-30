@@ -69,8 +69,6 @@ steps:
           --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
           --quiet
 
-        PROJECT_NUMBER="$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')"
-        test -n "${PROJECT_NUMBER}"
         BACKEND_URL="https://${_KIDE_SERVICE_NAME}-${PROJECT_NUMBER}.${_REGION}.run.app"
 
         test -n "${BACKEND_URL}"
@@ -124,8 +122,6 @@ steps:
           --labels "kide-component=web,kide-build-id=${BUILD_ID}" \
           --quiet
 
-        PROJECT_NUMBER="$(gcloud projects describe "${PROJECT_ID}" --format='value(projectNumber)')"
-        test -n "${PROJECT_NUMBER}"
         WEB_URL="https://${_KIDE_WEB_SERVICE_NAME}-${PROJECT_NUMBER}.${_REGION}.run.app"
 
         test -n "${WEB_URL}"
