@@ -189,6 +189,12 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         token_pattern = re.compile(
             r"(?<!\$)\$(?:\{([A-Z_][A-Z0-9_]*)\}|([A-Z_][A-Z0-9_]*))"
         )
+        trigger_builtins = {
+            "_HEAD_BRANCH",
+            "_BASE_BRANCH",
+            "_HEAD_REPO_URL",
+            "_PR_NUMBER",
+        }
         definition_pattern = re.compile(r"^  (_[A-Z0-9_]+):", re.MULTILINE)
 
         for relative in (
@@ -213,7 +219,11 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
                 msg=f"{relative} has illegal unescaped Cloud Build substitutions",
             )
 
-            custom_refs = {token for token in tokens if token.startswith("_")}
+            custom_refs = {
+                token
+                for token in tokens
+                if token.startswith("_") and token not in trigger_builtins
+            }
             definitions = set(definition_pattern.findall(cloudbuild))
             self.assertEqual(
                 [],
