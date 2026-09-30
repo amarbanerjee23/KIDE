@@ -7,6 +7,7 @@ import type {
   KnowledgeTraceList,
   KnowledgeTraceRelation,
   Model,
+  ModelList,
   PresenceList,
   PresenceSession,
   Project,
@@ -63,6 +64,13 @@ export class KideApiClient {
   getProject(projectId: string): Promise<Project> {
     return this.request<Project>(
       `/projects/${encodeURIComponent(projectId)}`,
+      { method: "GET" }
+    );
+  }
+
+  listModels(projectId: string): Promise<ModelList> {
+    return this.request<ModelList>(
+      `/projects/${encodeURIComponent(projectId)}/models`,
       { method: "GET" }
     );
   }
