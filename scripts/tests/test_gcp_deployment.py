@@ -87,6 +87,23 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             build = self.read(relative)
             self.assertGreaterEqual(build.count("--ingress all"), 2)
             self.assertGreaterEqual(build.count("--allow-unauthenticated"), 2)
+    def test_cloud_run_urls_are_deterministic_and_backend_root_is_informative(self):
+        nginx = self.read("deploy/gcp/nginx.conf.template")
+        for relative in (
+            "cloudbuild.yaml",
+            "deploy/gcp/cloudbuild.yaml",
+            "deploy/gcp/cloudbuild-release.yaml",
+            "deploy/gcp/cloudbuild-deploy.yaml",
+        ):
+            build = self.read(relative)
+            self.assertIn("gcloud projects describe", build)
+            self.assertIn("value(projectNumber)", build)
+            self.assertIn(".${_REGION}.run.app", build)
+            self.assertNotIn("value(status.url)", build)
+
+        self.assertIn('location = / {', nginx)
+        self.assertIn('"service":"kide-backend"', nginx)
+        self.assertIn('"health":"/healthz"', nginx)
     def test_deploy_contract_is_single_writer_and_websocket_ready(self):
         deploy = self.read("deploy/gcp/deploy-cloud-run.sh")
         cloudbuild = self.read("deploy/gcp/cloudbuild-deploy.yaml")
