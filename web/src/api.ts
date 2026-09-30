@@ -75,6 +75,13 @@ export class KideApiClient {
     );
   }
 
+  createStarterModels(projectId: string): Promise<ModelList> {
+    return this.request<ModelList>(
+      `/projects/${encodeURIComponent(projectId)}/models`,
+      { method: "POST" }
+    );
+  }
+
   getModel(projectId: string, modelId: string): Promise<Model> {
     return this.request<Model>(
       `/projects/${encodeURIComponent(projectId)}/models/${encodeURIComponent(modelId)}`,
