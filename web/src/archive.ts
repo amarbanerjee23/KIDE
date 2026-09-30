@@ -7,7 +7,7 @@ export const MAX_FILE_BYTES = 2 * 1024 * 1024;
 export const MAX_FILES = 1000;
 
 const TEXT_EXTENSIONS = new Set([
-  "activity", "cap", "dml", "json", "krl", "md", "mncspec", "operation",
+  "activity", "cap", "dml", "json", "krl", "md", "mncspec", "op",
   "properties", "txt", "xml", "yaml", "yml"
 ]);
 
@@ -91,7 +91,7 @@ export function mediaTypeFor(path: string): string {
     case "dml": return "text/x-kide-dml";
     case "cap": return "text/x-kide-capability";
     case "mncspec": return "text/x-kide-mnc";
-    case "operation": return "text/x-kide-operation";
+    case "op": return "text/x-kide-operation";
     case "activity": return "text/x-kide-activity";
     case "krl": return "text/x-kide-krl";
     case "json": return "application/json";
