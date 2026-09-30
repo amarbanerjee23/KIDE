@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import subprocess
 import unittest
 
@@ -166,7 +167,30 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("dynamicSubstitutions: true", cloudbuild)
         self.assertIn("logging: CLOUD_LOGGING_ONLY", cloudbuild)
 
-    def test_cloud_build_escapes_runtime_backend_url(self):
+    def test_cloud_build_substitutions_are_valid_and_complete(self):
+        builtins = {
+            "PROJECT_ID",
+            "PROJECT_NUMBER",
+            "BUILD_ID",
+            "LOCATION",
+            "TRIGGER_NAME",
+            "COMMIT_SHA",
+            "REVISION_ID",
+            "SHORT_SHA",
+            "REPO_NAME",
+            "REPO_FULL_NAME",
+            "BRANCH_NAME",
+            "TAG_NAME",
+            "REF_NAME",
+            "TRIGGER_BUILD_CONFIG_PATH",
+            "SERVICE_ACCOUNT_EMAIL",
+            "SERVICE_ACCOUNT",
+        }
+        token_pattern = re.compile(
+            r"(?<!\$)\$(?:\{([A-Z_][A-Z0-9_]*)\}|([A-Z_][A-Z0-9_]*))"
+        )
+        definition_pattern = re.compile(r"^  (_[A-Z0-9_]+):", re.MULTILINE)
+
         for relative in (
             "cloudbuild.yaml",
             "deploy/gcp/cloudbuild.yaml",
@@ -174,9 +198,36 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             "deploy/gcp/cloudbuild-deploy.yaml",
         ):
             cloudbuild = self.read(relative)
-            self.assertIn("VITE_KIDE_LSP_ORIGIN=$${BACKEND_URL}", cloudbuild)
-            self.assertNotIn("VITE_KIDE_LSP_ORIGIN=${BACKEND_URL}", cloudbuild)
+            tokens = {
+                braced or plain
+                for braced, plain in token_pattern.findall(cloudbuild)
+            }
+            invalid = sorted(
+                token
+                for token in tokens
+                if not token.startswith("_") and token not in builtins
+            )
+            self.assertEqual(
+                [],
+                invalid,
+                msg=f"{relative} has illegal unescaped Cloud Build substitutions",
+            )
 
+            custom_refs = {token for token in tokens if token.startswith("_")}
+            definitions = set(definition_pattern.findall(cloudbuild))
+            self.assertEqual(
+                [],
+                sorted(custom_refs - definitions),
+                msg=f"{relative} references undefined custom substitutions",
+            )
+
+            self.assertIn("${PROJECT_NUMBER}", cloudbuild)
+            self.assertIn("$${BACKEND_URL}", cloudbuild)
+            self.assertIn("$${WEB_URL}", cloudbuild)
+            self.assertNotIn(
+                'gcloud projects describe "${PROJECT_ID}" --format=\'value(projectNumber)\'',
+                cloudbuild,
+            )
     def test_cloud_build_yaml_has_no_unindented_embedded_content(self):
         allowed_top_level = (
             "steps:",
