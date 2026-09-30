@@ -80,6 +80,37 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("failureThreshold=60", build)
         self.assertIn("--cpu-boost", build)
         self.assertIn("httpGet.path=/health", deploy)
+    def test_cloud_run_health_endpoint_avoids_reserved_z_paths(self):
+        deployment_files = (
+            "deploy/gcp/nginx.conf.template",
+            "deploy/web/nginx.conf.template",
+            "scripts/qualify-cloud-run-backend.sh",
+            "deploy/gcp/entrypoint.sh",
+            "deploy/gcp/deployment-status.sh",
+            "deploy-kide-gcp.sh",
+            "deploy/gcp/bootstrap-first-deployment.sh",
+            "deploy/web/deploy-web.sh",
+            ".github/workflows/cloud-run.yml",
+            "cloudbuild.yaml",
+            "deploy/gcp/cloudbuild.yaml",
+            "deploy/gcp/cloudbuild-release.yaml",
+            "deploy/gcp/cloudbuild-deploy.yaml",
+        )
+        for relative in deployment_files:
+            content = self.read(relative)
+            self.assertNotIn(
+                "/healthz",
+                content,
+                msg=f"{relative} uses a Cloud Run reserved-style health path",
+            )
+
+        backend_nginx = self.read("deploy/gcp/nginx.conf.template")
+        web_nginx = self.read("deploy/web/nginx.conf.template")
+        self.assertIn("location = /health {", backend_nginx)
+        self.assertIn("location = /health {", web_nginx)
+        self.assertIn('"health":"/health"', backend_nginx)
+        self.assertIn("default_type application/json;", backend_nginx)
+        self.assertIn("default_type text/plain;", web_nginx)
     def test_cloud_run_services_are_explicitly_public(self):
         for relative in (
             "cloudbuild.yaml",
