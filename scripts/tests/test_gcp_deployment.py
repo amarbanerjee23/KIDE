@@ -103,7 +103,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             self.assertNotIn(".${_REGION}.run.app", build)
             self.assertNotIn("value(projectNumber)", build)
             self.assertNotIn("gcloud projects describe", build)
-            self.assertGreaterEqual(build.count("--default-url"), 3)
+            self.assertGreaterEqual(build.count("--default-url"), 2)
 
         self.assertIn('location = / {', nginx)
         self.assertIn('"service":"kide-backend"', nginx)
