@@ -845,6 +845,19 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 + "  namespace kide = \"https://kide.dev/ontology/v1#\";\n"
                 + "  fact kide:Camera kide:providesCapability iri "
                 + "\"urn:kide:capability:Observe\";\n"
+                + "  query FindObserve(capability: iri) {\n"
+                + "    match ?device kide:providesCapability ?capability;\n"
+                + "    select ?device;\n"
+                + "  }\n"
+                + "  template Binding(name: string, resource: iri) for java\n"
+                + "    body \"public final class ${name} { public static final String RESOURCE = \\\"${resource}\\\"; }\";\n"
+                + "  target Observe type java {\n"
+                + "    template Binding;\n"
+                + "    output \"generated/ObserveBinding.java\";\n"
+                + "    bind name: string = string \"ObserveBinding\";\n"
+                + "    bind resource: iri = query FindObserve(iri "
+                + "\"urn:kide:capability:Observe\").device;\n"
+                + "  }\n"
                 + "}\n");
 
         try (ModelTransaction tx = models.beginTransaction()) {
