@@ -13,7 +13,7 @@ import {
 import { AutosaveCoordinator } from "./autosave";
 import { CollaborationCoordinator } from "./collaboration";
 import { pathFromWorkspaceUri } from "./languageAssets";
-import { KideLspClient, type SymbolInformation } from "./lspClient";
+import { KideLspClient, type DocumentSymbol, type SymbolInformation } from "./lspClient";
 import { MonacoEditor } from "./MonacoEditor";
 import { MonacoLspController } from "./monacoLsp";
 import { MonacoWorkspace } from "./monacoWorkspace";
@@ -70,6 +70,15 @@ interface ProblemItem {
   severity: monaco.MarkerSeverity;
   line: number;
   column: number;
+}
+
+interface OutlineItem {
+  name: string;
+  detail?: string;
+  kind: number;
+  line: number;
+  column: number;
+  depth: number;
 }
 
 export default function App() {
@@ -146,6 +155,7 @@ export default function App() {
   const [workspaceMatches, setWorkspaceMatches] =
     useState<WorkspaceSearchMatch[]>([]);
   const [problems, setProblems] = useState<ProblemItem[]>([]);
+  const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([]);
   const [outputLog, setOutputLog] = useState<string[]>([]);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [theme, setTheme] = useState<"dark" | "light">(() => {
@@ -245,6 +255,9 @@ export default function App() {
       setOpenPaths((current) =>
         current.includes(selectedPath) ? current : [...current, selectedPath]
       );
+      void refreshOutline(selectedPath);
+    } else {
+      setOutlineItems([]);
     }
   }, [selectedPath]);
 
@@ -509,6 +522,9 @@ export default function App() {
       lspController.current = controller;
       setLspStatus("Connected · Xtext LSP");
       setSymbols([]);
+      if (selectedPathRef.current) {
+        void refreshOutline(selectedPathRef.current);
+      }
     } catch (error) {
       setLspStatus("Connection failed");
       showError(error);
@@ -1249,6 +1265,7 @@ export default function App() {
     setOpenPaths([]);
     setWorkspaceMatches([]);
     setProblems([]);
+    setOutlineItems([]);
   }
 
   async function disposeLanguageServices() {
@@ -1313,6 +1330,37 @@ export default function App() {
       setSelectedPath(fallback);
       setRevealRange(undefined);
     }
+  }
+
+  async function refreshOutline(path = selectedPathRef.current) {
+    const controller = lspController.current;
+    if (!controller || !path || !controller.client.hasCapability("documentSymbolProvider")) {
+      setOutlineItems([]);
+      return;
+    }
+    const model = workspace.get(path);
+    if (!model) {
+      setOutlineItems([]);
+      return;
+    }
+    try {
+      const symbols = await controller.client.documentSymbols(model.uri.toString());
+      setOutlineItems(flattenDocumentSymbols(symbols ?? []));
+    } catch {
+      setOutlineItems([]);
+    }
+  }
+
+  function openOutlineItem(item: OutlineItem) {
+    if (!selectedPathRef.current) return;
+    setRevealRange(
+      new monaco.Range(
+        item.line,
+        item.column,
+        item.line,
+        item.column + Math.max(1, item.name.length)
+      )
+    );
   }
 
   async function runWorkspaceSearch() {
@@ -2186,6 +2234,36 @@ export default function App() {
                 selectedPath={selectedPath}
                 onSelect={selectEntry}
               />
+
+              {outlineItems.length > 0 && (
+                <section className="outline-view" aria-label="Document outline">
+                  <div className="sidebar-section-heading">
+                    <h2>Outline</h2>
+                    <button
+                      type="button"
+                      onClick={() => void refreshOutline()}
+                      title="Refresh outline"
+                    >
+                      ↻
+                    </button>
+                  </div>
+                  <ul>
+                    {outlineItems.map((item, index) => (
+                      <li key={`${item.name}:${item.line}:${index}`}>
+                        <button
+                          type="button"
+                          style={{ paddingLeft: 6 + item.depth * 12 }}
+                          onClick={() => openOutlineItem(item)}
+                        >
+                          <span className="outline-kind" aria-hidden="true">◇</span>
+                          <span className="file-path">{item.name}</span>
+                          <small>{item.detail ?? ""}</small>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
             </>
           )}
 
