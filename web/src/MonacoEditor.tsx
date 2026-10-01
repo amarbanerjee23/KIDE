@@ -17,6 +17,8 @@ interface Props {
   lsp?: MonacoLspController;
   readOnly?: boolean;
   revealRange?: monaco.Range;
+  theme?: "vs" | "vs-dark";
+  onCursorChange?(line: number, column: number): void;
 }
 
 export function MonacoEditor({
@@ -25,7 +27,9 @@ export function MonacoEditor({
   workspace,
   lsp,
   readOnly = false,
-  revealRange
+  revealRange,
+  theme = "vs",
+  onCursorChange
 }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | undefined>(undefined);
@@ -36,24 +40,90 @@ export function MonacoEditor({
     const attachment = lsp?.attachModel(model);
     const instance = monaco.editor.create(host.current, {
       model,
+      theme,
       automaticLayout: true,
-      minimap: { enabled: false },
       readOnly,
+      fontFamily:
+        '"SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace',
       fontSize: 14,
+      fontLigatures: true,
+      lineHeight: 21,
       tabSize: 2,
-      wordWrap: "on",
+      insertSpaces: true,
+      detectIndentation: true,
+      wordWrap: "off",
+      wordWrapColumn: 120,
       scrollBeyondLastLine: false,
-      quickSuggestions: true,
+      smoothScrolling: true,
+      mouseWheelZoom: true,
+      cursorBlinking: "smooth",
+      cursorSmoothCaretAnimation: "on",
+      renderLineHighlight: "all",
+      renderWhitespace: "selection",
+      renderControlCharacters: false,
+      glyphMargin: true,
+      lineNumbersMinChars: 4,
+      minimap: {
+        enabled: true,
+        showSlider: "mouseover",
+        renderCharacters: false,
+        maxColumn: 100
+      },
+      stickyScroll: { enabled: true },
+      folding: true,
+      foldingHighlight: true,
+      showFoldingControls: "mouseover",
+      bracketPairColorization: { enabled: true },
+      guides: {
+        indentation: true,
+        highlightActiveIndentation: true,
+        bracketPairs: true,
+        bracketPairsHorizontal: true,
+        highlightActiveBracketPair: true
+      },
+      quickSuggestions: {
+        other: true,
+        comments: false,
+        strings: false
+      },
       suggestOnTriggerCharacters: true,
-      folding: true
+      acceptSuggestionOnEnter: "on",
+      tabCompletion: "on",
+      snippetSuggestions: "inline",
+      parameterHints: { enabled: true },
+      inlineSuggest: { enabled: true },
+      hover: { enabled: true, delay: 250 },
+      links: true,
+      codeLens: true,
+      contextmenu: true,
+      matchBrackets: "always",
+      selectionHighlight: true,
+      formatOnPaste: true,
+      formatOnType: true,
+      multiCursorModifier: "alt",
+      renderValidationDecorations: "on",
+      accessibilitySupport: "auto",
+      ariaLabel: `KIDE editor for ${path}`
     });
     editor.current = instance;
+
+    const cursorSubscription = instance.onDidChangeCursorPosition((event) => {
+      onCursorChange?.(event.position.lineNumber, event.position.column);
+    });
+    const initial = instance.getPosition();
+    if (initial) onCursorChange?.(initial.lineNumber, initial.column);
+
     return () => {
+      cursorSubscription.dispose();
       attachment?.dispose();
       instance.dispose();
       editor.current = undefined;
     };
   }, [path, readOnly, workspace, lsp]);
+
+  useEffect(() => {
+    monaco.editor.setTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     workspace.sync(path, value);
@@ -67,44 +137,19 @@ export function MonacoEditor({
     instance.focus();
   }, [revealRange]);
 
-  async function runEditorAction(actionId: string) {
-    const instance = editor.current;
-    if (!instance) return;
-    await instance.getAction(actionId)?.run();
-    instance.focus();
-  }
+  useEffect(() => {
+    const listener = (event: Event) => {
+      const actionId = (event as CustomEvent<{ actionId?: string }>).detail?.actionId;
+      const instance = editor.current;
+      if (!actionId || !instance) return;
+      void instance.getAction(actionId)?.run().then(() => instance.focus());
+    };
+    window.addEventListener("kide:editor-action", listener);
+    return () => window.removeEventListener("kide:editor-action", listener);
+  }, []);
 
   return (
     <div className="monaco-shell">
-      <div className="monaco-commandbar" aria-label="Text editor commands">
-        <button onClick={() => void runEditorAction("editor.action.triggerSuggest")}>
-          Completion
-        </button>
-        <button onClick={() => void runEditorAction("editor.action.revealDefinition")}>
-          Definition
-        </button>
-        <button onClick={() => void runEditorAction("editor.action.referenceSearch.trigger")}>
-          References
-        </button>
-        <button
-          disabled={readOnly}
-          onClick={() => void runEditorAction("editor.action.rename")}
-        >
-          Rename
-        </button>
-        <button
-          disabled={readOnly}
-          onClick={() => void runEditorAction("editor.action.quickFix")}
-        >
-          Quick Fix
-        </button>
-        <button
-          disabled={readOnly}
-          onClick={() => void runEditorAction("editor.action.formatDocument")}
-        >
-          Format
-        </button>
-      </div>
       <div className="editor-host" data-testid="monaco-editor" ref={host} />
     </div>
   );
