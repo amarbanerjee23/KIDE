@@ -1,5 +1,38 @@
 import { expect, test } from "@playwright/test";
 
+test("keeps sign-in on the landing page and engineering actions in the workspace", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(
+    page.getByRole("heading", {
+      name: "Engineer control software from models to generated artifacts."
+    })
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in to KIDE" })).toBeVisible();
+  await expect(page.getByLabel("Firebase email")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open Engineering Workspace" }).first()).toBeVisible();
+  await expect(page.locator(".activity-bar")).toHaveCount(0);
+  await expect(page.locator(".editor-tabs")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Open Engineering Workspace" }).first().click();
+  await expect(page).toHaveURL(/\/workspace$/);
+  await expect(page.locator(".activity-bar")).toBeVisible();
+  await expect(page.locator(".status-bar")).toBeVisible();
+  await expect(page.getByLabel("Firebase email")).toHaveCount(0);
+
+  await page
+    .locator(".activity-bar")
+    .getByRole("button", { name: "Settings", exact: true })
+    .click();
+  await expect(page.getByText("Authentication required for server engineering")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Go to sign in" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Home" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { name: "Sign in to KIDE" })).toBeVisible();
+});
+
+
 test("opens a project and connects Monaco to the shared Xtext LSP boundary", async ({ page }) => {
   let initializeRootUri = "";
   let didOpenUri = "";
@@ -789,11 +822,17 @@ async function signInFirebase(page: import("@playwright/test").Page) {
   );
 
   await page.goto("/");
-  await expect(page.getByText("Engineering Workspace", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Sign in to KIDE" }).click();
+  await expect(page.getByRole("heading", { name: "Sign in to KIDE" })).toBeVisible();
   await page.getByLabel("Firebase email").fill("browser@example.test");
   await page.getByLabel("Firebase password").fill("password");
   await page.getByRole("button", { name: "Sign in with Firebase" }).click();
+  await expect(page.getByText("browser@example.test", { exact: true })).toBeVisible();
+
+  await page
+    .getByRole("button", { name: "Open Engineering Workspace" })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/workspace$/);
   await expect(
     page.getByRole("button", { name: "browser@example.test" })
   ).toBeVisible();
