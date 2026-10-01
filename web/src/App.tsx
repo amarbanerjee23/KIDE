@@ -2895,6 +2895,38 @@ function languageLabelForPath(path: string): string {
   return "Plain Text";
 }
 
+function flattenDocumentSymbols(
+  symbols: Array<DocumentSymbol | SymbolInformation>,
+  depth = 0
+): OutlineItem[] {
+  const result: OutlineItem[] = [];
+  for (const symbol of symbols) {
+    if ("location" in symbol) {
+      result.push({
+        name: symbol.name,
+        kind: symbol.kind,
+        line: symbol.location.range.start.line + 1,
+        column: symbol.location.range.start.character + 1,
+        depth
+      });
+      continue;
+    }
+
+    result.push({
+      name: symbol.name,
+      detail: symbol.detail,
+      kind: symbol.kind,
+      line: symbol.selectionRange.start.line + 1,
+      column: symbol.selectionRange.start.character + 1,
+      depth
+    });
+    if (symbol.children?.length) {
+      result.push(...flattenDocumentSymbols(symbol.children, depth + 1));
+    }
+  }
+  return result;
+}
+
 function sidebarViewLabel(view: SidebarView): string {
   switch (view) {
     case "explorer": return "Explorer";
