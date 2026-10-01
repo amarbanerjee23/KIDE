@@ -1812,7 +1812,18 @@ export default function App() {
             </div>
           )}
 
-          <h2>Projects</h2>
+          {activeSidebar === "explorer" && (
+            <>
+              <div className="sidebar-section-heading">
+                <h2>Projects</h2>
+                <button
+                  type="button"
+                  onClick={() => setQuickPickMode("files")}
+                  title="Quick Open (Ctrl/⌘+P)"
+                >
+                  ⌕
+                </button>
+              </div>
           {projects.length === 0 ? (
             <p className="muted">Connect to list authorized projects, or import a local ZIP.</p>
           ) : (
@@ -1848,8 +1859,51 @@ export default function App() {
               </div>
             </div>
           )}
+            </>
+          )}
 
-          {lspController.current && (
+          {activeSidebar === "search" && (
+            <>
+              <section className="search-view">
+                <h2>Search project</h2>
+                <div className="search-box-row">
+                  <input
+                    aria-label="Search project text"
+                    value={workspaceSearch}
+                    onChange={(event) => setWorkspaceSearch(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") void runWorkspaceSearch();
+                    }}
+                    placeholder="Search across project files"
+                  />
+                  <button
+                    type="button"
+                    disabled={!workspaceSearch.trim()}
+                    onClick={() => void runWorkspaceSearch()}
+                  >
+                    Search
+                  </button>
+                </div>
+                <p className="muted">
+                  Text search materializes remote text models on demand and is capped at 500 matches.
+                </p>
+                <ul className="search-results">
+                  {workspaceMatches.map((match, index) => (
+                    <li key={`${match.path}:${match.line}:${match.column}:${index}`}>
+                      <button
+                        type="button"
+                        onClick={() => void openWorkspaceSearchMatch(match)}
+                      >
+                        <strong>{match.path}</strong>
+                        <span>Ln {match.line}, Col {match.column}</span>
+                        <small>{match.preview}</small>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              {lspController.current && (
             <div className="symbol-search">
               <h2>Workspace symbols</h2>
               <label>
@@ -1872,9 +1926,11 @@ export default function App() {
                 ))}
               </ul>
             </div>
+              )}
+            </>
           )}
 
-          {project && (
+          {activeSidebar === "engineering" && project && (
             <div className="knowledge-panel">
               <div className="panel-heading">
                 <h2>Knowledge catalogue</h2>
@@ -1962,7 +2018,10 @@ export default function App() {
             </div>
           )}
 
-          {project && selected?.source === "remote" && selected.path.endsWith(".activity") && (
+          {activeSidebar === "engineering" &&
+          project &&
+          selected?.source === "remote" &&
+          selected.path.endsWith(".activity") && (
             <div className="synthesis-panel">
               <div className="panel-heading">
                 <h2>Deterministic synthesis</h2>
@@ -2108,22 +2167,39 @@ export default function App() {
             </div>
           )}
 
-          <h2>Files</h2>
-          <ul className="file-list">
-            {entries.map((entry) => (
-              <li key={entry.path}>
+          {activeSidebar === "explorer" && (
+            <>
+              <div className="sidebar-section-heading files-heading">
+                <h2>Files</h2>
                 <button
-                  className={entry.path === selectedPathRef.current ? "selected" : ""}
-                  onClick={() => selectEntry(entry)}
+                  type="button"
+                  disabled={!project}
+                  onClick={() => void refreshProjectModels()}
+                  title="Refresh project files"
                 >
-                  <span>{entry.path}</span>
-                  {entry.dirty && <span aria-label="Unsaved local change">●</span>}
+                  ↻
                 </button>
-              </li>
-            ))}
-          </ul>
+              </div>
+              <ul className="file-list">
+                {entries.map((entry) => (
+                  <li key={entry.path}>
+                    <button
+                      className={entry.path === selectedPathRef.current ? "selected" : ""}
+                      onClick={() => selectEntry(entry)}
+                    >
+                      <span className="file-icon" aria-hidden="true">
+                        {fileGlyph(entry.path)}
+                      </span>
+                      <span className="file-path">{entry.path}</span>
+                      {entry.dirty && <span aria-label="Unsaved local change">●</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
 
-          {project && (
+          {activeSidebar === "collaboration" && project && (
             <div className="collaboration-panel">
               <div className="panel-heading">
                 <h2>Collaboration</h2>
@@ -2175,6 +2251,7 @@ export default function App() {
             </div>
           )}
         </aside>
+        )}
 
         <section className="editor-panel">
           <div className="editor-toolbar">
