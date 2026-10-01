@@ -10,11 +10,11 @@ test("keeps sign-in on the landing page and engineering actions in the workspace
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Sign in to KIDE" })).toBeVisible();
   await expect(page.getByLabel("Firebase email")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Open Engineering Workspace" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open Engineering Workspace" })).toBeVisible();
   await expect(page.locator(".activity-bar")).toHaveCount(0);
   await expect(page.locator(".editor-tabs")).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Open Engineering Workspace" }).first().click();
+  await page.getByRole("link", { name: "Open Engineering Workspace" }).click();
   await expect(page).toHaveURL(/\/workspace$/);
   await expect(page.locator(".activity-bar")).toBeVisible();
   await expect(page.locator(".status-bar")).toBeVisible();
