@@ -1490,3 +1490,67 @@ body {
     max-width: 150px;
   }
 }
+
+
+.file-tree,
+.file-tree-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.file-tree-children {
+  display: block;
+}
+
+.file-tree-folder,
+.file-tree-file {
+  margin: 0;
+}
+
+.file-tree-folder-row,
+.file-tree-file > button {
+  width: 100%;
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  padding-right: 5px !important;
+  border: 0 !important;
+  border-radius: 3px !important;
+  text-align: left;
+  font-weight: 500;
+  background: transparent !important;
+}
+
+.file-tree-folder-row:hover,
+.file-tree-file > button:hover {
+  background: var(--ide-surface-hover) !important;
+}
+
+.file-tree-file > button.selected {
+  background: color-mix(in srgb, var(--ide-accent) 20%, var(--ide-surface)) !important;
+}
+
+.tree-chevron {
+  width: 10px;
+  flex: 0 0 10px;
+  color: var(--ide-muted);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.folder-glyph {
+  width: 15px;
+  flex: 0 0 15px;
+  color: #d8a93e;
+  font-size: 13px;
+}
+
+.tree-dirty {
+  margin-left: auto;
+  color: var(--ide-accent);
+  font-size: 9px;
+}
