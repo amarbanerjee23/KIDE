@@ -1527,6 +1527,13 @@ export default function App() {
       run: () => setSidebarVisible((visible) => !visible)
     },
     {
+      id: "view.panel",
+      label: bottomPanel ? "View: Hide Panel" : "View: Show Panel",
+      description: "Problems and Output",
+      shortcut: "Ctrl/⌘+J",
+      run: () => setBottomPanel((panel) => (panel ? null : "problems"))
+    },
+    {
       id: "view.problems",
       label: "View: Problems",
       description: `${problems.length} current diagnostic(s)`,
