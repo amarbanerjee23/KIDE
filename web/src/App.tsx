@@ -18,6 +18,7 @@ import { MonacoEditor } from "./MonacoEditor";
 import { MonacoLspController } from "./monacoLsp";
 import { MonacoWorkspace } from "./monacoWorkspace";
 import { GraphicalEditor } from "./GraphicalEditor";
+import { QuickPick, type QuickPickItem } from "./QuickPick";
 import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
 import type {
@@ -44,6 +45,31 @@ const GATEWAY_ORIGIN =
   import.meta.env.VITE_KIDE_LSP_ORIGIN ?? SERVICE_ORIGIN;
 const FIREBASE_API_KEY = import.meta.env.VITE_FIREBASE_API_KEY ?? "";
 const FIREBASE_PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "";
+
+type SidebarView =
+  | "explorer"
+  | "search"
+  | "engineering"
+  | "collaboration"
+  | "settings";
+
+type QuickPickMode = "commands" | "files" | null;
+type BottomPanel = "problems" | "output" | null;
+
+interface WorkspaceSearchMatch {
+  path: string;
+  line: number;
+  column: number;
+  preview: string;
+}
+
+interface ProblemItem {
+  path: string;
+  message: string;
+  severity: monaco.MarkerSeverity;
+  line: number;
+  column: number;
+}
 
 export default function App() {
   const [serviceOrigin, setServiceOrigin] = useState(SERVICE_ORIGIN);
@@ -108,6 +134,28 @@ export default function App() {
     useState<ReconfigurationResult>();
   const [generationKrlModelId, setGenerationKrlModelId] = useState("bindings.krl");
   const [generationResult, setGenerationResult] = useState<GenerationResult>();
+
+  const [activeSidebar, setActiveSidebar] =
+    useState<SidebarView>("explorer");
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [bottomPanel, setBottomPanel] = useState<BottomPanel>(null);
+  const [quickPickMode, setQuickPickMode] = useState<QuickPickMode>(null);
+  const [openPaths, setOpenPaths] = useState<string[]>([]);
+  const [workspaceSearch, setWorkspaceSearch] = useState("");
+  const [workspaceMatches, setWorkspaceMatches] =
+    useState<WorkspaceSearchMatch[]>([]);
+  const [problems, setProblems] = useState<ProblemItem[]>([]);
+  const [outputLog, setOutputLog] = useState<string[]>([]);
+  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    try {
+      return localStorage.getItem("kide:web-theme") === "light"
+        ? "light"
+        : "dark";
+    } catch {
+      return "dark";
+    }
+  });
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
