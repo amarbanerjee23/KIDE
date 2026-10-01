@@ -122,7 +122,8 @@ class WebWorkspaceContractTest(unittest.TestCase):
         self.assertNotIn('aria-label="Firebase password"', app)
         self.assertIn("Authentication required for server engineering", app)
         self.assertIn("Go to sign in", app)
-        self.assertIn(">Home<", app.replace("\n", ""))
+        self.assertIn('onClick={() => navigate("home")}', app)
+        self.assertIn('href="/workspace"', landing)
 
     def test_browser_workbench_uses_standard_ide_chrome(self):
         app = (ROOT / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
