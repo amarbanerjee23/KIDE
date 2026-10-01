@@ -2635,6 +2635,88 @@ export default function App() {
           )}
         </section>
       </section>
+
+      <footer className="status-bar" aria-label="Workbench status">
+        <div className="status-left">
+          <button
+            type="button"
+            className={`status-item ${connectionTone(serviceStatus)}`}
+            onClick={() => {
+              setActiveSidebar("settings");
+              setSidebarVisible(true);
+            }}
+            title={serviceStatus}
+          >
+            <span className="status-dot" /> API {connectionSummary(serviceStatus)}
+          </button>
+          <button
+            type="button"
+            className={`status-item ${connectionTone(lspStatus)}`}
+            onClick={() => {
+              setActiveSidebar("settings");
+              setSidebarVisible(true);
+            }}
+            title={lspStatus}
+          >
+            <span className="status-dot" /> Xtext {connectionSummary(lspStatus)}
+          </button>
+          <button
+            type="button"
+            className={`status-item ${connectionTone(collaborationStatus)}`}
+            onClick={() => activateSidebar("collaboration")}
+            title={collaborationStatus}
+          >
+            <span className="status-dot" /> Collaboration {connectionSummary(collaborationStatus)}
+          </button>
+          {project && <span className="status-project">{project.displayName}</span>}
+        </div>
+
+        <div className="status-right">
+          <button
+            type="button"
+            className="status-item"
+            onClick={() => setBottomPanel("problems")}
+            title="Show Problems"
+          >
+            × {problems.filter((problem) => problem.severity === monaco.MarkerSeverity.Error).length}
+            <span className="status-warning">
+              △ {problems.filter((problem) => problem.severity === monaco.MarkerSeverity.Warning).length}
+            </span>
+          </button>
+          {selected && (
+            <>
+              <span className="status-item status-static">{languageLabelForPath(selected.path)}</span>
+              <span className="status-item status-static">
+                Ln {cursorPosition.line}, Col {cursorPosition.column}
+              </span>
+              <span className={`status-item status-static save-state state-${saveState}`}>
+                {saveState}
+              </span>
+            </>
+          )}
+          <button
+            type="button"
+            className="status-item"
+            onClick={() => setQuickPickMode("commands")}
+            title="Command Palette (F1)"
+          >
+            {theme === "dark" ? "Dark" : "Light"} · F1
+          </button>
+        </div>
+      </footer>
+
+      <QuickPick
+        open={quickPickMode !== null}
+        title={quickPickMode === "files" ? "Quick Open" : "Command Palette"}
+        placeholder={
+          quickPickMode === "files"
+            ? "Type a file name to open…"
+            : "Type a command to run…"
+        }
+        items={quickPickItems}
+        onSelect={chooseQuickPick}
+        onClose={() => setQuickPickMode(null)}
+      />
     </main>
   );
 }
