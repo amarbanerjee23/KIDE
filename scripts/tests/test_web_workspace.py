@@ -66,15 +66,36 @@ class WebWorkspaceContractTest(unittest.TestCase):
         self.assertIn("Refresh project files", app)
         self.assertIn("Synthesize", app)
         self.assertIn("Diagram", app)
+        self.assertIn("Command Palette", app)
+        self.assertIn("Quick Open", app)
+        self.assertIn("status-bar", app)
+        self.assertIn("editor-tabs", app)
+        self.assertIn("breadcrumbs", app)
+        self.assertIn("bottom-panel", app)
+        self.assertNotIn("status-stack", app)
+
         for command in (
-            "Completion",
-            "Definition",
-            "References",
-            "Rename",
-            "Quick Fix",
-            "Format",
+            "Editor: Trigger Completion",
+            "Editor: Go to Definition",
+            "Editor: Find All References",
+            "Editor: Rename Symbol",
+            "Editor: Quick Fix",
+            "Editor: Format Document",
         ):
-            self.assertIn(command, editor)
+            self.assertIn(command, app)
+
+        for option in (
+            "minimap",
+            "stickyScroll",
+            "bracketPairColorization",
+            "glyphMargin",
+            "codeLens",
+            "inlineSuggest",
+            "formatOnPaste",
+            "formatOnType",
+            "mouseWheelZoom",
+        ):
+            self.assertIn(option, editor)
 
         self.assertIn('"model.list"', server)
         self.assertIn('"model.starter.create"', server)
@@ -82,6 +103,29 @@ class WebWorkspaceContractTest(unittest.TestCase):
             "Model listing awaits the repository index phase.",
             server,
         )
+
+    def test_browser_workbench_uses_standard_ide_chrome(self):
+        app = (ROOT / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
+        tree = (ROOT / "web" / "src" / "FileTree.tsx").read_text(
+            encoding="utf-8"
+        )
+        picker = (ROOT / "web" / "src" / "QuickPick.tsx").read_text(
+            encoding="utf-8"
+        )
+
+        for view in ("explorer", "search", "engineering", "collaboration", "settings"):
+            self.assertIn(f'"{view}"', app)
+
+        self.assertIn("Ctrl/⌘+Shift+P", app)
+        self.assertIn("Ctrl/⌘+P", app)
+        self.assertIn("Ctrl/⌘+Shift+F", app)
+        self.assertIn("Ctrl/⌘+Shift+M", app)
+        self.assertIn("Ctrl/⌘+B", app)
+        self.assertIn("Ctrl/⌘+J", app)
+        self.assertIn("file-tree-folder", tree)
+        self.assertIn("aria-expanded", tree)
+        self.assertIn("role=\"dialog\"", picker)
+        self.assertIn("role=\"listbox\"", picker)
 
     def test_browser_is_a_separate_client_of_shared_semantics(self):
         app = (ROOT / "web" / "src" / "App.tsx").read_text(
