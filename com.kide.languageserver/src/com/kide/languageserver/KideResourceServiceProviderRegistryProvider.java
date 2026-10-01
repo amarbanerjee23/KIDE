@@ -151,9 +151,13 @@ public final class KideResourceServiceProviderRegistryProvider
             throw new IllegalStateException("Required KIDE language bundle is not installed: "
                     + language.bundleId);
         }
-        String effectiveSetupClass = "dml".equals(language.extension)
-                ? "com.dml.dsl.ide.KideDmlIdeSetup"
-                : language.setupClass;
+        String effectiveSetupClass = switch (language.extension) {
+            case "dml" -> "com.dml.dsl.ide.KideDmlIdeSetup";
+            case "cap" -> "com.capability.ide.KideCapabilityIdeSetup";
+            case "mncspec" -> "com.mncml.dsl.ide.KideMncIdeSetup";
+            case "activity" -> "com.smr.activity.dsl.ide.KideActivityDiagramIdeSetup";
+            default -> language.setupClass;
+        };
         try {
             Class<?> setupType = bundle.loadClass(effectiveSetupClass);
             Object setup = setupType.getDeclaredConstructor().newInstance();
