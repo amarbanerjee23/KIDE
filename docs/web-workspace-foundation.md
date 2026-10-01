@@ -43,6 +43,34 @@ It still does not duplicate Eclipse workspace metadata or desktop UI contributio
 the browser remains a separate client over shared model, LSP, GLSP, synthesis and
 generation semantics.
 
+## Browser IDE workbench
+
+The browser shell follows the established workbench conventions used by modern
+web IDEs rather than exposing service diagnostics as the primary page. It provides:
+
+- a compact title/command bar;
+- Explorer, Search, Engineering, Collaboration and Settings activity views;
+- a collapsible hierarchical project tree;
+- multiple open-editor tabs and breadcrumbs;
+- Quick Open and a keyboard-first Command Palette;
+- project-wide text search plus LSP workspace-symbol search;
+- Monaco minimap, sticky scroll, folding, bracket-pair guides, CodeLens,
+  inline suggestions, parameter hints, multi-cursor editing and validation
+  decorations;
+- a Problems panel driven directly by Monaco/LSP markers;
+- a workspace Output panel;
+- dark/light workbench themes; and
+- a labeled status bar for API, Xtext LSP, collaboration, language mode,
+  save state, diagnostics and cursor position.
+
+Connection endpoints and Firebase credentials live under Settings. Offline state
+is therefore explicit (for example, "API Offline" or "Xtext Offline") instead of
+being rendered as anonymous "Not connected" badges in the application header.
+
+The browser does not advertise a local terminal or debugger because KIDE Web has
+no browser-side shell/debug runtime. Those capabilities require an explicit
+remote execution/debug service; the UI does not fake them.
+
 ## Archive safety
 
 Project ZIP import rejects compressed uploads over 10 MiB, more than 1,000 files,
