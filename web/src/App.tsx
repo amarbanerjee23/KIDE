@@ -1321,6 +1321,12 @@ export default function App() {
     );
   }
 
+  function runSynthesisInWorkbench() {
+    setActiveSidebar("engineering");
+    setSidebarVisible(true);
+    void runSynthesis();
+  }
+
   function closeEditor(path: string) {
     const index = openPaths.indexOf(path);
     const next = openPaths.filter((candidate) => candidate !== path);
@@ -1600,7 +1606,7 @@ export default function App() {
       description: selected?.path.endsWith(".activity")
         ? selected.path
         : "Open an Activity model first",
-      run: () => void runSynthesis()
+      run: runSynthesisInWorkbench
     },
     {
       id: "engineering.diagram",
@@ -2389,7 +2395,7 @@ export default function App() {
                 <button
                   className="primary-action"
                   disabled={!selected.etag || selected.dirty}
-                  onClick={() => void runSynthesis()}
+                  onClick={runSynthesisInWorkbench}
                 >
                   Synthesize
                 </button>
