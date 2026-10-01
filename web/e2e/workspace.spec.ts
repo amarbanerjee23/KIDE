@@ -158,11 +158,11 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
   );
 
   await signInFirebase(page);
-  await expect(page.getByText("UP · API v1")).toBeVisible();
+  await expect(page.locator(".status-bar")).toContainText("API Online");
   await expect(page.getByText("Golden Project")).toBeVisible();
 
-  await page.getByRole("button", { name: "Open" }).click();
-  await expect(page.getByText("Connected · Xtext LSP")).toBeVisible();
+  await page.getByRole("button", { name: "Open", exact: true }).click();
+  await expect(page.locator(".status-bar")).toContainText("Xtext Online");
   await expect(page.getByText("1 project file(s) discovered.")).toBeVisible();
   expect(initializeRootUri).toBe("kide-workspace:/");
 
@@ -563,7 +563,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   );
 
   await signInFirebase(page);
-  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Open", exact: true }).click();
   await expect(page.locator(".file-list").getByText("flow.activity", { exact: true })).toBeVisible();
   await expect(page.getByTestId("monaco-editor")).toBeVisible();
   await expect(page.locator(".status-bar")).toContainText("Collaboration Online");
@@ -731,11 +731,11 @@ test("creates starter engineering models for an empty hosted project", async ({ 
   );
 
   await signInFirebase(page);
-  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Open", exact: true }).click();
 
-  const createStarter = page.getByRole("button", {
-    name: "Create starter engineering models"
-  });
+  const createStarter = page
+    .locator(".welcome-workbench")
+    .getByRole("button", { name: "Create starter engineering models" });
   await expect(createStarter).toBeEnabled();
   await expect(page.getByText(/no editable DSL models are present yet/i)).toBeVisible();
 
