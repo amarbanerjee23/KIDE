@@ -167,12 +167,25 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
   expect(initializeRootUri).toBe("kide-workspace:/");
 
   await expect(page.getByTestId("monaco-editor")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Completion" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Definition" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "References" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Rename" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Quick Fix" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Format" })).toBeVisible();
+  await expect(page.locator(".editor-tabs")).toContainText("selfcheck.dml");
+  await expect(page.locator(".breadcrumbs")).toContainText("selfcheck.dml");
+  await expect(page.locator(".status-bar")).toContainText("API Online");
+  await expect(page.locator(".status-bar")).toContainText("Xtext Online");
+
+  await page.keyboard.press("F1");
+  const palette = page.getByRole("dialog", { name: "Command Palette" });
+  await expect(palette).toBeVisible();
+  for (const command of [
+    "Editor: Trigger Completion",
+    "Editor: Go to Definition",
+    "Editor: Find All References",
+    "Editor: Rename Symbol",
+    "Editor: Quick Fix",
+    "Editor: Format Document"
+  ]) {
+    await expect(palette.getByText(command, { exact: true })).toBeVisible();
+  }
+  await page.keyboard.press("Escape");
   await expect.poll(() => didOpenUri).toBe("kide-workspace:/selfcheck.dml");
 
   await page.getByLabel("Symbol query").fill("Self");
@@ -553,6 +566,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   await page.getByRole("button", { name: "Open" }).click();
   await expect(page.locator(".file-list").getByText("flow.activity", { exact: true })).toBeVisible();
   await expect(page.getByTestId("monaco-editor")).toBeVisible();
+  await expect(page.locator(".status-bar")).toContainText("Collaboration Online");
   await expect(page.getByRole("button", { name: "Synthesize", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Synthesize", exact: true }).click();
@@ -761,10 +775,14 @@ async function signInFirebase(page: import("@playwright/test").Page) {
   );
 
   await page.goto("/");
+  await expect(page.getByText("Engineering Workspace", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Sign in to KIDE" }).click();
   await page.getByLabel("Firebase email").fill("browser@example.test");
   await page.getByLabel("Firebase password").fill("password");
   await page.getByRole("button", { name: "Sign in with Firebase" }).click();
-  await expect(page.getByText("Signed in · browser@example.test")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "browser@example.test" })
+  ).toBeVisible();
 }
 
 
