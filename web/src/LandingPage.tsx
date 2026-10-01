@@ -44,14 +44,17 @@ export function LandingPage({
             <small>Engineering Environment</small>
           </span>
         </a>
-        <button
-          type="button"
+        <a
           className="landing-workspace-link"
-          onClick={onOpenWorkspace}
+          href="/workspace"
+          onClick={(event) => {
+            event.preventDefault();
+            onOpenWorkspace();
+          }}
         >
           Open Engineering Workspace
           <span aria-hidden="true">→</span>
-        </button>
+        </a>
       </header>
 
       <section className="landing-hero">
