@@ -2774,6 +2774,110 @@ function isProductionDslPath(path: string): boolean {
   );
 }
 
+function isTextProjectPath(path: string): boolean {
+  const lower = path.toLowerCase();
+  return [
+    ".activity",
+    ".cap",
+    ".dml",
+    ".json",
+    ".krl",
+    ".md",
+    ".mncspec",
+    ".op",
+    ".properties",
+    ".txt",
+    ".xml",
+    ".yaml",
+    ".yml"
+  ].some((extension) => lower.endsWith(extension));
+}
+
+function basename(path: string): string {
+  const slash = path.lastIndexOf("/");
+  return slash < 0 ? path : path.slice(slash + 1);
+}
+
+function fileGlyph(path: string): string {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".activity")) return "A";
+  if (lower.endsWith(".dml")) return "D";
+  if (lower.endsWith(".cap")) return "C";
+  if (lower.endsWith(".mncspec")) return "M";
+  if (lower.endsWith(".op")) return "O";
+  if (lower.endsWith(".krl")) return "K";
+  if (lower.endsWith(".md")) return "#";
+  if (lower.endsWith(".json")) return "{}";
+  return "·";
+}
+
+function languageLabelForPath(path: string): string {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".activity")) return "Activity DSL";
+  if (lower.endsWith(".dml")) return "Data Model DSL";
+  if (lower.endsWith(".cap")) return "Capability DSL";
+  if (lower.endsWith(".mncspec")) return "MNC Specification DSL";
+  if (lower.endsWith(".op")) return "Operation DSL";
+  if (lower.endsWith(".krl")) return "Knowledge Representation DSL";
+  if (lower.endsWith(".md")) return "Markdown";
+  if (lower.endsWith(".json")) return "JSON";
+  if (lower.endsWith(".xml")) return "XML";
+  if (lower.endsWith(".yaml") || lower.endsWith(".yml")) return "YAML";
+  if (lower.endsWith(".properties")) return "Properties";
+  return "Plain Text";
+}
+
+function sidebarViewLabel(view: SidebarView): string {
+  switch (view) {
+    case "explorer": return "Explorer";
+    case "search": return "Search";
+    case "engineering": return "Engineering";
+    case "collaboration": return "Collaboration";
+    case "settings": return "Settings";
+  }
+}
+
+function problemSeverityClass(severity: monaco.MarkerSeverity): string {
+  if (severity === monaco.MarkerSeverity.Error) return "error";
+  if (severity === monaco.MarkerSeverity.Warning) return "warning";
+  if (severity === monaco.MarkerSeverity.Info) return "info";
+  return "hint";
+}
+
+function problemSeverityGlyph(severity: monaco.MarkerSeverity): string {
+  if (severity === monaco.MarkerSeverity.Error) return "×";
+  if (severity === monaco.MarkerSeverity.Warning) return "△";
+  if (severity === monaco.MarkerSeverity.Info) return "i";
+  return "·";
+}
+
+function connectionTone(status: string): string {
+  const normalized = status.toLowerCase();
+  if (
+    normalized.includes("connected") ||
+    normalized.startsWith("up") ||
+    normalized.includes("signed in")
+  ) {
+    if (normalized.includes("not connected")) return "status-offline";
+    return "status-online";
+  }
+  if (normalized.includes("connecting")) return "status-connecting";
+  if (normalized.includes("degraded") || normalized.includes("failed")) {
+    return "status-error";
+  }
+  return "status-offline";
+}
+
+function connectionSummary(status: string): string {
+  const normalized = status.toLowerCase();
+  if (normalized.includes("not connected")) return "Offline";
+  if (normalized.includes("connecting")) return "Connecting";
+  if (normalized.includes("degraded")) return "Degraded";
+  if (normalized.includes("failed")) return "Failed";
+  if (normalized.startsWith("up") || normalized.includes("connected")) return "Online";
+  return status;
+}
+
 function preferredModel(models: ModelSummary[]): ModelSummary | undefined {
   const extensions = [".activity", ".dml", ".cap", ".mncspec", ".op", ".krl"];
   for (const extension of extensions) {
