@@ -1243,6 +1243,9 @@ export default function App() {
     setTraceSemanticId("");
     setSynthesisResult(undefined);
     setSaveState("clean");
+    setOpenPaths([]);
+    setWorkspaceMatches([]);
+    setProblems([]);
   }
 
   async function disposeLanguageServices() {
@@ -1281,6 +1284,303 @@ export default function App() {
       return;
     }
     setNotice(error instanceof Error ? error.message : "Unexpected error.");
+  }
+
+  function activateSidebar(view: SidebarView) {
+    if (activeSidebar === view && sidebarVisible) {
+      setSidebarVisible(false);
+      return;
+    }
+    setActiveSidebar(view);
+    setSidebarVisible(true);
+  }
+
+  function runEditorAction(actionId: string) {
+    window.dispatchEvent(
+      new CustomEvent("kide:editor-action", { detail: { actionId } })
+    );
+  }
+
+  function closeEditor(path: string) {
+    setOpenPaths((current) => {
+      const index = current.indexOf(path);
+      const next = current.filter((candidate) => candidate !== path);
+      if (selectedPathRef.current === path) {
+        const fallback = next[Math.min(index, Math.max(0, next.length - 1))];
+        setSelectedPath(fallback);
+        setRevealRange(undefined);
+      }
+      return next;
+    });
+  }
+
+  async function runWorkspaceSearch() {
+    const query = workspaceSearch.trim();
+    if (!query) {
+      setWorkspaceMatches([]);
+      return;
+    }
+
+    const needle = query.toLocaleLowerCase();
+    const matches: WorkspaceSearchMatch[] = [];
+    const hydrated: WorkspaceEntry[] = [];
+    const currentProject = projectRef.current;
+
+    try {
+      for (const candidate of entriesRef.current) {
+        let entry = candidate;
+        if (
+          entry.source === "remote" &&
+          entry.loaded === false &&
+          currentProject &&
+          isTextProjectPath(entry.path)
+        ) {
+          const model = await clientRef.current.getModel(
+            currentProject.id,
+            entry.path
+          );
+          entry = remoteEntry(currentProject.id, model);
+          hydrated.push(entry);
+        }
+
+        const text = editableText(entry);
+        if (text === null) continue;
+        const lines = text.split(/\r?\n/);
+        for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+          const source = lines[lineIndex];
+          let from = 0;
+          while (from <= source.length) {
+            const column = source.toLocaleLowerCase().indexOf(needle, from);
+            if (column < 0) break;
+            matches.push({
+              path: entry.path,
+              line: lineIndex + 1,
+              column: column + 1,
+              preview: source.trim() || source
+            });
+            if (matches.length >= 500) break;
+            from = column + Math.max(1, query.length);
+          }
+          if (matches.length >= 500) break;
+        }
+        if (matches.length >= 500) break;
+      }
+
+      if (hydrated.length) {
+        updateEntries((current) => {
+          let next = current;
+          for (const entry of hydrated) next = upsert(next, entry);
+          return next;
+        });
+      }
+
+      setWorkspaceMatches(matches);
+      if (matches.length >= 500) {
+        setNotice("Search stopped after 500 matches. Refine the query for a smaller result set.");
+      }
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function openWorkspaceSearchMatch(match: WorkspaceSearchMatch) {
+    const entry = entriesRef.current.find((candidate) => candidate.path === match.path);
+    if (!entry) return;
+    if (entry.source === "remote" && entry.loaded === false) {
+      await loadSpecificModel(entry.path);
+    } else {
+      selectEntry(entry);
+    }
+    setRevealRange(
+      new monaco.Range(
+        match.line,
+        match.column,
+        match.line,
+        match.column + Math.max(1, workspaceSearch.length)
+      )
+    );
+  }
+
+  async function openProblem(problem: ProblemItem) {
+    const entry = entriesRef.current.find((candidate) => candidate.path === problem.path);
+    if (!entry) return;
+    if (entry.source === "remote" && entry.loaded === false) {
+      await loadSpecificModel(entry.path);
+    } else {
+      selectEntry(entry);
+    }
+    setRevealRange(
+      new monaco.Range(
+        problem.line,
+        problem.column,
+        problem.line,
+        problem.column + 1
+      )
+    );
+  }
+
+  function toggleTheme() {
+    setTheme((current) => (current === "dark" ? "light" : "dark"));
+  }
+
+  const workbenchCommands: Array<QuickPickItem & { run: () => void }> = [
+    {
+      id: "view.explorer",
+      label: "View: Explorer",
+      description: "Projects and project files",
+      shortcut: "Ctrl/⌘+Shift+E",
+      run: () => {
+        setActiveSidebar("explorer");
+        setSidebarVisible(true);
+      }
+    },
+    {
+      id: "view.search",
+      label: "View: Search",
+      description: "Search text and workspace symbols",
+      shortcut: "Ctrl/⌘+Shift+F",
+      run: () => {
+        setActiveSidebar("search");
+        setSidebarVisible(true);
+      }
+    },
+    {
+      id: "view.engineering",
+      label: "View: Engineering",
+      description: "Knowledge, synthesis, reconfiguration and generation",
+      run: () => {
+        setActiveSidebar("engineering");
+        setSidebarVisible(true);
+      }
+    },
+    {
+      id: "view.collaboration",
+      label: "View: Collaboration",
+      description: "Presence and engineering reviews",
+      run: () => {
+        setActiveSidebar("collaboration");
+        setSidebarVisible(true);
+      }
+    },
+    {
+      id: "view.settings",
+      label: "View: Settings & Connection",
+      description: "Authentication and service endpoints",
+      run: () => {
+        setActiveSidebar("settings");
+        setSidebarVisible(true);
+      }
+    },
+    {
+      id: "view.sidebar",
+      label: sidebarVisible ? "View: Hide Primary Side Bar" : "View: Show Primary Side Bar",
+      shortcut: "Ctrl/⌘+B",
+      run: () => setSidebarVisible((visible) => !visible)
+    },
+    {
+      id: "view.problems",
+      label: "View: Problems",
+      description: `${problems.length} current diagnostic(s)`,
+      shortcut: "Ctrl/⌘+Shift+M",
+      run: () => setBottomPanel("problems")
+    },
+    {
+      id: "view.output",
+      label: "View: Output",
+      description: "KIDE workspace activity and service messages",
+      run: () => setBottomPanel("output")
+    },
+    {
+      id: "editor.completion",
+      label: "Editor: Trigger Completion",
+      shortcut: "Ctrl/⌘+Space",
+      run: () => runEditorAction("editor.action.triggerSuggest")
+    },
+    {
+      id: "editor.definition",
+      label: "Editor: Go to Definition",
+      shortcut: "F12",
+      run: () => runEditorAction("editor.action.revealDefinition")
+    },
+    {
+      id: "editor.references",
+      label: "Editor: Find All References",
+      shortcut: "Shift+F12",
+      run: () => runEditorAction("editor.action.referenceSearch.trigger")
+    },
+    {
+      id: "editor.rename",
+      label: "Editor: Rename Symbol",
+      shortcut: "F2",
+      run: () => runEditorAction("editor.action.rename")
+    },
+    {
+      id: "editor.quickfix",
+      label: "Editor: Quick Fix",
+      shortcut: "Ctrl/⌘+.",
+      run: () => runEditorAction("editor.action.quickFix")
+    },
+    {
+      id: "editor.format",
+      label: "Editor: Format Document",
+      shortcut: "Shift+Alt+F",
+      run: () => runEditorAction("editor.action.formatDocument")
+    },
+    {
+      id: "editor.find",
+      label: "Editor: Find / Replace",
+      shortcut: "Ctrl/⌘+F",
+      run: () => runEditorAction("actions.find")
+    },
+    {
+      id: "project.refresh",
+      label: "Project: Refresh Files",
+      description: project ? project.displayName : "No server project open",
+      run: () => void refreshProjectModels()
+    },
+    {
+      id: "engineering.synthesize",
+      label: "Engineering: Run Deterministic Synthesis",
+      description: selected?.path.endsWith(".activity")
+        ? selected.path
+        : "Open an Activity model first",
+      run: () => void runSynthesis()
+    },
+    {
+      id: "engineering.diagram",
+      label: viewMode === "diagram"
+        ? "Engineering: Switch to Text Editor"
+        : "Engineering: Open Graphical Editor",
+      run: () => {
+        if (viewMode === "diagram") setViewMode("text");
+        else openDiagram();
+      }
+    },
+    {
+      id: "workbench.theme",
+      label: `Preferences: Use ${theme === "dark" ? "Light" : "Dark"} Theme`,
+      run: toggleTheme
+    }
+  ];
+
+  const quickPickItems: QuickPickItem[] =
+    quickPickMode === "files"
+      ? entries.map((entry) => ({
+          id: `file:${entry.path}`,
+          label: basename(entry.path),
+          description: entry.path,
+          keywords: [entry.path]
+        }))
+      : workbenchCommands.map(({ run: _run, ...item }) => item);
+
+  function chooseQuickPick(item: QuickPickItem) {
+    if (quickPickMode === "files") {
+      const path = item.id.startsWith("file:") ? item.id.slice(5) : item.id;
+      const entry = entriesRef.current.find((candidate) => candidate.path === path);
+      if (entry) selectEntry(entry);
+      return;
+    }
+    workbenchCommands.find((command) => command.id === item.id)?.run();
   }
 
   return (
