@@ -190,13 +190,24 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
   await page.keyboard.press("Escape");
   await expect.poll(() => didOpenUri).toBe("kide-workspace:/selfcheck.dml");
 
+  await page
+    .locator(".activity-bar")
+    .getByRole("button", { name: "Search", exact: true })
+    .click();
   await page.getByLabel("Symbol query").fill("Self");
   await page.getByRole("button", { name: "Search symbols" }).click();
   await expect(page.getByRole("button", { name: /SelfCheck/ })).toBeVisible();
 
+  await page
+    .locator(".activity-bar")
+    .getByRole("button", { name: "Engineering", exact: true })
+    .click();
   await page.getByLabel("Knowledge query").fill("Observe");
   await page.getByLabel("Knowledge concept type").selectOption("CAPABILITY");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await page
+    .locator(".knowledge-panel")
+    .getByRole("button", { name: "Search", exact: true })
+    .click();
   await expect(page.getByRole("button", { name: /Observe/ })).toBeVisible();
 });
 
