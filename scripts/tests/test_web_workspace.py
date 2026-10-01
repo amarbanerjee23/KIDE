@@ -104,6 +104,27 @@ class WebWorkspaceContractTest(unittest.TestCase):
             server,
         )
 
+    def test_landing_authentication_is_separate_from_engineering_workspace(self):
+        app = (ROOT / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
+        landing = (ROOT / "web" / "src" / "LandingPage.tsx").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn('window.location.pathname.startsWith("/workspace")', app)
+        self.assertIn('"/workspace"', app)
+        self.assertIn('if (route === "home")', app)
+        self.assertIn("<LandingPage", app)
+        self.assertIn("Open Engineering Workspace", landing)
+        self.assertIn("Sign in with Firebase", landing)
+        self.assertIn("Engineer control software from models to generated artifacts.", landing)
+
+        self.assertNotIn('aria-label="Firebase email"', app)
+        self.assertNotIn('aria-label="Firebase password"', app)
+        self.assertIn("Authentication required for server engineering", app)
+        self.assertIn("Go to sign in", app)
+        self.assertIn('onClick={() => navigate("home")}', app)
+        self.assertIn('href="/workspace"', landing)
+
     def test_browser_workbench_uses_standard_ide_chrome(self):
         app = (ROOT / "web" / "src" / "App.tsx").read_text(encoding="utf-8")
         tree = (ROOT / "web" / "src" / "FileTree.tsx").read_text(

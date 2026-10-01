@@ -18,6 +18,24 @@ delegates textual semantics to the packaged Xtext LSP, GLSP delegates graphical
 semantics to the Java service, and engineering actions use the versioned
 enterprise API.
 
+## Browser routes and authentication
+
+KIDE Web deliberately separates authentication from engineering work:
+
+- `/` is the landing page. It contains product context and Firebase sign-in.
+- `/workspace` is the engineering workbench. It contains project/model actions,
+  Monaco/Xtext editing, GLSP diagrams, knowledge, synthesis, reconfiguration,
+  generation and collaboration.
+- the landing page contains a direct **Open Engineering Workspace** link;
+- SPA navigation preserves the in-memory Firebase session when moving from the
+  landing page into the workspace; and
+- direct access to `/workspace` is allowed, but server-backed engineering remains
+  unavailable until the user signs in from Home.
+
+Firebase email/password inputs do not appear inside the engineering workbench.
+The token remains held in React memory only and is not persisted to local storage,
+project files, URLs or logs.
+
 ## Workspace behavior
 
 The browser can:
@@ -34,9 +52,6 @@ The browser can:
 - preserve binary/non-text files for export while editing supported text files;
 - export the current local project files back to ZIP; and
 - retain local/conflict drafts only in browser session storage.
-
-The access token is held in React memory only. It is not written to local storage,
-project files, URLs or logs.
 
 The hosted runtime provides bounded model enumeration and starter-model creation.
 It still does not duplicate Eclipse workspace metadata or desktop UI contributions:
@@ -63,8 +78,9 @@ web IDEs rather than exposing service diagnostics as the primary page. It provid
 - a labeled status bar for API, Xtext LSP, collaboration, language mode,
   save state, diagnostics and cursor position.
 
-Connection endpoints and Firebase credentials live under Settings. Offline state
-is therefore explicit (for example, "API Offline" or "Xtext Offline") instead of
+Connection endpoints live under Settings, while Firebase credentials live only
+on the landing page. Offline state is explicit in the workbench status bar (for
+example, "API Offline", "Xtext Offline" or "Collaboration Offline") instead of
 being rendered as anonymous "Not connected" badges in the application header.
 
 The browser does not advertise a local terminal or debugger because KIDE Web has
