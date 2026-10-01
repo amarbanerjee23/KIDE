@@ -241,6 +241,77 @@ export class MonacoLspController {
         ));
       }
 
+      if (this.client.hasCapability("documentRangeFormattingProvider")) {
+        this.disposables.push(monaco.languages.registerDocumentRangeFormattingEditProvider(
+          languageId,
+          {
+            provideDocumentRangeFormattingEdits: async (model, range) => {
+              const edits = (
+                await this.client.rangeFormatting(
+                  model.uri.toString(),
+                  fromRange(range)
+                )
+              ) ?? [];
+              return edits.map(toMonacoTextEdit);
+            }
+          }
+        ));
+      }
+
+      if (this.client.hasCapability("documentHighlightProvider")) {
+        this.disposables.push(monaco.languages.registerDocumentHighlightProvider(
+          languageId,
+          {
+            provideDocumentHighlights: async (model, position) => {
+              const highlights = (
+                await this.client.documentHighlights(
+                  model.uri.toString(),
+                  fromPosition(position)
+                )
+              ) ?? [];
+              return highlights.map((highlight) => ({
+                range: toRange(highlight.range),
+                kind: documentHighlightKind(highlight.kind)
+              }));
+            }
+          }
+        ));
+      }
+
+      const signature = this.client.capabilities.signatureHelpProvider;
+      if (signature) {
+        this.disposables.push(monaco.languages.registerSignatureHelpProvider(
+          languageId,
+          {
+            signatureHelpTriggerCharacters: signature.triggerCharacters ?? ["(", ","],
+            signatureHelpRetriggerCharacters: signature.retriggerCharacters ?? [","],
+            provideSignatureHelp: async (model, position) => {
+              const help = await this.client.signatureHelp(
+                model.uri.toString(),
+                fromPosition(position)
+              );
+              if (!help) return null;
+              return {
+                value: {
+                  signatures: help.signatures.map((item) => ({
+                    label: item.label,
+                    documentation: markdown(item.documentation),
+                    parameters: (item.parameters ?? []).map((parameter) => ({
+                      label: parameter.label,
+                      documentation: markdown(parameter.documentation)
+                    })),
+                    activeParameter: item.activeParameter
+                  })),
+                  activeSignature: help.activeSignature ?? 0,
+                  activeParameter: help.activeParameter ?? 0
+                },
+                dispose() {}
+              };
+            }
+          }
+        ));
+      }
+
       if (this.client.hasCapability("renameProvider")) {
         this.disposables.push(monaco.languages.registerRenameProvider(
           languageId,
@@ -533,6 +604,19 @@ function lspSeverity(severity: monaco.MarkerSeverity): number {
   if (severity === monaco.MarkerSeverity.Warning) return 2;
   if (severity === monaco.MarkerSeverity.Info) return 3;
   return 4;
+}
+
+function documentHighlightKind(
+  kind?: number
+): monaco.languages.DocumentHighlightKind {
+  switch (kind) {
+    case 2:
+      return monaco.languages.DocumentHighlightKind.Read;
+    case 3:
+      return monaco.languages.DocumentHighlightKind.Write;
+    default:
+      return monaco.languages.DocumentHighlightKind.Text;
+  }
 }
 
 function completionKind(kind?: number): monaco.languages.CompletionItemKind {
