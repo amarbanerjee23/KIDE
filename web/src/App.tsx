@@ -19,6 +19,7 @@ import { MonacoLspController } from "./monacoLsp";
 import { MonacoWorkspace } from "./monacoWorkspace";
 import { GraphicalEditor } from "./GraphicalEditor";
 import { QuickPick, type QuickPickItem } from "./QuickPick";
+import { LandingPage } from "./LandingPage";
 import { FileTree } from "./FileTree";
 import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
@@ -167,6 +168,10 @@ export default function App() {
       return "dark";
     }
   });
+  const [route, setRoute] = useState<"home" | "workspace">(() =>
+    window.location.pathname.startsWith("/workspace") ? "workspace" : "home"
+  );
+  const [authBusy, setAuthBusy] = useState(false);
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
@@ -312,6 +317,18 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    const onPopState = () => {
+      setRoute(
+        window.location.pathname.startsWith("/workspace")
+          ? "workspace"
+          : "home"
+      );
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const command = event.ctrlKey || event.metaKey;
       if (event.key === "F1" || (command && event.shiftKey && event.key.toLowerCase() === "p")) {
@@ -357,6 +374,7 @@ export default function App() {
 
   async function signInFirebase() {
     setNotice("");
+    setAuthBusy(true);
     try {
       const user = await firebaseAuth.signInWithEmailPassword(
         firebaseEmail,
@@ -377,6 +395,8 @@ export default function App() {
           ? error.message
           : "Firebase sign-in failed."
       );
+    } finally {
+      setAuthBusy(false);
     }
   }
 
@@ -1297,6 +1317,19 @@ export default function App() {
     setProject(next);
   }
 
+  function navigate(next: "home" | "workspace") {
+    const path = next === "workspace" ? "/workspace" : "/";
+    if (window.location.pathname !== path) {
+      window.history.pushState({}, "", path);
+    }
+    setRoute(next);
+  }
+
+  async function signOutAndGoHome() {
+    await signOutFirebase();
+    navigate("home");
+  }
+
   function showError(error: unknown) {
     if (error instanceof ApiClientError) {
       const suffix = error.requestId ? ` Request ${error.requestId}.` : "";
@@ -1645,6 +1678,25 @@ export default function App() {
     workbenchCommands.find((command) => command.id === item.id)?.run();
   }
 
+  if (route === "home") {
+    return (
+      <LandingPage
+        email={firebaseEmail}
+        password={firebasePassword}
+        authStatus={authStatus}
+        signedInEmail={firebaseAuth.user?.email}
+        configured={Boolean(FIREBASE_PROJECT_ID && FIREBASE_API_KEY)}
+        busy={authBusy}
+        notice={notice}
+        onEmail={setFirebaseEmail}
+        onPassword={setFirebasePassword}
+        onSignIn={() => void signInFirebase()}
+        onSignOut={() => void signOutFirebase()}
+        onOpenWorkspace={() => navigate("workspace")}
+      />
+    );
+  }
+
   return (
     <main className="app-shell" data-theme={theme}>
       <header className="ide-titlebar">
@@ -1676,6 +1728,13 @@ export default function App() {
         <div className="titlebar-actions">
           <button
             type="button"
+            className="titlebar-home-button"
+            onClick={() => navigate("home")}
+          >
+            Home
+          </button>
+          <button
+            type="button"
             className="titlebar-icon-button"
             onClick={toggleTheme}
             title={theme === "dark" ? "Use light theme" : "Use dark theme"}
@@ -1687,6 +1746,10 @@ export default function App() {
             type="button"
             className="account-button"
             onClick={() => {
+              if (!firebaseAuth.user) {
+                navigate("home");
+                return;
+              }
               setActiveSidebar("settings");
               setSidebarVisible(true);
             }}
@@ -1779,48 +1842,41 @@ export default function App() {
             <div className="settings-view">
               <section className="settings-section">
                 <h2>Account</h2>
-                <p className="muted">{authStatus}</p>
                 {firebaseAuth.user ? (
-                  <div className="settings-actions">
-                    <button type="button" onClick={() => void connect()}>
-                      Reconnect API
-                    </button>
-                    <button type="button" onClick={() => void signOutFirebase()}>
-                      Sign out
-                    </button>
-                  </div>
-                ) : (
                   <>
-                    <label>
-                      Firebase email
-                      <input
-                        aria-label="Firebase email"
-                        type="email"
-                        autoComplete="username"
-                        value={firebaseEmail}
-                        onChange={(event) => setFirebaseEmail(event.target.value)}
-                        placeholder="you@example.com"
-                      />
-                    </label>
-                    <label>
-                      Firebase password
-                      <input
-                        aria-label="Firebase password"
-                        type="password"
-                        autoComplete="current-password"
-                        value={firebasePassword}
-                        onChange={(event) => setFirebasePassword(event.target.value)}
-                      />
-                    </label>
+                    <div className="signed-in-workbench-account">
+                      <span className="account-avatar">
+                        {firebaseAuth.user.email.slice(0, 1).toUpperCase()}
+                      </span>
+                      <div>
+                        <small>Signed in as</small>
+                        <strong>{firebaseAuth.user.email}</strong>
+                      </div>
+                    </div>
+                    <div className="settings-actions">
+                      <button type="button" onClick={() => void connect()}>
+                        Reconnect API
+                      </button>
+                      <button type="button" onClick={() => void signOutAndGoHome()}>
+                        Sign out
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="workspace-auth-required">
+                    <strong>Authentication required for server engineering</strong>
+                    <p className="muted">
+                      Sign in on the KIDE landing page to use the enterprise API,
+                      Xtext LSP, GLSP, synthesis, knowledge and generation services.
+                    </p>
                     <button
                       type="button"
                       className="primary-action"
-                      disabled={!FIREBASE_PROJECT_ID || !FIREBASE_API_KEY}
-                      onClick={() => void signInFirebase()}
+                      onClick={() => navigate("home")}
                     >
-                      Sign in with Firebase
+                      Go to sign in
                     </button>
-                  </>
+                  </div>
                 )}
               </section>
 
