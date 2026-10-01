@@ -158,30 +158,56 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
   );
 
   await signInFirebase(page);
-  await expect(page.getByText("UP · API v1")).toBeVisible();
-  await expect(page.getByText("Golden Project")).toBeVisible();
+  await expect(page.locator(".status-bar")).toContainText("API Online");
+  await expect(
+    page.locator(".project-list").getByText("Golden Project", { exact: true })
+  ).toBeVisible();
 
-  await page.getByRole("button", { name: "Open" }).click();
-  await expect(page.getByText("Connected · Xtext LSP")).toBeVisible();
+  await page.getByRole("button", { name: "Open", exact: true }).click();
+  await expect(page.locator(".status-bar")).toContainText("Xtext Online");
   await expect(page.getByText("1 project file(s) discovered.")).toBeVisible();
   expect(initializeRootUri).toBe("kide-workspace:/");
 
   await expect(page.getByTestId("monaco-editor")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Completion" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Definition" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "References" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Rename" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Quick Fix" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Format" })).toBeVisible();
+  await expect(page.locator(".editor-tabs")).toContainText("selfcheck.dml");
+  await expect(page.locator(".breadcrumbs")).toContainText("selfcheck.dml");
+  await expect(page.locator(".status-bar")).toContainText("API Online");
+  await expect(page.locator(".status-bar")).toContainText("Xtext Online");
+
+  await page.keyboard.press("F1");
+  const palette = page.getByRole("dialog", { name: "Command Palette" });
+  await expect(palette).toBeVisible();
+  for (const command of [
+    "Editor: Trigger Completion",
+    "Editor: Go to Definition",
+    "Editor: Find All References",
+    "Editor: Rename Symbol",
+    "Editor: Quick Fix",
+    "Editor: Format Document"
+  ]) {
+    await expect(palette.getByText(command, { exact: true })).toBeVisible();
+  }
+  await page.keyboard.press("Escape");
   await expect.poll(() => didOpenUri).toBe("kide-workspace:/selfcheck.dml");
 
+  await page
+    .locator(".activity-bar")
+    .getByRole("button", { name: "Search", exact: true })
+    .click();
   await page.getByLabel("Symbol query").fill("Self");
   await page.getByRole("button", { name: "Search symbols" }).click();
   await expect(page.getByRole("button", { name: /SelfCheck/ })).toBeVisible();
 
+  await page
+    .locator(".activity-bar")
+    .getByRole("button", { name: "Engineering", exact: true })
+    .click();
   await page.getByLabel("Knowledge query").fill("Observe");
   await page.getByLabel("Knowledge concept type").selectOption("CAPABILITY");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await page
+    .locator(".knowledge-panel")
+    .getByRole("button", { name: "Search", exact: true })
+    .click();
   await expect(page.getByRole("button", { name: /Observe/ })).toBeVisible();
 });
 
@@ -550,9 +576,10 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   );
 
   await signInFirebase(page);
-  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Open", exact: true }).click();
   await expect(page.locator(".file-list").getByText("flow.activity", { exact: true })).toBeVisible();
   await expect(page.getByTestId("monaco-editor")).toBeVisible();
+  await expect(page.locator(".status-bar")).toContainText("Collaboration Online");
   await expect(page.getByRole("button", { name: "Synthesize", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Synthesize", exact: true }).click();
@@ -717,11 +744,11 @@ test("creates starter engineering models for an empty hosted project", async ({ 
   );
 
   await signInFirebase(page);
-  await page.getByRole("button", { name: "Open" }).click();
+  await page.getByRole("button", { name: "Open", exact: true }).click();
 
-  const createStarter = page.getByRole("button", {
-    name: "Create starter engineering models"
-  });
+  const createStarter = page
+    .locator(".welcome-workbench")
+    .getByRole("button", { name: "Create starter engineering models" });
   await expect(createStarter).toBeEnabled();
   await expect(page.getByText(/no editable DSL models are present yet/i)).toBeVisible();
 
@@ -738,7 +765,8 @@ test("creates starter engineering models for an empty hosted project", async ({ 
   await expect(
     page.getByRole("button", { name: "Synthesize", exact: true })
   ).toBeVisible();
-  await expect(createStarter).toBeDisabled();
+  await expect(page.locator(".welcome-workbench")).toHaveCount(0);
+  await expect(page.locator(".editor-tabs")).toContainText("workflow.activity");
 });
 
 
@@ -761,10 +789,14 @@ async function signInFirebase(page: import("@playwright/test").Page) {
   );
 
   await page.goto("/");
+  await expect(page.getByText("Engineering Workspace", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Sign in to KIDE" }).click();
   await page.getByLabel("Firebase email").fill("browser@example.test");
   await page.getByLabel("Firebase password").fill("password");
   await page.getByRole("button", { name: "Sign in with Firebase" }).click();
-  await expect(page.getByText("Signed in · browser@example.test")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "browser@example.test" })
+  ).toBeVisible();
 }
 
 

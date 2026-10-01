@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import type * as monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
 import { KideApiClient, ApiClientError } from "./api";
 import { FirebaseAuthClient, FirebaseAuthError } from "./firebaseAuth";
 import {
@@ -13,11 +13,13 @@ import {
 import { AutosaveCoordinator } from "./autosave";
 import { CollaborationCoordinator } from "./collaboration";
 import { pathFromWorkspaceUri } from "./languageAssets";
-import { KideLspClient, type SymbolInformation } from "./lspClient";
+import { KideLspClient, type DocumentSymbol, type SymbolInformation } from "./lspClient";
 import { MonacoEditor } from "./MonacoEditor";
 import { MonacoLspController } from "./monacoLsp";
 import { MonacoWorkspace } from "./monacoWorkspace";
 import { GraphicalEditor } from "./GraphicalEditor";
+import { QuickPick, type QuickPickItem } from "./QuickPick";
+import { FileTree } from "./FileTree";
 import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
 import type {
@@ -44,6 +46,40 @@ const GATEWAY_ORIGIN =
   import.meta.env.VITE_KIDE_LSP_ORIGIN ?? SERVICE_ORIGIN;
 const FIREBASE_API_KEY = import.meta.env.VITE_FIREBASE_API_KEY ?? "";
 const FIREBASE_PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "";
+
+type SidebarView =
+  | "explorer"
+  | "search"
+  | "engineering"
+  | "collaboration"
+  | "settings";
+
+type QuickPickMode = "commands" | "files" | null;
+type BottomPanel = "problems" | "output" | null;
+
+interface WorkspaceSearchMatch {
+  path: string;
+  line: number;
+  column: number;
+  preview: string;
+}
+
+interface ProblemItem {
+  path: string;
+  message: string;
+  severity: monaco.MarkerSeverity;
+  line: number;
+  column: number;
+}
+
+interface OutlineItem {
+  name: string;
+  detail?: string;
+  kind: number;
+  line: number;
+  column: number;
+  depth: number;
+}
 
 export default function App() {
   const [serviceOrigin, setServiceOrigin] = useState(SERVICE_ORIGIN);
@@ -108,6 +144,29 @@ export default function App() {
     useState<ReconfigurationResult>();
   const [generationKrlModelId, setGenerationKrlModelId] = useState("bindings.krl");
   const [generationResult, setGenerationResult] = useState<GenerationResult>();
+
+  const [activeSidebar, setActiveSidebar] =
+    useState<SidebarView>("explorer");
+  const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [bottomPanel, setBottomPanel] = useState<BottomPanel>(null);
+  const [quickPickMode, setQuickPickMode] = useState<QuickPickMode>(null);
+  const [openPaths, setOpenPaths] = useState<string[]>([]);
+  const [workspaceSearch, setWorkspaceSearch] = useState("");
+  const [workspaceMatches, setWorkspaceMatches] =
+    useState<WorkspaceSearchMatch[]>([]);
+  const [problems, setProblems] = useState<ProblemItem[]>([]);
+  const [outlineItems, setOutlineItems] = useState<OutlineItem[]>([]);
+  const [outputLog, setOutputLog] = useState<string[]>([]);
+  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    try {
+      return localStorage.getItem("kide:web-theme") === "light"
+        ? "light"
+        : "dark";
+    } catch {
+      return "dark";
+    }
+  });
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
@@ -191,7 +250,110 @@ export default function App() {
     setReconfigurationResult(undefined);
     setGenerationResult(undefined);
     collaboration.current?.setModel(selectedPath);
+    setCursorPosition({ line: 1, column: 1 });
+    if (selectedPath) {
+      setOpenPaths((current) =>
+        current.includes(selectedPath) ? current : [...current, selectedPath]
+      );
+      void refreshOutline(selectedPath);
+    } else {
+      setOutlineItems([]);
+    }
   }, [selectedPath]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const stamp = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+    setOutputLog((current) => [...current.slice(-199), `[${stamp}] ${notice}`]);
+  }, [notice]);
+
+  useEffect(() => {
+    const refresh = () => {
+      const next = monaco.editor
+        .getModelMarkers({})
+        .map((marker) => {
+          let path = marker.resource.path.replace(/^\/+/, "");
+          try {
+            path = pathFromWorkspaceUri(marker.resource.toString());
+          } catch {
+            // Non-workspace Monaco models keep their URI path.
+          }
+          return {
+            path,
+            message: marker.message,
+            severity: marker.severity,
+            line: marker.startLineNumber,
+            column: marker.startColumn
+          } satisfies ProblemItem;
+        })
+        .sort((a, b) =>
+          b.severity - a.severity ||
+          a.path.localeCompare(b.path) ||
+          a.line - b.line ||
+          a.column - b.column
+        );
+      setProblems(next);
+    };
+    refresh();
+    const subscription = monaco.editor.onDidChangeMarkers(refresh);
+    return () => subscription.dispose();
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("kide:web-theme", theme);
+    } catch {
+      // Theme persistence is optional.
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const command = event.ctrlKey || event.metaKey;
+      if (event.key === "F1" || (command && event.shiftKey && event.key.toLowerCase() === "p")) {
+        event.preventDefault();
+        setQuickPickMode("commands");
+        return;
+      }
+      if (command && !event.shiftKey && event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        setQuickPickMode("files");
+        return;
+      }
+      if (command && event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        setSidebarVisible((visible) => !visible);
+        return;
+      }
+      if (command && event.key.toLowerCase() === "j") {
+        event.preventDefault();
+        setBottomPanel((panel) => (panel ? null : "problems"));
+        return;
+      }
+      if (command && event.shiftKey && event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        setActiveSidebar("explorer");
+        setSidebarVisible(true);
+        return;
+      }
+      if (command && event.shiftKey && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        setActiveSidebar("search");
+        setSidebarVisible(true);
+        return;
+      }
+      if (command && event.shiftKey && event.key.toLowerCase() === "m") {
+        event.preventDefault();
+        setBottomPanel("problems");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, []);
 
   async function signInFirebase() {
     setNotice("");
@@ -205,6 +367,8 @@ export default function App() {
       setFirebasePassword("");
       setAuthStatus(`Signed in · ${user.email}`);
       await connect();
+      setActiveSidebar("explorer");
+      setSidebarVisible(true);
     } catch (error) {
       setToken("");
       setAuthStatus("Sign-in failed");
@@ -358,6 +522,9 @@ export default function App() {
       lspController.current = controller;
       setLspStatus("Connected · Xtext LSP");
       setSymbols([]);
+      if (selectedPathRef.current) {
+        void refreshOutline(selectedPathRef.current);
+      }
     } catch (error) {
       setLspStatus("Connection failed");
       showError(error);
@@ -1095,6 +1262,10 @@ export default function App() {
     setTraceSemanticId("");
     setSynthesisResult(undefined);
     setSaveState("clean");
+    setOpenPaths([]);
+    setWorkspaceMatches([]);
+    setProblems([]);
+    setOutlineItems([]);
   }
 
   async function disposeLanguageServices() {
@@ -1135,88 +1306,396 @@ export default function App() {
     setNotice(error instanceof Error ? error.message : "Unexpected error.");
   }
 
+  function activateSidebar(view: SidebarView) {
+    if (activeSidebar === view && sidebarVisible) {
+      setSidebarVisible(false);
+      return;
+    }
+    setActiveSidebar(view);
+    setSidebarVisible(true);
+  }
+
+  function runEditorAction(actionId: string) {
+    window.dispatchEvent(
+      new CustomEvent("kide:editor-action", { detail: { actionId } })
+    );
+  }
+
+  function runSynthesisInWorkbench() {
+    setActiveSidebar("engineering");
+    setSidebarVisible(true);
+    void runSynthesis();
+  }
+
+  function closeEditor(path: string) {
+    const index = openPaths.indexOf(path);
+    const next = openPaths.filter((candidate) => candidate !== path);
+    setOpenPaths(next);
+    if (selectedPathRef.current === path) {
+      const fallback = next[Math.min(index, Math.max(0, next.length - 1))];
+      setSelectedPath(fallback);
+      setRevealRange(undefined);
+    }
+  }
+
+  async function refreshOutline(path = selectedPathRef.current) {
+    const controller = lspController.current;
+    if (!controller || !path || !controller.client.hasCapability("documentSymbolProvider")) {
+      setOutlineItems([]);
+      return;
+    }
+    const model = workspace.get(path);
+    if (!model) {
+      setOutlineItems([]);
+      return;
+    }
+    try {
+      const symbols = await controller.client.documentSymbols(model.uri.toString());
+      setOutlineItems(flattenDocumentSymbols(symbols ?? []));
+    } catch {
+      setOutlineItems([]);
+    }
+  }
+
+  function openOutlineItem(item: OutlineItem) {
+    if (!selectedPathRef.current) return;
+    setRevealRange(
+      new monaco.Range(
+        item.line,
+        item.column,
+        item.line,
+        item.column + Math.max(1, item.name.length)
+      )
+    );
+  }
+
+  async function runWorkspaceSearch() {
+    const query = workspaceSearch.trim();
+    if (!query) {
+      setWorkspaceMatches([]);
+      return;
+    }
+
+    const needle = query.toLocaleLowerCase();
+    const matches: WorkspaceSearchMatch[] = [];
+    const hydrated: WorkspaceEntry[] = [];
+    const currentProject = projectRef.current;
+
+    try {
+      for (const candidate of entriesRef.current) {
+        let entry = candidate;
+        if (
+          entry.source === "remote" &&
+          entry.loaded === false &&
+          currentProject &&
+          isTextProjectPath(entry.path)
+        ) {
+          const model = await clientRef.current.getModel(
+            currentProject.id,
+            entry.path
+          );
+          entry = remoteEntry(currentProject.id, model);
+          hydrated.push(entry);
+        }
+
+        const text = editableText(entry);
+        if (text === null) continue;
+        const lines = text.split(/\r?\n/);
+        for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+          const source = lines[lineIndex];
+          let from = 0;
+          while (from <= source.length) {
+            const column = source.toLocaleLowerCase().indexOf(needle, from);
+            if (column < 0) break;
+            matches.push({
+              path: entry.path,
+              line: lineIndex + 1,
+              column: column + 1,
+              preview: source.trim() || source
+            });
+            if (matches.length >= 500) break;
+            from = column + Math.max(1, query.length);
+          }
+          if (matches.length >= 500) break;
+        }
+        if (matches.length >= 500) break;
+      }
+
+      if (hydrated.length) {
+        updateEntries((current) => {
+          let next = current;
+          for (const entry of hydrated) next = upsert(next, entry);
+          return next;
+        });
+      }
+
+      setWorkspaceMatches(matches);
+      if (matches.length >= 500) {
+        setNotice("Search stopped after 500 matches. Refine the query for a smaller result set.");
+      }
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function openWorkspaceSearchMatch(match: WorkspaceSearchMatch) {
+    const entry = entriesRef.current.find((candidate) => candidate.path === match.path);
+    if (!entry) return;
+    if (entry.source === "remote" && entry.loaded === false) {
+      await loadSpecificModel(entry.path);
+    } else {
+      selectEntry(entry);
+    }
+    setRevealRange(
+      new monaco.Range(
+        match.line,
+        match.column,
+        match.line,
+        match.column + Math.max(1, workspaceSearch.length)
+      )
+    );
+  }
+
+  async function openProblem(problem: ProblemItem) {
+    const entry = entriesRef.current.find((candidate) => candidate.path === problem.path);
+    if (!entry) return;
+    if (entry.source === "remote" && entry.loaded === false) {
+      await loadSpecificModel(entry.path);
+    } else {
+      selectEntry(entry);
+    }
+    setRevealRange(
+      new monaco.Range(
+        problem.line,
+        problem.column,
+        problem.line,
+        problem.column + 1
+      )
+    );
+  }
+
+  function toggleTheme() {
+    setTheme((current) => (current === "dark" ? "light" : "dark"));
+  }
+
+  const workbenchCommands: Array<QuickPickItem & { run: () => void }> = [
+    {
+      id: "view.explorer",
+      label: "View: Explorer",
+      description: "Projects and project files",
+      shortcut: "Ctrl/⌘+Shift+E",
+      run: () => {
+        setActiveSidebar("explorer");
+        setSidebarVisible(true);
+      }
+    },
+    {
+      id: "view.search",
+      label: "View: Search",
+      description: "Search text and workspace symbols",
+      shortcut: "Ctrl/⌘+Shift+F",
+      run: () => {
+        setActiveSidebar("search");
+        setSidebarVisible(true);
+      }
+    },
+    {
+      id: "view.engineering",
+      label: "View: Engineering",
+      description: "Knowledge, synthesis, reconfiguration and generation",
+      run: () => {
+        setActiveSidebar("engineering");
+        setSidebarVisible(true);
+      }
+    },
+    {
+      id: "view.collaboration",
+      label: "View: Collaboration",
+      description: "Presence and engineering reviews",
+      run: () => {
+        setActiveSidebar("collaboration");
+        setSidebarVisible(true);
+      }
+    },
+    {
+      id: "view.settings",
+      label: "View: Settings & Connection",
+      description: "Authentication and service endpoints",
+      run: () => {
+        setActiveSidebar("settings");
+        setSidebarVisible(true);
+      }
+    },
+    {
+      id: "view.sidebar",
+      label: sidebarVisible ? "View: Hide Primary Side Bar" : "View: Show Primary Side Bar",
+      shortcut: "Ctrl/⌘+B",
+      run: () => setSidebarVisible((visible) => !visible)
+    },
+    {
+      id: "view.panel",
+      label: bottomPanel ? "View: Hide Panel" : "View: Show Panel",
+      description: "Problems and Output",
+      shortcut: "Ctrl/⌘+J",
+      run: () => setBottomPanel((panel) => (panel ? null : "problems"))
+    },
+    {
+      id: "view.problems",
+      label: "View: Problems",
+      description: `${problems.length} current diagnostic(s)`,
+      shortcut: "Ctrl/⌘+Shift+M",
+      run: () => setBottomPanel("problems")
+    },
+    {
+      id: "view.output",
+      label: "View: Output",
+      description: "KIDE workspace activity and service messages",
+      run: () => setBottomPanel("output")
+    },
+    {
+      id: "editor.completion",
+      label: "Editor: Trigger Completion",
+      shortcut: "Ctrl/⌘+Space",
+      run: () => runEditorAction("editor.action.triggerSuggest")
+    },
+    {
+      id: "editor.definition",
+      label: "Editor: Go to Definition",
+      shortcut: "F12",
+      run: () => runEditorAction("editor.action.revealDefinition")
+    },
+    {
+      id: "editor.references",
+      label: "Editor: Find All References",
+      shortcut: "Shift+F12",
+      run: () => runEditorAction("editor.action.referenceSearch.trigger")
+    },
+    {
+      id: "editor.rename",
+      label: "Editor: Rename Symbol",
+      shortcut: "F2",
+      run: () => runEditorAction("editor.action.rename")
+    },
+    {
+      id: "editor.quickfix",
+      label: "Editor: Quick Fix",
+      shortcut: "Ctrl/⌘+.",
+      run: () => runEditorAction("editor.action.quickFix")
+    },
+    {
+      id: "editor.format",
+      label: "Editor: Format Document",
+      shortcut: "Shift+Alt+F",
+      run: () => runEditorAction("editor.action.formatDocument")
+    },
+    {
+      id: "editor.find",
+      label: "Editor: Find / Replace",
+      shortcut: "Ctrl/⌘+F",
+      run: () => runEditorAction("actions.find")
+    },
+    {
+      id: "project.refresh",
+      label: "Project: Refresh Files",
+      description: project ? project.displayName : "No server project open",
+      run: () => void refreshProjectModels()
+    },
+    {
+      id: "engineering.synthesize",
+      label: "Engineering: Run Deterministic Synthesis",
+      description: selected?.path.endsWith(".activity")
+        ? selected.path
+        : "Open an Activity model first",
+      run: runSynthesisInWorkbench
+    },
+    {
+      id: "engineering.diagram",
+      label: viewMode === "diagram"
+        ? "Engineering: Switch to Text Editor"
+        : "Engineering: Open Graphical Editor",
+      run: () => {
+        if (viewMode === "diagram") setViewMode("text");
+        else openDiagram();
+      }
+    },
+    {
+      id: "workbench.theme",
+      label: `Preferences: Use ${theme === "dark" ? "Light" : "Dark"} Theme`,
+      run: toggleTheme
+    }
+  ];
+
+  const quickPickItems: QuickPickItem[] =
+    quickPickMode === "files"
+      ? entries.map((entry) => ({
+          id: `file:${entry.path}`,
+          label: basename(entry.path),
+          description: entry.path,
+          keywords: [entry.path]
+        }))
+      : workbenchCommands.map(({ run: _run, ...item }) => item);
+
+  function chooseQuickPick(item: QuickPickItem) {
+    if (quickPickMode === "files") {
+      const path = item.id.startsWith("file:") ? item.id.slice(5) : item.id;
+      const entry = entriesRef.current.find((candidate) => candidate.path === path);
+      if (entry) selectEntry(entry);
+      return;
+    }
+    workbenchCommands.find((command) => command.id === item.id)?.run();
+  }
+
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">KIDE WEB</p>
-          <h1>Engineering Workspace</h1>
-          <p className="subtitle">
-            Separate browser client · shared enterprise API · shared Xtext semantics
-          </p>
-        </div>
-        <div className="status-stack">
-          <div className="service-state" aria-live="polite">{serviceStatus}</div>
-          <div className="service-state lsp-state" aria-live="polite">{lspStatus}</div>
-          <div className="service-state collaboration-state" aria-live="polite">
-            {collaborationStatus}
-          </div>
+    <main className="app-shell" data-theme={theme}>
+      <header className="ide-titlebar">
+        <button
+          className="ide-brand"
+          type="button"
+          onClick={() => activateSidebar("explorer")}
+          title="KIDE Explorer"
+        >
+          <span className="ide-brand-mark">K</span>
+          <span>KIDE</span>
+          <small>WEB</small>
+        </button>
+
+        <button
+          className="command-center"
+          type="button"
+          onClick={() => setQuickPickMode("commands")}
+          aria-label="Open command palette"
+        >
+          <span className="command-center-icon">⌕</span>
+          <span className="command-center-copy">
+            {project?.displayName ?? "KIDE Engineering Workspace"}
+            {selected ? ` · ${basename(selected.path)}` : ""}
+          </span>
+          <kbd>Ctrl/⌘+Shift+P</kbd>
+        </button>
+
+        <div className="titlebar-actions">
+          <button
+            type="button"
+            className="titlebar-icon-button"
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Use light theme" : "Use dark theme"}
+            aria-label={theme === "dark" ? "Use light theme" : "Use dark theme"}
+          >
+            {theme === "dark" ? "☀" : "◐"}
+          </button>
+          <button
+            type="button"
+            className="account-button"
+            onClick={() => {
+              setActiveSidebar("settings");
+              setSidebarVisible(true);
+            }}
+          >
+            <span className="account-dot" />
+            {firebaseAuth.user?.email ?? "Sign in"}
+          </button>
         </div>
       </header>
-
-      <section className="connection-panel" aria-label="Service connection">
-        <label>
-          API origin
-          <input
-            aria-label="API origin"
-            value={serviceOrigin}
-            onChange={(event) => setServiceOrigin(event.target.value)}
-          />
-        </label>
-        <label>
-          LSP gateway origin
-          <input
-            aria-label="LSP gateway origin"
-            value={gatewayOrigin}
-            onChange={(event) => setGatewayOrigin(event.target.value)}
-          />
-        </label>
-        <label>
-          Firebase email
-          <input
-            aria-label="Firebase email"
-            type="email"
-            autoComplete="username"
-            value={firebaseEmail}
-            onChange={(event) => setFirebaseEmail(event.target.value)}
-            placeholder="you@example.com"
-          />
-        </label>
-        <label>
-          Firebase password
-          <input
-            aria-label="Firebase password"
-            type="password"
-            autoComplete="current-password"
-            value={firebasePassword}
-            onChange={(event) => setFirebasePassword(event.target.value)}
-          />
-        </label>
-        <span className="service-state" aria-live="polite">{authStatus}</span>
-        {firebaseAuth.user ? (
-          <>
-            <button onClick={() => void connect()}>Connect API</button>
-            <button onClick={() => void signOutFirebase()}>Sign out</button>
-          </>
-        ) : (
-          <button
-            disabled={!FIREBASE_PROJECT_ID || !FIREBASE_API_KEY}
-            onClick={() => void signInFirebase()}
-          >
-            Sign in with Firebase
-          </button>
-        )}
-        <label className="import-button">
-          Import project ZIP
-          <input
-            aria-label="Import project ZIP"
-            type="file"
-            accept=".zip,application/zip"
-            onChange={(event) => void importArchive(event)}
-          />
-        </label>
-        <button disabled={!entries.length} onClick={() => void exportArchive()}>Export ZIP</button>
-      </section>
 
       {notice && <div className="notice" role="status">{notice}</div>}
       {conflict && (
@@ -1227,9 +1706,186 @@ export default function App() {
         </div>
       )}
 
-      <section className="workspace">
-        <aside className="sidebar">
-          <h2>Projects</h2>
+      <section className={`workspace ${sidebarVisible ? "" : "sidebar-hidden"}`}>
+        <nav className="activity-bar" aria-label="Workbench views">
+          <button
+            type="button"
+            className={activeSidebar === "explorer" && sidebarVisible ? "active" : ""}
+            aria-pressed={activeSidebar === "explorer" && sidebarVisible}
+            title="Explorer (Ctrl/⌘+Shift+E)"
+            onClick={() => activateSidebar("explorer")}
+          >
+            <span aria-hidden="true">▤</span>
+            <span className="sr-only">Explorer</span>
+          </button>
+          <button
+            type="button"
+            className={activeSidebar === "search" && sidebarVisible ? "active" : ""}
+            aria-pressed={activeSidebar === "search" && sidebarVisible}
+            title="Search (Ctrl/⌘+Shift+F)"
+            onClick={() => activateSidebar("search")}
+          >
+            <span aria-hidden="true">⌕</span>
+            <span className="sr-only">Search</span>
+          </button>
+          <button
+            type="button"
+            className={activeSidebar === "engineering" && sidebarVisible ? "active" : ""}
+            aria-pressed={activeSidebar === "engineering" && sidebarVisible}
+            title="Engineering"
+            onClick={() => activateSidebar("engineering")}
+          >
+            <span aria-hidden="true">◇</span>
+            <span className="sr-only">Engineering</span>
+          </button>
+          <button
+            type="button"
+            className={activeSidebar === "collaboration" && sidebarVisible ? "active" : ""}
+            aria-pressed={activeSidebar === "collaboration" && sidebarVisible}
+            title="Collaboration"
+            onClick={() => activateSidebar("collaboration")}
+          >
+            <span aria-hidden="true">◎</span>
+            <span className="sr-only">Collaboration</span>
+          </button>
+          <span className="activity-spacer" />
+          <button
+            type="button"
+            className={activeSidebar === "settings" && sidebarVisible ? "active" : ""}
+            aria-pressed={activeSidebar === "settings" && sidebarVisible}
+            title="Settings & Connection"
+            onClick={() => activateSidebar("settings")}
+          >
+            <span aria-hidden="true">⚙</span>
+            <span className="sr-only">Settings</span>
+          </button>
+        </nav>
+
+        {sidebarVisible && (
+        <aside className="sidebar" aria-label={sidebarViewLabel(activeSidebar)}>
+          <div className="sidebar-view-title">
+            <strong>{sidebarViewLabel(activeSidebar)}</strong>
+            <button
+              type="button"
+              onClick={() => setSidebarVisible(false)}
+              title="Hide Primary Side Bar"
+              aria-label="Hide Primary Side Bar"
+            >
+              ×
+            </button>
+          </div>
+
+          {activeSidebar === "settings" && (
+            <div className="settings-view">
+              <section className="settings-section">
+                <h2>Account</h2>
+                <p className="muted">{authStatus}</p>
+                {firebaseAuth.user ? (
+                  <div className="settings-actions">
+                    <button type="button" onClick={() => void connect()}>
+                      Reconnect API
+                    </button>
+                    <button type="button" onClick={() => void signOutFirebase()}>
+                      Sign out
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <label>
+                      Firebase email
+                      <input
+                        aria-label="Firebase email"
+                        type="email"
+                        autoComplete="username"
+                        value={firebaseEmail}
+                        onChange={(event) => setFirebaseEmail(event.target.value)}
+                        placeholder="you@example.com"
+                      />
+                    </label>
+                    <label>
+                      Firebase password
+                      <input
+                        aria-label="Firebase password"
+                        type="password"
+                        autoComplete="current-password"
+                        value={firebasePassword}
+                        onChange={(event) => setFirebasePassword(event.target.value)}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="primary-action"
+                      disabled={!FIREBASE_PROJECT_ID || !FIREBASE_API_KEY}
+                      onClick={() => void signInFirebase()}
+                    >
+                      Sign in with Firebase
+                    </button>
+                  </>
+                )}
+              </section>
+
+              <section className="settings-section">
+                <h2>Services</h2>
+                <label>
+                  API origin
+                  <input
+                    aria-label="API origin"
+                    value={serviceOrigin}
+                    onChange={(event) => setServiceOrigin(event.target.value)}
+                  />
+                </label>
+                <label>
+                  LSP / GLSP gateway origin
+                  <input
+                    aria-label="LSP gateway origin"
+                    value={gatewayOrigin}
+                    onChange={(event) => setGatewayOrigin(event.target.value)}
+                  />
+                </label>
+                <div className="connection-summary">
+                  <span><strong>API</strong>{serviceStatus}</span>
+                  <span><strong>Xtext LSP</strong>{lspStatus}</span>
+                  <span><strong>Collaboration</strong>{collaborationStatus}</span>
+                </div>
+              </section>
+
+              <section className="settings-section">
+                <h2>Workspace</h2>
+                <label className="import-button">
+                  Import project ZIP
+                  <input
+                    aria-label="Import project ZIP"
+                    type="file"
+                    accept=".zip,application/zip"
+                    onChange={(event) => void importArchive(event)}
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={!entries.length}
+                  onClick={() => void exportArchive()}
+                >
+                  Export project ZIP
+                </button>
+                <button type="button" onClick={toggleTheme}>
+                  Use {theme === "dark" ? "light" : "dark"} theme
+                </button>
+              </section>
+            </div>
+          )}
+
+          {activeSidebar === "explorer" && (
+            <>
+              <div className="sidebar-section-heading">
+                <h2>Projects</h2>
+                <button
+                  type="button"
+                  onClick={() => setQuickPickMode("files")}
+                  title="Quick Open (Ctrl/⌘+P)"
+                >
+                  ⌕
+                </button>
+              </div>
           {projects.length === 0 ? (
             <p className="muted">Connect to list authorized projects, or import a local ZIP.</p>
           ) : (
@@ -1265,8 +1921,51 @@ export default function App() {
               </div>
             </div>
           )}
+            </>
+          )}
 
-          {lspController.current && (
+          {activeSidebar === "search" && (
+            <>
+              <section className="search-view">
+                <h2>Search project</h2>
+                <div className="search-box-row">
+                  <input
+                    aria-label="Search project text"
+                    value={workspaceSearch}
+                    onChange={(event) => setWorkspaceSearch(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") void runWorkspaceSearch();
+                    }}
+                    placeholder="Search across project files"
+                  />
+                  <button
+                    type="button"
+                    disabled={!workspaceSearch.trim()}
+                    onClick={() => void runWorkspaceSearch()}
+                  >
+                    Search
+                  </button>
+                </div>
+                <p className="muted">
+                  Text search materializes remote text models on demand and is capped at 500 matches.
+                </p>
+                <ul className="search-results">
+                  {workspaceMatches.map((match, index) => (
+                    <li key={`${match.path}:${match.line}:${match.column}:${index}`}>
+                      <button
+                        type="button"
+                        onClick={() => void openWorkspaceSearchMatch(match)}
+                      >
+                        <strong>{match.path}</strong>
+                        <span>Ln {match.line}, Col {match.column}</span>
+                        <small>{match.preview}</small>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              {lspController.current && (
             <div className="symbol-search">
               <h2>Workspace symbols</h2>
               <label>
@@ -1289,9 +1988,11 @@ export default function App() {
                 ))}
               </ul>
             </div>
+              )}
+            </>
           )}
 
-          {project && (
+          {activeSidebar === "engineering" && project && (
             <div className="knowledge-panel">
               <div className="panel-heading">
                 <h2>Knowledge catalogue</h2>
@@ -1379,7 +2080,10 @@ export default function App() {
             </div>
           )}
 
-          {project && selected?.source === "remote" && selected.path.endsWith(".activity") && (
+          {activeSidebar === "engineering" &&
+          project &&
+          selected?.source === "remote" &&
+          selected.path.endsWith(".activity") && (
             <div className="synthesis-panel">
               <div className="panel-heading">
                 <h2>Deterministic synthesis</h2>
@@ -1525,22 +2229,58 @@ export default function App() {
             </div>
           )}
 
-          <h2>Files</h2>
-          <ul className="file-list">
-            {entries.map((entry) => (
-              <li key={entry.path}>
+          {activeSidebar === "explorer" && (
+            <>
+              <div className="sidebar-section-heading files-heading">
+                <h2>Files</h2>
                 <button
-                  className={entry.path === selectedPathRef.current ? "selected" : ""}
-                  onClick={() => selectEntry(entry)}
+                  type="button"
+                  disabled={!project}
+                  onClick={() => void refreshProjectModels()}
+                  title="Refresh project files"
                 >
-                  <span>{entry.path}</span>
-                  {entry.dirty && <span aria-label="Unsaved local change">●</span>}
+                  ↻
                 </button>
-              </li>
-            ))}
-          </ul>
+              </div>
+              <FileTree
+                entries={entries}
+                selectedPath={selectedPath}
+                onSelect={selectEntry}
+              />
 
-          {project && (
+              {outlineItems.length > 0 && (
+                <section className="outline-view" aria-label="Document outline">
+                  <div className="sidebar-section-heading">
+                    <h2>Outline</h2>
+                    <button
+                      type="button"
+                      onClick={() => void refreshOutline()}
+                      title="Refresh outline"
+                    >
+                      ↻
+                    </button>
+                  </div>
+                  <ul>
+                    {outlineItems.map((item, index) => (
+                      <li key={`${item.name}:${item.line}:${index}`}>
+                        <button
+                          type="button"
+                          style={{ paddingLeft: 6 + item.depth * 12 }}
+                          onClick={() => openOutlineItem(item)}
+                        >
+                          <span className="outline-kind" aria-hidden="true">◇</span>
+                          <span className="file-path">{item.name}</span>
+                          <small>{item.detail ?? ""}</small>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </>
+          )}
+
+          {activeSidebar === "collaboration" && project && (
             <div className="collaboration-panel">
               <div className="panel-heading">
                 <h2>Collaboration</h2>
@@ -1592,11 +2332,60 @@ export default function App() {
             </div>
           )}
         </aside>
+        )}
 
         <section className="editor-panel">
+          <div className="editor-tabs" role="tablist" aria-label="Open editors">
+            {openPaths.length ? (
+              openPaths.map((path) => {
+                const entry = entries.find((candidate) => candidate.path === path);
+                return (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={path === selectedPath}
+                    className={path === selectedPath ? "active" : ""}
+                    key={path}
+                    onClick={() => entry && selectEntry(entry)}
+                    title={path}
+                  >
+                    <span className="file-icon" aria-hidden="true">{fileGlyph(path)}</span>
+                    <span>{basename(path)}</span>
+                    {entry?.dirty && <span className="tab-dirty" aria-label="Unsaved">●</span>}
+                    <span
+                      className="tab-close"
+                      role="button"
+                      aria-label={`Close ${basename(path)}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        closeEditor(path);
+                      }}
+                    >
+                      ×
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <span className="editor-tabs-empty">No open editors</span>
+            )}
+          </div>
+
+          {selected && (
+            <nav className="breadcrumbs" aria-label="Editor breadcrumbs">
+              {(project ? [project.displayName, ...selected.path.split("/")] : selected.path.split("/"))
+                .map((part, index, parts) => (
+                  <span key={`${part}:${index}`}>
+                    {part}
+                    {index < parts.length - 1 && <b aria-hidden="true">›</b>}
+                  </span>
+                ))}
+            </nav>
+          )}
+
           <div className="editor-toolbar">
             <div className="editor-identity">
-              <strong>{selected?.path ?? "No file selected"}</strong>
+              <strong>{selected ? languageLabelForPath(selected.path) : "Welcome"}</strong>
               {selected?.revision && <span>revision {selected.revision}</span>}
             </div>
             <div className="editor-actions">
@@ -1606,7 +2395,7 @@ export default function App() {
                 <button
                   className="primary-action"
                   disabled={!selected.etag || selected.dirty}
-                  onClick={() => void runSynthesis()}
+                  onClick={runSynthesisInWorkbench}
                 >
                   Synthesize
                 </button>
@@ -1629,6 +2418,15 @@ export default function App() {
                   </button>
                 </div>
               )}
+              <button
+                type="button"
+                className="editor-more-actions"
+                onClick={() => setQuickPickMode("commands")}
+                title="More editor actions (F1)"
+                aria-label="More editor actions"
+              >
+                ⋯
+              </button>
               <span className={`save-state state-${saveState}`}>{saveState}</span>
             </div>
           </div>
@@ -1645,8 +2443,86 @@ export default function App() {
               onSaved={() => void refreshAfterGraphicalSave(selected.path)}
             />
           ) : !selected ? (
-            <div className="empty-state">
-              Open a server project/model or import a project ZIP.
+            <div className="welcome-workbench">
+              <div className="welcome-copy">
+                <span className="welcome-mark">K</span>
+                <p className="eyebrow">KIDE WEB</p>
+                <h1>Engineering Workspace</h1>
+                <p>
+                  Model with the shared Xtext DSLs, edit Activity and MNC diagrams,
+                  synthesize supervisory designs, and generate deterministic artifacts.
+                </p>
+              </div>
+
+              {!firebaseAuth.user ? (
+                <div className="welcome-actions">
+                  <button
+                    type="button"
+                    className="primary-action"
+                    onClick={() => {
+                      setActiveSidebar("settings");
+                      setSidebarVisible(true);
+                    }}
+                  >
+                    Sign in to KIDE
+                  </button>
+                  <label className="import-button">
+                    Open local project ZIP
+                    <input
+                      aria-label="Open local project ZIP"
+                      type="file"
+                      accept=".zip,application/zip"
+                      onChange={(event) => void importArchive(event)}
+                    />
+                  </label>
+                </div>
+              ) : project ? (
+                <div className="welcome-actions">
+                  <strong>{project.displayName}</strong>
+                  <p className="muted">
+                    {entries.length} project file(s). Select a file in Explorer or use Quick Open.
+                  </p>
+                  <button type="button" onClick={() => setQuickPickMode("files")}>
+                    Quick Open file
+                  </button>
+                  {!entries.some((entry) => isProductionDslPath(entry.path)) && (
+                    <button
+                      type="button"
+                      className="primary-action"
+                      onClick={() => void createStarterEngineeringModels()}
+                    >
+                      Create starter engineering models
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="welcome-projects">
+                  <h2>Open an engineering project</h2>
+                  {projects.length ? (
+                    projects.map((item) => (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => void openProject(item)}
+                      >
+                        <strong>{item.displayName}</strong>
+                        <small>{item.id}</small>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="muted">
+                      No authorized projects were returned by the connected service.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="welcome-shortcuts">
+                <span><kbd>Ctrl/⌘+P</kbd> Quick Open</span>
+                <span><kbd>F1</kbd> Command Palette</span>
+                <span><kbd>Ctrl/⌘+Shift+F</kbd> Search</span>
+                <span><kbd>Ctrl/⌘+Shift+M</kbd> Problems</span>
+              </div>
             </div>
           ) : editorText === null ? (
             <div className="empty-state">
@@ -1659,7 +2535,79 @@ export default function App() {
               workspace={workspace}
               lsp={lspController.current}
               revealRange={revealRange}
+              theme={theme === "dark" ? "vs-dark" : "vs"}
+              onCursorChange={(line, column) => setCursorPosition({ line, column })}
             />
+          )}
+
+          {bottomPanel && (
+            <section className="bottom-panel" aria-label="Workbench panel">
+              <div className="bottom-panel-header">
+                <div className="bottom-panel-tabs">
+                  <button
+                    type="button"
+                    className={bottomPanel === "problems" ? "active" : ""}
+                    onClick={() => setBottomPanel("problems")}
+                  >
+                    Problems <span>{problems.length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={bottomPanel === "output" ? "active" : ""}
+                    onClick={() => setBottomPanel("output")}
+                  >
+                    Output
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="panel-close"
+                  aria-label="Close panel"
+                  onClick={() => setBottomPanel(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="bottom-panel-body">
+                {bottomPanel === "problems" ? (
+                  problems.length ? (
+                    <ul className="problems-list">
+                      {problems.map((problem, index) => (
+                        <li key={`${problem.path}:${problem.line}:${problem.column}:${index}`}>
+                          <button
+                            type="button"
+                            onClick={() => void openProblem(problem)}
+                          >
+                            <span
+                              className={`problem-severity ${problemSeverityClass(problem.severity)}`}
+                              aria-hidden="true"
+                            >
+                              {problemSeverityGlyph(problem.severity)}
+                            </span>
+                            <span className="problem-copy">
+                              <strong>{problem.message}</strong>
+                              <small>
+                                {problem.path} · Ln {problem.line}, Col {problem.column}
+                              </small>
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="panel-empty">No problems detected in loaded models.</div>
+                  )
+                ) : (
+                  <div className="output-view">
+                    <div className="output-toolbar">
+                      <strong>KIDE Workspace</strong>
+                      <button type="button" onClick={() => setOutputLog([])}>Clear</button>
+                    </div>
+                    <pre>{outputLog.length ? outputLog.join("\n") : "No workspace output yet."}</pre>
+                  </div>
+                )}
+              </div>
+            </section>
           )}
 
           {activeReview && (
@@ -1768,6 +2716,88 @@ export default function App() {
           )}
         </section>
       </section>
+
+      <footer className="status-bar" aria-label="Workbench status">
+        <div className="status-left">
+          <button
+            type="button"
+            className={`status-item ${connectionTone(serviceStatus)}`}
+            onClick={() => {
+              setActiveSidebar("settings");
+              setSidebarVisible(true);
+            }}
+            title={serviceStatus}
+          >
+            <span className="status-dot" /> API {connectionSummary(serviceStatus)}
+          </button>
+          <button
+            type="button"
+            className={`status-item ${connectionTone(lspStatus)}`}
+            onClick={() => {
+              setActiveSidebar("settings");
+              setSidebarVisible(true);
+            }}
+            title={lspStatus}
+          >
+            <span className="status-dot" /> Xtext {connectionSummary(lspStatus)}
+          </button>
+          <button
+            type="button"
+            className={`status-item ${connectionTone(collaborationStatus)}`}
+            onClick={() => activateSidebar("collaboration")}
+            title={collaborationStatus}
+          >
+            <span className="status-dot" /> Collaboration {connectionSummary(collaborationStatus)}
+          </button>
+          {project && <span className="status-project">{project.displayName}</span>}
+        </div>
+
+        <div className="status-right">
+          <button
+            type="button"
+            className="status-item"
+            onClick={() => setBottomPanel("problems")}
+            title="Show Problems"
+          >
+            × {problems.filter((problem) => problem.severity === monaco.MarkerSeverity.Error).length}
+            <span className="status-warning">
+              △ {problems.filter((problem) => problem.severity === monaco.MarkerSeverity.Warning).length}
+            </span>
+          </button>
+          {selected && (
+            <>
+              <span className="status-item status-static">{languageLabelForPath(selected.path)}</span>
+              <span className="status-item status-static">
+                Ln {cursorPosition.line}, Col {cursorPosition.column}
+              </span>
+              <span className={`status-item status-static save-state state-${saveState}`}>
+                {saveState}
+              </span>
+            </>
+          )}
+          <button
+            type="button"
+            className="status-item"
+            onClick={() => setQuickPickMode("commands")}
+            title="Command Palette (F1)"
+          >
+            {theme === "dark" ? "Dark" : "Light"} · F1
+          </button>
+        </div>
+      </footer>
+
+      <QuickPick
+        open={quickPickMode !== null}
+        title={quickPickMode === "files" ? "Quick Open" : "Command Palette"}
+        placeholder={
+          quickPickMode === "files"
+            ? "Type a file name to open…"
+            : "Type a command to run…"
+        }
+        items={quickPickItems}
+        onSelect={chooseQuickPick}
+        onClose={() => setQuickPickMode(null)}
+      />
     </main>
   );
 }
@@ -1823,6 +2853,142 @@ function isProductionDslPath(path: string): boolean {
   return [".activity", ".dml", ".cap", ".mncspec", ".op", ".krl"].some(
     (extension) => lower.endsWith(extension)
   );
+}
+
+function isTextProjectPath(path: string): boolean {
+  const lower = path.toLowerCase();
+  return [
+    ".activity",
+    ".cap",
+    ".dml",
+    ".json",
+    ".krl",
+    ".md",
+    ".mncspec",
+    ".op",
+    ".properties",
+    ".txt",
+    ".xml",
+    ".yaml",
+    ".yml"
+  ].some((extension) => lower.endsWith(extension));
+}
+
+function basename(path: string): string {
+  const slash = path.lastIndexOf("/");
+  return slash < 0 ? path : path.slice(slash + 1);
+}
+
+function fileGlyph(path: string): string {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".activity")) return "A";
+  if (lower.endsWith(".dml")) return "D";
+  if (lower.endsWith(".cap")) return "C";
+  if (lower.endsWith(".mncspec")) return "M";
+  if (lower.endsWith(".op")) return "O";
+  if (lower.endsWith(".krl")) return "K";
+  if (lower.endsWith(".md")) return "#";
+  if (lower.endsWith(".json")) return "{}";
+  return "·";
+}
+
+function languageLabelForPath(path: string): string {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".activity")) return "Activity DSL";
+  if (lower.endsWith(".dml")) return "Data Model DSL";
+  if (lower.endsWith(".cap")) return "Capability DSL";
+  if (lower.endsWith(".mncspec")) return "MNC Specification DSL";
+  if (lower.endsWith(".op")) return "Operation DSL";
+  if (lower.endsWith(".krl")) return "Knowledge Representation DSL";
+  if (lower.endsWith(".md")) return "Markdown";
+  if (lower.endsWith(".json")) return "JSON";
+  if (lower.endsWith(".xml")) return "XML";
+  if (lower.endsWith(".yaml") || lower.endsWith(".yml")) return "YAML";
+  if (lower.endsWith(".properties")) return "Properties";
+  return "Plain Text";
+}
+
+function flattenDocumentSymbols(
+  symbols: Array<DocumentSymbol | SymbolInformation>,
+  depth = 0
+): OutlineItem[] {
+  const result: OutlineItem[] = [];
+  for (const symbol of symbols) {
+    if ("location" in symbol) {
+      result.push({
+        name: symbol.name,
+        kind: symbol.kind,
+        line: symbol.location.range.start.line + 1,
+        column: symbol.location.range.start.character + 1,
+        depth
+      });
+      continue;
+    }
+
+    result.push({
+      name: symbol.name,
+      detail: symbol.detail,
+      kind: symbol.kind,
+      line: symbol.selectionRange.start.line + 1,
+      column: symbol.selectionRange.start.character + 1,
+      depth
+    });
+    if (symbol.children?.length) {
+      result.push(...flattenDocumentSymbols(symbol.children, depth + 1));
+    }
+  }
+  return result;
+}
+
+function sidebarViewLabel(view: SidebarView): string {
+  switch (view) {
+    case "explorer": return "Explorer";
+    case "search": return "Search";
+    case "engineering": return "Engineering";
+    case "collaboration": return "Collaboration";
+    case "settings": return "Settings";
+  }
+}
+
+function problemSeverityClass(severity: monaco.MarkerSeverity): string {
+  if (severity === monaco.MarkerSeverity.Error) return "error";
+  if (severity === monaco.MarkerSeverity.Warning) return "warning";
+  if (severity === monaco.MarkerSeverity.Info) return "info";
+  return "hint";
+}
+
+function problemSeverityGlyph(severity: monaco.MarkerSeverity): string {
+  if (severity === monaco.MarkerSeverity.Error) return "×";
+  if (severity === monaco.MarkerSeverity.Warning) return "△";
+  if (severity === monaco.MarkerSeverity.Info) return "i";
+  return "·";
+}
+
+function connectionTone(status: string): string {
+  const normalized = status.toLowerCase();
+  if (
+    normalized.includes("connected") ||
+    normalized.startsWith("up") ||
+    normalized.includes("signed in")
+  ) {
+    if (normalized.includes("not connected")) return "status-offline";
+    return "status-online";
+  }
+  if (normalized.includes("connecting")) return "status-connecting";
+  if (normalized.includes("degraded") || normalized.includes("failed")) {
+    return "status-error";
+  }
+  return "status-offline";
+}
+
+function connectionSummary(status: string): string {
+  const normalized = status.toLowerCase();
+  if (normalized.includes("not connected")) return "Offline";
+  if (normalized.includes("connecting")) return "Connecting";
+  if (normalized.includes("degraded")) return "Degraded";
+  if (normalized.includes("failed")) return "Failed";
+  if (normalized.startsWith("up") || normalized.includes("connected")) return "Online";
+  return status;
 }
 
 function preferredModel(models: ModelSummary[]): ModelSummary | undefined {
