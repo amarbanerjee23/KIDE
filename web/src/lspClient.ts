@@ -94,6 +94,29 @@ export interface FoldingRange {
   kind?: string;
 }
 
+export interface DocumentHighlight {
+  range: Range;
+  kind?: number;
+}
+
+export interface SignatureParameter {
+  label: string | [number, number];
+  documentation?: string | { kind: string; value: string };
+}
+
+export interface SignatureInformation {
+  label: string;
+  documentation?: string | { kind: string; value: string };
+  parameters?: SignatureParameter[];
+  activeParameter?: number;
+}
+
+export interface SignatureHelp {
+  signatures: SignatureInformation[];
+  activeSignature?: number;
+  activeParameter?: number;
+}
+
 export interface ServerCapabilities {
   [key: string]: unknown;
   completionProvider?: unknown;
@@ -103,6 +126,12 @@ export interface ServerCapabilities {
   documentSymbolProvider?: unknown;
   workspaceSymbolProvider?: unknown;
   documentFormattingProvider?: unknown;
+  documentRangeFormattingProvider?: unknown;
+  documentHighlightProvider?: unknown;
+  signatureHelpProvider?: {
+    triggerCharacters?: string[];
+    retriggerCharacters?: string[];
+  };
   renameProvider?: unknown;
   codeActionProvider?: unknown;
   foldingRangeProvider?: unknown;
@@ -269,6 +298,32 @@ export class KideLspClient {
     return this.request("textDocument/formatting", {
       textDocument: { uri },
       options: { tabSize: 2, insertSpaces: true, trimTrailingWhitespace: true }
+    });
+  }
+
+  rangeFormatting(uri: string, range: Range): Promise<TextEdit[] | null> {
+    return this.request("textDocument/rangeFormatting", {
+      textDocument: { uri },
+      range,
+      options: { tabSize: 2, insertSpaces: true, trimTrailingWhitespace: true }
+    });
+  }
+
+  documentHighlights(uri: string, position: Position): Promise<DocumentHighlight[] | null> {
+    return this.request("textDocument/documentHighlight", {
+      textDocument: { uri },
+      position
+    });
+  }
+
+  signatureHelp(uri: string, position: Position): Promise<SignatureHelp | null> {
+    return this.request("textDocument/signatureHelp", {
+      textDocument: { uri },
+      position,
+      context: {
+        triggerKind: 1,
+        isRetrigger: false
+      }
     });
   }
 
@@ -522,7 +577,18 @@ function clientCapabilities(): Record<string, unknown> {
         hierarchicalDocumentSymbolSupport: true
       },
       formatting: { dynamicRegistration: false },
-      rename: { dynamicRegistration: false, prepareSupport: false },
+      rangeFormatting: { dynamicRegistration: false },
+      documentHighlight: { dynamicRegistration: false },
+      signatureHelp: {
+        dynamicRegistration: false,
+        signatureInformation: {
+          documentationFormat: ["markdown", "plaintext"],
+          parameterInformation: { labelOffsetSupport: true },
+          activeParameterSupport: true
+        },
+        contextSupport: true
+      },
+      rename: { dynamicRegistration: false, prepareSupport: true },
       codeAction: {
         dynamicRegistration: false,
         codeActionLiteralSupport: {
