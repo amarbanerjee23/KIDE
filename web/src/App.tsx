@@ -1943,7 +1943,18 @@ export default function App() {
                 </button>
               </div>
           {projects.length === 0 ? (
-            <p className="muted">Connect to list authorized projects, or import a local ZIP.</p>
+            <div className="explorer-empty">
+              <p className="muted">
+                {firebaseAuth.user
+                  ? "No authorized server projects are currently listed. You can also import a local ZIP."
+                  : "Sign in from Home to list authorized server projects, or import a local ZIP."}
+              </p>
+              {!firebaseAuth.user && (
+                <button type="button" onClick={() => navigate("home")}>
+                  Go to sign in
+                </button>
+              )}
+            </div>
           ) : (
             <ul className="project-list">
               {projects.map((item) => (
