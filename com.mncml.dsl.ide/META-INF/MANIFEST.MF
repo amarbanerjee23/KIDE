@@ -15,5 +15,6 @@ Require-Bundle: com.mncml.dsl,
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: com.mncml.dsl.ide,
  com.mncml.dsl.ide.contentassist.antlr,
- com.mncml.dsl.ide.contentassist.antlr.internal
+ com.mncml.dsl.ide.contentassist.antlr.internal,
+ com.mncml.dsl.ide.highlighting
 Import-Package: com.mncml.dsl.services
