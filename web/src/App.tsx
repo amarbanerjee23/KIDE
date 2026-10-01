@@ -2254,9 +2254,57 @@ export default function App() {
         )}
 
         <section className="editor-panel">
+          <div className="editor-tabs" role="tablist" aria-label="Open editors">
+            {openPaths.length ? (
+              openPaths.map((path) => {
+                const entry = entries.find((candidate) => candidate.path === path);
+                return (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={path === selectedPath}
+                    className={path === selectedPath ? "active" : ""}
+                    key={path}
+                    onClick={() => entry && selectEntry(entry)}
+                    title={path}
+                  >
+                    <span className="file-icon" aria-hidden="true">{fileGlyph(path)}</span>
+                    <span>{basename(path)}</span>
+                    {entry?.dirty && <span className="tab-dirty" aria-label="Unsaved">●</span>}
+                    <span
+                      className="tab-close"
+                      role="button"
+                      aria-label={`Close ${basename(path)}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        closeEditor(path);
+                      }}
+                    >
+                      ×
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <span className="editor-tabs-empty">No open editors</span>
+            )}
+          </div>
+
+          {selected && (
+            <nav className="breadcrumbs" aria-label="Editor breadcrumbs">
+              {(project ? [project.displayName, ...selected.path.split("/")] : selected.path.split("/"))
+                .map((part, index, parts) => (
+                  <span key={`${part}:${index}`}>
+                    {part}
+                    {index < parts.length - 1 && <b aria-hidden="true">›</b>}
+                  </span>
+                ))}
+            </nav>
+          )}
+
           <div className="editor-toolbar">
             <div className="editor-identity">
-              <strong>{selected?.path ?? "No file selected"}</strong>
+              <strong>{selected ? languageLabelForPath(selected.path) : "Welcome"}</strong>
               {selected?.revision && <span>revision {selected.revision}</span>}
             </div>
             <div className="editor-actions">
@@ -2289,6 +2337,15 @@ export default function App() {
                   </button>
                 </div>
               )}
+              <button
+                type="button"
+                className="editor-more-actions"
+                onClick={() => setQuickPickMode("commands")}
+                title="More editor actions (F1)"
+                aria-label="More editor actions"
+              >
+                ⋯
+              </button>
               <span className={`save-state state-${saveState}`}>{saveState}</span>
             </div>
           </div>
@@ -2305,8 +2362,86 @@ export default function App() {
               onSaved={() => void refreshAfterGraphicalSave(selected.path)}
             />
           ) : !selected ? (
-            <div className="empty-state">
-              Open a server project/model or import a project ZIP.
+            <div className="welcome-workbench">
+              <div className="welcome-copy">
+                <span className="welcome-mark">K</span>
+                <p className="eyebrow">KIDE WEB</p>
+                <h1>Engineering Workspace</h1>
+                <p>
+                  Model with the shared Xtext DSLs, edit Activity and MNC diagrams,
+                  synthesize supervisory designs, and generate deterministic artifacts.
+                </p>
+              </div>
+
+              {!firebaseAuth.user ? (
+                <div className="welcome-actions">
+                  <button
+                    type="button"
+                    className="primary-action"
+                    onClick={() => {
+                      setActiveSidebar("settings");
+                      setSidebarVisible(true);
+                    }}
+                  >
+                    Sign in to KIDE
+                  </button>
+                  <label className="import-button">
+                    Open local project ZIP
+                    <input
+                      aria-label="Open local project ZIP"
+                      type="file"
+                      accept=".zip,application/zip"
+                      onChange={(event) => void importArchive(event)}
+                    />
+                  </label>
+                </div>
+              ) : project ? (
+                <div className="welcome-actions">
+                  <strong>{project.displayName}</strong>
+                  <p className="muted">
+                    {entries.length} project file(s). Select a file in Explorer or use Quick Open.
+                  </p>
+                  <button type="button" onClick={() => setQuickPickMode("files")}>
+                    Quick Open file
+                  </button>
+                  {!entries.some((entry) => isProductionDslPath(entry.path)) && (
+                    <button
+                      type="button"
+                      className="primary-action"
+                      onClick={() => void createStarterEngineeringModels()}
+                    >
+                      Create starter engineering models
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="welcome-projects">
+                  <h2>Open an engineering project</h2>
+                  {projects.length ? (
+                    projects.map((item) => (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={() => void openProject(item)}
+                      >
+                        <strong>{item.displayName}</strong>
+                        <small>{item.id}</small>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="muted">
+                      No authorized projects were returned by the connected service.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="welcome-shortcuts">
+                <span><kbd>Ctrl/⌘+P</kbd> Quick Open</span>
+                <span><kbd>F1</kbd> Command Palette</span>
+                <span><kbd>Ctrl/⌘+Shift+F</kbd> Search</span>
+                <span><kbd>Ctrl/⌘+Shift+M</kbd> Problems</span>
+              </div>
             </div>
           ) : editorText === null ? (
             <div className="empty-state">
@@ -2319,7 +2454,79 @@ export default function App() {
               workspace={workspace}
               lsp={lspController.current}
               revealRange={revealRange}
+              theme={theme === "dark" ? "vs-dark" : "vs"}
+              onCursorChange={(line, column) => setCursorPosition({ line, column })}
             />
+          )}
+
+          {bottomPanel && (
+            <section className="bottom-panel" aria-label="Workbench panel">
+              <div className="bottom-panel-header">
+                <div className="bottom-panel-tabs">
+                  <button
+                    type="button"
+                    className={bottomPanel === "problems" ? "active" : ""}
+                    onClick={() => setBottomPanel("problems")}
+                  >
+                    Problems <span>{problems.length}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={bottomPanel === "output" ? "active" : ""}
+                    onClick={() => setBottomPanel("output")}
+                  >
+                    Output
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="panel-close"
+                  aria-label="Close panel"
+                  onClick={() => setBottomPanel(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="bottom-panel-body">
+                {bottomPanel === "problems" ? (
+                  problems.length ? (
+                    <ul className="problems-list">
+                      {problems.map((problem, index) => (
+                        <li key={`${problem.path}:${problem.line}:${problem.column}:${index}`}>
+                          <button
+                            type="button"
+                            onClick={() => void openProblem(problem)}
+                          >
+                            <span
+                              className={`problem-severity ${problemSeverityClass(problem.severity)}`}
+                              aria-hidden="true"
+                            >
+                              {problemSeverityGlyph(problem.severity)}
+                            </span>
+                            <span className="problem-copy">
+                              <strong>{problem.message}</strong>
+                              <small>
+                                {problem.path} · Ln {problem.line}, Col {problem.column}
+                              </small>
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="panel-empty">No problems detected in loaded models.</div>
+                  )
+                ) : (
+                  <div className="output-view">
+                    <div className="output-toolbar">
+                      <strong>KIDE Workspace</strong>
+                      <button type="button" onClick={() => setOutputLog([])}>Clear</button>
+                    </div>
+                    <pre>{outputLog.length ? outputLog.join("\n") : "No workspace output yet."}</pre>
+                  </div>
+                )}
+              </div>
+            </section>
           )}
 
           {activeReview && (
