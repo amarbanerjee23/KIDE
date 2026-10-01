@@ -19,6 +19,7 @@ import { MonacoLspController } from "./monacoLsp";
 import { MonacoWorkspace } from "./monacoWorkspace";
 import { GraphicalEditor } from "./GraphicalEditor";
 import { QuickPick, type QuickPickItem } from "./QuickPick";
+import { FileTree } from "./FileTree";
 import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
 import type {
@@ -353,6 +354,8 @@ export default function App() {
       setFirebasePassword("");
       setAuthStatus(`Signed in · ${user.email}`);
       await connect();
+      setActiveSidebar("explorer");
+      setSidebarVisible(true);
     } catch (error) {
       setToken("");
       setAuthStatus("Sign-in failed");
@@ -1302,16 +1305,14 @@ export default function App() {
   }
 
   function closeEditor(path: string) {
-    setOpenPaths((current) => {
-      const index = current.indexOf(path);
-      const next = current.filter((candidate) => candidate !== path);
-      if (selectedPathRef.current === path) {
-        const fallback = next[Math.min(index, Math.max(0, next.length - 1))];
-        setSelectedPath(fallback);
-        setRevealRange(undefined);
-      }
-      return next;
-    });
+    const index = openPaths.indexOf(path);
+    const next = openPaths.filter((candidate) => candidate !== path);
+    setOpenPaths(next);
+    if (selectedPathRef.current === path) {
+      const fallback = next[Math.min(index, Math.max(0, next.length - 1))];
+      setSelectedPath(fallback);
+      setRevealRange(undefined);
+    }
   }
 
   async function runWorkspaceSearch() {
@@ -2180,22 +2181,11 @@ export default function App() {
                   ↻
                 </button>
               </div>
-              <ul className="file-list">
-                {entries.map((entry) => (
-                  <li key={entry.path}>
-                    <button
-                      className={entry.path === selectedPathRef.current ? "selected" : ""}
-                      onClick={() => selectEntry(entry)}
-                    >
-                      <span className="file-icon" aria-hidden="true">
-                        {fileGlyph(entry.path)}
-                      </span>
-                      <span className="file-path">{entry.path}</span>
-                      {entry.dirty && <span aria-label="Unsaved local change">●</span>}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <FileTree
+                entries={entries}
+                selectedPath={selectedPath}
+                onSelect={selectEntry}
+              />
             </>
           )}
 
