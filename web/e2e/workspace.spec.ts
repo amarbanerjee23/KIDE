@@ -159,7 +159,9 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
 
   await signInFirebase(page);
   await expect(page.locator(".status-bar")).toContainText("API Online");
-  await expect(page.getByText("Golden Project")).toBeVisible();
+  await expect(
+    page.locator(".project-list").getByText("Golden Project", { exact: true })
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Open", exact: true }).click();
   await expect(page.locator(".status-bar")).toContainText("Xtext Online");
@@ -752,7 +754,8 @@ test("creates starter engineering models for an empty hosted project", async ({ 
   await expect(
     page.getByRole("button", { name: "Synthesize", exact: true })
   ).toBeVisible();
-  await expect(createStarter).toBeDisabled();
+  await expect(page.locator(".welcome-workbench")).toHaveCount(0);
+  await expect(page.locator(".editor-tabs")).toContainText("workflow.activity");
 });
 
 
