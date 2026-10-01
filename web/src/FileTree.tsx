@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import type { WorkspaceEntry } from "./types";
 
 interface Props {
@@ -41,8 +42,8 @@ function renderFolder(
   toggle: (path: string) => void,
   selectedPath: string | undefined,
   onSelect: (entry: WorkspaceEntry) => void
-): React.ReactNode[] {
-  const rows: React.ReactNode[] = [];
+): ReactNode[] {
+  const rows: ReactNode[] = [];
 
   const folders = [...folder.folders.values()].sort((a, b) =>
     a.name.localeCompare(b.name)
