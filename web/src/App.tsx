@@ -1644,8 +1644,174 @@ export default function App() {
         </div>
       )}
 
-      <section className="workspace">
-        <aside className="sidebar">
+      <section className={`workspace ${sidebarVisible ? "" : "sidebar-hidden"}`}>
+        <nav className="activity-bar" aria-label="Workbench views">
+          <button
+            type="button"
+            className={activeSidebar === "explorer" && sidebarVisible ? "active" : ""}
+            aria-pressed={activeSidebar === "explorer" && sidebarVisible}
+            title="Explorer (Ctrl/⌘+Shift+E)"
+            onClick={() => activateSidebar("explorer")}
+          >
+            <span aria-hidden="true">▤</span>
+            <span className="sr-only">Explorer</span>
+          </button>
+          <button
+            type="button"
+            className={activeSidebar === "search" && sidebarVisible ? "active" : ""}
+            aria-pressed={activeSidebar === "search" && sidebarVisible}
+            title="Search (Ctrl/⌘+Shift+F)"
+            onClick={() => activateSidebar("search")}
+          >
+            <span aria-hidden="true">⌕</span>
+            <span className="sr-only">Search</span>
+          </button>
+          <button
+            type="button"
+            className={activeSidebar === "engineering" && sidebarVisible ? "active" : ""}
+            aria-pressed={activeSidebar === "engineering" && sidebarVisible}
+            title="Engineering"
+            onClick={() => activateSidebar("engineering")}
+          >
+            <span aria-hidden="true">◇</span>
+            <span className="sr-only">Engineering</span>
+          </button>
+          <button
+            type="button"
+            className={activeSidebar === "collaboration" && sidebarVisible ? "active" : ""}
+            aria-pressed={activeSidebar === "collaboration" && sidebarVisible}
+            title="Collaboration"
+            onClick={() => activateSidebar("collaboration")}
+          >
+            <span aria-hidden="true">◎</span>
+            <span className="sr-only">Collaboration</span>
+          </button>
+          <span className="activity-spacer" />
+          <button
+            type="button"
+            className={activeSidebar === "settings" && sidebarVisible ? "active" : ""}
+            aria-pressed={activeSidebar === "settings" && sidebarVisible}
+            title="Settings & Connection"
+            onClick={() => activateSidebar("settings")}
+          >
+            <span aria-hidden="true">⚙</span>
+            <span className="sr-only">Settings</span>
+          </button>
+        </nav>
+
+        {sidebarVisible && (
+        <aside className="sidebar" aria-label={sidebarViewLabel(activeSidebar)}>
+          <div className="sidebar-view-title">
+            <strong>{sidebarViewLabel(activeSidebar)}</strong>
+            <button
+              type="button"
+              onClick={() => setSidebarVisible(false)}
+              title="Hide Primary Side Bar"
+              aria-label="Hide Primary Side Bar"
+            >
+              ×
+            </button>
+          </div>
+
+          {activeSidebar === "settings" && (
+            <div className="settings-view">
+              <section className="settings-section">
+                <h2>Account</h2>
+                <p className="muted">{authStatus}</p>
+                {firebaseAuth.user ? (
+                  <div className="settings-actions">
+                    <button type="button" onClick={() => void connect()}>
+                      Reconnect API
+                    </button>
+                    <button type="button" onClick={() => void signOutFirebase()}>
+                      Sign out
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <label>
+                      Firebase email
+                      <input
+                        aria-label="Firebase email"
+                        type="email"
+                        autoComplete="username"
+                        value={firebaseEmail}
+                        onChange={(event) => setFirebaseEmail(event.target.value)}
+                        placeholder="you@example.com"
+                      />
+                    </label>
+                    <label>
+                      Firebase password
+                      <input
+                        aria-label="Firebase password"
+                        type="password"
+                        autoComplete="current-password"
+                        value={firebasePassword}
+                        onChange={(event) => setFirebasePassword(event.target.value)}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="primary-action"
+                      disabled={!FIREBASE_PROJECT_ID || !FIREBASE_API_KEY}
+                      onClick={() => void signInFirebase()}
+                    >
+                      Sign in with Firebase
+                    </button>
+                  </>
+                )}
+              </section>
+
+              <section className="settings-section">
+                <h2>Services</h2>
+                <label>
+                  API origin
+                  <input
+                    aria-label="API origin"
+                    value={serviceOrigin}
+                    onChange={(event) => setServiceOrigin(event.target.value)}
+                  />
+                </label>
+                <label>
+                  LSP / GLSP gateway origin
+                  <input
+                    aria-label="LSP gateway origin"
+                    value={gatewayOrigin}
+                    onChange={(event) => setGatewayOrigin(event.target.value)}
+                  />
+                </label>
+                <div className="connection-summary">
+                  <span><strong>API</strong>{serviceStatus}</span>
+                  <span><strong>Xtext LSP</strong>{lspStatus}</span>
+                  <span><strong>Collaboration</strong>{collaborationStatus}</span>
+                </div>
+              </section>
+
+              <section className="settings-section">
+                <h2>Workspace</h2>
+                <label className="import-button">
+                  Import project ZIP
+                  <input
+                    aria-label="Import project ZIP"
+                    type="file"
+                    accept=".zip,application/zip"
+                    onChange={(event) => void importArchive(event)}
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={!entries.length}
+                  onClick={() => void exportArchive()}
+                >
+                  Export project ZIP
+                </button>
+                <button type="button" onClick={toggleTheme}>
+                  Use {theme === "dark" ? "light" : "dark"} theme
+                </button>
+              </section>
+            </div>
+          )}
+
           <h2>Projects</h2>
           {projects.length === 0 ? (
             <p className="muted">Connect to list authorized projects, or import a local ZIP.</p>
