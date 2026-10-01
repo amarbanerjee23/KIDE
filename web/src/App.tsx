@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import type * as monaco from "monaco-editor";
+import * as monaco from "monaco-editor";
 import { KideApiClient, ApiClientError } from "./api";
 import { FirebaseAuthClient, FirebaseAuthError } from "./firebaseAuth";
 import {
@@ -239,7 +239,107 @@ export default function App() {
     setReconfigurationResult(undefined);
     setGenerationResult(undefined);
     collaboration.current?.setModel(selectedPath);
+    setCursorPosition({ line: 1, column: 1 });
+    if (selectedPath) {
+      setOpenPaths((current) =>
+        current.includes(selectedPath) ? current : [...current, selectedPath]
+      );
+    }
   }, [selectedPath]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const stamp = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+    setOutputLog((current) => [...current.slice(-199), `[${stamp}] ${notice}`]);
+  }, [notice]);
+
+  useEffect(() => {
+    const refresh = () => {
+      const next = monaco.editor
+        .getModelMarkers({})
+        .map((marker) => {
+          let path = marker.resource.path.replace(/^\/+/, "");
+          try {
+            path = pathFromWorkspaceUri(marker.resource.toString());
+          } catch {
+            // Non-workspace Monaco models keep their URI path.
+          }
+          return {
+            path,
+            message: marker.message,
+            severity: marker.severity,
+            line: marker.startLineNumber,
+            column: marker.startColumn
+          } satisfies ProblemItem;
+        })
+        .sort((a, b) =>
+          b.severity - a.severity ||
+          a.path.localeCompare(b.path) ||
+          a.line - b.line ||
+          a.column - b.column
+        );
+      setProblems(next);
+    };
+    refresh();
+    const subscription = monaco.editor.onDidChangeMarkers(refresh);
+    return () => subscription.dispose();
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("kide:web-theme", theme);
+    } catch {
+      // Theme persistence is optional.
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const command = event.ctrlKey || event.metaKey;
+      if (event.key === "F1" || (command && event.shiftKey && event.key.toLowerCase() === "p")) {
+        event.preventDefault();
+        setQuickPickMode("commands");
+        return;
+      }
+      if (command && !event.shiftKey && event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        setQuickPickMode("files");
+        return;
+      }
+      if (command && event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        setSidebarVisible((visible) => !visible);
+        return;
+      }
+      if (command && event.key.toLowerCase() === "j") {
+        event.preventDefault();
+        setBottomPanel((panel) => (panel ? null : "problems"));
+        return;
+      }
+      if (command && event.shiftKey && event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        setActiveSidebar("explorer");
+        setSidebarVisible(true);
+        return;
+      }
+      if (command && event.shiftKey && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        setActiveSidebar("search");
+        setSidebarVisible(true);
+        return;
+      }
+      if (command && event.shiftKey && event.key.toLowerCase() === "m") {
+        event.preventDefault();
+        setBottomPanel("problems");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   async function signInFirebase() {
     setNotice("");
