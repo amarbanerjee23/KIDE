@@ -1584,87 +1584,56 @@ export default function App() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">KIDE WEB</p>
-          <h1>Engineering Workspace</h1>
-          <p className="subtitle">
-            Separate browser client · shared enterprise API · shared Xtext semantics
-          </p>
-        </div>
-        <div className="status-stack">
-          <div className="service-state" aria-live="polite">{serviceStatus}</div>
-          <div className="service-state lsp-state" aria-live="polite">{lspStatus}</div>
-          <div className="service-state collaboration-state" aria-live="polite">
-            {collaborationStatus}
-          </div>
+    <main className="app-shell" data-theme={theme}>
+      <header className="ide-titlebar">
+        <button
+          className="ide-brand"
+          type="button"
+          onClick={() => activateSidebar("explorer")}
+          title="KIDE Explorer"
+        >
+          <span className="ide-brand-mark">K</span>
+          <span>KIDE</span>
+          <small>WEB</small>
+        </button>
+
+        <button
+          className="command-center"
+          type="button"
+          onClick={() => setQuickPickMode("commands")}
+          aria-label="Open command palette"
+        >
+          <span className="command-center-icon">⌕</span>
+          <span className="command-center-copy">
+            {project?.displayName ?? "KIDE Engineering Workspace"}
+            {selected ? ` · ${basename(selected.path)}` : ""}
+          </span>
+          <kbd>Ctrl/⌘+Shift+P</kbd>
+        </button>
+
+        <div className="titlebar-actions">
+          <button
+            type="button"
+            className="titlebar-icon-button"
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Use light theme" : "Use dark theme"}
+            aria-label={theme === "dark" ? "Use light theme" : "Use dark theme"}
+          >
+            {theme === "dark" ? "☀" : "◐"}
+          </button>
+          <button
+            type="button"
+            className="account-button"
+            onClick={() => {
+              setActiveSidebar("settings");
+              setSidebarVisible(true);
+            }}
+          >
+            <span className="account-dot" />
+            {firebaseAuth.user?.email ?? "Sign in"}
+          </button>
         </div>
       </header>
-
-      <section className="connection-panel" aria-label="Service connection">
-        <label>
-          API origin
-          <input
-            aria-label="API origin"
-            value={serviceOrigin}
-            onChange={(event) => setServiceOrigin(event.target.value)}
-          />
-        </label>
-        <label>
-          LSP gateway origin
-          <input
-            aria-label="LSP gateway origin"
-            value={gatewayOrigin}
-            onChange={(event) => setGatewayOrigin(event.target.value)}
-          />
-        </label>
-        <label>
-          Firebase email
-          <input
-            aria-label="Firebase email"
-            type="email"
-            autoComplete="username"
-            value={firebaseEmail}
-            onChange={(event) => setFirebaseEmail(event.target.value)}
-            placeholder="you@example.com"
-          />
-        </label>
-        <label>
-          Firebase password
-          <input
-            aria-label="Firebase password"
-            type="password"
-            autoComplete="current-password"
-            value={firebasePassword}
-            onChange={(event) => setFirebasePassword(event.target.value)}
-          />
-        </label>
-        <span className="service-state" aria-live="polite">{authStatus}</span>
-        {firebaseAuth.user ? (
-          <>
-            <button onClick={() => void connect()}>Connect API</button>
-            <button onClick={() => void signOutFirebase()}>Sign out</button>
-          </>
-        ) : (
-          <button
-            disabled={!FIREBASE_PROJECT_ID || !FIREBASE_API_KEY}
-            onClick={() => void signInFirebase()}
-          >
-            Sign in with Firebase
-          </button>
-        )}
-        <label className="import-button">
-          Import project ZIP
-          <input
-            aria-label="Import project ZIP"
-            type="file"
-            accept=".zip,application/zip"
-            onChange={(event) => void importArchive(event)}
-          />
-        </label>
-        <button disabled={!entries.length} onClick={() => void exportArchive()}>Export ZIP</button>
-      </section>
 
       {notice && <div className="notice" role="status">{notice}</div>}
       {conflict && (
