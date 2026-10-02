@@ -5,7 +5,7 @@ import org.eclipse.xtext.util.Modules2;
 
 import com.capability.CapabilityRuntimeModule;
 import com.capability.CapabilityStandaloneSetup;
-import com.capability.ide.highlighting.KideCapabilityIdeSemanticHighlightingCalculator;
+import com.capability.ide.highlighting.CapabilityLspSemanticHighlightingCalculator;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -22,7 +22,7 @@ public final class KideCapabilityIdeSetup extends CapabilityStandaloneSetup {
             @Override
             protected void configure() {
                 bind(ISemanticHighlightingCalculator.class)
-                        .to(KideCapabilityIdeSemanticHighlightingCalculator.class);
+                        .to(CapabilityLspSemanticHighlightingCalculator.class);
             }
         };
         return Guice.createInjector(Modules.override(generated).with(parity));
