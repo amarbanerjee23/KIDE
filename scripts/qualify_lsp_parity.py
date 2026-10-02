@@ -643,9 +643,30 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                             )
 
                     if "semantic_tokens" in qualified_features:
+                        semantic_uri = uri
+                        semantic_probe_text = probe.get("semantic_tokens_text")
+                        if isinstance(semantic_probe_text, str):
+                            semantic_path = workspace / f"semantic-tokens.{extension}"
+                            semantic_path.write_text(
+                                semantic_probe_text,
+                                encoding="utf-8",
+                            )
+                            announce_workspace_files(peer, [semantic_path])
+                            semantic_uri = open_document(
+                                peer,
+                                semantic_path,
+                                language["language_id"],
+                                semantic_probe_text,
+                            )
+                            wait_for_clean_diagnostics(
+                                peer,
+                                semantic_uri,
+                                f"semantic-token diagnostics for .{extension}",
+                            )
+
                         semantic_tokens = rpc(
                             "textDocument/semanticTokens/full",
-                            {"textDocument": {"uri": uri}},
+                            {"textDocument": {"uri": semantic_uri}},
                         ).get("result")
                         if not isinstance(semantic_tokens, dict):
                             raise SmokeFailure(
@@ -662,6 +683,12 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                                 f".{extension} semantic tokens expected >= "
                                 f"{probe['semantic_tokens_min']}, got {token_count}"
                             )
+                        if semantic_uri != uri:
+                            peer.send({
+                                "jsonrpc": "2.0",
+                                "method": "textDocument/didClose",
+                                "params": {"textDocument": {"uri": semantic_uri}},
+                            })
 
                     if "code_actions" in qualified_features:
                         action_probe = probe.get("code_action")
