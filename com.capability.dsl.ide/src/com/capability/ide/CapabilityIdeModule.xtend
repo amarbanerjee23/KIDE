@@ -6,6 +6,7 @@ package com.capability.ide
 import com.capability.ide.highlighting.CapabilityLspSemanticHighlightingCalculator
 import com.capability.ide.hover.CapabilityLspHoverService
 import com.capability.ide.quickfix.CapabilityCodeActionService
+import org.eclipse.xtext.ide.editor.contentassist.IdeContentProposalProvider
 import org.eclipse.xtext.ide.server.codeActions.ICodeActionService2
 import org.eclipse.xtext.ide.server.hover.IHoverService
 import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculator
@@ -14,6 +15,10 @@ import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculat
  * KIDE-owned IDE bindings layered on the generated Capability services.
  */
 class CapabilityIdeModule extends AbstractCapabilityIdeModule {
+
+    def Class<? extends IdeContentProposalProvider> bindIdeContentProposalProvider() {
+        KideCapabilityIdeContentProposalProvider
+    }
 
     def Class<? extends ICodeActionService2> bindICodeActionService2() {
         CapabilityCodeActionService
