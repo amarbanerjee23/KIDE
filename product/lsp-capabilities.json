@@ -160,7 +160,12 @@
         }
       },
       "semantic_tokens_min": 1,
-      "document_highlights_min": 1
+      "document_highlights_min": 1,
+      "code_action": {
+        "diagnostic_code": "invalidName",
+        "title": "Capitalize name",
+        "replacement": "Node"
+      }
     },
     "capability": {
       "symbol": "Observe",
@@ -183,7 +188,12 @@
         }
       },
       "semantic_tokens_min": 1,
-      "document_highlights_min": 1
+      "document_highlights_min": 1,
+      "code_action": {
+        "diagnostic_code": "invalidControlCapabilitiesCommand",
+        "title": "Remove this command",
+        "replacement": ""
+      }
     },
     "activity": {
       "symbol": "GoldenWorkflow",
@@ -206,7 +216,12 @@
         }
       },
       "semantic_tokens_min": 1,
-      "document_highlights_min": 1
+      "document_highlights_min": 1,
+      "code_action": {
+        "diagnostic_code": "invalidControlCapability",
+        "title": "Remove this control item",
+        "replacement": ""
+      }
     },
     "krl": {
       "symbol": "GoldenKrl",
