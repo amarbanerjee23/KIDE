@@ -153,6 +153,70 @@ class WebWorkspaceContractTest(unittest.TestCase):
         self.assertIn("role=\"dialog\"", picker)
         self.assertIn("role=\"listbox\"", picker)
 
+    def test_eclipse_and_web_editor_semantics_share_headless_services(self):
+        capability_ui = (
+            ROOT / "com.capability.dsl.ui" / "src" / "com" / "capability"
+            / "ui" / "hover" / "CapabilityEObjectHoverProvider.java"
+        ).read_text(encoding="utf-8")
+        activity_ui = (
+            ROOT / "com.smr.activity.dsl.ui" / "src" / "com" / "smr"
+            / "activity" / "dsl" / "ui" / "hover"
+            / "ActivityDiagramEObjectHoverProvider.java"
+        ).read_text(encoding="utf-8")
+        mnc_ui = (
+            ROOT / "com.mncml.dsl.ui" / "src" / "com" / "mncml" / "dsl"
+            / "ui" / "syntaxcoloring" / "MncSemanticHighlightingCalculator.xtend"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("CapabilityHoverTextProvider", capability_ui)
+        self.assertIn("ActivityDiagramHoverTextProvider", activity_ui)
+        self.assertIn("MncSemanticRegionProvider", mnc_ui)
+        self.assertNotIn("getAllContents", mnc_ui)
+
+        module_expectations = {
+            "com.capability.dsl.ide/src/com/capability/ide/CapabilityIdeModule.xtend": (
+                "KideCapabilityIdeContentProposalProvider",
+                "CapabilityCodeActionService",
+                "CapabilityLspHoverService",
+                "CapabilityLspSemanticHighlightingCalculator",
+            ),
+            "com.mncml.dsl.ide/src/com/mncml/dsl/ide/MncIdeModule.xtend": (
+                "KideMncIdeContentProposalProvider",
+                "MncCodeActionService",
+                "MncLspSemanticHighlightingCalculator",
+            ),
+            "com.smr.activity.dsl.ide/src/com/smr/activity/dsl/ide/ActivityDiagramIdeModule.xtend": (
+                "KideActivityIdeContentProposalProvider",
+                "ActivityDiagramCodeActionService",
+                "ActivityDiagramLspHoverService",
+                "ActivityDiagramLspSemanticHighlightingCalculator",
+            ),
+        }
+        for relative, expected in module_expectations.items():
+            module = (ROOT / relative).read_text(encoding="utf-8")
+            for service in expected:
+                self.assertIn(service, module)
+
+        monaco_lsp = (ROOT / "web" / "src" / "monacoLsp.ts").read_text(
+            encoding="utf-8"
+        )
+        for provider in (
+            "registerCompletionItemProvider",
+            "registerHoverProvider",
+            "registerDefinitionProvider",
+            "registerReferenceProvider",
+            "registerDocumentHighlightProvider",
+            "registerDocumentSymbolProvider",
+            "registerDocumentFormattingEditProvider",
+            "registerDocumentRangeFormattingEditProvider",
+            "registerRenameProvider",
+            "registerCodeActionProvider",
+            "registerFoldingRangeProvider",
+            "registerDocumentSemanticTokensProvider",
+            "registerSignatureHelpProvider",
+        ):
+            self.assertIn(provider, monaco_lsp)
+
     def test_browser_is_a_separate_client_of_shared_semantics(self):
         app = (ROOT / "web" / "src" / "App.tsx").read_text(
             encoding="utf-8"
