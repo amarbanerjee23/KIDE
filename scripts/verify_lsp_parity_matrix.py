@@ -131,6 +131,33 @@ def verify(root: Path) -> list[str]:
         if not isinstance(highlight_min, int) or isinstance(highlight_min, bool) or highlight_min < 0:
             errors.append(f"{language_id} document_highlights_min must be a non-negative integer")
 
+        semantic_completion = probe.get("semantic_completion")
+        if semantic_completion is not None:
+            if language_id not in {"mnc", "capability", "activity"}:
+                errors.append(
+                    f"{language_id} declares semantic completion without an Eclipse custom proposal provider"
+                )
+            elif not isinstance(semantic_completion, dict):
+                errors.append(f"{language_id} semantic_completion must be an object")
+            else:
+                text_value = semantic_completion.get("text")
+                expected = semantic_completion.get("expected")
+                forbidden = semantic_completion.get("forbidden")
+                if not isinstance(text_value, str) or not text_value:
+                    errors.append(f"{language_id} semantic_completion text must be non-empty")
+                if not isinstance(expected, list) or not expected or not all(
+                    isinstance(item, str) and item for item in expected
+                ):
+                    errors.append(
+                        f"{language_id} semantic_completion expected must be a non-empty string list"
+                    )
+                if not isinstance(forbidden, list) or not forbidden or not all(
+                    isinstance(item, str) and item for item in forbidden
+                ):
+                    errors.append(
+                        f"{language_id} semantic_completion forbidden must be a non-empty string list"
+                    )
+
         action = probe.get("code_action")
         if action is not None:
             if language_id not in {"mnc", "capability", "activity"}:
@@ -157,6 +184,18 @@ def verify(root: Path) -> list[str]:
                     )
                 if not isinstance(definition.get("token"), str) or not definition.get("token"):
                     errors.append(f"{language_id} definition probe requires token")
+
+    semantic_completion_languages = {
+        language_id
+        for language_id, probe in language_matrix.items()
+        if isinstance(probe, dict)
+        and isinstance(probe.get("semantic_completion"), dict)
+    }
+    if semantic_completion_languages != {"mnc", "capability", "activity"}:
+        errors.append(
+            "semantic Eclipse content-assist parity must be defined exactly for "
+            "mnc, capability and activity"
+        )
 
     action_languages = {
         language_id
