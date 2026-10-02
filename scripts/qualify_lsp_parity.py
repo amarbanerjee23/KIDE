@@ -471,7 +471,10 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                         "textDocument/references",
                         {
                             "textDocument": {"uri": uri},
-                            "position": position_of(text, probe["symbol"]),
+                            "position": position_of(
+                                text,
+                                probe.get("document_highlight_token", probe["symbol"]),
+                            ),
                             "context": {"includeDeclaration": False},
                         },
                     ).get("result")
