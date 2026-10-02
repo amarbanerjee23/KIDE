@@ -55,7 +55,7 @@ type SidebarView =
   | "collaboration"
   | "settings";
 
-type QuickPickMode = "commands" | "files" | null;
+type QuickPickMode = "commands" | "files" | "operationScripts" | null;
 type BottomPanel = "problems" | "output" | null;
 
 interface WorkspaceSearchMatch {
@@ -1354,6 +1354,42 @@ export default function App() {
     );
   }
 
+  function chooseOperationExecutableScript() {
+    const path = selectedPathRef.current;
+    if (!path?.toLowerCase().endsWith(".op")) {
+      setNotice("Open an Operation DSL file before choosing an executable script.");
+      return;
+    }
+    setQuickPickMode("operationScripts");
+  }
+
+  function insertOperationExecutablePath(scriptPath: string) {
+    const path = selectedPathRef.current;
+    if (!path?.toLowerCase().endsWith(".op")) return;
+    const model = workspace.get(path);
+    if (!model) return;
+    const position = new monaco.Position(
+      cursorPosition.line,
+      cursorPosition.column
+    );
+    const quotedPath = JSON.stringify(scriptPath);
+    model.pushEditOperations(
+      null,
+      [{
+        range: new monaco.Range(
+          position.lineNumber,
+          position.column,
+          position.lineNumber,
+          position.column
+        ),
+        text: quotedPath,
+        forceMoveMarkers: true
+      }],
+      () => null
+    );
+    setNotice(`Inserted executable script path ${scriptPath} into ${path}.`);
+  }
+
   function runSynthesisInWorkbench() {
     setActiveSidebar("engineering");
     setSidebarVisible(true);
@@ -1621,6 +1657,14 @@ export default function App() {
       shortcut: "Shift+Alt+F",
       run: () => runEditorAction("editor.action.formatDocument")
     },
+    ...(selected?.path.toLowerCase().endsWith(".op")
+      ? [{
+          id: "operation.executableScript",
+          label: "Operation: Choose Executable Script",
+          description: "Insert a workspace file path for the execute field",
+          run: chooseOperationExecutableScript
+        }]
+      : []),
     {
       id: "editor.find",
       label: "Editor: Find / Replace",
@@ -1666,13 +1710,29 @@ export default function App() {
           description: entry.path,
           keywords: [entry.path]
         }))
-      : workbenchCommands.map(({ run: _run, ...item }) => item);
+      : quickPickMode === "operationScripts"
+        ? entries
+            .filter((entry) => entry.path !== selectedPathRef.current)
+            .map((entry) => ({
+              id: `operation-script:${entry.path}`,
+              label: basename(entry.path),
+              description: entry.path,
+              keywords: [entry.path]
+            }))
+        : workbenchCommands.map(({ run: _run, ...item }) => item);
 
   function chooseQuickPick(item: QuickPickItem) {
     if (quickPickMode === "files") {
       const path = item.id.startsWith("file:") ? item.id.slice(5) : item.id;
       const entry = entriesRef.current.find((candidate) => candidate.path === path);
       if (entry) selectEntry(entry);
+      return;
+    }
+    if (quickPickMode === "operationScripts") {
+      const path = item.id.startsWith("operation-script:")
+        ? item.id.slice("operation-script:".length)
+        : item.id;
+      insertOperationExecutablePath(path);
       return;
     }
     workbenchCommands.find((command) => command.id === item.id)?.run();
@@ -2855,11 +2915,19 @@ export default function App() {
 
       <QuickPick
         open={quickPickMode !== null}
-        title={quickPickMode === "files" ? "Quick Open" : "Command Palette"}
+        title={
+          quickPickMode === "files"
+            ? "Quick Open"
+            : quickPickMode === "operationScripts"
+              ? "Choose Executable Script"
+              : "Command Palette"
+        }
         placeholder={
           quickPickMode === "files"
             ? "Type a file name to open…"
-            : "Type a command to run…"
+            : quickPickMode === "operationScripts"
+              ? "Type a workspace file name…"
+              : "Type a command to run…"
         }
         items={quickPickItems}
         onSelect={chooseQuickPick}
