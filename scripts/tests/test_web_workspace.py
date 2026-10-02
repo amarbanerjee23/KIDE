@@ -81,8 +81,13 @@ class WebWorkspaceContractTest(unittest.TestCase):
             "Editor: Rename Symbol",
             "Editor: Quick Fix",
             "Editor: Format Document",
+            "Operation: Choose Executable Script",
         ):
             self.assertIn(command, app)
+
+        self.assertIn('"operationScripts"', app)
+        self.assertIn('operation-script:', app)
+        self.assertIn('JSON.stringify(scriptPath)', app)
 
         for option in (
             "minimap",
