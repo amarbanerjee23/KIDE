@@ -22,8 +22,10 @@ import com.google.inject.Inject;
 
 import CapabilityDescription.Capability;
 import mncModel.AbstractInterfaceItems;
-import mncModel.Action;
+import mncModel.ActionAlarm;
 import mncModel.ActionCommand;
+import mncModel.ActionDataPoint;
+import mncModel.ActionEvent;
 import mncModel.Alarm;
 import mncModel.Command;
 import mncModel.DataPoint;
@@ -62,15 +64,15 @@ public final class KideCapabilityIdeContentProposalProvider
                     ? CapabilityValidator.getCommandsFromAllInterfaces(
                             capability.getComponentInterface())
                     : null;
-            case "raiseAlarm" -> model instanceof Action
+            case "alarm" -> model instanceof ActionAlarm
                     ? CapabilityValidator.getAlarmsFromAllInterfaces(
                             capability.getComponentInterface())
                     : null;
-            case "publishEvent" -> model instanceof Action
+            case "event" -> model instanceof ActionEvent
                     ? CapabilityValidator.getEventsFromAllInterfaces(
                             capability.getComponentInterface())
                     : null;
-            case "triggerDataPoint" -> model instanceof Action
+            case "dataPoint" -> model instanceof ActionDataPoint
                     ? CapabilityValidator.getDataPointsFromAllInterfaces(
                             capability.getComponentInterface())
                     : null;
