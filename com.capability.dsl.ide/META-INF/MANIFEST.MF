@@ -10,6 +10,8 @@ Require-Bundle: com.capability.dsl,
  com.capability,
  org.eclipse.xtext.ide,
  org.eclipse.xtext.xbase.ide,
+ org.eclipse.lsp4j,
+ org.eclipse.lsp4j.jsonrpc,
  org.antlr.runtime;bundle-version="[3.2.0,3.2.1)",
  com.dml.dsl;bundle-version="1.0.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-21
