@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -128,6 +129,62 @@ def workspace_edit_uris(result: Any) -> set[str]:
     return uris
 
 
+def wait_for_diagnostic_code(
+    peer: JsonRpcPeer,
+    uri: str,
+    code: str,
+    description: str,
+    timeout: float = 25.0,
+) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout
+    last: list[dict[str, Any]] = []
+    while time.monotonic() < deadline:
+        remaining = max(0.01, deadline - time.monotonic())
+        message = peer.wait_for(
+            lambda candidate: candidate.get("method") == "textDocument/publishDiagnostics"
+            and candidate.get("params", {}).get("uri") == uri,
+            remaining,
+            description,
+        )
+        diagnostics = message.get("params", {}).get("diagnostics")
+        if not isinstance(diagnostics, list):
+            raise SmokeFailure(f"{description} returned malformed diagnostics")
+        last = [item for item in diagnostics if isinstance(item, dict)]
+        for diagnostic in last:
+            raw_code = diagnostic.get("code")
+            if str(raw_code) == code:
+                return diagnostic
+    raise SmokeFailure(
+        f"{description} never published diagnostic code {code!r}; last diagnostics: {last}"
+    )
+
+
+def workspace_edit_texts(action: Any, uri: str) -> list[str]:
+    if not isinstance(action, dict):
+        return []
+    edit = action.get("edit")
+    if not isinstance(edit, dict):
+        return []
+    values: list[str] = []
+    changes = edit.get("changes")
+    if isinstance(changes, dict):
+        for item in changes.get(uri, []):
+            if isinstance(item, dict) and isinstance(item.get("newText"), str):
+                values.append(item["newText"])
+    document_changes = edit.get("documentChanges")
+    if isinstance(document_changes, list):
+        for change in document_changes:
+            if not isinstance(change, dict):
+                continue
+            document = change.get("textDocument")
+            if not isinstance(document, dict) or document.get("uri") != uri:
+                continue
+            for item in change.get("edits", []):
+                if isinstance(item, dict) and isinstance(item.get("newText"), str):
+                    values.append(item["newText"])
+    return values
+
+
 def require_capabilities(
     capabilities: dict[str, Any], matrix: dict[str, Any]
 ) -> None:
@@ -169,6 +226,46 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
             path.write_text(language["valid_fixture_text"], encoding="utf-8")
             paths[extension] = path
             by_id[language["id"]] = language
+
+        quickfix_texts = {
+            "mncspec": (
+                "Model QuickFix\n"
+                "InterfaceDescription QuickDevice {\n"
+                "  commands { Start[] }\n"
+                "}\n"
+                "ControlNode node implements interface QuickDevice {\n"
+                "}\n"
+            ),
+            "cap": (
+                "Capability BadCap compatible component interface QuickDevice {\n"
+                "  providesControlCapabilities {\n"
+                "    fireable commands : Stop\n"
+                "  }\n"
+                "}\n"
+            ),
+            "activity": (
+                "ActivityDiagram BadWorkflow\n"
+                "has activities {\n"
+                "  Activity BadStep {\n"
+                "    requireCapability : Observe { Stop }\n"
+                "    nextActivity : BadStep\n"
+                "  }\n"
+                "}\n"
+            ),
+        }
+        support_text = (
+            "Model QuickSupport\n"
+            "InterfaceDescription OtherDevice {\n"
+            "  commands { Stop[] }\n"
+            "}\n"
+        )
+        support_path = workspace / "quickfix-support.mncspec"
+        support_path.write_text(support_text, encoding="utf-8")
+        quickfix_paths: dict[str, Path] = {}
+        for extension, text_value in quickfix_texts.items():
+            quickfix_path = workspace / f"quickfix.{extension}"
+            quickfix_path.write_text(text_value, encoding="utf-8")
+            quickfix_paths[extension] = quickfix_path
 
         stderr_log = workspace / "server-stderr.log"
         environment = os.environ.copy()
@@ -244,7 +341,10 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                 require_capabilities(capabilities, matrix)
                 peer.send({"jsonrpc": "2.0", "method": "initialized", "params": {}})
 
-                announce_workspace_files(peer, list(paths.values()))
+                announce_workspace_files(
+                    peer,
+                    list(paths.values()) + [support_path] + list(quickfix_paths.values()),
+                )
                 uris: dict[str, str] = {}
                 for language in languages:
                     extension = language["extension"]
@@ -253,6 +353,23 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                         paths[extension],
                         language["language_id"],
                         language["valid_fixture_text"],
+                    )
+
+                support_uri = open_document(
+                    peer,
+                    support_path,
+                    by_id["mnc"]["language_id"],
+                    support_text,
+                )
+                quickfix_uris: dict[str, str] = {}
+                for language_id in ("mnc", "capability", "activity"):
+                    language = by_id[language_id]
+                    extension = language["extension"]
+                    quickfix_uris[extension] = open_document(
+                        peer,
+                        quickfix_paths[extension],
+                        language["language_id"],
+                        quickfix_texts[extension],
                     )
 
                 # Freeze tests against the fully linked workspace, not transient didOpen state.
@@ -499,21 +616,53 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                             )
 
                     if "code_actions" in qualified_features:
-                        actions = rpc(
-                            "textDocument/codeAction",
-                            {
-                                "textDocument": {"uri": uri},
-                                "range": {
-                                    "start": position_of(text, probe["symbol"]),
-                                    "end": position_of(text, probe["symbol"]),
-                                },
-                                "context": {"diagnostics": []},
-                            },
-                        ).get("result")
-                        if not isinstance(actions, list):
-                            raise SmokeFailure(
-                                f".{extension} code actions returned malformed result"
+                        action_probe = probe.get("code_action")
+                        if isinstance(action_probe, dict):
+                            action_uri = quickfix_uris[extension]
+                            diagnostic = wait_for_diagnostic_code(
+                                peer,
+                                action_uri,
+                                action_probe["diagnostic_code"],
+                                f".{extension} quick-fix diagnostic",
                             )
+                            actions = rpc(
+                                "textDocument/codeAction",
+                                {
+                                    "textDocument": {"uri": action_uri},
+                                    "range": diagnostic["range"],
+                                    "context": {"diagnostics": [diagnostic]},
+                                },
+                            ).get("result")
+                            if not isinstance(actions, list):
+                                raise SmokeFailure(
+                                    f".{extension} code actions returned malformed result"
+                                )
+                            matching = [
+                                action
+                                for action in actions
+                                if isinstance(action, dict)
+                                and action.get("title") == action_probe["title"]
+                            ]
+                            if not matching:
+                                raise SmokeFailure(
+                                    f".{extension} code actions missing "
+                                    f"{action_probe['title']!r}: {actions}"
+                                )
+                            replacement = action_probe["replacement"]
+                            if replacement not in workspace_edit_texts(
+                                matching[0], action_uri
+                            ):
+                                raise SmokeFailure(
+                                    f".{extension} quick fix {action_probe['title']!r} "
+                                    f"did not contain replacement {replacement!r}: {matching[0]}"
+                                )
+
+                for uri in [support_uri, *quickfix_uris.values()]:
+                    peer.send({
+                        "jsonrpc": "2.0",
+                        "method": "textDocument/didClose",
+                        "params": {"textDocument": {"uri": uri}},
+                    })
 
                 for uri in uris.values():
                     peer.send({
