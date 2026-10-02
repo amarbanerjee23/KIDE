@@ -99,6 +99,7 @@ def verify(root: Path) -> list[str]:
             "references_min",
             "folding_min",
             "semantic_tokens_min",
+            "document_highlights_min",
             "rename_targets",
         ):
             if field not in probe:
