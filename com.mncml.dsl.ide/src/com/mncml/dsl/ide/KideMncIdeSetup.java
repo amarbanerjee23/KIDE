@@ -10,7 +10,7 @@ import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.mncml.dsl.MncRuntimeModule;
 import com.mncml.dsl.MncStandaloneSetup;
-import com.mncml.dsl.ide.highlighting.KideMncIdeSemanticHighlightingCalculator;
+import com.mncml.dsl.ide.highlighting.MncLspSemanticHighlightingCalculator;
 
 /** KIDE-owned headless editor-service bindings for MNC. */
 public final class KideMncIdeSetup extends MncStandaloneSetup {
@@ -21,7 +21,7 @@ public final class KideMncIdeSetup extends MncStandaloneSetup {
             @Override
             protected void configure() {
                 bind(ISemanticHighlightingCalculator.class)
-                        .to(KideMncIdeSemanticHighlightingCalculator.class);
+                        .to(MncLspSemanticHighlightingCalculator.class);
             }
         };
         return Guice.createInjector(Modules.override(generated).with(parity));
