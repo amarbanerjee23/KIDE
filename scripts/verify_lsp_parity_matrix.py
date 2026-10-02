@@ -12,9 +12,14 @@ REQUIRED_FEATURES = {
     "diagnostics", "completion", "hover", "definition", "references",
     "document_symbols", "workspace_symbols", "formatting", "rename", "folding",
     "snippets", "code_actions", "semantic_tokens", "declaration",
-    "type_definition", "implementation",
+    "type_definition", "implementation", "document_highlights",
+    "range_formatting", "signature_help",
 }
-QUALIFICATIONS = {"required", "required_where_applicable", "deferred"}
+QUALIFICATIONS = {
+    "required",
+    "required_where_applicable",
+    "not_applicable",
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -34,6 +39,10 @@ def verify(root: Path) -> list[str]:
 
     if matrix.get("schema_version") != 1:
         errors.append("product/lsp-capabilities.json must use schema_version 1")
+
+    baseline = matrix.get("baseline")
+    if not isinstance(baseline, dict) or baseline.get("xtext") != "2.44.0 current platform":
+        errors.append("LSP parity baseline must be Xtext 2.44.0 current platform")
 
     registry_languages = registry.get("languages")
     if not isinstance(registry_languages, list):
@@ -69,8 +78,13 @@ def verify(root: Path) -> list[str]:
         feature_ids.append(feature_id)
         if feature.get("qualification") not in QUALIFICATIONS:
             errors.append(f"invalid qualification for LSP feature {feature_id}")
-        if feature.get("qualification") == "deferred" and not feature.get("reason"):
-            errors.append(f"deferred LSP feature {feature_id} requires a reason")
+        qualification = feature.get("qualification")
+        if qualification == "not_applicable" and not feature.get("reason"):
+            errors.append(f"not-applicable LSP feature {feature_id} requires a reason")
+        if qualification == "deferred":
+            errors.append(
+                f"LSP feature {feature_id} may not remain deferred on the complete-parity baseline"
+            )
     if set(feature_ids) != REQUIRED_FEATURES or len(feature_ids) != len(REQUIRED_FEATURES):
         errors.append("LSP feature matrix must contain the complete PR13 feature set exactly once")
 
@@ -79,7 +93,14 @@ def verify(root: Path) -> list[str]:
         if not isinstance(probe, dict):
             errors.append(f"missing LSP probes for {language_id}")
             continue
-        for field in ("symbol", "hover_token", "references_min", "folding_min", "rename_targets"):
+        for field in (
+            "symbol",
+            "hover_token",
+            "references_min",
+            "folding_min",
+            "semantic_tokens_min",
+            "rename_targets",
+        ):
             if field not in probe:
                 errors.append(f"{language_id} LSP probe missing {field}")
         for field in ("document_symbol", "workspace_symbol"):
