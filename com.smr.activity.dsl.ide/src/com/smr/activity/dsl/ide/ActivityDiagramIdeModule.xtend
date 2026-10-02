@@ -3,9 +3,15 @@
  */
 package com.smr.activity.dsl.ide
 
+import com.smr.activity.dsl.ide.highlighting.ActivityDiagramLspSemanticHighlightingCalculator
+import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculator
 
 /**
- * Use this class to register ide components.
+ * KIDE-owned IDE bindings layered on the generated Activity services.
  */
 class ActivityDiagramIdeModule extends AbstractActivityDiagramIdeModule {
+
+    def Class<? extends ISemanticHighlightingCalculator> bindISemanticHighlightingCalculator() {
+        ActivityDiagramLspSemanticHighlightingCalculator
+    }
 }
