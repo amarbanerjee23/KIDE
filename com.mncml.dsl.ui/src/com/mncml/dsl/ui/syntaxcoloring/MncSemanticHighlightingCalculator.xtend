@@ -8,11 +8,22 @@ import org.eclipse.xtext.ui.editor.syntaxcoloring.ISemanticHighlightingCalculato
 /** Eclipse adapter over the platform-neutral MNC semantic regions. */
 class MncSemanticHighlightingCalculator implements ISemanticHighlightingCalculator {
 
-    val MncSemanticRegionProvider regionProvider = new MncSemanticRegionProvider
+    val regionProvider = new MncSemanticRegionProvider
 
     override provideHighlightingFor(XtextResource resource, IHighlightedPositionAcceptor acceptor) {
         for (region : regionProvider.getSemanticRegions(resource)) {
-            acceptor.addPosition(region.offset, region.length, region.kind)
+            acceptor.addPosition(region.offset, region.length, styleId(region.kind))
+        }
+    }
+
+    private def String styleId(String kind) {
+        switch kind {
+            case MncSemanticRegionProvider.COMMAND_REFERENCE: MncHighlightingConfiguration.CRB_COMMAND
+            case MncSemanticRegionProvider.EVENT_REFERENCE: MncHighlightingConfiguration.EB_EVENT
+            case MncSemanticRegionProvider.ALARM_REFERENCE: MncHighlightingConfiguration.AB_ALARM
+            case MncSemanticRegionProvider.DATA_REFERENCE: MncHighlightingConfiguration.DT_DATA
+            case MncSemanticRegionProvider.STATE_REFERENCE: MncHighlightingConfiguration.TR_STATE
+            default: kind
         }
     }
 }
