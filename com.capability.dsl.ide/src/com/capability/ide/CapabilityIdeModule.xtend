@@ -3,9 +3,15 @@
  */
 package com.capability.ide
 
+import com.capability.ide.highlighting.CapabilityLspSemanticHighlightingCalculator
+import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculator
 
 /**
- * Use this class to register ide components.
+ * KIDE-owned IDE bindings layered on the generated Capability services.
  */
 class CapabilityIdeModule extends AbstractCapabilityIdeModule {
+
+    def Class<? extends ISemanticHighlightingCalculator> bindISemanticHighlightingCalculator() {
+        CapabilityLspSemanticHighlightingCalculator
+    }
 }
