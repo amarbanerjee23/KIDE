@@ -246,7 +246,7 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
             "mncspec": (
                 "Model QuickFix\n"
                 "InterfaceDescription QuickDevice {\n"
-                "  commands { Start[] }\n"
+                "  commands { QuickStart[] }\n"
                 "}\n"
                 "ControlNode node implements interface QuickDevice {\n"
                 "}\n"
