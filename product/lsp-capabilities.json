@@ -123,7 +123,8 @@
         }
       },
       "semantic_tokens_min": 0,
-      "document_highlights_min": 1
+      "document_highlights_min": 1,
+      "document_highlight_token": "Payload"
     },
     "operation": {
       "symbol": "Inspect",
@@ -141,7 +142,8 @@
         }
       },
       "semantic_tokens_min": 0,
-      "document_highlights_min": 1
+      "document_highlights_min": 0,
+      "document_highlight_token": "Inspect"
     },
     "mnc": {
       "symbol": "Device",
@@ -165,7 +167,8 @@
         "diagnostic_code": "invalidName",
         "title": "Capitalize name",
         "replacement": "Node"
-      }
+      },
+      "document_highlight_token": "Device"
     },
     "capability": {
       "symbol": "Observe",
@@ -193,7 +196,8 @@
         "diagnostic_code": "invalidControlCapabilitiesCommand",
         "title": "Remove this command",
         "replacement": ""
-      }
+      },
+      "document_highlight_token": "Device"
     },
     "activity": {
       "symbol": "GoldenWorkflow",
@@ -221,7 +225,8 @@
         "diagnostic_code": "invalidControlCapability",
         "title": "Remove this control item",
         "replacement": ""
-      }
+      },
+      "document_highlight_token": "Observe"
     },
     "krl": {
       "symbol": "GoldenKrl",
@@ -246,7 +251,8 @@
       "document_symbol": "GoldenKrl",
       "workspace_symbol": "GoldenKrl",
       "semantic_tokens_min": 0,
-      "document_highlights_min": 1
+      "document_highlights_min": 1,
+      "document_highlight_token": "JavaBinding"
     }
   }
 }
