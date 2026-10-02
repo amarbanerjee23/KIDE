@@ -326,10 +326,31 @@ export class MonacoLspController {
               await this.ensureWorkspaceEdit(edit);
               return toMonacoWorkspaceEdit(edit);
             },
-            resolveRenameLocation: async (model, position) => ({
-              range: wordRange(model, position),
-              text: model.getWordAtPosition(position)?.word ?? ""
-            })
+            resolveRenameLocation: async (model, position) => {
+              const prepared = await this.client.prepareRename(
+                model.uri.toString(),
+                fromPosition(position)
+              );
+              if (!prepared) {
+                return {
+                  range: wordRange(model, position),
+                  text: model.getWordAtPosition(position)?.word ?? ""
+                };
+              }
+              if ("defaultBehavior" in prepared) {
+                return {
+                  range: wordRange(model, position),
+                  text: model.getWordAtPosition(position)?.word ?? ""
+                };
+              }
+              const range = "range" in prepared ? prepared.range : prepared;
+              return {
+                range: toRange(range),
+                text: "placeholder" in prepared && prepared.placeholder
+                  ? prepared.placeholder
+                  : model.getValueInRange(toRange(range))
+              };
+            }
           }
         ));
       }
