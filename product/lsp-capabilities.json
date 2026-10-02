@@ -177,7 +177,8 @@
         "forbidden": [
           "Stop"
         ]
-      }
+      },
+      "semantic_tokens_text": "Model SemanticMnc\nInterfaceDescription SemanticDevice {\n  commands { Start[] }\n}\nControlNode SemanticNode implements interface SemanticDevice {\n  CommandResponseBlock {\n    Command Start {\n    }\n  }\n}\n"
     },
     "capability": {
       "symbol": "Observe",
