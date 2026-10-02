@@ -3,9 +3,15 @@
  */
 package com.mncml.dsl.ide
 
+import com.mncml.dsl.ide.highlighting.MncLspSemanticHighlightingCalculator
+import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculator
 
 /**
- * Use this class to register ide components.
+ * KIDE-owned IDE bindings layered on the generated MNC services.
  */
 class MncIdeModule extends AbstractMncIdeModule {
+
+    def Class<? extends ISemanticHighlightingCalculator> bindISemanticHighlightingCalculator() {
+        MncLspSemanticHighlightingCalculator
+    }
 }
