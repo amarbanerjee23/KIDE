@@ -8,7 +8,7 @@ import com.mncml.dsl.ui.hyperlink.MncHyperlinkHelper;
 import com.mncml.dsl.ui.syntaxcoloring.MncHighlightingConfiguration;
 import com.mncml.dsl.ui.syntaxcoloring.MncSemanticHighlightingCalculator;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
-import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculator;
+import org.eclipse.xtext.ui.editor.syntaxcoloring.ISemanticHighlightingCalculator;
 import org.eclipse.xtext.ui.editor.hyperlinking.IHyperlinkHelper;
 import org.eclipse.xtext.ui.editor.syntaxcoloring.IHighlightingConfiguration;
 import org.eclipse.xtext.ui.resource.IResourceSetProvider;
