@@ -52,6 +52,14 @@ def position_of(text: str, token: str, occurrence: int = 1) -> dict[str, int]:
     return {"line": line, "character": character}
 
 
+def end_position(text: str) -> dict[str, int]:
+    lines = text.split("\n")
+    return {
+        "line": len(lines) - 1,
+        "character": len(lines[-1]),
+    }
+
+
 def capability_enabled(capabilities: dict[str, Any], key: str) -> bool:
     value = capabilities.get(key)
     return value is not None and value is not False
@@ -197,6 +205,33 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                                 "foldingRange": {"lineFoldingOnly": True},
                                 "rename": {"prepareSupport": True},
                                 "documentSymbol": {"hierarchicalDocumentSymbolSupport": True},
+                                "documentHighlight": {"dynamicRegistration": False},
+                                "rangeFormatting": {"dynamicRegistration": False},
+                                "codeAction": {"dynamicRegistration": False},
+                                "signatureHelp": {
+                                    "dynamicRegistration": False,
+                                    "contextSupport": True,
+                                },
+                                "semanticTokens": {
+                                    "dynamicRegistration": False,
+                                    "requests": {"range": False, "full": True},
+                                    "tokenTypes": [
+                                        "namespace", "type", "class", "enum",
+                                        "interface", "struct", "typeParameter",
+                                        "parameter", "variable", "property",
+                                        "enumMember", "event", "function", "method",
+                                        "macro", "keyword", "modifier", "comment",
+                                        "string", "number", "regexp", "operator",
+                                        "decorator",
+                                    ],
+                                    "tokenModifiers": [
+                                        "declaration", "definition", "readonly",
+                                        "static", "deprecated", "abstract", "async",
+                                        "modification", "documentation",
+                                        "defaultLibrary",
+                                    ],
+                                    "formats": ["relative"],
+                                },
                             },
                         },
                         "workspaceFolders": [{"uri": root_uri, "name": "kide-parity"}],
@@ -330,6 +365,23 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                             f".{extension} references expected >= {probe['references_min']}, got {len(references)}"
                         )
 
+                    highlights = rpc(
+                        "textDocument/documentHighlight",
+                        {
+                            "textDocument": {"uri": uri},
+                            "position": position_of(text, probe["symbol"]),
+                        },
+                    ).get("result")
+                    if not isinstance(highlights, list):
+                        raise SmokeFailure(
+                            f".{extension} document highlights returned malformed result"
+                        )
+                    if len(highlights) < int(probe["document_highlights_min"]):
+                        raise SmokeFailure(
+                            f".{extension} document highlights expected >= "
+                            f"{probe['document_highlights_min']}, got {len(highlights)}"
+                        )
+
                     document_symbols = rpc(
                         "textDocument/documentSymbol",
                         {"textDocument": {"uri": uri}},
@@ -365,6 +417,34 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                     if not isinstance(formatting, list):
                         raise SmokeFailure(f".{extension} formatting did not return a text-edit list")
 
+                    range_formatting = rpc(
+                        "textDocument/rangeFormatting",
+                        {
+                            "textDocument": {"uri": uri},
+                            "range": {
+                                "start": {"line": 0, "character": 0},
+                                "end": end_position(text),
+                            },
+                            "options": {"tabSize": 2, "insertSpaces": True},
+                        },
+                    ).get("result")
+                    if not isinstance(range_formatting, list):
+                        raise SmokeFailure(
+                            f".{extension} range formatting did not return a text-edit list"
+                        )
+
+                    prepare_rename = rpc(
+                        "textDocument/prepareRename",
+                        {
+                            "textDocument": {"uri": uri},
+                            "position": position_of(text, probe["symbol"]),
+                        },
+                    ).get("result")
+                    if prepare_rename is None:
+                        raise SmokeFailure(
+                            f".{extension} prepareRename rejected the qualified symbol"
+                        )
+
                     new_name = probe["symbol"] + "PR13"
                     rename = rpc(
                         "textDocument/rename",
@@ -395,6 +475,44 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                         if len(folding) < int(probe["folding_min"]):
                             raise SmokeFailure(
                                 f".{extension} folding expected >= {probe['folding_min']}, got {len(folding)}"
+                            )
+
+                    if "semantic_tokens" in qualified_features:
+                        semantic_tokens = rpc(
+                            "textDocument/semanticTokens/full",
+                            {"textDocument": {"uri": uri}},
+                        ).get("result")
+                        if not isinstance(semantic_tokens, dict):
+                            raise SmokeFailure(
+                                f".{extension} semantic tokens returned malformed result"
+                            )
+                        token_data = semantic_tokens.get("data")
+                        if not isinstance(token_data, list) or len(token_data) % 5 != 0:
+                            raise SmokeFailure(
+                                f".{extension} semantic token data is not an LSP token stream"
+                            )
+                        token_count = len(token_data) // 5
+                        if token_count < int(probe["semantic_tokens_min"]):
+                            raise SmokeFailure(
+                                f".{extension} semantic tokens expected >= "
+                                f"{probe['semantic_tokens_min']}, got {token_count}"
+                            )
+
+                    if "code_actions" in qualified_features:
+                        actions = rpc(
+                            "textDocument/codeAction",
+                            {
+                                "textDocument": {"uri": uri},
+                                "range": {
+                                    "start": position_of(text, probe["symbol"]),
+                                    "end": position_of(text, probe["symbol"]),
+                                },
+                                "context": {"diagnostics": []},
+                            },
+                        ).get("result")
+                        if not isinstance(actions, list):
+                            raise SmokeFailure(
+                                f".{extension} code actions returned malformed result"
                             )
 
                 for uri in uris.values():
