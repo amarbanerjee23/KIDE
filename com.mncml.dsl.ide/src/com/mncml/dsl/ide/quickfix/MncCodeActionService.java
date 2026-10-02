@@ -35,10 +35,13 @@ public final class MncCodeActionService implements ICodeActionService2 {
                 continue;
             }
             Range range = diagnostic.getRange();
-            if (range == null || options.getDocument() == null) {
+            if (range == null || options.getLanguageServerAccess() == null
+                    || options.getURI() == null) {
                 continue;
             }
-            String issueText = options.getDocument().getSubstring(range);
+            String issueText = options.getLanguageServerAccess().doSyncRead(
+                    options.getURI(),
+                    context -> context.getDocument().getSubstring(range));
             if (issueText.isEmpty()) {
                 continue;
             }
