@@ -3,11 +3,27 @@
  */
 package com.mncml.dsl.ide;
 
-import com.mncml.dsl.ide.AbstractMncIdeModule;
+import com.mncml.dsl.ide.highlighting.MncLspSemanticHighlightingCalculator;
+import com.mncml.dsl.ide.quickfix.MncCodeActionService;
+import org.eclipse.xtext.ide.editor.contentassist.IdeContentProposalProvider;
+import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculator;
+import org.eclipse.xtext.ide.server.codeActions.ICodeActionService2;
 
 /**
- * Use this class to register ide components.
+ * KIDE-owned IDE bindings layered on the generated MNC services.
  */
 @SuppressWarnings("all")
 public class MncIdeModule extends AbstractMncIdeModule {
+
+  public Class<? extends IdeContentProposalProvider> bindIdeContentProposalProvider() {
+    return KideMncIdeContentProposalProvider.class;
+  }
+
+  public Class<? extends ICodeActionService2> bindICodeActionService2() {
+    return MncCodeActionService.class;
+  }
+
+  public Class<? extends ISemanticHighlightingCalculator> bindISemanticHighlightingCalculator() {
+    return MncLspSemanticHighlightingCalculator.class;
+  }
 }
