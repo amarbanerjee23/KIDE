@@ -21,7 +21,7 @@ import com.google.common.base.Predicates;
 import com.google.inject.Inject;
 
 import CapabilityDescription.Capability;
-import mncModel.AbstractInterfaceItems;
+import CapabilityDescription.ControlCapabilities;
 import mncModel.ActionAlarm;
 import mncModel.ActionCommand;
 import mncModel.ActionDataPoint;
@@ -64,7 +64,15 @@ public final class KideCapabilityIdeContentProposalProvider
                     ? CapabilityValidator.getCommandsFromAllInterfaces(
                             capability.getComponentInterface())
                     : null;
+            case "commands" -> model instanceof ControlCapabilities
+                    ? CapabilityValidator.getCommandsFromAllInterfaces(
+                            capability.getComponentInterface())
+                    : null;
             case "alarm" -> model instanceof ActionAlarm
+                    ? CapabilityValidator.getAlarmsFromAllInterfaces(
+                            capability.getComponentInterface())
+                    : null;
+            case "alarms" -> model instanceof ControlCapabilities
                     ? CapabilityValidator.getAlarmsFromAllInterfaces(
                             capability.getComponentInterface())
                     : null;
@@ -72,7 +80,15 @@ public final class KideCapabilityIdeContentProposalProvider
                     ? CapabilityValidator.getEventsFromAllInterfaces(
                             capability.getComponentInterface())
                     : null;
+            case "events" -> model instanceof ControlCapabilities
+                    ? CapabilityValidator.getEventsFromAllInterfaces(
+                            capability.getComponentInterface())
+                    : null;
             case "dataPoint" -> model instanceof ActionDataPoint
+                    ? CapabilityValidator.getDataPointsFromAllInterfaces(
+                            capability.getComponentInterface())
+                    : null;
+            case "dataPoints" -> model instanceof ControlCapabilities
                     ? CapabilityValidator.getDataPointsFromAllInterfaces(
                             capability.getComponentInterface())
                     : null;
