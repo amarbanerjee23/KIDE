@@ -122,7 +122,8 @@
           "character": 15
         }
       },
-      "semantic_tokens_min": 0
+      "semantic_tokens_min": 0,
+      "document_highlights_min": 1
     },
     "operation": {
       "symbol": "Inspect",
@@ -139,7 +140,8 @@
           "character": 0
         }
       },
-      "semantic_tokens_min": 0
+      "semantic_tokens_min": 0,
+      "document_highlights_min": 1
     },
     "mnc": {
       "symbol": "Device",
@@ -157,7 +159,8 @@
           "character": 0
         }
       },
-      "semantic_tokens_min": 1
+      "semantic_tokens_min": 1,
+      "document_highlights_min": 1
     },
     "capability": {
       "symbol": "Observe",
@@ -179,7 +182,8 @@
           "character": 0
         }
       },
-      "semantic_tokens_min": 1
+      "semantic_tokens_min": 1,
+      "document_highlights_min": 1
     },
     "activity": {
       "symbol": "GoldenWorkflow",
@@ -201,7 +205,8 @@
           "character": 0
         }
       },
-      "semantic_tokens_min": 1
+      "semantic_tokens_min": 1,
+      "document_highlights_min": 1
     },
     "krl": {
       "symbol": "GoldenKrl",
@@ -225,7 +230,8 @@
       },
       "document_symbol": "GoldenKrl",
       "workspace_symbol": "GoldenKrl",
-      "semantic_tokens_min": 0
+      "semantic_tokens_min": 0,
+      "document_highlights_min": 1
     }
   }
 }
