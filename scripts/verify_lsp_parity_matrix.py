@@ -100,6 +100,7 @@ def verify(root: Path) -> list[str]:
             "folding_min",
             "semantic_tokens_min",
             "document_highlights_min",
+            "document_highlight_token",
             "rename_targets",
         ):
             if field not in probe:
@@ -118,6 +119,29 @@ def verify(root: Path) -> list[str]:
             if own_name not in rename_targets:
                 errors.append(f"{language_id} rename must include its own document {own_name}")
 
+        highlight_token = probe.get("document_highlight_token")
+        if not isinstance(highlight_token, str) or not highlight_token:
+            errors.append(f"{language_id} document_highlight_token must be non-empty")
+
+        semantic_min = probe.get("semantic_tokens_min")
+        if not isinstance(semantic_min, int) or isinstance(semantic_min, bool) or semantic_min < 0:
+            errors.append(f"{language_id} semantic_tokens_min must be a non-negative integer")
+
+        highlight_min = probe.get("document_highlights_min")
+        if not isinstance(highlight_min, int) or isinstance(highlight_min, bool) or highlight_min < 0:
+            errors.append(f"{language_id} document_highlights_min must be a non-negative integer")
+
+        action = probe.get("code_action")
+        if action is not None:
+            if language_id not in {"mnc", "capability", "activity"}:
+                errors.append(f"{language_id} declares a custom code action without an Eclipse quick fix")
+            elif not isinstance(action, dict):
+                errors.append(f"{language_id} code_action must be an object")
+            else:
+                for field in ("diagnostic_code", "title", "replacement"):
+                    if not isinstance(action.get(field), str):
+                        errors.append(f"{language_id} code_action {field} must be a string")
+
         definition = probe.get("definition")
         if definition is not None:
             occurrence = definition.get("occurrence", 1) if isinstance(definition, dict) else 1
@@ -133,6 +157,17 @@ def verify(root: Path) -> list[str]:
                     )
                 if not isinstance(definition.get("token"), str) or not definition.get("token"):
                     errors.append(f"{language_id} definition probe requires token")
+
+    action_languages = {
+        language_id
+        for language_id, probe in language_matrix.items()
+        if isinstance(probe, dict) and isinstance(probe.get("code_action"), dict)
+    }
+    if action_languages != {"mnc", "capability", "activity"}:
+        errors.append(
+            "custom Eclipse quick-fix parity must be defined exactly for "
+            "mnc, capability and activity"
+        )
 
     return errors
 
