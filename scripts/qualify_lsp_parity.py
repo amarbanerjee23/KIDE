@@ -355,23 +355,6 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                         language["valid_fixture_text"],
                     )
 
-                support_uri = open_document(
-                    peer,
-                    support_path,
-                    by_id["mnc"]["language_id"],
-                    support_text,
-                )
-                quickfix_uris: dict[str, str] = {}
-                for language_id in ("mnc", "capability", "activity"):
-                    language = by_id[language_id]
-                    extension = language["extension"]
-                    quickfix_uris[extension] = open_document(
-                        peer,
-                        quickfix_paths[extension],
-                        language["language_id"],
-                        quickfix_texts[extension],
-                    )
-
                 # Freeze tests against the fully linked workspace, not transient didOpen state.
                 for language in languages:
                     extension = language["extension"]
@@ -621,7 +604,13 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                     if "code_actions" in qualified_features:
                         action_probe = probe.get("code_action")
                         if isinstance(action_probe, dict):
-                            action_uri = quickfix_uris[extension]
+                            action_text = quickfix_texts[extension]
+                            action_uri = open_document(
+                                peer,
+                                quickfix_paths[extension],
+                                language["language_id"],
+                                action_text,
+                            )
                             diagnostic = wait_for_diagnostic_code(
                                 peer,
                                 action_uri,
@@ -659,13 +648,11 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                                     f".{extension} quick fix {action_probe['title']!r} "
                                     f"did not contain replacement {replacement!r}: {matching[0]}"
                                 )
-
-                for uri in [support_uri, *quickfix_uris.values()]:
-                    peer.send({
-                        "jsonrpc": "2.0",
-                        "method": "textDocument/didClose",
-                        "params": {"textDocument": {"uri": uri}},
-                    })
+                            peer.send({
+                                "jsonrpc": "2.0",
+                                "method": "textDocument/didClose",
+                                "params": {"textDocument": {"uri": action_uri}},
+                            })
 
                 for uri in uris.values():
                     peer.send({
