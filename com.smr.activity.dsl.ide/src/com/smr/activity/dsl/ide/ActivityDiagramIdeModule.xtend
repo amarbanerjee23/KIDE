@@ -4,12 +4,18 @@
 package com.smr.activity.dsl.ide
 
 import com.smr.activity.dsl.ide.highlighting.ActivityDiagramLspSemanticHighlightingCalculator
+import com.smr.activity.dsl.ide.hover.ActivityDiagramLspHoverService
+import org.eclipse.xtext.ide.server.hover.IHoverService
 import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculator
 
 /**
  * KIDE-owned IDE bindings layered on the generated Activity services.
  */
 class ActivityDiagramIdeModule extends AbstractActivityDiagramIdeModule {
+
+    def Class<? extends IHoverService> bindIHoverService() {
+        ActivityDiagramLspHoverService
+    }
 
     def Class<? extends ISemanticHighlightingCalculator> bindISemanticHighlightingCalculator() {
         ActivityDiagramLspSemanticHighlightingCalculator
