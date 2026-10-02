@@ -6,6 +6,7 @@ package com.smr.activity.dsl.ide
 import com.smr.activity.dsl.ide.highlighting.ActivityDiagramLspSemanticHighlightingCalculator
 import com.smr.activity.dsl.ide.hover.ActivityDiagramLspHoverService
 import com.smr.activity.dsl.ide.quickfix.ActivityDiagramCodeActionService
+import org.eclipse.xtext.ide.editor.contentassist.IdeContentProposalProvider
 import org.eclipse.xtext.ide.server.codeActions.ICodeActionService2
 import org.eclipse.xtext.ide.server.hover.IHoverService
 import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculator
@@ -14,6 +15,10 @@ import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculat
  * KIDE-owned IDE bindings layered on the generated Activity services.
  */
 class ActivityDiagramIdeModule extends AbstractActivityDiagramIdeModule {
+
+    def Class<? extends IdeContentProposalProvider> bindIdeContentProposalProvider() {
+        KideActivityIdeContentProposalProvider
+    }
 
     def Class<? extends ICodeActionService2> bindICodeActionService2() {
         ActivityDiagramCodeActionService
