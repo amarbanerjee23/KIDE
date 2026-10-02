@@ -99,6 +99,11 @@ export interface DocumentHighlight {
   kind?: number;
 }
 
+export type PrepareRenameResult =
+  | Range
+  | { range: Range; placeholder?: string }
+  | { defaultBehavior: boolean };
+
 export interface SignatureParameter {
   label: string | [number, number];
   documentation?: string | { kind: string; value: string };
@@ -324,6 +329,16 @@ export class KideLspClient {
         triggerKind: 1,
         isRetrigger: false
       }
+    });
+  }
+
+  prepareRename(
+    uri: string,
+    position: Position
+  ): Promise<PrepareRenameResult | null> {
+    return this.request("textDocument/prepareRename", {
+      textDocument: { uri },
+      position
     });
   }
 
