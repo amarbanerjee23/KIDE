@@ -47,6 +47,11 @@ class FakeWebSocket {
           documentSymbolProvider: true,
           workspaceSymbolProvider: true,
           documentFormattingProvider: true,
+          documentRangeFormattingProvider: true,
+          documentHighlightProvider: true,
+          signatureHelpProvider: {
+            triggerCharacters: ["(", ","]
+          },
           renameProvider: true,
           codeActionProvider: true,
           foldingRangeProvider: true,
@@ -126,6 +131,21 @@ describe("KideLspClient", () => {
       client.documentSymbols("kide-workspace:/model.dml"),
       client.workspaceSymbols("Golden"),
       client.formatting("kide-workspace:/model.dml"),
+      client.rangeFormatting(
+        "kide-workspace:/model.dml",
+        {
+          start: { line: 0, character: 0 },
+          end: { line: 0, character: 10 }
+        }
+      ),
+      client.documentHighlights(
+        "kide-workspace:/model.dml",
+        { line: 0, character: 10 }
+      ),
+      client.signatureHelp(
+        "kide-workspace:/model.dml",
+        { line: 0, character: 10 }
+      ),
       client.rename("kide-workspace:/model.dml", { line: 0, character: 1 }, "Renamed"),
       client.codeActions(
         "kide-workspace:/model.dml",
@@ -149,6 +169,9 @@ describe("KideLspClient", () => {
       "textDocument/documentSymbol",
       "workspace/symbol",
       "textDocument/formatting",
+      "textDocument/rangeFormatting",
+      "textDocument/documentHighlight",
+      "textDocument/signatureHelp",
       "textDocument/rename",
       "textDocument/codeAction",
       "textDocument/semanticTokens/full",
