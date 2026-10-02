@@ -15,6 +15,7 @@ Require-Bundle: com.smr.activity.dsl,
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: com.smr.activity.dsl.ide.contentassist.antlr,
  com.smr.activity.dsl.ide.contentassist.antlr.internal,
- com.smr.activity.dsl.ide.highlighting
+ com.smr.activity.dsl.ide.highlighting,
+ com.smr.activity.dsl.ide.hover
 Automatic-Module-Name: com.smr.activity.dsl.ide
 
