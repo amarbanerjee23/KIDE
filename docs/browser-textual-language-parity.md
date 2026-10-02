@@ -26,19 +26,22 @@ The browser registers Monaco providers only for capabilities advertised by the
 server. The client maps:
 
 - diagnostics;
-- completion, including snippets returned by Xtext;
+- completion, including snippet-shaped Xtext completion items;
 - hover;
 - definition and references;
+- document occurrences/highlights;
 - document symbols and workspace-symbol search;
-- formatting;
+- document and range formatting;
 - rename, including multi-document text edits;
-- folding ranges when advertised;
-- code-action edits when advertised; and
-- semantic tokens when advertised.
+- folding ranges;
+- code actions/quick fixes; and
+- semantic tokens.
 
-The authoritative PR13 capability matrix still decides which server features are
-required versus deferred. PR31 does not invent browser-only quick fixes or semantic
-classification for capabilities the shared Xtext server does not advertise.
+The authoritative capability matrix distinguishes required, required-where-
+applicable and explicitly not-applicable services. The browser does not invent
+semantic quick fixes, candidate filtering or semantic classification in
+TypeScript: those implementations live in the shared/runtime or `.ide` Java
+layers used by the packaged language server.
 
 ## Lexical highlighting
 
@@ -46,7 +49,9 @@ TextMate lexical assets are generated from the production Xtext grammar files an
 `product/languages.json`. The generated asset file is verified in CI by
 `scripts/generate_web_language_assets.py --check`. This gives Monaco a local,
 fast lexical fallback without creating a second hand-maintained language
-definition. Advertised semantic tokens overlay that lexical baseline.
+definition. Xtext 2.44 semantic tokens overlay that lexical baseline for DSLs with custom
+semantic regions. Capability, MNC and Activity use the same platform-neutral
+region providers as the Eclipse semantic highlighters.
 
 ## Authentication and transport
 
