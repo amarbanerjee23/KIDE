@@ -74,6 +74,21 @@ def completion_items(result: Any) -> list[dict[str, Any]]:
     return []
 
 
+def completion_labels(result: Any) -> set[str]:
+    labels: set[str] = set()
+    for item in completion_items(result):
+        label = item.get("label")
+        if isinstance(label, str):
+            labels.add(label)
+    return labels
+
+
+def has_completion(labels: set[str], expected: str) -> bool:
+    return expected in labels or any(
+        label.endswith("." + expected) for label in labels
+    )
+
+
 def symbol_names(result: Any) -> set[str]:
     names: set[str] = set()
 
@@ -420,6 +435,53 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                         "method": "textDocument/didClose",
                         "params": {"textDocument": {"uri": completion_uri}},
                     })
+
+                    semantic_completion = probe.get("semantic_completion")
+                    if isinstance(semantic_completion, dict):
+                        semantic_text = semantic_completion.get("text")
+                        if not isinstance(semantic_text, str):
+                            raise SmokeFailure(
+                                f".{extension} semantic completion text is malformed"
+                            )
+                        semantic_path = workspace / f"semantic-completion.{extension}"
+                        semantic_path.write_text(semantic_text, encoding="utf-8")
+                        announce_workspace_files(peer, [semantic_path])
+                        semantic_uri = open_document(
+                            peer,
+                            semantic_path,
+                            language["language_id"],
+                            semantic_text,
+                        )
+                        wait_for_diagnostics(
+                            peer,
+                            semantic_uri,
+                            f"semantic completion diagnostics for .{extension}",
+                        )
+                        semantic_result = rpc(
+                            "textDocument/completion",
+                            {
+                                "textDocument": {"uri": semantic_uri},
+                                "position": end_position(semantic_text),
+                            },
+                        ).get("result")
+                        labels = completion_labels(semantic_result)
+                        for expected in semantic_completion.get("expected", []):
+                            if not has_completion(labels, expected):
+                                raise SmokeFailure(
+                                    f".{extension} semantic completion missing "
+                                    f"{expected!r}: {sorted(labels)}"
+                                )
+                        for forbidden in semantic_completion.get("forbidden", []):
+                            if has_completion(labels, forbidden):
+                                raise SmokeFailure(
+                                    f".{extension} semantic completion leaked "
+                                    f"out-of-scope {forbidden!r}: {sorted(labels)}"
+                                )
+                        peer.send({
+                            "jsonrpc": "2.0",
+                            "method": "textDocument/didClose",
+                            "params": {"textDocument": {"uri": semantic_uri}},
+                        })
 
                     hover = rpc(
                         "textDocument/hover",
