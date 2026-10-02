@@ -10,7 +10,7 @@ import com.google.inject.Module;
 import com.google.inject.util.Modules;
 import com.smr.activity.dsl.ActivityDiagramRuntimeModule;
 import com.smr.activity.dsl.ActivityDiagramStandaloneSetup;
-import com.smr.activity.dsl.ide.highlighting.KideActivityIdeSemanticHighlightingCalculator;
+import com.smr.activity.dsl.ide.highlighting.ActivityDiagramLspSemanticHighlightingCalculator;
 
 /** KIDE-owned headless editor-service bindings for Activity. */
 public final class KideActivityDiagramIdeSetup extends ActivityDiagramStandaloneSetup {
@@ -22,7 +22,7 @@ public final class KideActivityDiagramIdeSetup extends ActivityDiagramStandalone
             @Override
             protected void configure() {
                 bind(ISemanticHighlightingCalculator.class)
-                        .to(KideActivityIdeSemanticHighlightingCalculator.class);
+                        .to(ActivityDiagramLspSemanticHighlightingCalculator.class);
             }
         };
         return Guice.createInjector(Modules.override(generated).with(parity));
