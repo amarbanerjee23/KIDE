@@ -7,7 +7,7 @@ package com.mncml.dsl.ui
 import org.eclipse.xtext.ui.resource.IResourceSetProvider
 import org.eclipse.xtext.ui.resource.XtextLiveScopeResourceSetProvider
 import org.eclipse.xtext.ui.editor.syntaxcoloring.IHighlightingConfiguration
-import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculator
+import org.eclipse.xtext.ui.editor.syntaxcoloring.ISemanticHighlightingCalculator
 import com.mncml.dsl.ui.syntaxcoloring.MncSemanticHighlightingCalculator
 import com.mncml.dsl.ui.syntaxcoloring.MncHighlightingConfiguration
 import org.eclipse.xtext.ui.editor.hyperlinking.IHyperlinkHelper
