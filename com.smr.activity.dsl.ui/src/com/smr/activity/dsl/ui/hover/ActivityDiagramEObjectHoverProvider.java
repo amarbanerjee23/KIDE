@@ -3,54 +3,33 @@ package com.smr.activity.dsl.ui.hover;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.xtext.ui.editor.hover.html.DefaultEObjectHoverProvider;
 
-import activityDiagramModel.Activity;
-import activityDiagramModel.ActivityDiagram;
+import com.smr.activity.dsl.ide.hover.ActivityDiagramHoverTextProvider;
+import com.smr.activity.dsl.ide.hover.ActivityDiagramHoverTextProvider.HoverText;
 
-/**
- * Shows what an activity does, how long it takes and what follows it, without
- * leaving the editor.
- */
+/** Eclipse adapter over the client-neutral Activity hover descriptions. */
 public class ActivityDiagramEObjectHoverProvider extends DefaultEObjectHoverProvider {
 
-	@Override
-	protected String getFirstLine(EObject element) {
-		if (element instanceof Activity) {
-			return "<b>Activity</b> " + nullSafe(((Activity) element).getName());
-		}
-		if (element instanceof ActivityDiagram) {
-			return "<b>Activity diagram</b> " + nullSafe(((ActivityDiagram) element).getName());
-		}
-		return super.getFirstLine(element);
-	}
+    private final ActivityDiagramHoverTextProvider text =
+            new ActivityDiagramHoverTextProvider();
 
-	@Override
-	protected String getDocumentation(EObject element) {
-		if (element instanceof Activity) {
-			Activity activity = (Activity) element;
-			StringBuilder text = new StringBuilder();
-			if (activity.getDescription() != null) {
-				text.append(activity.getDescription());
-			}
-			if (activity.getBindCapability() != null) {
-				text.append("<br/>Requires capability: ").append(nullSafe(activity.getBindCapability().getName()));
-			}
-			if (activity.getUnit() != null) {
-				text.append("<br/>Takes ").append(activity.getTime()).append(' ').append(activity.getUnit());
-			}
-			if (activity.getNextActivity() != null) {
-				text.append("<br/>Hands over to: ").append(nullSafe(activity.getNextActivity().getName()));
-			}
-			return text.length() == 0 ? super.getDocumentation(element) : text.toString();
-		}
-		if (element instanceof ActivityDiagram) {
-			ActivityDiagram diagram = (ActivityDiagram) element;
-			int count = diagram.getActivities() == null ? 0 : diagram.getActivities().size();
-			return "Contains " + count + " activity/activities.";
-		}
-		return super.getDocumentation(element);
-	}
+    @Override
+    protected String getFirstLine(EObject element) {
+        HoverText hover = text.describe(element);
+        return hover == null ? super.getFirstLine(element) : html(hover.title());
+    }
 
-	private String nullSafe(String value) {
-		return value == null ? "&lt;unnamed&gt;" : value;
-	}
+    @Override
+    protected String getDocumentation(EObject element) {
+        HoverText hover = text.describe(element);
+        if (hover == null || hover.detail() == null || hover.detail().isBlank()) {
+            return super.getDocumentation(element);
+        }
+        return html(hover.detail()).replace("\n", "<br/>");
+    }
+
+    private static String html(String value) {
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
+    }
 }
