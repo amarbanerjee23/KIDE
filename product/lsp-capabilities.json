@@ -168,7 +168,16 @@
         "title": "Capitalize name",
         "replacement": "Node"
       },
-      "document_highlight_token": "Device"
+      "document_highlight_token": "Device",
+      "semantic_completion": {
+        "text": "Model Completion\nInterfaceDescription Local {\n  commands { Start[] }\n}\nControlNode Node implements interface Local {\n  CommandResponseBlock {\n    Command ",
+        "expected": [
+          "Start"
+        ],
+        "forbidden": [
+          "Stop"
+        ]
+      }
     },
     "capability": {
       "symbol": "Observe",
@@ -197,7 +206,16 @@
         "title": "Remove this command",
         "replacement": ""
       },
-      "document_highlight_token": "Device"
+      "document_highlight_token": "Device",
+      "semantic_completion": {
+        "text": "Capability Completion compatible component interface Device {\n  providesControlCapabilities {\n    fireable commands : ",
+        "expected": [
+          "Start"
+        ],
+        "forbidden": [
+          "Stop"
+        ]
+      }
     },
     "activity": {
       "symbol": "GoldenWorkflow",
@@ -226,7 +244,17 @@
         "title": "Remove this control item",
         "replacement": ""
       },
-      "document_highlight_token": "Observe"
+      "document_highlight_token": "Observe",
+      "semantic_completion": {
+        "text": "ActivityDiagram Completion\nhas activities {\n  Activity Step {\n    requireCapability : Observe { ",
+        "expected": [
+          "Start",
+          "Ready"
+        ],
+        "forbidden": [
+          "Stop"
+        ]
+      }
     },
     "krl": {
       "symbol": "GoldenKrl",
