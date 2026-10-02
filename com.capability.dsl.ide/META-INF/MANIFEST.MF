@@ -15,5 +15,6 @@ Require-Bundle: com.capability.dsl,
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Export-Package: com.capability.ide.contentassist.antlr.internal,
  com.capability.ide.contentassist.antlr,
- com.capability.ide.highlighting
+ com.capability.ide.highlighting,
+ com.capability.ide.hover
 
