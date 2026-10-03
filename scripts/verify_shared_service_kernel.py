@@ -17,6 +17,14 @@ SERVER_SYNTHESIS = (
     ROOT / "com.kide.enterprise.server" / "src" / "com" / "kide"
     / "enterprise" / "server" / "ProjectSynthesisService.java"
 )
+SHARED_GENERATION = (
+    ROOT / "com.kide.codegen" / "src" / "com" / "kide" / "codegen"
+    / "ProjectGenerationService.java"
+)
+SERVER_GENERATION = (
+    ROOT / "com.kide.enterprise.server" / "src" / "com" / "kide"
+    / "enterprise" / "server" / "ProjectGenerationService.java"
+)
 SERVER_ROOT = ROOT / "com.kide.enterprise.server" / "src"
 
 
@@ -53,10 +61,18 @@ def main() -> int:
         fail("ProjectSynthesisService has the wrong package")
     if SERVER_SYNTHESIS.exists():
         fail("server bundle must not own ProjectSynthesisService")
+    if not SHARED_GENERATION.is_file():
+        fail("ProjectGenerationService must live in com.kide.codegen")
+    generation = SHARED_GENERATION.read_text(encoding="utf-8")
+    if "package com.kide.codegen;" not in generation:
+        fail("ProjectGenerationService has the wrong package")
+    if SERVER_GENERATION.exists():
+        fail("server bundle must not own ProjectGenerationService")
 
     forbidden = (
         "new ProjectSynthesisEngine(",
         "new DeterministicSynthesisService(",
+        "new ProjectKrlGenerationEngine(",
     )
     for java in SERVER_ROOT.rglob("*.java"):
         text = java.read_text(encoding="utf-8")
