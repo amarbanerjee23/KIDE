@@ -81,6 +81,9 @@ public final class KideActivityIdeContentProposalProvider
             QualifiedName name = names.getFullyQualifiedName(value);
             if (name != null) {
                 allowed.add(name);
+                if (name.getSegmentCount() > 0) {
+                    allowed.add(QualifiedName.create(name.getLastSegment()));
+                }
             }
         }
         return candidate -> allowed.contains(candidate.getQualifiedName());
