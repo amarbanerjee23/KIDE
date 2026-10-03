@@ -64,13 +64,33 @@ the underlying semantic engines.
 This makes the downloadable Eclipse product and hosted backend derive their
 engineering behavior from the same commit, bundles, and service implementations.
 
-## Next qualification layer
+## Cross-adapter semantic qualification
 
-The next parity gate should execute the same golden project through:
+PR80 makes the next parity layer executable and fail-closed.
 
-1. the shared Java service directly;
-2. the Eclipse adapter;
-3. the HTTP/LSP/GLSP adapter as applicable;
+The packaged enterprise self-check now exercises the same canonical project through
+the shared project services directly and through the authenticated HTTP adapter,
+then compares normalized engineering semantics rather than presentation:
 
-and compare normalized semantic outputs such as diagnostics, selections,
-fingerprints, generated artifacts and trace IDs.
+- knowledge revision/ETag and catalogue identity;
+- synthesis status, selections, diagnostics, fingerprint and generated MNC;
+- generation fingerprint, manifest structure and artifact path/hash/target/content;
+- reconfiguration status, selections and state-migration policy/resources.
+
+Transport-only values such as request IDs, timestamps, HTTP headers, JSON object
+ordering and UI wording are explicitly excluded from parity.
+
+The contract is declared in
+`product/cross-adapter-semantic-qualification.json` and verified by
+`scripts/verify_cross_adapter_semantics.py`.
+
+The same PR80 contract also requires the existing adapter-specific parity gates to
+remain active:
+
+1. Eclipse Xtext services versus packaged Web LSP
+   (`verify_lsp_parity_matrix.py` + `qualify_lsp_parity.py`);
+2. Eclipse Sirius semantics versus Web GLSP
+   (`verify_diagram_parity.py` + packaged GLSP smoke qualification).
+
+A change that removes any of these gates, bypasses the shared project services, or
+changes a normalized semantic result on only one adapter fails CI.
