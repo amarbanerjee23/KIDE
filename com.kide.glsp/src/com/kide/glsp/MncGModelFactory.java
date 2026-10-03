@@ -1,5 +1,6 @@
 package com.kide.glsp;
 
+import org.eclipse.emf.common.util.TreeIterator;
 import org.eclipse.emf.ecore.EObject;
 import org.eclipse.glsp.graph.GModelRoot;
 import org.eclipse.glsp.graph.builder.impl.GEdgeBuilder;
@@ -16,6 +17,8 @@ import org.eclipse.glsp.server.emf.notation.util.NotationUtil;
 import mncModel.ControlNode;
 import mncModel.InterfaceDescription;
 import mncModel.Model;
+import mncModel.OperatingState;
+import mncModel.Transition;
 
 public final class MncGModelFactory extends EMFNotationGModelFactory {
     @Override
@@ -51,6 +54,35 @@ public final class MncGModelFactory extends EMFNotationGModelFactory {
                     addEdge(newRoot, KideDiagramTypes.MNC_CHILD, source,
                             idGenerator.getOrCreateId(child), "child");
                 }
+            }
+        }
+
+        // The desktop Sirius State Diagram visualizes OperatingState and Transition
+        // directly from the same EMF model. Expose those concepts in GLSP as well
+        // so the browser state-machine view is semantic parity, not a browser-only
+        // reconstruction.
+        TreeIterator<EObject> contents = model.eAllContents();
+        while (contents.hasNext()) {
+            EObject element = contents.next();
+            if (element instanceof OperatingState state) {
+                addNode(state, KideDiagramTypes.MNC_OPERATING_STATE,
+                        safe(state.getName(), "OperatingState"), notationModel,
+                        newRoot, index++);
+            }
+        }
+
+        contents = model.eAllContents();
+        while (contents.hasNext()) {
+            EObject element = contents.next();
+            if (!(element instanceof Transition transition)
+                    || transition.getNextState() == null) {
+                continue;
+            }
+            String target = idGenerator.getOrCreateId(transition.getNextState());
+            for (OperatingState current : transition.getCurrentState()) {
+                addEdge(newRoot, KideDiagramTypes.MNC_STATE_TRANSITION,
+                        idGenerator.getOrCreateId(current), target,
+                        "transition:" + idGenerator.getOrCreateId(transition));
             }
         }
     }
