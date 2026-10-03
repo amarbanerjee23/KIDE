@@ -23,6 +23,7 @@ enterprise API.
 KIDE Web deliberately separates authentication from engineering work:
 
 - `/` is the landing page. It contains product context and Firebase sign-in.
+- `/register` is the email/password account-registration page. Registration establishes a Firebase session; KIDE engineering authorization still comes from server-side role bindings.
 - `/workspace` is the engineering workbench. It contains project/model actions,
   Monaco/Xtext editing, GLSP diagrams, knowledge, synthesis, reconfiguration,
   generation and collaboration.
