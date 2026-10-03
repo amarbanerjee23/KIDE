@@ -81,6 +81,28 @@ describe("KideApiClient", () => {
     ).resolves.toMatchObject({ id: "folder/model.dml" });
   });
 
+  it("fails closed when a generated response schema receives invalid JSON", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response("", {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        })
+      )
+    );
+
+    const client = new KideApiClient(
+      "https://kide.example",
+      () => "token-value"
+    );
+
+    await expect(client.listProjects()).rejects.toMatchObject({
+      status: 200,
+      message: expect.stringContaining("expected response schema ProjectList")
+    });
+  });
+
   it("surfaces typed revision conflicts without rewriting them", async () => {
     vi.stubGlobal(
       "fetch",
