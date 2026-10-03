@@ -634,7 +634,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
 
   await page.getByLabel("Reconfiguration cause").selectOption("RESOURCE_LOSS");
   await expect(page.getByLabel("Reconfiguration cause")).toHaveValue("RESOURCE_LOSS");
-  await page.getByRole("button", { name: "Reconfigure" }).click();
+  await page.getByLabel("Engineering workflow").getByRole("button", { name: "Reconfigure", exact: true }).click();
   await expect(page.getByLabel("Reconfiguration result")).toContainText("RECONFIGURED");
   await expect(page.getByLabel("Reconfiguration result")).toContainText(
     "urn:kide:device:camera-b"
