@@ -424,11 +424,10 @@ export default function App() {
       setFirebasePassword("");
       setFirebaseConfirmPassword("");
       setAuthStatus(`Account created · ${user.email}`);
-      setNotice("Account created successfully.");
-      navigate("workspace");
-      await connect();
-      setActiveSidebar("explorer");
-      setSidebarVisible(true);
+      setNotice(
+        "Account created and signed in. Engineering access is granted through KIDE role bindings."
+      );
+      navigate("home");
     } catch (error) {
       setToken("");
       setAuthStatus("Registration failed");
