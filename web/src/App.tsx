@@ -180,6 +180,7 @@ export default function App() {
   const [engineeringCockpitOpen, setEngineeringCockpitOpen] = useState(false);
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
+  const pendingDiagramPath = useRef<string | undefined>(undefined);
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
   const lspClient = useRef<KideLspClient | undefined>(undefined);
   const lspController = useRef<MonacoLspController | undefined>(undefined);
@@ -276,7 +277,10 @@ export default function App() {
   }, [token]);
 
   useEffect(() => {
-    setViewMode("text");
+    const openRequestedDiagram =
+      Boolean(selectedPath) && pendingDiagramPath.current === selectedPath;
+    if (openRequestedDiagram) pendingDiagramPath.current = undefined;
+    setViewMode(openRequestedDiagram ? "diagram" : "text");
     setSynthesisResult(undefined);
     setReconfigurationResult(undefined);
     setGenerationResult(undefined);
@@ -1305,13 +1309,33 @@ export default function App() {
   async function openGraphicalModel(path: string) {
     const entry = entriesRef.current.find((candidate) => candidate.path === path);
     if (!entry || entry.source !== "remote" || !diagramTypeFor(path)) return;
+    if (!tokenRef.current.trim()) {
+      setNotice("An access token is required for the graphical service.");
+      return;
+    }
+    if (
+      saveState === "pending" ||
+      saveState === "saving" ||
+      saveState === "conflict" ||
+      saveState === "error"
+    ) {
+      setNotice("Resolve or finish textual saves before opening the shared graphical model.");
+      return;
+    }
+
+    setEngineeringCockpitOpen(false);
+    if (selectedPathRef.current === path) {
+      pendingDiagramPath.current = undefined;
+      setViewMode("diagram");
+      return;
+    }
+
+    pendingDiagramPath.current = path;
     if (entry.loaded === false) {
       await loadSpecificModel(path);
     } else {
       selectEntry(entry);
     }
-    setEngineeringCockpitOpen(false);
-    setViewMode("diagram");
   }
 
   function openDiagram() {
