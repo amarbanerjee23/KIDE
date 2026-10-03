@@ -43,6 +43,58 @@ export class FirebaseAuthClient {
     return this.userValue;
   }
 
+  async registerWithEmailPassword(
+    email: string,
+    password: string
+  ): Promise<FirebaseSignedInUser> {
+    if (!this.apiKey.trim()) {
+      throw new FirebaseAuthError("Firebase Web API key is not configured.");
+    }
+    if (!email.trim() || !password) {
+      throw new FirebaseAuthError("Email and password are required.");
+    }
+    if (password.length < 6) {
+      throw new FirebaseAuthError("Password must be at least 6 characters.");
+    }
+
+    const response = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${encodeURIComponent(this.apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+          returnSecureToken: true
+        })
+      }
+    );
+
+    const body = await parseJson(response);
+    if (!response.ok) {
+      throw new FirebaseAuthError(firebaseMessage(body, "Firebase registration failed."));
+    }
+
+    const result = body as Partial<FirebasePasswordResponse>;
+    if (
+      !result.localId ||
+      !result.idToken ||
+      !result.refreshToken ||
+      !result.expiresIn
+    ) {
+      throw new FirebaseAuthError("Firebase registration returned an incomplete session.");
+    }
+
+    this.idTokenValue = result.idToken;
+    this.refreshTokenValue = result.refreshToken;
+    this.expiresAt = Date.now() + seconds(result.expiresIn) * 1000;
+    this.userValue = {
+      uid: result.localId,
+      email: result.email ?? email.trim()
+    };
+    return this.userValue;
+  }
+
   async signInWithEmailPassword(
     email: string,
     password: string
@@ -180,6 +232,12 @@ function firebaseMessage(body: unknown, fallback: string): string {
     case "INVALID_PASSWORD":
     case "INVALID_LOGIN_CREDENTIALS":
       return "Email or password is incorrect.";
+    case "EMAIL_EXISTS":
+      return "An account already exists for this email.";
+    case "WEAK_PASSWORD":
+      return "Password must be at least 6 characters.";
+    case "INVALID_EMAIL":
+      return "Enter a valid email address.";
     case "USER_DISABLED":
       return "This Firebase account is disabled.";
     case "TOO_MANY_ATTEMPTS_TRY_LATER":

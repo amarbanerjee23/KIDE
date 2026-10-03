@@ -6,6 +6,51 @@ afterEach(() => {
 });
 
 describe("FirebaseAuthClient", () => {
+  it("registers with email and password and establishes a session", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(
+        JSON.stringify({
+          localId: "uid-new",
+          email: "new@example.test",
+          idToken: "id-token-new",
+          refreshToken: "refresh-new",
+          expiresIn: "3600"
+        }),
+        { status: 200 }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const auth = new FirebaseAuthClient("web-api-key");
+    const user = await auth.registerWithEmailPassword(
+      "new@example.test",
+      "secret1"
+    );
+
+    expect(user).toEqual({ uid: "uid-new", email: "new@example.test" });
+    expect(await auth.idToken()).toBe("id-token-new");
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
+      "identitytoolkit.googleapis.com/v1/accounts:signUp"
+    );
+  });
+
+  it("maps duplicate registration to a safe user-facing error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({ error: { message: "EMAIL_EXISTS" } }),
+          { status: 400 }
+        )
+      )
+    );
+
+    const auth = new FirebaseAuthClient("web-api-key");
+    await expect(
+      auth.registerWithEmailPassword("existing@example.test", "secret1")
+    ).rejects.toThrow("An account already exists for this email.");
+  });
+
   it("signs in and reuses a current ID token", async () => {
     const fetchMock = vi.fn(async () =>
       new Response(

@@ -114,14 +114,26 @@ class WebWorkspaceContractTest(unittest.TestCase):
         landing = (ROOT / "web" / "src" / "LandingPage.tsx").read_text(
             encoding="utf-8"
         )
+        register = (ROOT / "web" / "src" / "RegisterPage.tsx").read_text(
+            encoding="utf-8"
+        )
 
         self.assertIn('window.location.pathname.startsWith("/workspace")', app)
+        self.assertIn('window.location.pathname.startsWith("/register")', app)
         self.assertIn('"/workspace"', app)
+        self.assertIn('"/register"', app)
         self.assertIn('if (route === "home")', app)
+        self.assertIn('if (route === "register")', app)
         self.assertIn("<LandingPage", app)
+        self.assertIn("<RegisterPage", app)
         self.assertIn("Open Engineering Workspace", landing)
         self.assertIn("Sign in with Firebase", landing)
+        self.assertIn("New to KIDE? Create an account", landing)
         self.assertIn("Engineer control software from models to generated artifacts.", landing)
+        self.assertIn("Create account", register)
+        self.assertIn('aria-label="Registration email"', register)
+        self.assertIn('aria-label="Registration password"', register)
+        self.assertIn('aria-label="Confirm registration password"', register)
 
         self.assertNotIn('aria-label="Firebase email"', app)
         self.assertNotIn('aria-label="Firebase password"', app)

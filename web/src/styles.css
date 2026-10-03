@@ -1690,6 +1690,36 @@ body {
   background: #1d4ed8;
 }
 
+.landing-auth-link {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid rgba(148, 163, 184, .32);
+  border-radius: 7px;
+  color: #cbd5e1;
+  background: transparent;
+}
+
+.landing-auth-link:hover {
+  color: #f8fafc;
+  border-color: #60a5fa;
+  background: rgba(37, 99, 235, .12);
+}
+
+.registration-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+}
+
+.registration-card {
+  align-self: center;
+}
+
+.password-guidance {
+  margin: -6px 0 0;
+  color: #8192a8;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
 .landing-hero {
   width: min(1240px, calc(100% - 48px));
   margin: 0 auto;
