@@ -1,4 +1,4 @@
-package com.kide.enterprise.server;
+package com.kide.knowledge;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -8,19 +8,6 @@ import java.util.Set;
 import com.kide.enterprise.modelrepo.ModelPath;
 import com.kide.enterprise.modelrepo.ModelRepository;
 import com.kide.enterprise.modelrepo.ModelSnapshot;
-import com.kide.knowledge.KnowledgeCatalogueQuery;
-import com.kide.knowledge.KnowledgeCatalogueService;
-import com.kide.knowledge.KnowledgeQueryResult;
-import com.kide.knowledge.KnowledgeRepository;
-import com.kide.knowledge.KnowledgeRepositoryException;
-import com.kide.knowledge.KnowledgeSnapshot;
-import com.kide.knowledge.KnowledgeTraceIssue;
-import com.kide.knowledge.KnowledgeTraceLink;
-import com.kide.knowledge.KnowledgeTraceRelation;
-import com.kide.knowledge.KnowledgeTraceService;
-import com.kide.knowledge.KnowledgeTraceSnapshot;
-import com.kide.knowledge.KnowledgeTraceStore;
-import com.kide.knowledge.KnowledgeVocabulary;
 
 public final class ProjectKnowledgeService {
     private final KnowledgeRepository repository;

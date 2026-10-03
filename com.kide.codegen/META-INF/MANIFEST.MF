@@ -12,5 +12,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.emf.ecore,
  org.eclipse.xtext,
  com.kide.krl.dsl;bundle-version="1.0.0",
- com.kide.knowledge;bundle-version="1.0.0"
+ com.kide.knowledge;bundle-version="1.0.0",
+ com.kide.enterprise.modelrepo;bundle-version="1.0.0",
+ com.kide.synthesis;bundle-version="1.0.0"
 Export-Package: com.kide.codegen

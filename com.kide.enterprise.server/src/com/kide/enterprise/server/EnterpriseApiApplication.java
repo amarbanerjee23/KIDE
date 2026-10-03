@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 
+import com.kide.codegen.ProjectGenerationService;
 import com.kide.enterprise.audit.InMemoryAuditLedger;
 import com.kide.enterprise.authorization.AuthorizationEnforcer;
 import com.kide.enterprise.authorization.AuthorizationService;
@@ -33,11 +34,13 @@ import com.kide.enterprise.modelrepo.FileModelRepository;
 import com.kide.knowledge.EmbeddedKnowledgeRepository;
 import com.kide.knowledge.KnowledgeDataset;
 import com.kide.knowledge.KnowledgeProvenance;
+import com.kide.knowledge.ProjectKnowledgeService;
 import com.kide.knowledge.KnowledgeRepository;
 import com.kide.knowledge.KnowledgeTerm;
 import com.kide.knowledge.KnowledgeTraceStore;
 import com.kide.knowledge.KnowledgeTriple;
 import com.kide.knowledge.KnowledgeVocabulary;
+import com.kide.synthesis.ProjectSynthesisService;
 import com.kide.synthesis.SynthesisVocabulary;
 
 public final class EnterpriseApiApplication implements IApplication {

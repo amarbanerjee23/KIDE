@@ -45,9 +45,12 @@ import com.kide.enterprise.modelrepo.ModelSnapshot;
 import com.kide.enterprise.modelrepo.ModelTransaction;
 import com.kide.enterprise.modelrepo.RevisionConflictException;
 import com.kide.knowledge.KnowledgeRepositoryException;
+import com.kide.knowledge.ProjectKnowledgeService;
 import com.kide.knowledge.KnowledgeRevisionConflictException;
 import com.kide.synthesis.ProjectSynthesisException;
+import com.kide.synthesis.ProjectSynthesisService;
 import com.kide.codegen.GenerationException;
+import com.kide.codegen.ProjectGenerationService;
 
 /**
  * Shared HTTP runtime for browser and service clients. It binds the PR20 API

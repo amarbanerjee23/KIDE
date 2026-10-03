@@ -1,16 +1,10 @@
-package com.kide.enterprise.server;
+package com.kide.codegen;
 
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 
-import com.kide.codegen.GeneratedArtifact;
-import com.kide.codegen.GenerationContext;
-import com.kide.codegen.GenerationException;
-import com.kide.codegen.GenerationHashes;
-import com.kide.codegen.GenerationOutput;
-import com.kide.codegen.ProjectKrlGenerationEngine;
 import com.kide.enterprise.modelrepo.ModelPath;
 import com.kide.enterprise.modelrepo.ModelRepository;
 import com.kide.enterprise.modelrepo.ModelSnapshot;
@@ -19,6 +13,7 @@ import com.kide.knowledge.KnowledgeRepository;
 import com.kide.knowledge.KnowledgeRepositoryException;
 import com.kide.knowledge.KnowledgeRevisionConflictException;
 import com.kide.knowledge.KnowledgeSnapshot;
+import com.kide.synthesis.ProjectSynthesisService;
 
 public final class ProjectGenerationService {
     private static final int MAX_ARTIFACTS = 1_000;

@@ -25,6 +25,7 @@ Require-Bundle: org.eclipse.core.runtime,
  com.capability.dsl;bundle-version="1.0.0",
  com.operation.dsl;bundle-version="1.0.0",
  com.smr.activity.dsl;bundle-version="1.0.0",
- com.kide.knowledge;bundle-version="1.0.0"
+ com.kide.knowledge;bundle-version="1.0.0",
+ com.kide.enterprise.modelrepo;bundle-version="1.0.0"
 Export-Package: com.kide.synthesis,
  com.kide.synthesis.activity2mnc

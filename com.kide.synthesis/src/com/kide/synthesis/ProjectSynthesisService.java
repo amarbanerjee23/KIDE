@@ -1,4 +1,4 @@
-package com.kide.enterprise.server;
+package com.kide.synthesis;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -11,14 +11,6 @@ import com.kide.enterprise.modelrepo.RevisionConflictException;
 import com.kide.knowledge.KnowledgeRepository;
 import com.kide.knowledge.KnowledgeRepositoryException;
 import com.kide.knowledge.KnowledgeSnapshot;
-import com.kide.synthesis.HistoricalResourceBinding;
-import com.kide.synthesis.ProjectSynthesisEngine;
-import com.kide.synthesis.ReconfigurationCause;
-import com.kide.synthesis.ReconfigurationResult;
-import com.kide.synthesis.ResourceSelection;
-import com.kide.synthesis.SynthesisDiagnostic;
-import com.kide.synthesis.SynthesisPlan;
-import com.kide.synthesis.SynthesisResult;
 
 public final class ProjectSynthesisService {
     private final Path projectRoot;
