@@ -245,6 +245,65 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
 });
 
 
+test("keeps API reachability distinct from denied project authorization", async ({ page }) => {
+  let healthCalls = 0;
+  let projectCalls = 0;
+
+  await page.route("**/api/v1/health", async (route) => {
+    healthCalls += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ status: "UP", version: "v1", dependencies: {} })
+    });
+  });
+
+  await page.route("**/api/v1/projects", async (route) => {
+    projectCalls += 1;
+    await route.fulfill({
+      status: 403,
+      contentType: "application/json",
+      body: JSON.stringify({
+        apiVersion: "v1",
+        requestId: "24f8a8d8-739c-41ec-b291-1299550f4ba9",
+        code: "FORBIDDEN",
+        message: "The requested operation is not permitted.",
+        details: {}
+      })
+    });
+  });
+
+  await signInFirebase(page);
+  await expect.poll(() => healthCalls).toBe(1);
+  await expect.poll(() => projectCalls).toBe(1);
+
+  await page
+    .locator(".activity-bar")
+    .getByRole("button", { name: "Settings", exact: true })
+    .click();
+
+  await expect(page.locator(".connection-summary")).toContainText(
+    "Connected · API v1 · authorization required"
+  );
+  await expect(page.getByLabel("KIDE authorization identity")).toContainText(
+    "firebase:kide-playwright#firebase-browser-user"
+  );
+  await expect(page.getByText(/API is reachable, but firebase:kide-playwright#firebase-browser-user/))
+    .toBeVisible();
+  await expect(page.getByText(/Grant an explicit ENGINEER or ADMINISTRATOR role binding/))
+    .toBeVisible();
+  await expect(page.getByText(/24f8a8d8-739c-41ec-b291-1299550f4ba9/))
+    .toBeVisible();
+
+  await page.getByRole("button", { name: "Reconnect API", exact: true }).click();
+  await expect.poll(() => healthCalls).toBe(2);
+  await expect.poll(() => projectCalls).toBe(2);
+  await expect(page.locator(".connection-summary")).toContainText(
+    "Connected · API v1 · authorization required"
+  );
+});
+
+
 test("opens Activity through the secure GLSP browser boundary", async ({ page }) => {
   let requestedSourceUri = "";
   let requestedDiagramType = "";

@@ -27,6 +27,7 @@ import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
 import type {
   GenerationResult,
+  Health,
   KnowledgeCatalogueItem,
   KnowledgeImpactResult,
   KnowledgeTraceList,
@@ -481,12 +482,38 @@ export default function App() {
   async function connect() {
     setNotice("");
     setConflict(undefined);
+
+    let health: Health;
     try {
-      const health = await client.health();
-      const list = await client.listProjects();
-      setServiceStatus(`${health.status} · API ${health.version}`);
-      setProjects(list.items);
+      health = await client.health();
+      setServiceStatus(`Connected · ${health.status} · API ${health.version}`);
     } catch (error) {
+      setServiceStatus("Not connected");
+      showError(error);
+      return;
+    }
+
+    try {
+      const list = await client.listProjects();
+      setProjects(list.items);
+      if (list.items.length === 0) {
+        setNotice("API connected. No authorized server projects are available for this account.");
+      }
+    } catch (error) {
+      setProjects([]);
+      if (error instanceof ApiClientError && error.status === 403) {
+        setServiceStatus(`Connected · API ${health.version} · authorization required`);
+        const principal = firebaseAuth.user
+          ? `firebase:${FIREBASE_PROJECT_ID}#${firebaseAuth.user.uid}`
+          : "the signed-in Firebase principal";
+        const suffix = error.requestId ? ` Request ${error.requestId}.` : "";
+        setNotice(
+          `API is reachable, but ${principal} has no KIDE project access. ` +
+          `Grant an explicit ENGINEER or ADMINISTRATOR role binding on the hosted project.${suffix}`
+        );
+        return;
+      }
+      setServiceStatus(`Connected · API ${health.version} · project listing failed`);
       showError(error);
     }
   }
@@ -2087,6 +2114,16 @@ export default function App() {
                         Sign out
                       </button>
                     </div>
+                    {FIREBASE_PROJECT_ID && (
+                      <div className="authorization-identity" aria-label="KIDE authorization identity">
+                        <small>KIDE principal</small>
+                        <code>{`firebase:${FIREBASE_PROJECT_ID}#${firebaseAuth.user.uid}`}</code>
+                        <p className="muted">
+                          Firebase sign-in proves identity. Server-side KIDE role bindings grant
+                          project access; authentication never grants engineering rights automatically.
+                        </p>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="workspace-auth-required">
@@ -2129,6 +2166,17 @@ export default function App() {
                   <span><strong>Xtext LSP</strong>{lspStatus}</span>
                   <span><strong>Collaboration</strong>{collaborationStatus}</span>
                 </div>
+                {!project && entries.some((entry) => entry.source !== "remote") && (
+                  <div className="local-archive-service-note" role="status">
+                    <strong>Local archive workspace</strong>
+                    <p className="muted">
+                      This ZIP is open only in the browser and has no hosted project/workspace ID.
+                      Reconnecting the API checks server availability and authorization, but cannot
+                      attach Xtext LSP, GLSP, collaboration, synthesis or generation to this local
+                      archive. Open an authorized hosted project to use those services.
+                    </p>
+                  </div>
+                )}
               </section>
 
               <section className="settings-section">
