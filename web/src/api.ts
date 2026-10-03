@@ -467,6 +467,12 @@ export class KideApiClient {
         envelope
       );
     }
+    if (body === undefined) {
+      throw new ApiClientError(
+        `Generated operation ${call.operationId} expected response schema ${call.responseSchema}, but the response was empty or invalid JSON.`,
+        response.status
+      );
+    }
     return body as T;
   }
 }
