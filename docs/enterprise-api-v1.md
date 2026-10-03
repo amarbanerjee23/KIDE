@@ -68,6 +68,34 @@ validated, and all object schemas allow unknown fields for forward compatibility
 schema references, routes outside `/api/v1`, malformed path parameter declarations
 or malformed generated contract structure.
 
+## Generated Web transport
+
+PR81 generates `web/src/generated/api-v1.ts` from the packaged runtime OpenAPI
+document rather than maintaining REST route templates and HTTP verbs manually in
+the browser client.
+
+The generated transport owns:
+
+- every v1 operation ID;
+- HTTP method;
+- encoded path construction for all path parameters;
+- request-schema and response-schema names.
+
+`web/src/api.ts` remains responsible for Firebase bearer authentication,
+request IDs, structured error handling and UI-facing result refinements, but it
+must call the generated operations instead of spelling REST routes or verbs.
+
+The packaged `com.kide.enterprise.api.selfcheck` can export
+`OpenApiV1.generateJson()` with `--openapi-output`. Build KIDE exports that
+document from the actual packaged Eclipse product and runs
+`scripts/generate_web_api_client.py --check` against the checked-in TypeScript
+transport. Any server-route, verb, path-parameter or schema-reference drift
+therefore fails CI before the products are accepted.
+
+Successful browser responses also fail closed when the declared response schema
+receives an empty or malformed JSON payload. Unknown response fields remain
+forward-compatible as required by the v1 contract.
+
 ## Qualification
 
 The PR20 test bundle verifies the six required domain surfaces, deterministic
