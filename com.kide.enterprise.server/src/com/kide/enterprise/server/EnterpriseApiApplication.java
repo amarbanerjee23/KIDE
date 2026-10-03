@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 
+import com.kide.codegen.ProjectGenerationService;
 import com.kide.enterprise.audit.InMemoryAuditLedger;
 import com.kide.enterprise.authorization.AuthorizationEnforcer;
 import com.kide.enterprise.authorization.AuthorizationService;
