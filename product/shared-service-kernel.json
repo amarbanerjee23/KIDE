@@ -10,6 +10,7 @@
   ],
   "ownership": {
     "project_synthesis_service": "com.kide.synthesis",
+    "project_generation_service": "com.kide.codegen",
     "http_adapter": "com.kide.enterprise.server"
   }
 }
