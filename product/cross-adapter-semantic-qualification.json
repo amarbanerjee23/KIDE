@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "purpose": "Fail closed if KIDE desktop/web adapters diverge from the shared engineering semantics.",
+  "runtime_equality": {
+    "application": "com.kide.enterprise.server.selfcheck",
+    "marker": "KIDE PR80 CROSS-ADAPTER SEMANTIC PARITY OK",
+    "shared_services": [
+      "com.kide.knowledge.ProjectKnowledgeService",
+      "com.kide.synthesis.ProjectSynthesisService",
+      "com.kide.codegen.ProjectGenerationService"
+    ],
+    "http_adapter": "com.kide.enterprise.server.EnterpriseApiServer",
+    "compared_semantics": [
+      "knowledge revision, etag, item iri and label",
+      "synthesis status, fingerprint, generated MNC, selections and diagnostic codes",
+      "generation fingerprint, synthesis fingerprint, manifest structure and artifact path/hash/target/content",
+      "reconfiguration status, cause, fingerprint, selections and migration policy/resources"
+    ],
+    "excluded_presentation_or_transport": [
+      "request ids",
+      "timestamps",
+      "HTTP headers",
+      "JSON object ordering",
+      "UI wording and layout"
+    ]
+  },
+  "adapter_gates": [
+    {
+      "adapter_pair": "Eclipse Xtext / Web LSP",
+      "contract": "product/lsp-capabilities.json",
+      "static_verifier": "scripts/verify_lsp_parity_matrix.py",
+      "runtime_qualifier": "scripts/qualify_lsp_parity.py"
+    },
+    {
+      "adapter_pair": "Eclipse Sirius / Web GLSP",
+      "contract": "product/diagram-semantics.json",
+      "static_verifier": "scripts/verify_diagram_parity.py",
+      "runtime_qualifier": "scripts/smoke_glsp_runtime.py"
+    }
+  ]
+}
