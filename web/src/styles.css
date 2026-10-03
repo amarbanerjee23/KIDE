@@ -2322,3 +2322,7 @@ body {
 .engineering-inline-field {
   margin: 8px 0 10px;
 }
+
+.engineering-result-binding {
+  margin-top: 6px;
+}
