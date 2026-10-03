@@ -16,6 +16,8 @@
    <plugin id="com.kide.languageserver" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.kide.languageserver.gateway" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.kide.enterprise.server" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.kide.enterprise.api" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
+   <plugin id="com.kide.enterprise.modelrepo" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.kide.glsp" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.kide.knowledge" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
    <plugin id="com.kide.synthesis" download-size="0" install-size="0" version="0.0.0" unpack="false"/>
