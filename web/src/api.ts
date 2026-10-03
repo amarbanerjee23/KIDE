@@ -1,3 +1,4 @@
+import { apiV1, type GeneratedApiCall } from "./generated/api-v1";
 import type {
   ApiErrorEnvelope,
   GenerationResult,
@@ -54,38 +55,38 @@ export class KideApiClient {
   }
 
   health(): Promise<Health> {
-    return this.request<Health>("/health", { method: "GET" }, false);
+    return this.request<Health>(apiV1.health(), {}, false);
   }
 
   listProjects(): Promise<ProjectList> {
-    return this.request<ProjectList>("/projects", { method: "GET" });
+    return this.request<ProjectList>(apiV1.listProjects(), {});
   }
 
   getProject(projectId: string): Promise<Project> {
     return this.request<Project>(
-      `/projects/${encodeURIComponent(projectId)}`,
-      { method: "GET" }
+      apiV1.getProject(projectId),
+      {}
     );
   }
 
   listModels(projectId: string): Promise<ModelList> {
     return this.request<ModelList>(
-      `/projects/${encodeURIComponent(projectId)}/models`,
-      { method: "GET" }
+      apiV1.listModels(projectId),
+      {}
     );
   }
 
   createStarterModels(projectId: string): Promise<ModelList> {
     return this.request<ModelList>(
-      `/projects/${encodeURIComponent(projectId)}/models`,
-      { method: "POST" }
+      apiV1.createStarterModels(projectId),
+      {}
     );
   }
 
   getModel(projectId: string, modelId: string): Promise<Model> {
     return this.request<Model>(
-      `/projects/${encodeURIComponent(projectId)}/models/${encodeURIComponent(modelId)}`,
-      { method: "GET" }
+      apiV1.getModel(projectId, modelId),
+      {}
     );
   }
 
@@ -97,9 +98,8 @@ export class KideApiClient {
     mediaType: string
   ): Promise<Model> {
     return this.request<Model>(
-      `/projects/${encodeURIComponent(projectId)}/models/${encodeURIComponent(modelId)}`,
+      apiV1.putModel(projectId, modelId),
       {
-        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content, expectedRevision, mediaType })
       }
@@ -108,8 +108,8 @@ export class KideApiClient {
 
   listPresence(projectId: string): Promise<PresenceList> {
     return this.request<PresenceList>(
-      `/projects/${encodeURIComponent(projectId)}/collaboration/sessions`,
-      { method: "GET" }
+      apiV1.listPresence(projectId),
+      {}
     );
   }
 
@@ -119,9 +119,8 @@ export class KideApiClient {
     modelId?: string
   ): Promise<PresenceSession> {
     return this.request<PresenceSession>(
-      `/projects/${encodeURIComponent(projectId)}/collaboration/sessions`,
+      apiV1.joinPresence(projectId),
       {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...(sessionId ? { sessionId } : {}),
@@ -137,9 +136,8 @@ export class KideApiClient {
     modelId?: string
   ): Promise<PresenceSession> {
     return this.request<PresenceSession>(
-      `/projects/${encodeURIComponent(projectId)}/collaboration/sessions/${encodeURIComponent(sessionId)}`,
+      apiV1.heartbeatPresence(projectId, sessionId),
       {
-        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(modelId ? { modelId } : {})
       }
@@ -148,15 +146,15 @@ export class KideApiClient {
 
   leavePresence(projectId: string, sessionId: string): Promise<PresenceSession> {
     return this.request<PresenceSession>(
-      `/projects/${encodeURIComponent(projectId)}/collaboration/sessions/${encodeURIComponent(sessionId)}`,
-      { method: "DELETE" }
+      apiV1.leavePresence(projectId, sessionId),
+      {}
     );
   }
 
   listReviewChangeSets(projectId: string): Promise<ReviewChangeSetList> {
     return this.request<ReviewChangeSetList>(
-      `/projects/${encodeURIComponent(projectId)}/reviews/changesets`,
-      { method: "GET" }
+      apiV1.listReviewChangeSets(projectId),
+      {}
     );
   }
 
@@ -168,9 +166,8 @@ export class KideApiClient {
     mediaType: string
   ): Promise<ReviewChangeSet> {
     return this.request<ReviewChangeSet>(
-      `/projects/${encodeURIComponent(projectId)}/reviews/changesets`,
+      apiV1.createReviewChangeSet(projectId),
       {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           modelId,
@@ -184,8 +181,8 @@ export class KideApiClient {
 
   getReviewChangeSet(projectId: string, changeSetId: string): Promise<ReviewBundle> {
     return this.request<ReviewBundle>(
-      `/projects/${encodeURIComponent(projectId)}/reviews/changesets/${encodeURIComponent(changeSetId)}`,
-      { method: "GET" }
+      apiV1.getReviewChangeSet(projectId, changeSetId),
+      {}
     );
   }
 
@@ -196,9 +193,8 @@ export class KideApiClient {
     proposedContent: string
   ): Promise<ReviewChangeSet> {
     return this.request<ReviewChangeSet>(
-      `/projects/${encodeURIComponent(projectId)}/reviews/changesets/${encodeURIComponent(changeSetId)}`,
+      apiV1.rebaseReviewChangeSet(projectId, changeSetId),
       {
-        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ expectedCurrentEtag, proposedContent })
       }
@@ -215,15 +211,15 @@ export class KideApiClient {
 
   applyReview(projectId: string, changeSetId: string): Promise<ReviewApplyResult> {
     return this.request<ReviewApplyResult>(
-      `/projects/${encodeURIComponent(projectId)}/reviews/changesets/${encodeURIComponent(changeSetId)}/apply`,
-      { method: "POST" }
+      apiV1.applyReview(projectId, changeSetId),
+      {}
     );
   }
 
   listReviewComments(projectId: string, changeSetId: string): Promise<{ items: ReviewComment[] }> {
     return this.request<{ items: ReviewComment[] }>(
-      `/projects/${encodeURIComponent(projectId)}/reviews/changesets/${encodeURIComponent(changeSetId)}/comments`,
-      { method: "GET" }
+      apiV1.listReviewComments(projectId, changeSetId),
+      {}
     );
   }
 
@@ -234,9 +230,8 @@ export class KideApiClient {
     anchor = ""
   ): Promise<ReviewComment> {
     return this.request<ReviewComment>(
-      `/projects/${encodeURIComponent(projectId)}/reviews/changesets/${encodeURIComponent(changeSetId)}/comments`,
+      apiV1.createReviewComment(projectId, changeSetId),
       {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ body, anchor })
       }
@@ -250,9 +245,8 @@ export class KideApiClient {
     resolved: boolean
   ): Promise<ReviewComment> {
     return this.request<ReviewComment>(
-      `/projects/${encodeURIComponent(projectId)}/reviews/changesets/${encodeURIComponent(changeSetId)}/comments/${encodeURIComponent(commentId)}`,
+      apiV1.updateReviewComment(projectId, changeSetId, commentId),
       {
-        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resolved })
       }
@@ -265,9 +259,8 @@ export class KideApiClient {
     modelRevision: string
   ): Promise<SynthesisResult> {
     return this.request<SynthesisResult>(
-      `/projects/${encodeURIComponent(projectId)}/synthesis`,
+      apiV1.synthesize(projectId),
       {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modelId, modelRevision })
       }
@@ -285,9 +278,8 @@ export class KideApiClient {
     >>
   ): Promise<ReconfigurationResult> {
     return this.request<ReconfigurationResult>(
-      `/projects/${encodeURIComponent(projectId)}/reconfiguration`,
+      apiV1.reconfigure(projectId),
       {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           modelId,
@@ -308,9 +300,8 @@ export class KideApiClient {
     synthesisFingerprint: string
   ): Promise<GenerationResult> {
     return this.request<GenerationResult>(
-      `/projects/${encodeURIComponent(projectId)}/generation`,
+      apiV1.generate(projectId),
       {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sourceModelId,
@@ -330,9 +321,8 @@ export class KideApiClient {
     limit = 100
   ): Promise<KnowledgeQueryResult> {
     return this.request<KnowledgeQueryResult>(
-      `/projects/${encodeURIComponent(projectId)}/knowledge/query`,
+      apiV1.queryKnowledge(projectId),
       {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query, typeIri, limit })
       }
@@ -341,8 +331,8 @@ export class KideApiClient {
 
   listKnowledgeTraces(projectId: string): Promise<KnowledgeTraceList> {
     return this.request<KnowledgeTraceList>(
-      `/projects/${encodeURIComponent(projectId)}/knowledge/traces`,
-      { method: "GET" }
+      apiV1.listKnowledgeTraces(projectId),
+      {}
     );
   }
 
@@ -355,9 +345,8 @@ export class KideApiClient {
     expectedTraceEtag: string
   ): Promise<KnowledgeTraceList> {
     return this.request<KnowledgeTraceList>(
-      `/projects/${encodeURIComponent(projectId)}/knowledge/traces`,
+      apiV1.createKnowledgeTrace(projectId),
       {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           knowledgeIri,
@@ -378,9 +367,8 @@ export class KideApiClient {
     expectedTraceEtag: string
   ): Promise<KnowledgeTraceList> {
     return this.request<KnowledgeTraceList>(
-      `/projects/${encodeURIComponent(projectId)}/knowledge/traces/${encodeURIComponent(traceId)}`,
+      apiV1.rebindKnowledgeTrace(projectId, traceId),
       {
-        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modelId, semanticId, expectedTraceEtag })
       }
@@ -393,9 +381,8 @@ export class KideApiClient {
     expectedTraceEtag: string
   ): Promise<KnowledgeTraceList> {
     return this.request<KnowledgeTraceList>(
-      `/projects/${encodeURIComponent(projectId)}/knowledge/traces/${encodeURIComponent(traceId)}`,
+      apiV1.deleteKnowledgeTrace(projectId, traceId),
       {
-        method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ expectedTraceEtag })
       }
@@ -408,9 +395,8 @@ export class KideApiClient {
     modelId = ""
   ): Promise<KnowledgeImpactResult> {
     return this.request<KnowledgeImpactResult>(
-      `/projects/${encodeURIComponent(projectId)}/knowledge/impact`,
+      apiV1.queryKnowledgeImpact(projectId),
       {
-        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...(knowledgeIri ? { knowledgeIri } : {}),
@@ -425,15 +411,16 @@ export class KideApiClient {
     changeSetId: string,
     action: "ready" | "approve"
   ): Promise<ReviewChangeSet> {
-    return this.request<ReviewChangeSet>(
-      `/projects/${encodeURIComponent(projectId)}/reviews/changesets/${encodeURIComponent(changeSetId)}/${action}`,
-      { method: "POST" }
-    );
+    const call =
+      action === "ready"
+        ? apiV1.markReviewReady(projectId, changeSetId)
+        : apiV1.approveReview(projectId, changeSetId);
+    return this.request<ReviewChangeSet>(call, {});
   }
 
   private async request<T>(
-    path: string,
-    init: RequestInit,
+    call: GeneratedApiCall,
+    init: Omit<RequestInit, "method">,
     requireAuthentication = true
   ): Promise<T> {
     const headers = new Headers(init.headers);
@@ -446,9 +433,26 @@ export class KideApiClient {
       headers.set("Authorization", `Bearer ${token}`);
     }
 
+    if (call.requestSchema && init.body === undefined) {
+      throw new ApiClientError(
+        `Generated operation ${call.operationId} requires request schema ${call.requestSchema}.`,
+        0
+      );
+    }
+    if (!call.requestSchema && init.body !== undefined) {
+      throw new ApiClientError(
+        `Generated operation ${call.operationId} does not accept a request body.`,
+        0
+      );
+    }
+
     let response: Response;
     try {
-      response = await fetch(`${this.root}${path}`, { ...init, headers });
+      response = await fetch(`${this.root}${call.path}`, {
+        ...init,
+        method: call.method,
+        headers
+      });
     } catch {
       throw new ApiClientError("The KIDE service could not be reached.", 0);
     }
@@ -461,6 +465,12 @@ export class KideApiClient {
         envelope?.message ?? `KIDE service request failed with HTTP ${response.status}.`,
         response.status,
         envelope
+      );
+    }
+    if (body === undefined) {
+      throw new ApiClientError(
+        `Generated operation ${call.operationId} expected response schema ${call.responseSchema}, but the response was empty or invalid JSON.`,
+        response.status
       );
     }
     return body as T;

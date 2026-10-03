@@ -51,7 +51,7 @@ def find_launcher(root: Path) -> Path:
     return candidates[0]
 
 
-def run_selfcheck(archive: Path) -> None:
+def run_selfcheck(archive: Path, openapi_output: Path | None = None) -> None:
     with tempfile.TemporaryDirectory(prefix="kide-pr20-runtime-") as temp_dir:
         root = Path(temp_dir)
         safe_extract(archive, root)
@@ -60,14 +60,20 @@ def run_selfcheck(archive: Path) -> None:
         workspace = root / "workspace"
         workspace.mkdir()
 
+        command = [
+            str(launcher),
+            "-nosplash",
+            "-consoleLog",
+            "-application", "com.kide.enterprise.api.selfcheck",
+            "-data", str(workspace),
+        ]
+        if openapi_output is not None:
+            output = openapi_output.resolve()
+            output.parent.mkdir(parents=True, exist_ok=True)
+            command.extend(["--openapi-output", str(output)])
+
         result = subprocess.run(
-            [
-                str(launcher),
-                "-nosplash",
-                "-consoleLog",
-                "-application", "com.kide.enterprise.api.selfcheck",
-                "-data", str(workspace),
-            ],
+            command,
             cwd=launcher.parent,
             env=os.environ.copy(),
             text=True,
@@ -86,16 +92,28 @@ def run_selfcheck(archive: Path) -> None:
             raise SmokeError(
                 f"packaged PR20 API contract success marker missing\n{output[-6000:]}"
             )
+        if openapi_output is not None:
+            if not openapi_output.is_file():
+                raise SmokeError("packaged API self-check did not export OpenAPI")
+            try:
+                document = __import__("json").loads(
+                    openapi_output.read_text(encoding="utf-8")
+                )
+            except (OSError, ValueError) as exc:
+                raise SmokeError(f"exported OpenAPI is invalid: {exc}") from exc
+            if document.get("openapi") != "3.1.0" or document.get("info", {}).get("version") != "v1":
+                raise SmokeError("exported OpenAPI is not the KIDE v1 contract")
         print(f"PR20 PACKAGED API CONTRACT QUALIFIED: {archive.name}")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--products", required=True, type=Path)
+    parser.add_argument("--openapi-output", type=Path)
     args = parser.parse_args()
     if not args.products.is_dir():
         raise SmokeError(f"products directory does not exist: {args.products}")
-    run_selfcheck(find_linux_archive(args.products))
+    run_selfcheck(find_linux_archive(args.products), args.openapi_output)
     return 0
 
 

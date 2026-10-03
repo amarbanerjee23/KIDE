@@ -53,6 +53,56 @@ describe("KideApiClient", () => {
     });
   });
 
+  it("uses generated route encoding and verbs for model reads", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe(
+        "https://kide.example/api/v1/projects/project%2Falpha/models/folder%2Fmodel.dml"
+      );
+      expect(init?.method).toBe("GET");
+      return new Response(
+        JSON.stringify({
+          id: "folder/model.dml",
+          content: "domain Encoded",
+          revision: "1",
+          etag: "a".repeat(64),
+          mediaType: "text/x-kide-dml"
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        }
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new KideApiClient("https://kide.example", () => "token-value");
+    await expect(
+      client.getModel("project/alpha", "folder/model.dml")
+    ).resolves.toMatchObject({ id: "folder/model.dml" });
+  });
+
+  it("fails closed when a generated response schema receives invalid JSON", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response("", {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        })
+      )
+    );
+
+    const client = new KideApiClient(
+      "https://kide.example",
+      () => "token-value"
+    );
+
+    await expect(client.listProjects()).rejects.toMatchObject({
+      status: 200,
+      message: expect.stringContaining("expected response schema ProjectList")
+    });
+  });
+
   it("surfaces typed revision conflicts without rewriting them", async () => {
     vi.stubGlobal(
       "fetch",

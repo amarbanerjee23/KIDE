@@ -119,7 +119,15 @@ jobs:
       - name: Smoke-test packaged API contract runtime
         run: |
           python3 scripts/smoke_api_contract.py \
-            --products releng/com.kide.repository/target/products
+            --products releng/com.kide.repository/target/products \
+            --openapi-output qualification/openapi-v1.json
+
+      - name: Verify generated Web API transport against packaged OpenAPI
+        run: |
+          python3 scripts/generate_web_api_client.py \
+            --openapi qualification/openapi-v1.json \
+            --output web/src/generated/api-v1.ts \
+            --check
 
       - name: Smoke-test packaged model repository runtime
         run: |
