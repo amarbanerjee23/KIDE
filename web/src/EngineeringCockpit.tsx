@@ -216,7 +216,7 @@ export function EngineeringCockpit({
               ))}
               {synthesisResult.generatedMnc && (
                 <details open>
-                  <summary>Synthesized MNC model</summary>
+                  <summary>Generated MNC / synthesized control model</summary>
                   <pre>{synthesisResult.generatedMnc}</pre>
                 </details>
               )}
@@ -274,9 +274,16 @@ export function EngineeringCockpit({
             />
           </label>
           {generationResult?.artifacts.length ? (
-            generationResult.artifacts.map((artifact) => (
-              <GeneratedArtifactView artifact={artifact} key={artifact.path} />
-            ))
+            <>
+              <strong>Generated {generationResult.artifacts.length} artifact(s)</strong>
+              {generationResult.artifacts.map((artifact) => (
+                <GeneratedArtifactView artifact={artifact} key={artifact.path} />
+              ))}
+              <details className="generated-artifact">
+                <summary>Generation manifest</summary>
+                <pre>{generationResult.manifestJson}</pre>
+              </details>
+            </>
           ) : (
             <p className="muted">
               Run synthesis first, then generate code to inspect deterministic output artifacts here.
