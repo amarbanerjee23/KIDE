@@ -1756,12 +1756,56 @@ export default function App() {
       run: () => void refreshProjectModels()
     },
     {
+      id: "engineering.cockpit",
+      label: "Engineering: Open Flow & Generation Cockpit",
+      description: "Synthesis, state machines, reconfiguration and generated code",
+      run: () => setEngineeringCockpitOpen(true)
+    },
+    {
       id: "engineering.synthesize",
       label: "Engineering: Run Deterministic Synthesis",
       description: selected?.path.endsWith(".activity")
         ? selected.path
         : "Open an Activity model first",
       run: runSynthesisInWorkbench
+    },
+    {
+      id: "engineering.reconfigure",
+      label: "Engineering: Reconfigure Control Plan",
+      description: synthesisResult?.status === "SUCCESS"
+        ? reconfigurationCause
+        : "Run synthesis first",
+      run: () => {
+        setEngineeringCockpitOpen(true);
+        void runReconfiguration();
+      }
+    },
+    {
+      id: "engineering.generate",
+      label: "Engineering: Generate Code",
+      description: canGenerate ? generationKrlModelId : "Run synthesis first",
+      run: () => {
+        setEngineeringCockpitOpen(true);
+        void runGeneration();
+      }
+    },
+    {
+      id: "engineering.activityDiagram",
+      label: "Engineering: Visualize Activity Flow",
+      description: activityModels[0] ?? "No Activity model",
+      run: () => {
+        const path =
+          selected?.path.toLowerCase().endsWith(".activity")
+            ? selected.path
+            : activityModels[0];
+        if (path) void openGraphicalModel(path);
+      }
+    },
+    {
+      id: "engineering.stateMachine",
+      label: "Engineering: Visualize MNC State Machine",
+      description: mncModels[0] ?? "No MNC model",
+      run: () => mncModels[0] && void openGraphicalModel(mncModels[0])
     },
     {
       id: "engineering.diagram",
