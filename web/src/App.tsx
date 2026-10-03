@@ -2772,6 +2772,10 @@ export default function App() {
               canSynthesize={canSynthesize}
               canReconfigure={canReconfigure}
               canGenerate={canGenerate}
+              reconfigurationCause={reconfigurationCause}
+              generationKrlModelId={generationKrlModelId}
+              onReconfigurationCause={setReconfigurationCause}
+              onGenerationKrlModelId={setGenerationKrlModelId}
               onSynthesize={() => void runSynthesis()}
               onReconfigure={() => void runReconfiguration()}
               onGenerate={() => void runGeneration()}
