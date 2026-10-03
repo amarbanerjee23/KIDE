@@ -12,9 +12,14 @@ REQUIRED_FEATURES = {
     "diagnostics", "completion", "hover", "definition", "references",
     "document_symbols", "workspace_symbols", "formatting", "rename", "folding",
     "snippets", "code_actions", "semantic_tokens", "declaration",
-    "type_definition", "implementation",
+    "type_definition", "implementation", "document_highlights",
+    "range_formatting", "signature_help",
 }
-QUALIFICATIONS = {"required", "required_where_applicable", "deferred"}
+QUALIFICATIONS = {
+    "required",
+    "required_where_applicable",
+    "not_applicable",
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -34,6 +39,10 @@ def verify(root: Path) -> list[str]:
 
     if matrix.get("schema_version") != 1:
         errors.append("product/lsp-capabilities.json must use schema_version 1")
+
+    baseline = matrix.get("baseline")
+    if not isinstance(baseline, dict) or baseline.get("xtext") != "2.44.0 current platform":
+        errors.append("LSP parity baseline must be Xtext 2.44.0 current platform")
 
     registry_languages = registry.get("languages")
     if not isinstance(registry_languages, list):
@@ -69,8 +78,13 @@ def verify(root: Path) -> list[str]:
         feature_ids.append(feature_id)
         if feature.get("qualification") not in QUALIFICATIONS:
             errors.append(f"invalid qualification for LSP feature {feature_id}")
-        if feature.get("qualification") == "deferred" and not feature.get("reason"):
-            errors.append(f"deferred LSP feature {feature_id} requires a reason")
+        qualification = feature.get("qualification")
+        if qualification == "not_applicable" and not feature.get("reason"):
+            errors.append(f"not-applicable LSP feature {feature_id} requires a reason")
+        if qualification == "deferred":
+            errors.append(
+                f"LSP feature {feature_id} may not remain deferred on the complete-parity baseline"
+            )
     if set(feature_ids) != REQUIRED_FEATURES or len(feature_ids) != len(REQUIRED_FEATURES):
         errors.append("LSP feature matrix must contain the complete PR13 feature set exactly once")
 
@@ -79,7 +93,16 @@ def verify(root: Path) -> list[str]:
         if not isinstance(probe, dict):
             errors.append(f"missing LSP probes for {language_id}")
             continue
-        for field in ("symbol", "hover_token", "references_min", "folding_min", "rename_targets"):
+        for field in (
+            "symbol",
+            "hover_token",
+            "references_min",
+            "folding_min",
+            "semantic_tokens_min",
+            "document_highlights_min",
+            "document_highlight_token",
+            "rename_targets",
+        ):
             if field not in probe:
                 errors.append(f"{language_id} LSP probe missing {field}")
         for field in ("document_symbol", "workspace_symbol"):
@@ -96,6 +119,56 @@ def verify(root: Path) -> list[str]:
             if own_name not in rename_targets:
                 errors.append(f"{language_id} rename must include its own document {own_name}")
 
+        highlight_token = probe.get("document_highlight_token")
+        if not isinstance(highlight_token, str) or not highlight_token:
+            errors.append(f"{language_id} document_highlight_token must be non-empty")
+
+        semantic_min = probe.get("semantic_tokens_min")
+        if not isinstance(semantic_min, int) or isinstance(semantic_min, bool) or semantic_min < 0:
+            errors.append(f"{language_id} semantic_tokens_min must be a non-negative integer")
+
+        highlight_min = probe.get("document_highlights_min")
+        if not isinstance(highlight_min, int) or isinstance(highlight_min, bool) or highlight_min < 0:
+            errors.append(f"{language_id} document_highlights_min must be a non-negative integer")
+
+        semantic_completion = probe.get("semantic_completion")
+        if semantic_completion is not None:
+            if language_id not in {"mnc", "capability", "activity"}:
+                errors.append(
+                    f"{language_id} declares semantic completion without an Eclipse custom proposal provider"
+                )
+            elif not isinstance(semantic_completion, dict):
+                errors.append(f"{language_id} semantic_completion must be an object")
+            else:
+                text_value = semantic_completion.get("text")
+                expected = semantic_completion.get("expected")
+                forbidden = semantic_completion.get("forbidden")
+                if not isinstance(text_value, str) or not text_value:
+                    errors.append(f"{language_id} semantic_completion text must be non-empty")
+                if not isinstance(expected, list) or not expected or not all(
+                    isinstance(item, str) and item for item in expected
+                ):
+                    errors.append(
+                        f"{language_id} semantic_completion expected must be a non-empty string list"
+                    )
+                if not isinstance(forbidden, list) or not forbidden or not all(
+                    isinstance(item, str) and item for item in forbidden
+                ):
+                    errors.append(
+                        f"{language_id} semantic_completion forbidden must be a non-empty string list"
+                    )
+
+        action = probe.get("code_action")
+        if action is not None:
+            if language_id not in {"mnc", "capability", "activity"}:
+                errors.append(f"{language_id} declares a custom code action without an Eclipse quick fix")
+            elif not isinstance(action, dict):
+                errors.append(f"{language_id} code_action must be an object")
+            else:
+                for field in ("diagnostic_code", "title", "replacement"):
+                    if not isinstance(action.get(field), str):
+                        errors.append(f"{language_id} code_action {field} must be a string")
+
         definition = probe.get("definition")
         if definition is not None:
             occurrence = definition.get("occurrence", 1) if isinstance(definition, dict) else 1
@@ -111,6 +184,29 @@ def verify(root: Path) -> list[str]:
                     )
                 if not isinstance(definition.get("token"), str) or not definition.get("token"):
                     errors.append(f"{language_id} definition probe requires token")
+
+    semantic_completion_languages = {
+        language_id
+        for language_id, probe in language_matrix.items()
+        if isinstance(probe, dict)
+        and isinstance(probe.get("semantic_completion"), dict)
+    }
+    if semantic_completion_languages != {"mnc", "capability", "activity"}:
+        errors.append(
+            "semantic Eclipse content-assist parity must be defined exactly for "
+            "mnc, capability and activity"
+        )
+
+    action_languages = {
+        language_id
+        for language_id, probe in language_matrix.items()
+        if isinstance(probe, dict) and isinstance(probe.get("code_action"), dict)
+    }
+    if action_languages != {"mnc", "capability", "activity"}:
+        errors.append(
+            "custom Eclipse quick-fix parity must be defined exactly for "
+            "mnc, capability and activity"
+        )
 
     return errors
 

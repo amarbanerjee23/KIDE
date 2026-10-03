@@ -52,45 +52,58 @@
     },
     {
       "id": "folding",
-      "qualification": "deferred",
-      "capability": "foldingRangeProvider",
-      "reason": "The packaged Xtext 2.25 server does not advertise foldingRangeProvider; PR16 must promote this only after the platform upgrade exposes and qualifies it."
+      "qualification": "required",
+      "capability": "foldingRangeProvider"
     },
     {
       "id": "snippets",
-      "qualification": "deferred",
+      "qualification": "not_applicable",
       "capability": null,
-      "reason": "not separately qualified on the legacy Xtext baseline"
+      "reason": "KIDE Eclipse ships no separate snippet service; snippet-shaped completion items remain supported through completion."
     },
     {
       "id": "code_actions",
-      "qualification": "deferred",
-      "capability": "codeActionProvider",
-      "reason": "existing Eclipse quick fixes are UI-layer implementations and are not yet proven headless"
+      "qualification": "required_where_applicable",
+      "capability": "codeActionProvider"
     },
     {
       "id": "semantic_tokens",
-      "qualification": "deferred",
-      "capability": "semanticTokensProvider",
-      "reason": "not part of the qualified Xtext 2.25 KIDE baseline"
+      "qualification": "required_where_applicable",
+      "capability": "semanticTokensProvider"
     },
     {
       "id": "declaration",
-      "qualification": "deferred",
+      "qualification": "not_applicable",
       "capability": "declarationProvider",
-      "reason": "not part of the qualified Xtext 2.25 KIDE baseline"
+      "reason": "KIDE Eclipse uses hyperlink/definition navigation and has no distinct declaration service."
     },
     {
       "id": "type_definition",
-      "qualification": "deferred",
+      "qualification": "not_applicable",
       "capability": "typeDefinitionProvider",
-      "reason": "not part of the qualified Xtext 2.25 KIDE baseline"
+      "reason": "KIDE DSL model elements do not expose a distinct Eclipse type-definition navigation service."
     },
     {
       "id": "implementation",
-      "qualification": "deferred",
+      "qualification": "not_applicable",
       "capability": "implementationProvider",
-      "reason": "not part of the qualified Xtext 2.25 KIDE baseline"
+      "reason": "KIDE DSL model elements do not expose a distinct Eclipse implementation-navigation service."
+    },
+    {
+      "id": "document_highlights",
+      "qualification": "required",
+      "capability": "documentHighlightProvider"
+    },
+    {
+      "id": "range_formatting",
+      "qualification": "required",
+      "capability": "documentRangeFormattingProvider"
+    },
+    {
+      "id": "signature_help",
+      "qualification": "not_applicable",
+      "capability": "signatureHelpProvider",
+      "reason": "The KIDE Eclipse DSL editors do not ship a separate signature-help/parameter-hints semantic service; Xtext's default LSP service is intentionally no-op."
     }
   ],
   "languages": {
@@ -108,7 +121,10 @@
           "line": 1,
           "character": 15
         }
-      }
+      },
+      "semantic_tokens_min": 0,
+      "document_highlights_min": 1,
+      "document_highlight_token": "Payload"
     },
     "operation": {
       "symbol": "Inspect",
@@ -124,7 +140,10 @@
           "line": 1,
           "character": 0
         }
-      }
+      },
+      "semantic_tokens_min": 0,
+      "document_highlights_min": 0,
+      "document_highlight_token": "Inspect"
     },
     "mnc": {
       "symbol": "Device",
@@ -141,7 +160,25 @@
           "line": 2,
           "character": 0
         }
-      }
+      },
+      "semantic_tokens_min": 1,
+      "document_highlights_min": 1,
+      "code_action": {
+        "diagnostic_code": "invalidName",
+        "title": "Capitalize name",
+        "replacement": "Node"
+      },
+      "document_highlight_token": "Device",
+      "semantic_completion": {
+        "text": "Model Completion\nInterfaceDescription Local {\n  commands { Start[] }\n}\nControlNode Node implements interface Local {\n  CommandResponseBlock {\n    Command ",
+        "expected": [
+          "Start"
+        ],
+        "forbidden": [
+          "Stop"
+        ]
+      },
+      "semantic_tokens_text": "Model SemanticMnc\nInterfaceDescription SemanticDevice {\n  commands { SemanticStart[] }\n}\nControlNode SemanticNode implements interface SemanticDevice {\n  CommandResponseBlock {\n    Command SemanticMnc.SemanticDevice.SemanticStart {\n    }\n  }\n}\n"
     },
     "capability": {
       "symbol": "Observe",
@@ -162,6 +199,23 @@
           "line": 1,
           "character": 0
         }
+      },
+      "semantic_tokens_min": 1,
+      "document_highlights_min": 1,
+      "code_action": {
+        "diagnostic_code": "invalidControlCapabilitiesCommand",
+        "title": "Remove this command",
+        "replacement": ""
+      },
+      "document_highlight_token": "Device",
+      "semantic_completion": {
+        "text": "Capability Completion compatible component interface Device {\n  providesControlCapabilities {\n    fireable commands : ",
+        "expected": [
+          "Start"
+        ],
+        "forbidden": [
+          "Stop"
+        ]
       }
     },
     "activity": {
@@ -183,6 +237,24 @@
           "line": 1,
           "character": 0
         }
+      },
+      "semantic_tokens_min": 1,
+      "document_highlights_min": 1,
+      "code_action": {
+        "diagnostic_code": "invalidControlCapability",
+        "title": "Remove this control item",
+        "replacement": ""
+      },
+      "document_highlight_token": "Observe",
+      "semantic_completion": {
+        "text": "ActivityDiagram Completion\nhas activities {\n  Activity Step {\n    requireCapability : Observe { ",
+        "expected": [
+          "Start",
+          "Ready"
+        ],
+        "forbidden": [
+          "Stop"
+        ]
       }
     },
     "krl": {
@@ -206,7 +278,10 @@
         }
       },
       "document_symbol": "GoldenKrl",
-      "workspace_symbol": "GoldenKrl"
+      "workspace_symbol": "GoldenKrl",
+      "semantic_tokens_min": 0,
+      "document_highlights_min": 1,
+      "document_highlight_token": "JavaBinding"
     }
   }
 }

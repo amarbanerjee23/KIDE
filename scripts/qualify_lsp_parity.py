@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -52,6 +53,14 @@ def position_of(text: str, token: str, occurrence: int = 1) -> dict[str, int]:
     return {"line": line, "character": character}
 
 
+def end_position(text: str) -> dict[str, int]:
+    lines = text.split("\n")
+    return {
+        "line": len(lines) - 1,
+        "character": len(lines[-1]),
+    }
+
+
 def capability_enabled(capabilities: dict[str, Any], key: str) -> bool:
     value = capabilities.get(key)
     return value is not None and value is not False
@@ -63,6 +72,21 @@ def completion_items(result: Any) -> list[dict[str, Any]]:
     if isinstance(result, dict) and isinstance(result.get("items"), list):
         return [item for item in result["items"] if isinstance(item, dict)]
     return []
+
+
+def completion_labels(result: Any) -> set[str]:
+    labels: set[str] = set()
+    for item in completion_items(result):
+        label = item.get("label")
+        if isinstance(label, str):
+            labels.add(label)
+    return labels
+
+
+def has_completion(labels: set[str], expected: str) -> bool:
+    return expected in labels or any(
+        label.endswith("." + expected) for label in labels
+    )
 
 
 def symbol_names(result: Any) -> set[str]:
@@ -120,6 +144,62 @@ def workspace_edit_uris(result: Any) -> set[str]:
     return uris
 
 
+def wait_for_diagnostic_code(
+    peer: JsonRpcPeer,
+    uri: str,
+    code: str,
+    description: str,
+    timeout: float = 25.0,
+) -> dict[str, Any]:
+    deadline = time.monotonic() + timeout
+    last: list[dict[str, Any]] = []
+    while time.monotonic() < deadline:
+        remaining = max(0.01, deadline - time.monotonic())
+        message = peer.wait_for(
+            lambda candidate: candidate.get("method") == "textDocument/publishDiagnostics"
+            and candidate.get("params", {}).get("uri") == uri,
+            remaining,
+            description,
+        )
+        diagnostics = message.get("params", {}).get("diagnostics")
+        if not isinstance(diagnostics, list):
+            raise SmokeFailure(f"{description} returned malformed diagnostics")
+        last = [item for item in diagnostics if isinstance(item, dict)]
+        for diagnostic in last:
+            raw_code = diagnostic.get("code")
+            if str(raw_code) == code:
+                return diagnostic
+    raise SmokeFailure(
+        f"{description} never published diagnostic code {code!r}; last diagnostics: {last}"
+    )
+
+
+def workspace_edit_texts(action: Any, uri: str) -> list[str]:
+    if not isinstance(action, dict):
+        return []
+    edit = action.get("edit")
+    if not isinstance(edit, dict):
+        return []
+    values: list[str] = []
+    changes = edit.get("changes")
+    if isinstance(changes, dict):
+        for item in changes.get(uri, []):
+            if isinstance(item, dict) and isinstance(item.get("newText"), str):
+                values.append(item["newText"])
+    document_changes = edit.get("documentChanges")
+    if isinstance(document_changes, list):
+        for change in document_changes:
+            if not isinstance(change, dict):
+                continue
+            document = change.get("textDocument")
+            if not isinstance(document, dict) or document.get("uri") != uri:
+                continue
+            for item in change.get("edits", []):
+                if isinstance(item, dict) and isinstance(item.get("newText"), str):
+                    values.append(item["newText"])
+    return values
+
+
 def require_capabilities(
     capabilities: dict[str, Any], matrix: dict[str, Any]
 ) -> None:
@@ -162,6 +242,46 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
             paths[extension] = path
             by_id[language["id"]] = language
 
+        quickfix_texts = {
+            "mncspec": (
+                "Model QuickFix\n"
+                "InterfaceDescription QuickDevice {\n"
+                "  commands { QuickStart[] }\n"
+                "}\n"
+                "ControlNode node implements interface QuickDevice {\n"
+                "}\n"
+            ),
+            "cap": (
+                "Capability BadCap compatible component interface QuickDevice {\n"
+                "  providesControlCapabilities {\n"
+                "    fireable commands : Stop\n"
+                "  }\n"
+                "}\n"
+            ),
+            "activity": (
+                "ActivityDiagram BadWorkflow\n"
+                "has activities {\n"
+                "  Activity BadStep {\n"
+                "    requireCapability : Observe { Stop }\n"
+                "    nextActivity : BadStep\n"
+                "  }\n"
+                "}\n"
+            ),
+        }
+        support_text = (
+            "Model QuickSupport\n"
+            "InterfaceDescription OtherDevice {\n"
+            "  commands { Stop[] }\n"
+            "}\n"
+        )
+        support_path = workspace / "quickfix-support.mncspec"
+        support_path.write_text(support_text, encoding="utf-8")
+        quickfix_paths: dict[str, Path] = {}
+        for extension, text_value in quickfix_texts.items():
+            quickfix_path = workspace / f"quickfix.{extension}"
+            quickfix_path.write_text(text_value, encoding="utf-8")
+            quickfix_paths[extension] = quickfix_path
+
         stderr_log = workspace / "server-stderr.log"
         environment = os.environ.copy()
         environment.pop("DISPLAY", None)
@@ -197,6 +317,33 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                                 "foldingRange": {"lineFoldingOnly": True},
                                 "rename": {"prepareSupport": True},
                                 "documentSymbol": {"hierarchicalDocumentSymbolSupport": True},
+                                "documentHighlight": {"dynamicRegistration": False},
+                                "rangeFormatting": {"dynamicRegistration": False},
+                                "codeAction": {"dynamicRegistration": False},
+                                "signatureHelp": {
+                                    "dynamicRegistration": False,
+                                    "contextSupport": True,
+                                },
+                                "semanticTokens": {
+                                    "dynamicRegistration": False,
+                                    "requests": {"range": False, "full": True},
+                                    "tokenTypes": [
+                                        "namespace", "type", "class", "enum",
+                                        "interface", "struct", "typeParameter",
+                                        "parameter", "variable", "property",
+                                        "enumMember", "event", "function", "method",
+                                        "macro", "keyword", "modifier", "comment",
+                                        "string", "number", "regexp", "operator",
+                                        "decorator",
+                                    ],
+                                    "tokenModifiers": [
+                                        "declaration", "definition", "readonly",
+                                        "static", "deprecated", "abstract", "async",
+                                        "modification", "documentation",
+                                        "defaultLibrary",
+                                    ],
+                                    "formats": ["relative"],
+                                },
                             },
                         },
                         "workspaceFolders": [{"uri": root_uri, "name": "kide-parity"}],
@@ -209,7 +356,10 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                 require_capabilities(capabilities, matrix)
                 peer.send({"jsonrpc": "2.0", "method": "initialized", "params": {}})
 
-                announce_workspace_files(peer, list(paths.values()))
+                announce_workspace_files(
+                    peer,
+                    list(paths.values()) + [support_path] + list(quickfix_paths.values()),
+                )
                 uris: dict[str, str] = {}
                 for language in languages:
                     extension = language["extension"]
@@ -286,6 +436,53 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                         "params": {"textDocument": {"uri": completion_uri}},
                     })
 
+                    semantic_completion = probe.get("semantic_completion")
+                    if isinstance(semantic_completion, dict):
+                        semantic_text = semantic_completion.get("text")
+                        if not isinstance(semantic_text, str):
+                            raise SmokeFailure(
+                                f".{extension} semantic completion text is malformed"
+                            )
+                        semantic_path = workspace / f"semantic-completion.{extension}"
+                        semantic_path.write_text(semantic_text, encoding="utf-8")
+                        announce_workspace_files(peer, [semantic_path])
+                        semantic_uri = open_document(
+                            peer,
+                            semantic_path,
+                            language["language_id"],
+                            semantic_text,
+                        )
+                        wait_for_diagnostics(
+                            peer,
+                            semantic_uri,
+                            f"semantic completion diagnostics for .{extension}",
+                        )
+                        semantic_result = rpc(
+                            "textDocument/completion",
+                            {
+                                "textDocument": {"uri": semantic_uri},
+                                "position": end_position(semantic_text),
+                            },
+                        ).get("result")
+                        labels = completion_labels(semantic_result)
+                        for expected in semantic_completion.get("expected", []):
+                            if not has_completion(labels, expected):
+                                raise SmokeFailure(
+                                    f".{extension} semantic completion missing "
+                                    f"{expected!r}: {sorted(labels)}"
+                                )
+                        for forbidden in semantic_completion.get("forbidden", []):
+                            if has_completion(labels, forbidden):
+                                raise SmokeFailure(
+                                    f".{extension} semantic completion leaked "
+                                    f"out-of-scope {forbidden!r}: {sorted(labels)}"
+                                )
+                        peer.send({
+                            "jsonrpc": "2.0",
+                            "method": "textDocument/didClose",
+                            "params": {"textDocument": {"uri": semantic_uri}},
+                        })
+
                     hover = rpc(
                         "textDocument/hover",
                         {
@@ -319,7 +516,10 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                         "textDocument/references",
                         {
                             "textDocument": {"uri": uri},
-                            "position": position_of(text, probe["symbol"]),
+                            "position": position_of(
+                                text,
+                                probe.get("document_highlight_token", probe["symbol"]),
+                            ),
                             "context": {"includeDeclaration": False},
                         },
                     ).get("result")
@@ -328,6 +528,26 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                     if len(references) < int(probe["references_min"]):
                         raise SmokeFailure(
                             f".{extension} references expected >= {probe['references_min']}, got {len(references)}"
+                        )
+
+                    highlights = rpc(
+                        "textDocument/documentHighlight",
+                        {
+                            "textDocument": {"uri": uri},
+                            "position": position_of(
+                                text,
+                                probe.get("document_highlight_token", probe["symbol"]),
+                            ),
+                        },
+                    ).get("result")
+                    if not isinstance(highlights, list):
+                        raise SmokeFailure(
+                            f".{extension} document highlights returned malformed result"
+                        )
+                    if len(highlights) < int(probe["document_highlights_min"]):
+                        raise SmokeFailure(
+                            f".{extension} document highlights expected >= "
+                            f"{probe['document_highlights_min']}, got {len(highlights)}"
                         )
 
                     document_symbols = rpc(
@@ -365,6 +585,34 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                     if not isinstance(formatting, list):
                         raise SmokeFailure(f".{extension} formatting did not return a text-edit list")
 
+                    range_formatting = rpc(
+                        "textDocument/rangeFormatting",
+                        {
+                            "textDocument": {"uri": uri},
+                            "range": {
+                                "start": {"line": 0, "character": 0},
+                                "end": end_position(text),
+                            },
+                            "options": {"tabSize": 2, "insertSpaces": True},
+                        },
+                    ).get("result")
+                    if not isinstance(range_formatting, list):
+                        raise SmokeFailure(
+                            f".{extension} range formatting did not return a text-edit list"
+                        )
+
+                    prepare_rename = rpc(
+                        "textDocument/prepareRename",
+                        {
+                            "textDocument": {"uri": uri},
+                            "position": position_of(text, probe["symbol"]),
+                        },
+                    ).get("result")
+                    if prepare_rename is None:
+                        raise SmokeFailure(
+                            f".{extension} prepareRename rejected the qualified symbol"
+                        )
+
                     new_name = probe["symbol"] + "PR13"
                     rename = rpc(
                         "textDocument/rename",
@@ -396,6 +644,107 @@ def run_parity(products: Path, registry_path: Path, matrix_path: Path) -> None:
                             raise SmokeFailure(
                                 f".{extension} folding expected >= {probe['folding_min']}, got {len(folding)}"
                             )
+
+                    if "semantic_tokens" in qualified_features:
+                        semantic_uri = uri
+                        semantic_probe_text = probe.get("semantic_tokens_text")
+                        if isinstance(semantic_probe_text, str):
+                            semantic_path = workspace / f"semantic-tokens.{extension}"
+                            semantic_path.write_text(
+                                semantic_probe_text,
+                                encoding="utf-8",
+                            )
+                            announce_workspace_files(peer, [semantic_path])
+                            semantic_uri = open_document(
+                                peer,
+                                semantic_path,
+                                language["language_id"],
+                                semantic_probe_text,
+                            )
+                            wait_for_clean_diagnostics(
+                                peer,
+                                semantic_uri,
+                                f"semantic-token diagnostics for .{extension}",
+                            )
+
+                        semantic_tokens = rpc(
+                            "textDocument/semanticTokens/full",
+                            {"textDocument": {"uri": semantic_uri}},
+                        ).get("result")
+                        if not isinstance(semantic_tokens, dict):
+                            raise SmokeFailure(
+                                f".{extension} semantic tokens returned malformed result"
+                            )
+                        token_data = semantic_tokens.get("data")
+                        if not isinstance(token_data, list) or len(token_data) % 5 != 0:
+                            raise SmokeFailure(
+                                f".{extension} semantic token data is not an LSP token stream"
+                            )
+                        token_count = len(token_data) // 5
+                        if token_count < int(probe["semantic_tokens_min"]):
+                            raise SmokeFailure(
+                                f".{extension} semantic tokens expected >= "
+                                f"{probe['semantic_tokens_min']}, got {token_count}"
+                            )
+                        if semantic_uri != uri:
+                            peer.send({
+                                "jsonrpc": "2.0",
+                                "method": "textDocument/didClose",
+                                "params": {"textDocument": {"uri": semantic_uri}},
+                            })
+
+                    if "code_actions" in qualified_features:
+                        action_probe = probe.get("code_action")
+                        if isinstance(action_probe, dict):
+                            action_text = quickfix_texts[extension]
+                            action_uri = open_document(
+                                peer,
+                                quickfix_paths[extension],
+                                language["language_id"],
+                                action_text,
+                            )
+                            diagnostic = wait_for_diagnostic_code(
+                                peer,
+                                action_uri,
+                                action_probe["diagnostic_code"],
+                                f".{extension} quick-fix diagnostic",
+                            )
+                            actions = rpc(
+                                "textDocument/codeAction",
+                                {
+                                    "textDocument": {"uri": action_uri},
+                                    "range": diagnostic["range"],
+                                    "context": {"diagnostics": [diagnostic]},
+                                },
+                            ).get("result")
+                            if not isinstance(actions, list):
+                                raise SmokeFailure(
+                                    f".{extension} code actions returned malformed result"
+                                )
+                            matching = [
+                                action
+                                for action in actions
+                                if isinstance(action, dict)
+                                and action.get("title") == action_probe["title"]
+                            ]
+                            if not matching:
+                                raise SmokeFailure(
+                                    f".{extension} code actions missing "
+                                    f"{action_probe['title']!r}: {actions}"
+                                )
+                            replacement = action_probe["replacement"]
+                            if replacement not in workspace_edit_texts(
+                                matching[0], action_uri
+                            ):
+                                raise SmokeFailure(
+                                    f".{extension} quick fix {action_probe['title']!r} "
+                                    f"did not contain replacement {replacement!r}: {matching[0]}"
+                                )
+                            peer.send({
+                                "jsonrpc": "2.0",
+                                "method": "textDocument/didClose",
+                                "params": {"textDocument": {"uri": action_uri}},
+                            })
 
                 for uri in uris.values():
                     peer.send({

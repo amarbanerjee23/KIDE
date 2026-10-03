@@ -3,11 +3,33 @@
  */
 package com.smr.activity.dsl.ide;
 
-import com.smr.activity.dsl.ide.AbstractActivityDiagramIdeModule;
+import com.smr.activity.dsl.ide.highlighting.ActivityDiagramLspSemanticHighlightingCalculator;
+import com.smr.activity.dsl.ide.hover.ActivityDiagramLspHoverService;
+import com.smr.activity.dsl.ide.quickfix.ActivityDiagramCodeActionService;
+import org.eclipse.xtext.ide.editor.contentassist.IdeContentProposalProvider;
+import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculator;
+import org.eclipse.xtext.ide.server.codeActions.ICodeActionService2;
+import org.eclipse.xtext.ide.server.hover.IHoverService;
 
 /**
- * Use this class to register ide components.
+ * KIDE-owned IDE bindings layered on the generated Activity services.
  */
 @SuppressWarnings("all")
 public class ActivityDiagramIdeModule extends AbstractActivityDiagramIdeModule {
+
+  public Class<? extends IdeContentProposalProvider> bindIdeContentProposalProvider() {
+    return KideActivityIdeContentProposalProvider.class;
+  }
+
+  public Class<? extends ICodeActionService2> bindICodeActionService2() {
+    return ActivityDiagramCodeActionService.class;
+  }
+
+  public Class<? extends IHoverService> bindIHoverService() {
+    return ActivityDiagramLspHoverService.class;
+  }
+
+  public Class<? extends ISemanticHighlightingCalculator> bindISemanticHighlightingCalculator() {
+    return ActivityDiagramLspSemanticHighlightingCalculator.class;
+  }
 }

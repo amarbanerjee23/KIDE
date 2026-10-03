@@ -3,11 +3,33 @@
  */
 package com.capability.ide;
 
-import com.capability.ide.AbstractCapabilityIdeModule;
+import com.capability.ide.highlighting.CapabilityLspSemanticHighlightingCalculator;
+import com.capability.ide.hover.CapabilityLspHoverService;
+import com.capability.ide.quickfix.CapabilityCodeActionService;
+import org.eclipse.xtext.ide.editor.contentassist.IdeContentProposalProvider;
+import org.eclipse.xtext.ide.editor.syntaxcoloring.ISemanticHighlightingCalculator;
+import org.eclipse.xtext.ide.server.codeActions.ICodeActionService2;
+import org.eclipse.xtext.ide.server.hover.IHoverService;
 
 /**
- * Use this class to register ide components.
+ * KIDE-owned IDE bindings layered on the generated Capability services.
  */
 @SuppressWarnings("all")
 public class CapabilityIdeModule extends AbstractCapabilityIdeModule {
+
+  public Class<? extends IdeContentProposalProvider> bindIdeContentProposalProvider() {
+    return KideCapabilityIdeContentProposalProvider.class;
+  }
+
+  public Class<? extends ICodeActionService2> bindICodeActionService2() {
+    return CapabilityCodeActionService.class;
+  }
+
+  public Class<? extends IHoverService> bindIHoverService() {
+    return CapabilityLspHoverService.class;
+  }
+
+  public Class<? extends ISemanticHighlightingCalculator> bindISemanticHighlightingCalculator() {
+    return CapabilityLspSemanticHighlightingCalculator.class;
+  }
 }
