@@ -47,6 +47,7 @@ import com.kide.enterprise.modelrepo.RevisionConflictException;
 import com.kide.knowledge.KnowledgeRepositoryException;
 import com.kide.knowledge.KnowledgeRevisionConflictException;
 import com.kide.synthesis.ProjectSynthesisException;
+import com.kide.synthesis.ProjectSynthesisService;
 import com.kide.codegen.GenerationException;
 
 /**
