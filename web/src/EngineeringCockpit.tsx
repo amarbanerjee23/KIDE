@@ -169,7 +169,7 @@ export function EngineeringCockpit({
       </section>
 
       <div className="engineering-results-grid">
-        <section className="engineering-result-card" aria-label="Synthesis overview">
+        <section className="engineering-result-card" aria-label="Synthesis result">
           <div className="panel-heading">
             <h3>Synthesis</h3>
             <button type="button" disabled={!canReconfigure} onClick={onReconfigure}>
@@ -200,7 +200,7 @@ export function EngineeringCockpit({
           )}
 
           {reconfigurationResult && (
-            <div className="engineering-reconfiguration">
+            <div className="engineering-reconfiguration" aria-label="Reconfiguration result">
               <strong>{reconfigurationResult.status}</strong>
               {reconfigurationResult.migrations.map((migration) => (
                 <p key={migration.requirementId}>
@@ -231,7 +231,7 @@ export function EngineeringCockpit({
           )}
         </section>
 
-        <section className="engineering-result-card engineering-code-card" aria-label="Generated code">
+        <section className="engineering-result-card engineering-code-card" aria-label="Generation result">
           <div className="panel-heading">
             <h3>Generated code</h3>
             <button type="button" className="primary-action" disabled={!canGenerate} onClick={onGenerate}>
