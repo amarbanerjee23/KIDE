@@ -7,7 +7,7 @@ afterEach(() => {
 
 describe("FirebaseAuthClient", () => {
   it("registers with email and password and establishes a session", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(
         JSON.stringify({
           localId: "uid-new",
