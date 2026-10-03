@@ -448,6 +448,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             knowledgeQuery.addProperty("query", "Observe");
             knowledgeQuery.addProperty("typeIri", "CAPABILITY");
             knowledgeQuery.addProperty("limit", 10);
+            var directKnowledgeResult = knowledge.query("observe", "CAPABILITY", 10);
             HttpResponse<String> knowledgeResult = send(
                     client, base.resolve(knowledgeBase + "/query"), "POST",
                     "Bearer pr26-self-check", knowledgeQuery.toString());
@@ -458,6 +459,20 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                             knowledgeJson.getAsJsonArray("items")
                                     .get(0).getAsJsonObject().get("label").getAsString())) {
                 throw new AssertionError("knowledge catalogue query did not return Observe");
+            }
+            if (directKnowledgeResult.items().size() != 1
+                    || !directKnowledgeResult.items().get(0).iri().equals(
+                            knowledgeJson.getAsJsonArray("items").get(0)
+                                    .getAsJsonObject().get("iri").getAsString())
+                    || !directKnowledgeResult.items().get(0).label().equals(
+                            knowledgeJson.getAsJsonArray("items").get(0)
+                                    .getAsJsonObject().get("label").getAsString())
+                    || directKnowledgeResult.revision()
+                            != knowledgeJson.get("revision").getAsLong()
+                    || !directKnowledgeResult.etag().equals(
+                            knowledgeJson.get("etag").getAsString())) {
+                throw new AssertionError(
+                        "shared knowledge service and HTTP adapter diverged");
             }
 
             HttpResponse<String> reviewerKnowledge = send(
@@ -530,6 +545,8 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             requireStatus(synthesisSource, 200);
             String synthesisEtag = json(synthesisSource).get("etag").getAsString();
             String synthesisSourceBefore = Files.readString(project.resolve("workflow.activity"));
+            var directSynthesis = synthesis.synthesize(
+                    "workflow.activity", synthesisEtag);
 
             JsonObject synthesisRequest = new JsonObject();
             synthesisRequest.addProperty("modelId", "workflow.activity");
@@ -546,6 +563,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 throw new AssertionError("deterministic synthesis API did not produce MNC output");
             }
             String synthesisFingerprint = synthesisJson.get("fingerprint").getAsString();
+            requireSynthesisParity(directSynthesis, synthesisJson);
 
             HttpResponse<String> repeatedSynthesis = send(
                     client, base.resolve(projectApi + "/synthesis"), "POST",
@@ -573,6 +591,12 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             generationRequest.addProperty("krlModelId", "bindings.krl");
             generationRequest.addProperty("krlRevision", krlEtag);
             generationRequest.addProperty("synthesisFingerprint", synthesisFingerprint);
+            var directGeneration = generation.generate(
+                    "workflow.activity",
+                    synthesisEtag,
+                    "bindings.krl",
+                    krlEtag,
+                    synthesisFingerprint);
 
             HttpResponse<String> generated = send(
                     client, base.resolve(projectApi + "/generation"), "POST",
@@ -595,6 +619,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             }
             String generationFingerprint =
                     generatedJson.get("fingerprint").getAsString();
+            requireGenerationParity(directGeneration, generatedJson);
 
             HttpResponse<String> repeatedGeneration = send(
                     client, base.resolve(projectApi + "/generation"), "POST",
@@ -697,6 +722,14 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 previousBindings.add(binding);
             }
             reconfigurationRequest.add("previousBindings", previousBindings);
+            var directReconfiguration = synthesis.reconfigure(
+                    "workflow.activity",
+                    synthesisEtag,
+                    "RESOURCE_LOSS",
+                    directSynthesis.selections().stream()
+                            .map(selection -> new ProjectSynthesisService.PreviousBinding(
+                                    selection.requirementId(), selection.resourceId()))
+                            .toList());
 
             HttpResponse<String> reconfigured = send(
                     client, base.resolve(projectApi + "/reconfiguration"), "POST",
@@ -715,6 +748,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             }
             String reconfigurationFingerprint =
                     reconfiguredJson.get("fingerprint").getAsString();
+            requireReconfigurationParity(directReconfiguration, reconfiguredJson);
 
             HttpResponse<String> repeatedReconfiguration = send(
                     client, base.resolve(projectApi + "/reconfiguration"), "POST",
@@ -757,6 +791,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             System.out.println("KIDE PR36 ENTERPRISE SYNTHESIS SELF-CHECK OK");
             System.out.println("KIDE PR37 ENTERPRISE RECONFIGURATION SELF-CHECK OK");
             System.out.println("KIDE PR38 ENTERPRISE GENERATION SELF-CHECK OK");
+            System.out.println("KIDE PR80 CROSS-ADAPTER SEMANTIC PARITY OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
             String detail = failure.getMessage();
@@ -778,6 +813,95 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
         EnterpriseApiServer current = server;
         if (current != null) {
             try { current.close(); } catch (RuntimeException ignored) { }
+        }
+    }
+
+    private static void requireSynthesisParity(
+            ProjectSynthesisService.ApiResult direct, JsonObject http) {
+        if (!direct.status().equals(http.get("status").getAsString())
+                || !direct.fingerprint().equals(http.get("fingerprint").getAsString())
+                || !direct.generatedMnc().equals(http.get("generatedMnc").getAsString())
+                || direct.selections().size() != http.getAsJsonArray("selections").size()
+                || direct.diagnostics().size() != http.getAsJsonArray("diagnostics").size()) {
+            throw new AssertionError(
+                    "shared synthesis service and HTTP adapter diverged");
+        }
+        for (int i = 0; i < direct.selections().size(); i++) {
+            var expected = direct.selections().get(i);
+            JsonObject actual = http.getAsJsonArray("selections").get(i).getAsJsonObject();
+            if (!expected.requirementId().equals(actual.get("requirementId").getAsString())
+                    || !expected.activityName().equals(actual.get("activityName").getAsString())
+                    || !expected.capabilityName().equals(actual.get("capabilityName").getAsString())
+                    || !expected.resourceId().equals(actual.get("resourceId").getAsString())) {
+                throw new AssertionError(
+                        "shared synthesis selection and HTTP adapter diverged");
+            }
+        }
+        for (int i = 0; i < direct.diagnostics().size(); i++) {
+            if (!direct.diagnostics().get(i).code().equals(
+                    http.getAsJsonArray("diagnostics").get(i)
+                            .getAsJsonObject().get("code").getAsString())) {
+                throw new AssertionError(
+                        "shared synthesis diagnostics and HTTP adapter diverged");
+            }
+        }
+    }
+
+    private static void requireGenerationParity(
+            ProjectGenerationService.ApiResult direct, JsonObject http) {
+        if (!direct.fingerprint().equals(http.get("fingerprint").getAsString())
+                || !direct.synthesisFingerprint().equals(
+                        http.get("synthesisFingerprint").getAsString())
+                || direct.artifacts().size() != http.getAsJsonArray("artifacts").size()
+                || !JsonParser.parseString(direct.manifestJson()).equals(
+                        JsonParser.parseString(http.get("manifestJson").getAsString()))) {
+            throw new AssertionError(
+                    "shared generation service and HTTP adapter diverged");
+        }
+        for (int i = 0; i < direct.artifacts().size(); i++) {
+            var expected = direct.artifacts().get(i);
+            JsonObject actual = http.getAsJsonArray("artifacts").get(i).getAsJsonObject();
+            if (!expected.path().equals(actual.get("path").getAsString())
+                    || !expected.sha256().equals(actual.get("sha256").getAsString())
+                    || !expected.targetId().equals(actual.get("targetId").getAsString())
+                    || !expected.targetVersion().equals(actual.get("targetVersion").getAsString())
+                    || !expected.contentBase64().equals(actual.get("contentBase64").getAsString())) {
+                throw new AssertionError(
+                        "shared generation artifact and HTTP adapter diverged");
+            }
+        }
+    }
+
+    private static void requireReconfigurationParity(
+            ProjectSynthesisService.ReconfigurationApiResult direct, JsonObject http) {
+        if (!direct.status().equals(http.get("status").getAsString())
+                || !direct.cause().equals(http.get("cause").getAsString())
+                || !direct.fingerprint().equals(http.get("fingerprint").getAsString())
+                || direct.selections().size() != http.getAsJsonArray("selections").size()
+                || direct.migrations().size() != http.getAsJsonArray("migrations").size()
+                || direct.diagnostics().size() != http.getAsJsonArray("diagnostics").size()) {
+            throw new AssertionError(
+                    "shared reconfiguration service and HTTP adapter diverged");
+        }
+        for (int i = 0; i < direct.selections().size(); i++) {
+            var expected = direct.selections().get(i);
+            JsonObject actual = http.getAsJsonArray("selections").get(i).getAsJsonObject();
+            if (!expected.requirementId().equals(actual.get("requirementId").getAsString())
+                    || !expected.resourceId().equals(actual.get("resourceId").getAsString())) {
+                throw new AssertionError(
+                        "shared reconfiguration selection and HTTP adapter diverged");
+            }
+        }
+        for (int i = 0; i < direct.migrations().size(); i++) {
+            var expected = direct.migrations().get(i);
+            JsonObject actual = http.getAsJsonArray("migrations").get(i).getAsJsonObject();
+            if (!expected.requirementId().equals(actual.get("requirementId").getAsString())
+                    || !expected.policy().name().equals(actual.get("policy").getAsString())
+                    || !expected.fromResourceId().equals(actual.get("fromResourceId").getAsString())
+                    || !expected.toResourceId().equals(actual.get("toResourceId").getAsString())) {
+                throw new AssertionError(
+                        "shared reconfiguration migration and HTTP adapter diverged");
+            }
         }
     }
 
