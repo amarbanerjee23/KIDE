@@ -25,6 +25,14 @@ SERVER_GENERATION = (
     ROOT / "com.kide.enterprise.server" / "src" / "com" / "kide"
     / "enterprise" / "server" / "ProjectGenerationService.java"
 )
+SHARED_KNOWLEDGE = (
+    ROOT / "com.kide.knowledge" / "src" / "com" / "kide" / "knowledge"
+    / "ProjectKnowledgeService.java"
+)
+SERVER_KNOWLEDGE = (
+    ROOT / "com.kide.enterprise.server" / "src" / "com" / "kide"
+    / "enterprise" / "server" / "ProjectKnowledgeService.java"
+)
 SERVER_ROOT = ROOT / "com.kide.enterprise.server" / "src"
 
 
@@ -68,11 +76,19 @@ def main() -> int:
         fail("ProjectGenerationService has the wrong package")
     if SERVER_GENERATION.exists():
         fail("server bundle must not own ProjectGenerationService")
+    if not SHARED_KNOWLEDGE.is_file():
+        fail("ProjectKnowledgeService must live in com.kide.knowledge")
+    knowledge = SHARED_KNOWLEDGE.read_text(encoding="utf-8")
+    if "package com.kide.knowledge;" not in knowledge:
+        fail("ProjectKnowledgeService has the wrong package")
+    if SERVER_KNOWLEDGE.exists():
+        fail("server bundle must not own ProjectKnowledgeService")
 
     forbidden = (
         "new ProjectSynthesisEngine(",
         "new DeterministicSynthesisService(",
         "new ProjectKrlGenerationEngine(",
+        "new KnowledgeCatalogueService(",
     )
     for java in SERVER_ROOT.rglob("*.java"):
         text = java.read_text(encoding="utf-8")
