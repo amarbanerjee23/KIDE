@@ -34,6 +34,7 @@ import com.kide.enterprise.modelrepo.FileModelRepository;
 import com.kide.knowledge.EmbeddedKnowledgeRepository;
 import com.kide.knowledge.KnowledgeDataset;
 import com.kide.knowledge.KnowledgeProvenance;
+import com.kide.knowledge.ProjectKnowledgeService;
 import com.kide.knowledge.KnowledgeRepository;
 import com.kide.knowledge.KnowledgeTerm;
 import com.kide.knowledge.KnowledgeTraceStore;
