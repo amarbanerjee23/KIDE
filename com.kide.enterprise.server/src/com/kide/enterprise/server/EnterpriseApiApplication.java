@@ -38,6 +38,7 @@ import com.kide.knowledge.KnowledgeTerm;
 import com.kide.knowledge.KnowledgeTraceStore;
 import com.kide.knowledge.KnowledgeTriple;
 import com.kide.knowledge.KnowledgeVocabulary;
+import com.kide.synthesis.ProjectSynthesisService;
 import com.kide.synthesis.SynthesisVocabulary;
 
 public final class EnterpriseApiApplication implements IApplication {
