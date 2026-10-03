@@ -19,6 +19,7 @@ import com.kide.knowledge.KnowledgeRepository;
 import com.kide.knowledge.KnowledgeRepositoryException;
 import com.kide.knowledge.KnowledgeRevisionConflictException;
 import com.kide.knowledge.KnowledgeSnapshot;
+import com.kide.synthesis.ProjectSynthesisService;
 
 public final class ProjectGenerationService {
     private static final int MAX_ARTIFACTS = 1_000;
