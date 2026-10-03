@@ -8,6 +8,8 @@ public final class KideDiagramTypes {
     public static final String ACTIVITY_NEXT = "kide:activity-next";
     public static final String MNC_INTERFACE = "kide:mnc-interface";
     public static final String MNC_CONTROL_NODE = "kide:mnc-control-node";
+    public static final String MNC_OPERATING_STATE = "kide:mnc-operating-state";
+    public static final String MNC_STATE_TRANSITION = "kide:mnc-state-transition";
     public static final String MNC_USES = "kide:mnc-uses";
     public static final String MNC_IMPLEMENTS = "kide:mnc-implements";
     public static final String MNC_CHILD = "kide:mnc-child";

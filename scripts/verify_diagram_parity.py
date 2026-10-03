@@ -144,6 +144,8 @@ def verify() -> None:
         "activityDiagramModel.Activity",
         "mncModel.InterfaceDescription",
         "mncModel.ControlNode",
+        "mncModel.OperatingState",
+        "mncModel.Transition",
     ]
     browser_semantics = "\n".join(
         path.read_text(encoding="utf-8")

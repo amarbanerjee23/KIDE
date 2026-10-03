@@ -249,7 +249,11 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   let requestedSourceUri = "";
   let requestedDiagramType = "";
   let glspSessionId = "";
-  let reconfigurationRequest: unknown;
+  const glspRequests: Array<{ sourceUri: string; diagramType: string }> = [];
+  let synthesisCalls = 0;
+  let generationCalls = 0;
+  let reconfigurationCalls = 0;
+  const reconfigurationRequests: unknown[] = [];
 
   await page.routeWebSocket("**/lsp?*", (ws) => {
     ws.onMessage((message) => {
@@ -291,6 +295,18 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
                 "glspUndo",
                 "glspRedo",
                 "saveModel"
+              ],
+              "kide-mnc-diagram": [
+                "requestModel",
+                "requestTypeHints",
+                "createNode",
+                "createEdge",
+                "applyLabelEdit",
+                "deleteElement",
+                "changeBounds",
+                "glspUndo",
+                "glspRedo",
+                "saveModel"
               ]
             }
           }
@@ -321,6 +337,11 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
       if (action.kind === "requestModel") {
         requestedSourceUri = action.options.sourceUri;
         requestedDiagramType = action.options.diagramType;
+        glspRequests.push({
+          sourceUri: requestedSourceUri,
+          diagramType: requestedDiagramType
+        });
+        const mnc = requestedDiagramType === "kide-mnc-diagram";
         ws.send(JSON.stringify({
           jsonrpc: "2.0",
           method: "process",
@@ -333,14 +354,14 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
                 id: "root",
                 type: "graph",
                 children: [{
-                  id: "//@activities.0",
-                  type: "kide:activity",
+                  id: mnc ? "//@states.0" : "//@activities.0",
+                  type: mnc ? "kide:mnc-operating-state" : "kide:activity",
                   position: { x: 80, y: 80 },
                   size: { width: 180, height: 72 },
                   children: [{
-                    id: "//@activities.0_label",
+                    id: mnc ? "//@states.0_label" : "//@activities.0_label",
                     type: "label",
-                    text: "ObserveStep"
+                    text: mnc ? "ReadyState" : "ObserveStep"
                   }]
                 }]
               }
@@ -359,7 +380,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
               kind: "setTypeHints",
               responseId: action.requestId,
               shapeHints: [{
-                elementTypeId: "kide:activity",
+                elementTypeId: requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-operating-state" : "kide:activity",
                 repositionable: true,
                 deletable: true,
                 resizable: true,
@@ -367,12 +388,12 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
                 containableElementTypeIds: []
               }],
               edgeHints: [{
-                elementTypeId: "kide:activity-next",
+                elementTypeId: requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-state-transition" : "kide:activity-next",
                 repositionable: false,
                 deletable: true,
                 routable: false,
-                sourceElementTypeIds: ["kide:activity"],
-                targetElementTypeIds: ["kide:activity"]
+                sourceElementTypeIds: [requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-operating-state" : "kide:activity"],
+                targetElementTypeIds: [requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-operating-state" : "kide:activity"]
               }]
             }
           }
@@ -447,6 +468,12 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
               mediaType: "text/x-kide-activity"
             },
             {
+              id: "controller.mncspec",
+              revision: "3",
+              etag: "m".repeat(64),
+              mediaType: "text/x-kide-mnc"
+            },
+            {
               id: "bindings.krl",
               revision: "2",
               etag: "d".repeat(64),
@@ -476,6 +503,23 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   );
 
   await page.route(
+    "**/api/v1/projects/P04-001/models/controller.mncspec",
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "controller.mncspec",
+          content: "Model GoldenController\nState ReadyState {}\n",
+          revision: "3",
+          etag: "m".repeat(64),
+          mediaType: "text/x-kide-mnc"
+        })
+      });
+    }
+  );
+
+  await page.route(
     "**/api/v1/projects/P04-001/models/bindings.krl",
     async (route) => {
       await route.fulfill({
@@ -495,6 +539,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   await page.route(
     "**/api/v1/projects/P04-001/synthesis",
     async (route) => {
+      synthesisCalls += 1;
       const request = route.request();
       const body = request.postDataJSON();
       expect(body).toEqual({
@@ -532,6 +577,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   await page.route(
     "**/api/v1/projects/P04-001/generation",
     async (route) => {
+      generationCalls += 1;
       const body = route.request().postDataJSON();
       expect(body).toEqual({
         sourceModelId: "flow.activity",
@@ -573,7 +619,8 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   await page.route(
     "**/api/v1/projects/P04-001/reconfiguration",
     async (route) => {
-      reconfigurationRequest = route.request().postDataJSON();
+      reconfigurationCalls += 1;
+      reconfigurationRequests.push(route.request().postDataJSON());
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -611,55 +658,107 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   await signInFirebase(page);
   await page.getByRole("button", { name: "Open", exact: true }).click();
   await expect(page.locator(".file-list").getByText("flow.activity", { exact: true })).toBeVisible();
+  await expect(page.locator(".file-list").getByText("controller.mncspec", { exact: true })).toBeVisible();
   await expect(page.getByTestId("monaco-editor")).toBeVisible();
   await expect(page.locator(".status-bar")).toContainText("Collaboration Online");
-  await expect(page.getByRole("button", { name: "Synthesize", exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Synthesize", exact: true }).click();
-  await expect(page.getByLabel("Synthesis result")).toContainText("SUCCESS");
-  await expect(page.getByLabel("Synthesis result")).toContainText(
-    "urn:kide:device:camera"
-  );
-  await expect(page.getByText("Generated MNC")).toBeVisible();
+  const workflow = page.getByLabel("Engineering workflow");
+  await expect(workflow.getByRole("button", { name: "Visualize flow", exact: true })).toBeEnabled();
+  await expect(workflow.getByRole("button", { name: "Synthesize", exact: true })).toBeEnabled();
+  await expect(workflow.getByRole("button", { name: "State machine", exact: true })).toBeEnabled();
+  await expect(workflow.getByRole("button", { name: "Reconfigure", exact: true })).toBeDisabled();
+  await expect(workflow.getByRole("button", { name: "Generate code", exact: true })).toBeDisabled();
 
-  await expect(page.getByLabel("KRL model ID")).toHaveValue("bindings.krl");
-  await page.getByRole("button", { name: "Generate" }).click();
-  await expect(page.getByLabel("Generation result")).toContainText(
-    "Generated 1 artifact"
-  );
-  await expect(page.getByLabel("Generation result")).toContainText(
-    "generated/Out.java"
-  );
-  await expect(page.getByText("Generation manifest")).toBeVisible();
-
-  await page.getByLabel("Reconfiguration cause").selectOption("RESOURCE_LOSS");
-  await expect(page.getByLabel("Reconfiguration cause")).toHaveValue("RESOURCE_LOSS");
-  await page.getByRole("button", { name: "Reconfigure" }).click();
-  await expect(page.getByLabel("Reconfiguration result")).toContainText("RECONFIGURED");
-  await expect(page.getByLabel("Reconfiguration result")).toContainText(
-    "urn:kide:device:camera-b"
-  );
-  await expect(page.getByLabel("Reconfiguration result")).toContainText("MIGRATE");
-  expect(reconfigurationRequest).toEqual({
-    modelId: "flow.activity",
-    modelRevision: "etag-4",
-    cause: "RESOURCE_LOSS",
-    previousBindings: [{
-      requirementId: "activity:ObserveStep",
-      resourceId: "urn:kide:device:camera"
-    }]
-  });
-
-  await page.getByRole("button", { name: "Diagram" }).click();
-
+  // Persistent workflow surface: Activity GLSP visualization.
+  await workflow.getByRole("button", { name: "Visualize flow", exact: true }).click();
   await expect(page.getByTestId("glsp-editor")).toBeVisible();
   await expect(page.getByTestId("glsp-editor").getByText("ObserveStep", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Activity", exact: true })).toBeVisible();
   await expect(page.getByText("Connected · Eclipse GLSP graphical model")).toBeVisible();
+  expect(glspRequests.at(-1)).toEqual({
+    sourceUri: "kide-workspace:/flow.activity",
+    diagramType: "kide-activity-diagram"
+  });
+
+  // Return to text and open the engineering cockpit.
+  await page.getByRole("button", { name: "Text", exact: true }).click();
+  await workflow.getByRole("button", { name: "Engineering flow", exact: true }).click();
+  const cockpit = page.getByLabel("Engineering cockpit");
+  await expect(cockpit).toBeVisible();
+  await expect(cockpit.getByRole("button", { name: "Synthesize", exact: true })).toBeEnabled();
+
+  // Cockpit surface must invoke the exact same synthesis service contract.
+  await cockpit.getByRole("button", { name: "Synthesize", exact: true }).click();
+  await expect.poll(() => synthesisCalls).toBe(1);
+  await expect(page.getByLabel("Synthesis result")).toContainText("SUCCESS");
+  await expect(page.getByLabel("Synthesis result")).toContainText("urn:kide:device:camera");
+  await expect(page.getByText("Generated MNC / synthesized control model")).toBeVisible();
+
+  // The persistent workflow remains wired to the same service and can repeat deterministically.
+  await workflow.getByRole("button", { name: "Synthesize", exact: true }).click();
+  await expect.poll(() => synthesisCalls).toBe(2);
+  await expect(page.getByLabel("Synthesis result")).toContainText("SUCCESS");
+
+  await expect(workflow.getByRole("button", { name: "Reconfigure", exact: true })).toBeEnabled();
+  await expect(workflow.getByRole("button", { name: "Generate code", exact: true })).toBeEnabled();
+
+  // Cockpit generation surface.
+  await expect(page.getByLabel("KRL model ID")).toHaveValue("bindings.krl");
+  await page.getByLabel("Generation result").getByRole("button", { name: "Generate code", exact: true }).click();
+  await expect.poll(() => generationCalls).toBe(1);
+  await expect(page.getByLabel("Generation result")).toContainText("Generated 1 artifact");
+  await expect(page.getByLabel("Generation result")).toContainText("generated/Out.java");
+  await expect(page.getByLabel("Generation result")).toContainText("public class Out {}");
+  await expect(page.getByText("Generation manifest")).toBeVisible();
+
+  // Persistent generation surface must hit the same contract as the cockpit.
+  await workflow.getByRole("button", { name: "Generate code", exact: true }).click();
+  await expect.poll(() => generationCalls).toBe(2);
+
+  // Cockpit reconfiguration surface.
+  await page.getByLabel("Reconfiguration cause").selectOption("RESOURCE_LOSS");
+  await expect(page.getByLabel("Reconfiguration cause")).toHaveValue("RESOURCE_LOSS");
+  await page.getByLabel("Synthesis result").getByRole("button", { name: "Reconfigure", exact: true }).click();
+  await expect.poll(() => reconfigurationCalls).toBe(1);
+  await expect(page.getByLabel("Reconfiguration result")).toContainText("RECONFIGURED");
+  await expect(page.getByLabel("Reconfiguration result")).toContainText("urn:kide:device:camera-b");
+  await expect(page.getByLabel("Reconfiguration result")).toContainText("MIGRATE");
+
+  // Persistent reconfiguration surface must submit the identical previous binding contract.
+  await workflow.getByRole("button", { name: "Reconfigure", exact: true }).click();
+  await expect.poll(() => reconfigurationCalls).toBe(2);
+  expect(reconfigurationRequests).toEqual([
+    {
+      modelId: "flow.activity",
+      modelRevision: "etag-4",
+      cause: "RESOURCE_LOSS",
+      previousBindings: [{
+        requirementId: "activity:ObserveStep",
+        resourceId: "urn:kide:device:camera"
+      }]
+    },
+    {
+      modelId: "flow.activity",
+      modelRevision: "etag-4",
+      cause: "RESOURCE_LOSS",
+      previousBindings: [{
+        requirementId: "activity:ObserveStep",
+        resourceId: "urn:kide:device:camera"
+      }]
+    }
+  ]);
+
+  // State-machine visualization must use the MNC GLSP diagram type and canonical project URI.
+  await cockpit.getByRole("button", { name: "Visualize state machine", exact: true }).click();
+  await expect(page.getByTestId("glsp-editor")).toBeVisible();
+  await expect(page.getByTestId("glsp-editor").getByText("ReadyState", { exact: true })).toBeVisible();
+  expect(glspRequests.at(-1)).toEqual({
+    sourceUri: "kide-workspace:/controller.mncspec",
+    diagramType: "kide-mnc-diagram"
+  });
 
   expect(glspSessionId).not.toBe("");
-  expect(requestedSourceUri).toBe("kide-workspace:/flow.activity");
-  expect(requestedDiagramType).toBe("kide-activity-diagram");
+  expect(requestedSourceUri).toBe("kide-workspace:/controller.mncspec");
+  expect(requestedDiagramType).toBe("kide-mnc-diagram");
 });
 
 
@@ -796,7 +895,7 @@ test("creates starter engineering models for an empty hosted project", async ({ 
   ).toBeVisible();
   await expect(page.getByTestId("monaco-editor")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Synthesize", exact: true })
+    page.getByLabel("Engineering workflow").getByRole("button", { name: "Synthesize", exact: true })
   ).toBeVisible();
   await expect(page.locator(".welcome-workbench")).toHaveCount(0);
   await expect(page.locator(".editor-tabs")).toContainText("workflow.activity");

@@ -18,6 +18,7 @@ import { MonacoEditor } from "./MonacoEditor";
 import { MonacoLspController } from "./monacoLsp";
 import { MonacoWorkspace } from "./monacoWorkspace";
 import { GraphicalEditor } from "./GraphicalEditor";
+import { EngineeringCockpit } from "./EngineeringCockpit";
 import { QuickPick, type QuickPickItem } from "./QuickPick";
 import { LandingPage } from "./LandingPage";
 import { RegisterPage } from "./RegisterPage";
@@ -176,8 +177,10 @@ export default function App() {
     return "home";
   });
   const [authBusy, setAuthBusy] = useState(false);
+  const [engineeringCockpitOpen, setEngineeringCockpitOpen] = useState(false);
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
+  const pendingDiagramPath = useRef<string | undefined>(undefined);
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
   const lspClient = useRef<KideLspClient | undefined>(undefined);
   const lspController = useRef<MonacoLspController | undefined>(undefined);
@@ -194,6 +197,26 @@ export default function App() {
     selected?.source === "remote" &&
     selectedDiagramType &&
     project?.workspaceId
+  );
+  const activityModels = entries
+    .filter((entry) => entry.source === "remote" && entry.path.toLowerCase().endsWith(".activity"))
+    .map((entry) => entry.path);
+  const mncModels = entries
+    .filter((entry) => entry.source === "remote" && entry.path.toLowerCase().endsWith(".mncspec"))
+    .map((entry) => entry.path);
+  const canSynthesize = Boolean(
+    selected?.source === "remote" &&
+    selected.path.toLowerCase().endsWith(".activity") &&
+    selected.etag &&
+    !selected.dirty &&
+    saveState !== "pending" &&
+    saveState !== "saving"
+  );
+  const canReconfigure = Boolean(
+    canSynthesize && synthesisResult?.status === "SUCCESS"
+  );
+  const canGenerate = Boolean(
+    canReconfigure && generationKrlModelId.trim().toLowerCase().endsWith(".krl")
   );
 
   workspaceChange.current = (path, value) => {
@@ -254,7 +277,10 @@ export default function App() {
   }, [token]);
 
   useEffect(() => {
-    setViewMode("text");
+    const openRequestedDiagram =
+      Boolean(selectedPath) && pendingDiagramPath.current === selectedPath;
+    if (openRequestedDiagram) pendingDiagramPath.current = undefined;
+    setViewMode(openRequestedDiagram ? "diagram" : "text");
     setSynthesisResult(undefined);
     setReconfigurationResult(undefined);
     setGenerationResult(undefined);
@@ -1280,6 +1306,38 @@ export default function App() {
     }
   }
 
+  async function openGraphicalModel(path: string) {
+    const entry = entriesRef.current.find((candidate) => candidate.path === path);
+    if (!entry || entry.source !== "remote" || !diagramTypeFor(path)) return;
+    if (!tokenRef.current.trim()) {
+      setNotice("An access token is required for the graphical service.");
+      return;
+    }
+    if (
+      saveState === "pending" ||
+      saveState === "saving" ||
+      saveState === "conflict" ||
+      saveState === "error"
+    ) {
+      setNotice("Resolve or finish textual saves before opening the shared graphical model.");
+      return;
+    }
+
+    setEngineeringCockpitOpen(false);
+    if (selectedPathRef.current === path) {
+      pendingDiagramPath.current = undefined;
+      setViewMode("diagram");
+      return;
+    }
+
+    pendingDiagramPath.current = path;
+    if (entry.loaded === false) {
+      await loadSpecificModel(path);
+    } else {
+      selectEntry(entry);
+    }
+  }
+
   function openDiagram() {
     if (!diagramAvailable || !selected) return;
     if (!tokenRef.current.trim()) {
@@ -1322,6 +1380,9 @@ export default function App() {
     setKnowledgeImpact(undefined);
     setTraceSemanticId("");
     setSynthesisResult(undefined);
+    setGenerationResult(undefined);
+    setReconfigurationResult(undefined);
+    setEngineeringCockpitOpen(false);
     setSaveState("clean");
     setOpenPaths([]);
     setWorkspaceMatches([]);
@@ -1433,8 +1494,7 @@ export default function App() {
   }
 
   function runSynthesisInWorkbench() {
-    setActiveSidebar("engineering");
-    setSidebarVisible(true);
+    setEngineeringCockpitOpen(true);
     void runSynthesis();
   }
 
@@ -1720,12 +1780,56 @@ export default function App() {
       run: () => void refreshProjectModels()
     },
     {
+      id: "engineering.cockpit",
+      label: "Engineering: Open Flow & Generation Cockpit",
+      description: "Synthesis, state machines, reconfiguration and generated code",
+      run: () => setEngineeringCockpitOpen(true)
+    },
+    {
       id: "engineering.synthesize",
       label: "Engineering: Run Deterministic Synthesis",
       description: selected?.path.endsWith(".activity")
         ? selected.path
         : "Open an Activity model first",
       run: runSynthesisInWorkbench
+    },
+    {
+      id: "engineering.reconfigure",
+      label: "Engineering: Reconfigure Control Plan",
+      description: synthesisResult?.status === "SUCCESS"
+        ? reconfigurationCause
+        : "Run synthesis first",
+      run: () => {
+        setEngineeringCockpitOpen(true);
+        void runReconfiguration();
+      }
+    },
+    {
+      id: "engineering.generate",
+      label: "Engineering: Generate Code",
+      description: canGenerate ? generationKrlModelId : "Run synthesis first",
+      run: () => {
+        setEngineeringCockpitOpen(true);
+        void runGeneration();
+      }
+    },
+    {
+      id: "engineering.activityDiagram",
+      label: "Engineering: Visualize Activity Flow",
+      description: activityModels[0] ?? "No Activity model",
+      run: () => {
+        const path =
+          selected?.path.toLowerCase().endsWith(".activity")
+            ? selected.path
+            : activityModels[0];
+        if (path) void openGraphicalModel(path);
+      }
+    },
+    {
+      id: "engineering.stateMachine",
+      label: "Engineering: Visualize MNC State Machine",
+      description: mncModels[0] ?? "No MNC model",
+      run: () => mncModels[0] && void openGraphicalModel(mncModels[0])
     },
     {
       id: "engineering.diagram",
@@ -2572,6 +2676,67 @@ export default function App() {
             </nav>
           )}
 
+          <div className="engineering-workflow-bar" aria-label="Engineering workflow">
+            <button
+              type="button"
+              className={engineeringCockpitOpen ? "active" : ""}
+              onClick={() => setEngineeringCockpitOpen(true)}
+            >
+              Engineering flow
+            </button>
+            <button
+              type="button"
+              disabled={!activityModels.length}
+              onClick={() => {
+                const path =
+                  selected?.path.toLowerCase().endsWith(".activity")
+                    ? selected.path
+                    : activityModels[0];
+                if (path) void openGraphicalModel(path);
+              }}
+            >
+              Visualize flow
+            </button>
+            <button
+              type="button"
+              className="primary-action"
+              disabled={!canSynthesize}
+              onClick={runSynthesisInWorkbench}
+            >
+              Synthesize
+            </button>
+            <button
+              type="button"
+              disabled={!mncModels.length}
+              onClick={() => mncModels[0] && void openGraphicalModel(mncModels[0])}
+            >
+              State machine
+            </button>
+            <button
+              type="button"
+              disabled={!canReconfigure}
+              onClick={() => {
+                setEngineeringCockpitOpen(true);
+                void runReconfiguration();
+              }}
+            >
+              Reconfigure
+            </button>
+            <button
+              type="button"
+              className="primary-action"
+              disabled={!canGenerate}
+              onClick={() => {
+                setEngineeringCockpitOpen(true);
+                void runGeneration();
+              }}
+            >
+              Generate code
+            </button>
+            <span className="engineering-workflow-status">
+              {synthesisResult?.status ?? "Ready"}
+            </span>
+          </div>
           <div className="editor-toolbar">
             <div className="editor-identity">
               <strong>{selected ? languageLabelForPath(selected.path) : "Welcome"}</strong>
@@ -2619,7 +2784,30 @@ export default function App() {
               <span className={`save-state state-${saveState}`}>{saveState}</span>
             </div>
           </div>
-          {viewMode === "diagram" &&
+          {engineeringCockpitOpen && project ? (
+            <EngineeringCockpit
+              projectName={project.displayName}
+              selectedPath={selected?.path}
+              activityModels={activityModels}
+              mncModels={mncModels}
+              synthesisResult={synthesisResult}
+              reconfigurationResult={reconfigurationResult}
+              generationResult={generationResult}
+              canSynthesize={canSynthesize}
+              canReconfigure={canReconfigure}
+              canGenerate={canGenerate}
+              reconfigurationCause={reconfigurationCause}
+              generationKrlModelId={generationKrlModelId}
+              onReconfigurationCause={setReconfigurationCause}
+              onGenerationKrlModelId={setGenerationKrlModelId}
+              onSynthesize={() => void runSynthesis()}
+              onReconfigure={() => void runReconfiguration()}
+              onGenerate={() => void runGeneration()}
+              onOpenActivityDiagram={(path) => void openGraphicalModel(path)}
+              onOpenMncDiagram={(path) => void openGraphicalModel(path)}
+              onOpenEditor={() => setEngineeringCockpitOpen(false)}
+            />
+          ) : viewMode === "diagram" &&
           selected &&
           project?.workspaceId &&
           selectedDiagramType ? (

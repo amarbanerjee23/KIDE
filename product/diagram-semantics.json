@@ -39,6 +39,18 @@
           "editable": true
         },
         {
+          "id": "kide:mnc-operating-state",
+          "emf_class": "mncModel.OperatingState",
+          "sirius_mapping": "OperatingState",
+          "editable": false
+        },
+        {
+          "id": "kide:mnc-state-transition",
+          "emf_class": "mncModel.Transition",
+          "sirius_mapping": "StateTransition",
+          "editable": false
+        },
+        {
           "id": "kide:mnc-uses",
           "emf_feature": "mncModel.InterfaceDescription.uses",
           "sirius_mapping": "InterfaceDescriptionUsingEdge_BlockDiagram",
