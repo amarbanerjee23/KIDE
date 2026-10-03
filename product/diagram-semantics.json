@@ -47,7 +47,6 @@
         {
           "id": "kide:mnc-state-transition",
           "emf_class": "mncModel.Transition",
-          "emf_feature": "mncModel.Transition.nextState",
           "sirius_mapping": "StateTransition",
           "editable": false
         },
