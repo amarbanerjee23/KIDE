@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "purpose": "Bundles that define KIDE engineering semantics and must be shipped explicitly by both desktop and headless/web products.",
+  "bundles": [
+    "com.kide.enterprise.api",
+    "com.kide.enterprise.modelrepo",
+    "com.kide.knowledge",
+    "com.kide.synthesis",
+    "com.kide.codegen"
+  ],
+  "ownership": {
+    "project_synthesis_service": "com.kide.synthesis",
+    "http_adapter": "com.kide.enterprise.server"
+  }
+}
