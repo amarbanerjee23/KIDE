@@ -32,9 +32,21 @@ class SharedServiceKernelTest(unittest.TestCase):
         self.assertIn("package com.kide.synthesis;", source)
         self.assertIn("ProjectSynthesisEngine", source)
 
-    def test_server_does_not_instantiate_synthesis_engines(self):
+    def test_project_generation_is_owned_by_shared_kernel(self):
         module = load_module()
-        forbidden = ("new ProjectSynthesisEngine(", "new DeterministicSynthesisService(")
+        self.assertTrue(module.SHARED_GENERATION.is_file())
+        self.assertFalse(module.SERVER_GENERATION.exists())
+        source = module.SHARED_GENERATION.read_text(encoding="utf-8")
+        self.assertIn("package com.kide.codegen;", source)
+        self.assertIn("ProjectKrlGenerationEngine", source)
+
+    def test_server_does_not_instantiate_engineering_engines(self):
+        module = load_module()
+        forbidden = (
+            "new ProjectSynthesisEngine(",
+            "new DeterministicSynthesisService(",
+            "new ProjectKrlGenerationEngine(",
+        )
         violations = []
         for java in module.SERVER_ROOT.rglob("*.java"):
             source = java.read_text(encoding="utf-8")
