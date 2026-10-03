@@ -2318,3 +2318,7 @@ body {
     transform: rotate(90deg);
   }
 }
+
+.engineering-inline-field {
+  margin: 8px 0 10px;
+}
