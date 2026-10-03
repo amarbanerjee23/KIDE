@@ -613,9 +613,9 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   await expect(page.locator(".file-list").getByText("flow.activity", { exact: true })).toBeVisible();
   await expect(page.getByTestId("monaco-editor")).toBeVisible();
   await expect(page.locator(".status-bar")).toContainText("Collaboration Online");
-  await expect(page.getByRole("button", { name: "Synthesize", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Engineering workflow").getByRole("button", { name: "Synthesize", exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Synthesize", exact: true }).click();
+  await page.getByLabel("Engineering workflow").getByRole("button", { name: "Synthesize", exact: true }).click();
   await expect(page.getByLabel("Synthesis result")).toContainText("SUCCESS");
   await expect(page.getByLabel("Synthesis result")).toContainText(
     "urn:kide:device:camera"
@@ -623,7 +623,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
   await expect(page.getByText("Generated MNC")).toBeVisible();
 
   await expect(page.getByLabel("KRL model ID")).toHaveValue("bindings.krl");
-  await page.getByRole("button", { name: "Generate" }).click();
+  await page.getByRole("button", { name: "Generate code", exact: true }).first().click();
   await expect(page.getByLabel("Generation result")).toContainText(
     "Generated 1 artifact"
   );
@@ -796,7 +796,7 @@ test("creates starter engineering models for an empty hosted project", async ({ 
   ).toBeVisible();
   await expect(page.getByTestId("monaco-editor")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Synthesize", exact: true })
+    page.getByLabel("Engineering workflow").getByRole("button", { name: "Synthesize", exact: true })
   ).toBeVisible();
   await expect(page.locator(".welcome-workbench")).toHaveCount(0);
   await expect(page.locator(".editor-tabs")).toContainText("workflow.activity");
