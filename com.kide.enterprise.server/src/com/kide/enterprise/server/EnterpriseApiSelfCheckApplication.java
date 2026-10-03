@@ -19,6 +19,7 @@ import org.eclipse.equinox.app.IApplicationContext;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.kide.codegen.ProjectGenerationService;
 import com.kide.enterprise.audit.InMemoryAuditLedger;
 import com.kide.enterprise.authorization.AuthorizationEnforcer;
 import com.kide.enterprise.authorization.AuthorizationService;
