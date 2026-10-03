@@ -70,6 +70,12 @@ public class GlspGatewayIntegrationTest {
                     + "InterfaceDescription Device {\n"
                     + "  commands { Start[] }\n"
                     + "  events { Publish Ready[] }\n"
+                    + "  operatingStates {\n"
+                    + "    Idle[]\n"
+                    + "    ReadyState[]\n"
+                    + "    startStates: Idle\n"
+                    + "    endStates: ReadyState\n"
+                    + "  }\n"
                     + "}\n");
 
             PrincipalIdentity principal = new PrincipalIdentity(
@@ -163,6 +169,8 @@ public class GlspGatewayIntegrationTest {
                     message -> actionKind(message, "setModel")
                             && actionResponseId(message, "model-1"));
             assertTrue(setModel.toString().contains("kide:mnc-interface"));
+            assertTrue(setModel.toString().contains("kide:mnc-operating-state"));
+            assertTrue(setModel.toString().contains("ReadyState"));
             assertTrue(!setModel.toString().contains(project.toString()));
 
             sendProcess(socket,
@@ -172,6 +180,8 @@ public class GlspGatewayIntegrationTest {
                     message -> actionKind(message, "setTypeHints")
                             && actionResponseId(message, "hints-1"));
             assertTrue(hints.toString().contains("kide:mnc-control-node"));
+            assertTrue(hints.toString().contains("kide:mnc-operating-state"));
+            assertTrue(hints.toString().contains("kide:mnc-state-transition"));
 
             sendProcess(socket,
                     "{\"kind\":\"createNode\",\"isOperation\":true,"
