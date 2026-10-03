@@ -355,7 +355,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
                 type: "graph",
                 children: [{
                   id: mnc ? "//@states.0" : "//@activities.0",
-                  type: mnc ? "kide:mnc-state" : "kide:activity",
+                  type: mnc ? "kide:mnc-operating-state" : "kide:activity",
                   position: { x: 80, y: 80 },
                   size: { width: 180, height: 72 },
                   children: [{
@@ -380,7 +380,7 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
               kind: "setTypeHints",
               responseId: action.requestId,
               shapeHints: [{
-                elementTypeId: requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-state" : "kide:activity",
+                elementTypeId: requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-operating-state" : "kide:activity",
                 repositionable: true,
                 deletable: true,
                 resizable: true,
@@ -388,12 +388,12 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
                 containableElementTypeIds: []
               }],
               edgeHints: [{
-                elementTypeId: requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-transition" : "kide:activity-next",
+                elementTypeId: requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-state-transition" : "kide:activity-next",
                 repositionable: false,
                 deletable: true,
                 routable: false,
-                sourceElementTypeIds: [requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-state" : "kide:activity"],
-                targetElementTypeIds: [requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-state" : "kide:activity"]
+                sourceElementTypeIds: [requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-operating-state" : "kide:activity"],
+                targetElementTypeIds: [requestedDiagramType === "kide-mnc-diagram" ? "kide:mnc-operating-state" : "kide:activity"]
               }]
             }
           }
