@@ -45,6 +45,7 @@ import com.kide.enterprise.modelrepo.ModelSnapshot;
 import com.kide.enterprise.modelrepo.ModelTransaction;
 import com.kide.enterprise.modelrepo.RevisionConflictException;
 import com.kide.knowledge.KnowledgeRepositoryException;
+import com.kide.knowledge.ProjectKnowledgeService;
 import com.kide.knowledge.KnowledgeRevisionConflictException;
 import com.kide.synthesis.ProjectSynthesisException;
 import com.kide.synthesis.ProjectSynthesisService;
