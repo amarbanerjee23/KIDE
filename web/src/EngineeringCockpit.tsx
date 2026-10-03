@@ -1,6 +1,7 @@
 import type {
   GenerationArtifact,
   GenerationResult,
+  ReconfigurationCause,
   ReconfigurationResult,
   SynthesisResult
 } from "./types";
@@ -16,6 +17,10 @@ interface Props {
   canSynthesize: boolean;
   canReconfigure: boolean;
   canGenerate: boolean;
+  reconfigurationCause: ReconfigurationCause;
+  generationKrlModelId: string;
+  onReconfigurationCause(value: ReconfigurationCause): void;
+  onGenerationKrlModelId(value: string): void;
   onSynthesize(): void;
   onReconfigure(): void;
   onGenerate(): void;
@@ -35,6 +40,10 @@ export function EngineeringCockpit({
   canSynthesize,
   canReconfigure,
   canGenerate,
+  reconfigurationCause,
+  generationKrlModelId,
+  onReconfigurationCause,
+  onGenerationKrlModelId,
   onSynthesize,
   onReconfigure,
   onGenerate,
@@ -171,11 +180,28 @@ export function EngineeringCockpit({
       <div className="engineering-results-grid">
         <section className="engineering-result-card" aria-label="Synthesis result">
           <div className="panel-heading">
-            <h3>Synthesis</h3>
+            <h3>Synthesis & reconfiguration</h3>
             <button type="button" disabled={!canReconfigure} onClick={onReconfigure}>
               Reconfigure
             </button>
           </div>
+          <label className="engineering-inline-field">
+            Reconfiguration cause
+            <select
+              aria-label="Reconfiguration cause"
+              value={reconfigurationCause}
+              onChange={(event) =>
+                onReconfigurationCause(event.target.value as ReconfigurationCause)
+              }
+            >
+              <option value="AVAILABILITY_CHANGE">Availability change</option>
+              <option value="RESOURCE_LOSS">Resource loss</option>
+              <option value="RESOURCE_REPLACEMENT">Resource replacement</option>
+              <option value="CAPABILITY_CHANGE">Capability change</option>
+              <option value="REQUIREMENT_CHANGE">Requirement change</option>
+              <option value="MANUAL_REPLAN">Manual re-plan</option>
+            </select>
+          </label>
           {synthesisResult ? (
             <>
               <strong>{synthesisResult.status}</strong>
@@ -238,6 +264,15 @@ export function EngineeringCockpit({
               Generate code
             </button>
           </div>
+          <label className="engineering-inline-field">
+            KRL model
+            <input
+              aria-label="KRL model ID"
+              value={generationKrlModelId}
+              onChange={(event) => onGenerationKrlModelId(event.target.value)}
+              placeholder="bindings.krl"
+            />
+          </label>
           {generationResult?.artifacts.length ? (
             generationResult.artifacts.map((artifact) => (
               <GeneratedArtifactView artifact={artifact} key={artifact.path} />
