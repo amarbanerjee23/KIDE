@@ -208,6 +208,15 @@ export function EngineeringCockpit({
               <p className="muted">
                 fingerprint {synthesisResult.fingerprint.slice(0, 12)} · knowledge revision {synthesisResult.knowledgeRevision}
               </p>
+              {synthesisResult.selections.map((selection) => (
+                <div className="engineering-binding engineering-result-binding" key={selection.requirementId}>
+                  <span>{selection.activityName}</span>
+                  <b aria-hidden="true">→</b>
+                  <span>{selection.capabilityName}</span>
+                  <b aria-hidden="true">→</b>
+                  <strong>{selection.resourceId}</strong>
+                </div>
+              ))}
               {synthesisResult.diagnostics.map((diagnostic, index) => (
                 <div className="engineering-diagnostic" key={diagnostic.code + index}>
                   <strong>{diagnostic.code}</strong>
