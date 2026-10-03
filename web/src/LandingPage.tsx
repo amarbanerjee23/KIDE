@@ -12,6 +12,7 @@ interface Props {
   onPassword(value: string): void;
   onSignIn(): void;
   onSignOut(): void;
+  onOpenRegister(): void;
   onOpenWorkspace(): void;
 }
 
@@ -27,6 +28,7 @@ export function LandingPage({
   onPassword,
   onSignIn,
   onSignOut,
+  onOpenRegister,
   onOpenWorkspace
 }: Props) {
   function submit(event: FormEvent) {
@@ -160,6 +162,13 @@ export function LandingPage({
                 disabled={!configured || busy}
               >
                 {busy ? "Signing in…" : "Sign in with Firebase"}
+              </button>
+              <button
+                type="button"
+                className="signin-secondary"
+                onClick={onOpenRegister}
+              >
+                New to KIDE? Create an account
               </button>
               <p className="signin-status" aria-live="polite">{authStatus}</p>
             </>
