@@ -40,12 +40,21 @@ class SharedServiceKernelTest(unittest.TestCase):
         self.assertIn("package com.kide.codegen;", source)
         self.assertIn("ProjectKrlGenerationEngine", source)
 
+    def test_project_knowledge_is_owned_by_shared_kernel(self):
+        module = load_module()
+        self.assertTrue(module.SHARED_KNOWLEDGE.is_file())
+        self.assertFalse(module.SERVER_KNOWLEDGE.exists())
+        source = module.SHARED_KNOWLEDGE.read_text(encoding="utf-8")
+        self.assertIn("package com.kide.knowledge;", source)
+        self.assertIn("KnowledgeCatalogueService", source)
+
     def test_server_does_not_instantiate_engineering_engines(self):
         module = load_module()
         forbidden = (
             "new ProjectSynthesisEngine(",
             "new DeterministicSynthesisService(",
             "new ProjectKrlGenerationEngine(",
+            "new KnowledgeCatalogueService(",
         )
         violations = []
         for java in module.SERVER_ROOT.rglob("*.java"):
