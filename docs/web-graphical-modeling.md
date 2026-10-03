@@ -4,7 +4,7 @@ PR32 adds graphical modelling to the browser without turning the browser into a 
 
 ## Semantic ownership
 
-The canonical semantic artifacts remain the existing Xtext files: `.activity` and `.mncspec`. Both Eclipse Sirius desktop and the browser GLSP path load the same generated EMF packages. The browser receives a GLSP GModel and sends standard GLSP operations; it does not parse, scope, validate, or interpret Activity or MNC semantics.
+The canonical semantic artifacts remain the existing Xtext files: `.activity` and `.mncspec`. Both Eclipse Sirius desktop and the browser GLSP path load the same generated EMF packages. The MNC GLSP model includes the desktop Sirius block-diagram concepts plus `OperatingState` and `Transition` from the Sirius State Diagram, so the browser state-machine view is derived from the same EMF semantics rather than reconstructed in TypeScript. The browser receives a GLSP GModel and sends standard GLSP operations; it does not parse, scope, validate, or interpret Activity or MNC semantics.
 
 `product/diagram-semantics.json` is the machine-checked bridge between the GLSP element IDs and the current Sirius design mappings. `scripts/verify_diagram_parity.py` fails CI if a declared Sirius mapping, generated EMF class/feature, Java GLSP type, or browser diagram ID drifts.
 
