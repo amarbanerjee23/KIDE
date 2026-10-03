@@ -18,6 +18,7 @@ MARKERS = (
     "KIDE PR36 ENTERPRISE SYNTHESIS SELF-CHECK OK",
     "KIDE PR37 ENTERPRISE RECONFIGURATION SELF-CHECK OK",
     "KIDE PR38 ENTERPRISE GENERATION SELF-CHECK OK",
+    "KIDE PR80 CROSS-ADAPTER SEMANTIC PARITY OK",
 )
 
 
@@ -69,7 +70,7 @@ def run_selfcheck(launcher: Path) -> None:
         raise SmokeFailure(
             f"packaged enterprise API success markers missing: {missing}\n{output[-10000:]}"
         )
-    print(f"PR35 PACKAGED ENTERPRISE API + KNOWLEDGE QUALIFIED: {launcher}")
+    print(f"PR80 PACKAGED ENTERPRISE API + CROSS-ADAPTER SEMANTICS QUALIFIED: {launcher}")
 
 
 def main() -> int:
