@@ -11,6 +11,7 @@
   "ownership": {
     "project_synthesis_service": "com.kide.synthesis",
     "project_generation_service": "com.kide.codegen",
+    "project_knowledge_service": "com.kide.knowledge",
     "http_adapter": "com.kide.enterprise.server"
   }
 }
