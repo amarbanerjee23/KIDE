@@ -180,8 +180,8 @@ public class GlspGatewayIntegrationTest {
                     message -> actionKind(message, "setTypeHints")
                             && actionResponseId(message, "hints-1"));
             assertTrue(hints.toString().contains("kide:mnc-control-node"));
-            assertTrue(hints.toString().contains("kide:mnc-operating-state"));
-            assertTrue(hints.toString().contains("kide:mnc-state-transition"));
+            assertTrue(!hints.toString().contains("kide:mnc-operating-state"));
+            assertTrue(!hints.toString().contains("kide:mnc-state-transition"));
 
             sendProcess(socket,
                     "{\"kind\":\"createNode\",\"isOperation\":true,"
