@@ -49,6 +49,7 @@ import com.kide.knowledge.KnowledgeRevisionConflictException;
 import com.kide.synthesis.ProjectSynthesisException;
 import com.kide.synthesis.ProjectSynthesisService;
 import com.kide.codegen.GenerationException;
+import com.kide.codegen.ProjectGenerationService;
 
 /**
  * Shared HTTP runtime for browser and service clients. It binds the PR20 API
