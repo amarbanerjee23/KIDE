@@ -73,7 +73,7 @@ public class GlspGatewayIntegrationTest {
                     + "  operatingStates {\n"
                     + "    Idle[]\n"
                     + "    ReadyState[]\n"
-                    + "    startStates: Idle\n"
+                    + "    startStates: Idle, ReadyState\n"
                     + "    endStates: ReadyState\n"
                     + "  }\n"
                     + "}\n");
