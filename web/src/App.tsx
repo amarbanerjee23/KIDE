@@ -20,6 +20,7 @@ import { MonacoWorkspace } from "./monacoWorkspace";
 import { GraphicalEditor } from "./GraphicalEditor";
 import { QuickPick, type QuickPickItem } from "./QuickPick";
 import { LandingPage } from "./LandingPage";
+import { RegisterPage } from "./RegisterPage";
 import { FileTree } from "./FileTree";
 import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
@@ -91,6 +92,7 @@ export default function App() {
   );
   const [firebaseEmail, setFirebaseEmail] = useState("");
   const [firebasePassword, setFirebasePassword] = useState("");
+  const [firebaseConfirmPassword, setFirebaseConfirmPassword] = useState("");
   const [authStatus, setAuthStatus] = useState(
     FIREBASE_PROJECT_ID ? "Not signed in" : "Firebase configuration missing"
   );
@@ -168,9 +170,11 @@ export default function App() {
       return "dark";
     }
   });
-  const [route, setRoute] = useState<"home" | "workspace">(() =>
-    window.location.pathname.startsWith("/workspace") ? "workspace" : "home"
-  );
+  const [route, setRoute] = useState<"home" | "register" | "workspace">(() => {
+    if (window.location.pathname.startsWith("/workspace")) return "workspace";
+    if (window.location.pathname.startsWith("/register")) return "register";
+    return "home";
+  });
   const [authBusy, setAuthBusy] = useState(false);
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
@@ -318,11 +322,13 @@ export default function App() {
 
   useEffect(() => {
     const onPopState = () => {
-      setRoute(
-        window.location.pathname.startsWith("/workspace")
-          ? "workspace"
-          : "home"
-      );
+      if (window.location.pathname.startsWith("/workspace")) {
+        setRoute("workspace");
+      } else if (window.location.pathname.startsWith("/register")) {
+        setRoute("register");
+      } else {
+        setRoute("home");
+      }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -394,6 +400,42 @@ export default function App() {
         error instanceof FirebaseAuthError || error instanceof Error
           ? error.message
           : "Firebase sign-in failed."
+      );
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
+  async function registerFirebase() {
+    setNotice("");
+    if (firebasePassword !== firebaseConfirmPassword) {
+      setAuthStatus("Registration failed");
+      setNotice("Passwords do not match.");
+      return;
+    }
+    setAuthBusy(true);
+    try {
+      const user = await firebaseAuth.registerWithEmailPassword(
+        firebaseEmail,
+        firebasePassword
+      );
+      const nextToken = await firebaseAuth.idToken();
+      setToken(nextToken);
+      setFirebasePassword("");
+      setFirebaseConfirmPassword("");
+      setAuthStatus(`Account created · ${user.email}`);
+      setNotice("Account created successfully.");
+      navigate("workspace");
+      await connect();
+      setActiveSidebar("explorer");
+      setSidebarVisible(true);
+    } catch (error) {
+      setToken("");
+      setAuthStatus("Registration failed");
+      setNotice(
+        error instanceof FirebaseAuthError || error instanceof Error
+          ? error.message
+          : "Firebase registration failed."
       );
     } finally {
       setAuthBusy(false);
@@ -1317,8 +1359,9 @@ export default function App() {
     setProject(next);
   }
 
-  function navigate(next: "home" | "workspace") {
-    const path = next === "workspace" ? "/workspace" : "/";
+  function navigate(next: "home" | "register" | "workspace") {
+    const path =
+      next === "workspace" ? "/workspace" : next === "register" ? "/register" : "/";
     if (window.location.pathname !== path) {
       window.history.pushState({}, "", path);
     }
@@ -1738,6 +1781,25 @@ export default function App() {
     workbenchCommands.find((command) => command.id === item.id)?.run();
   }
 
+  if (route === "register") {
+    return (
+      <RegisterPage
+        email={firebaseEmail}
+        password={firebasePassword}
+        confirmPassword={firebaseConfirmPassword}
+        authStatus={authStatus}
+        configured={Boolean(FIREBASE_PROJECT_ID && FIREBASE_API_KEY)}
+        busy={authBusy}
+        notice={notice}
+        onEmail={setFirebaseEmail}
+        onPassword={setFirebasePassword}
+        onConfirmPassword={setFirebaseConfirmPassword}
+        onRegister={() => void registerFirebase()}
+        onOpenSignIn={() => navigate("home")}
+      />
+    );
+  }
+
   if (route === "home") {
     return (
       <LandingPage
@@ -1752,6 +1814,7 @@ export default function App() {
         onPassword={setFirebasePassword}
         onSignIn={() => void signInFirebase()}
         onSignOut={() => void signOutFirebase()}
+        onOpenRegister={() => navigate("register")}
         onOpenWorkspace={() => navigate("workspace")}
       />
     );
