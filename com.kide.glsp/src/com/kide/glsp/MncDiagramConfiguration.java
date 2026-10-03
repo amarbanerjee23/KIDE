@@ -10,12 +10,16 @@ public final class MncDiagramConfiguration extends BaseDiagramConfiguration {
     public List<ShapeTypeHint> getShapeTypeHints() {
         return List.of(
                 new ShapeTypeHint(KideDiagramTypes.MNC_INTERFACE, true, true, true, false),
-                new ShapeTypeHint(KideDiagramTypes.MNC_CONTROL_NODE, true, true, true, false));
+                new ShapeTypeHint(KideDiagramTypes.MNC_CONTROL_NODE, true, true, true, false),
+                new ShapeTypeHint(KideDiagramTypes.MNC_OPERATING_STATE, true, false, true, false));
     }
 
     @Override
     public List<EdgeTypeHint> getEdgeTypeHints() {
         return List.of(
+                new EdgeTypeHint(KideDiagramTypes.MNC_STATE_TRANSITION, false, false, false,
+                        List.of(KideDiagramTypes.MNC_OPERATING_STATE),
+                        List.of(KideDiagramTypes.MNC_OPERATING_STATE)),
                 new EdgeTypeHint(KideDiagramTypes.MNC_USES, false, true, false,
                         List.of(KideDiagramTypes.MNC_INTERFACE),
                         List.of(KideDiagramTypes.MNC_INTERFACE)),
