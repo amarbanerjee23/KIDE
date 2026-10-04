@@ -20,6 +20,7 @@ import type {
   ReviewComment,
   ReconfigurationCause,
   ReconfigurationResult,
+  RuntimeVersion,
   SynthesisResult
 } from "./types";
 
@@ -56,6 +57,10 @@ export class KideApiClient {
 
   health(): Promise<Health> {
     return this.request<Health>(apiV1.health(), {}, false);
+  }
+
+  version(): Promise<RuntimeVersion> {
+    return this.request<RuntimeVersion>(apiV1.version(), {}, false);
   }
 
   listProjects(): Promise<ProjectList> {
