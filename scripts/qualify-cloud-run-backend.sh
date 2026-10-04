@@ -53,7 +53,8 @@ import sys
 
 root = json.loads(sys.argv[1])
 health = json.loads(sys.argv[2])
-api_health = json.loads(sys.argv[3])\nversion = json.loads(sys.argv[4])
+api_health = json.loads(sys.argv[3])
+version = json.loads(sys.argv[4])
 
 assert root == {
     "service": "kide-backend",
