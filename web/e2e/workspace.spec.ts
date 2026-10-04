@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { strToU8, zipSync } from "fflate";
 
 test("keeps sign-in on the landing page and engineering actions in the workspace", async ({ page }) => {
   await page.goto("/");
@@ -242,6 +243,292 @@ test("opens a project and connects Monaco to the shared Xtext LSP boundary", asy
     .getByRole("button", { name: "Search", exact: true })
     .click();
   await expect(page.getByRole("button", { name: /Observe/ })).toBeVisible();
+});
+
+
+test("promotes a local ZIP atomically into an empty hosted project and attaches engineering services", async ({ page }) => {
+  let promoted = false;
+  let importCalls = 0;
+  let importPayload: any;
+  let initializeRootUri = "";
+
+  await page.routeWebSocket("**/lsp?*", (ws) => {
+    ws.onMessage((message) => {
+      const request = JSON.parse(String(message));
+      if (request.method === "initialize") {
+        initializeRootUri = request.params.rootUri;
+        ws.send(JSON.stringify({
+          jsonrpc: "2.0",
+          id: request.id,
+          result: {
+            capabilities: {
+              documentSymbolProvider: true,
+              completionProvider: {},
+              hoverProvider: true,
+              definitionProvider: true,
+              referencesProvider: true,
+              documentFormattingProvider: true,
+              renameProvider: true
+            }
+          }
+        }));
+        return;
+      }
+      if (typeof request.id === "number") {
+        ws.send(JSON.stringify({
+          jsonrpc: "2.0",
+          id: request.id,
+          result: null
+        }));
+      }
+    });
+  });
+
+  await mockCollaboration(page);
+
+  await page.route("**/api/v1/health", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ status: "UP", version: "v1", dependencies: {} })
+    });
+  });
+
+  await page.route("**/api/v1/projects", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [{
+          id: "P04-001",
+          displayName: "Empty Hosted Target",
+          revision: "1",
+          portfolioId: "PF04-1",
+          workspaceId: "W04-001"
+        }]
+      })
+    });
+  });
+
+  await page.route("**/api/v1/projects/P04-001", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "P04-001",
+        displayName: "Empty Hosted Target",
+        revision: "1",
+        portfolioId: "PF04-1",
+        workspaceId: "W04-001"
+      })
+    });
+  });
+
+  await page.route("**/api/v1/projects/P04-001/models", async (route) => {
+    const items = promoted ? [{
+      id: "models/main.activity",
+      revision: "1",
+      etag: "a".repeat(64),
+      mediaType: "text/x-kide-activity"
+    }, {
+      id: "bindings.krl",
+      revision: "1",
+      etag: "b".repeat(64),
+      mediaType: "text/x-kide-krl"
+    }] : [];
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items })
+    });
+  });
+
+  await page.route(
+    "**/api/v1/projects/P04-001/imports/archive",
+    async (route) => {
+      importCalls += 1;
+      importPayload = JSON.parse(route.request().postData() ?? "{}");
+      promoted = true;
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({
+          projectId: "P04-001",
+          workspaceId: "W04-001",
+          importedCount: 2,
+          totalBytes: 170,
+          items: [{
+            id: "models/main.activity",
+            revision: "1",
+            etag: "a".repeat(64),
+            mediaType: "text/x-kide-activity"
+          }, {
+            id: "bindings.krl",
+            revision: "1",
+            etag: "b".repeat(64),
+            mediaType: "text/x-kide-krl"
+          }]
+        })
+      });
+    }
+  );
+
+  await page.route(
+    "**/api/v1/projects/P04-001/models/*",
+    async (route) => {
+      const url = decodeURIComponent(route.request().url());
+      const activity = url.endsWith("/models/models/main.activity");
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(activity ? {
+          id: "models/main.activity",
+          content: "ActivityDiagram Promoted\nhas activities { Activity ObserveStep { nextActivity : ObserveStep } }\n",
+          contentBase64: Buffer.from(
+            "ActivityDiagram Promoted\nhas activities { Activity ObserveStep { nextActivity : ObserveStep } }\n"
+          ).toString("base64"),
+          revision: "1",
+          etag: "a".repeat(64),
+          mediaType: "text/x-kide-activity"
+        } : {
+          id: "bindings.krl",
+          content: "knowledge Promoted {}\n",
+          contentBase64: Buffer.from("knowledge Promoted {}\n").toString("base64"),
+          revision: "1",
+          etag: "b".repeat(64),
+          mediaType: "text/x-kide-krl"
+        })
+      });
+    }
+  );
+
+  await signInFirebase(page);
+  await expect(
+    page.locator(".project-list").getByText("Empty Hosted Target", { exact: true })
+  ).toBeVisible();
+
+  const archive = zipSync({
+    "models/main.activity": strToU8(
+      "ActivityDiagram Promoted\nhas activities { Activity ObserveStep { nextActivity : ObserveStep } }\n"
+    ),
+    "bindings.krl": strToU8("knowledge Promoted {}\n")
+  });
+
+  await page
+    .locator(".activity-bar")
+    .getByRole("button", { name: "Settings", exact: true })
+    .click();
+  await page.getByLabel("Import project ZIP").setInputFiles({
+    name: "promote-me.zip",
+    mimeType: "application/zip",
+    buffer: Buffer.from(archive)
+  });
+
+  await expect(
+    page.getByText(/Choose an empty authorized hosted project and select Promote here/i)
+  ).toBeVisible();
+
+  await page
+    .locator(".activity-bar")
+    .getByRole("button", { name: "Explorer", exact: true })
+    .click();
+
+  const target = page.locator(".project-list").filter({ hasText: "Empty Hosted Target" });
+  await expect(target.getByRole("button", { name: "Promote here", exact: true })).toBeVisible();
+  await target.getByRole("button", { name: "Promote here", exact: true }).click();
+
+  await expect.poll(() => importCalls).toBe(1);
+  expect(importPayload.archiveName).toBe("promote-me.zip");
+  expect(importPayload.items.map((item: any) => item.path).sort()).toEqual([
+    "bindings.krl",
+    "models/main.activity"
+  ]);
+  expect(importPayload.items.every((item: any) => typeof item.contentBase64 === "string")).toBe(true);
+
+  await expect(page.locator(".status-bar")).toContainText("Xtext Online");
+  await expect.poll(() => initializeRootUri).toBe("kide-workspace:/");
+  await expect(page.locator(".file-list")).toContainText("main.activity");
+  await expect(page.locator(".file-list")).toContainText("bindings.krl");
+  await expect(page.locator(".editor-tabs")).toContainText("main.activity");
+  await expect(
+    page.getByText(/Promoted 2 file\(s\).*atomically.*engineering services now use the hosted project/i)
+  ).toBeVisible();
+});
+
+
+test("refuses local ZIP promotion when the hosted target is not empty", async ({ page }) => {
+  let importCalls = 0;
+
+  await page.route("**/api/v1/health", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ status: "UP", version: "v1", dependencies: {} })
+    });
+  });
+
+  await page.route("**/api/v1/projects", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [{
+          id: "P04-001",
+          displayName: "Occupied Hosted Target",
+          revision: "1",
+          workspaceId: "W04-001"
+        }]
+      })
+    });
+  });
+
+  await page.route("**/api/v1/projects/P04-001/models", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [{
+          id: "existing.dml",
+          revision: "4",
+          etag: "c".repeat(64),
+          mediaType: "text/x-kide-dml"
+        }]
+      })
+    });
+  });
+
+  await page.route(
+    "**/api/v1/projects/P04-001/imports/archive",
+    async (route) => {
+      importCalls += 1;
+      await route.fulfill({ status: 500, body: "must not be called" });
+    }
+  );
+
+  await signInFirebase(page);
+
+  const archive = zipSync({
+    "model.dml": strToU8("DataModel Local { primitives { int value } }")
+  });
+  await page
+    .locator(".activity-bar")
+    .getByRole("button", { name: "Settings", exact: true })
+    .click();
+  await page.getByLabel("Import project ZIP").setInputFiles({
+    name: "occupied.zip",
+    mimeType: "application/zip",
+    buffer: Buffer.from(archive)
+  });
+  await page
+    .locator(".activity-bar")
+    .getByRole("button", { name: "Explorer", exact: true })
+    .click();
+
+  const target = page.locator(".project-list").filter({ hasText: "Occupied Hosted Target" });
+  await target.getByRole("button", { name: "Promote here", exact: true }).click();
+
+  await expect(page.getByText(/already contains 1 project file\(s\)/i)).toBeVisible();
+  await expect.poll(() => importCalls).toBe(0);
 });
 
 
