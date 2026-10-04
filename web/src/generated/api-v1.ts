@@ -291,6 +291,14 @@ export const apiV1 = {
       responseSchema: "ReviewComment"
     };
   },
+  version(): GeneratedApiCall {
+    return {
+      operationId: "version",
+      method: "GET",
+      path: "/version",
+      responseSchema: "RuntimeVersion"
+    };
+  },
 } as const;
 
 export type ApiV1OperationId = keyof typeof apiV1;
