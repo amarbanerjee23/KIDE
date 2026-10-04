@@ -290,7 +290,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
 
             HttpResponse<String> binaryRead = send(
                     client,
-                    base.resolve(projectApi + "/models/assets%2Fnested%2Fsample.bin"),
+                    base.resolve(projectApi + "/models/assets/nested/sample.bin"),
                     "GET", "Bearer pr26-self-check", null);
             requireStatus(binaryRead, 200);
             if (!Base64.getEncoder().encodeToString(binaryFixture).equals(
