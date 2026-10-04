@@ -712,12 +712,39 @@ test("opens Activity through the secure GLSP browser boundary", async ({ page })
           knowledgeRevision: 2,
           knowledgeEtag: "b".repeat(64),
           synthesisFingerprint: "c".repeat(64),
-          manifestJson: "{\"schemaVersion\":\"1\",\"toolchainVersion\":\"1\"}",
+          manifestJson: JSON.stringify({
+            schemaVersion: "1",
+            toolchainVersion: "1",
+            fingerprint: "f".repeat(64),
+            source: {
+              modelId: "flow.activity",
+              revision: "etag-4",
+              etag: "etag-4"
+            },
+            knowledge: { revision: 2, etag: "b".repeat(64) },
+            synthesis: { fingerprint: "c".repeat(64) },
+            krl: {
+              modelId: "bindings.krl",
+              revision: "d".repeat(64),
+              etag: "d".repeat(64)
+            },
+            targetVersions: { java: "1" },
+            artifacts: [{
+              path: "generated/Out.java",
+              mediaType: "text/x-java-source",
+              bytes: 19,
+              sha256: "2cb77ee9942215f8c3ec544036efa5f9cf5dd214b2f3678c549bafa4f70b4b31",
+              targetId: "java",
+              targetVersion: "1",
+              targetName: "Java",
+              templateName: "reference"
+            }]
+          }),
           artifacts: [{
             path: "generated/Out.java",
             mediaType: "text/x-java-source",
             contentBase64: "cHVibGljIGNsYXNzIE91dCB7fQ==",
-            sha256: "a".repeat(64),
+            sha256: "2cb77ee9942215f8c3ec544036efa5f9cf5dd214b2f3678c549bafa4f70b4b31",
             targetId: "java",
             targetVersion: "1"
           }]
