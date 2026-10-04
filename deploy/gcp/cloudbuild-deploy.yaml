@@ -215,18 +215,18 @@ steps:
         check_url "KIDE backend health" "$${BACKEND_URL}/health" /tmp/kide-backend-health
         grep -q '"status":"UP"' /tmp/kide-backend-health
 
-        check_url "KIDE API health" "${BACKEND_URL}/api/v1/health" /tmp/kide-api-health
+        check_url "KIDE API health" "$${BACKEND_URL}/api/v1/health" /tmp/kide-api-health
         grep -q '"status":"UP"' /tmp/kide-api-health
 
-        check_url "KIDE API version" "${BACKEND_URL}/api/v1/version" /tmp/kide-api-version
+        check_url "KIDE API version" "$${BACKEND_URL}/api/v1/version" /tmp/kide-api-version
         grep -q '"buildId":"${_KIDE_QUALIFIER}"' /tmp/kide-api-version
 
-        check_url "KIDE web health" "${WEB_URL}/health" /tmp/kide-web-health
+        check_url "KIDE web health" "$${WEB_URL}/health" /tmp/kide-web-health
 
-        check_url "KIDE web build identity" "${WEB_URL}/kide-version.json" /tmp/kide-web-version
+        check_url "KIDE web build identity" "$${WEB_URL}/kide-version.json" /tmp/kide-web-version
         grep -q '"buildId":"${_KIDE_QUALIFIER}"' /tmp/kide-web-version
 
-        check_url "KIDE web root" "${WEB_URL}/" /tmp/kide-web-root
+        check_url "KIDE web root" "$${WEB_URL}/" /tmp/kide-web-root
         grep -q '<div id="root"></div>' /tmp/kide-web-root
 
         echo "KIDE DEPLOYMENT COMPLETE"
