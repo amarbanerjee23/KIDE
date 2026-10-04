@@ -30,6 +30,7 @@ import com.kide.enterprise.api.ApiErrorEnvelope;
 import com.kide.enterprise.api.ApiExceptionMapper;
 import com.kide.enterprise.api.ApiVersion;
 import com.kide.enterprise.api.OpenApiV1;
+import com.kide.enterprise.api.RuntimeCompatibility;
 import com.kide.enterprise.audit.AuditEventDraft;
 import com.kide.enterprise.audit.AuditLedger;
 import com.kide.enterprise.audit.AuditOutcome;
@@ -172,6 +173,15 @@ public final class EnterpriseApiServer implements AutoCloseable {
                     dependencies.addProperty("knowledgeRepository", "AVAILABLE");
                     health.add("dependencies", dependencies);
                     writeJson(response, callback, 200, health);
+                    return true;
+                }
+
+                if ("/api/v1/version".equals(path) && "GET".equals(request.getMethod())) {
+                    writeJson(
+                            response,
+                            callback,
+                            200,
+                            gson.toJsonTree(RuntimeCompatibility.current()).getAsJsonObject());
                     return true;
                 }
 
