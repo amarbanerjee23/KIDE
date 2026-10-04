@@ -419,6 +419,7 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
             "deploy/gcp/repair-cloud-build-trigger.sh",
             "deploy/gcp/bootstrap-cloud-build.sh",
             "deploy/gcp/configure-auto-deploy.sh",
+            "deploy/gcp/verify-firebase-trigger.sh",
             "deploy/gcp/deployment-status.sh",
             "deploy/gcp/bootstrap-first-deployment.sh",
             "deploy-kide-gcp.sh",
@@ -566,9 +567,12 @@ class GoogleCloudDeploymentContractTest(unittest.TestCase):
         self.assertIn("roles/secretmanager.secretAccessor", configure)
         self.assertIn("_KIDE_RELEASE_ENABLED=true", configure)
         self.assertIn("--update-substitutions", configure)
-        self.assertIn("read_trigger_substitution", configure)
-        self.assertIn("Cloud Build trigger Firebase configuration verification failed.", configure)
-        self.assertIn("The deployment build will not be started with incomplete Firebase substitutions.", configure)
+        self.assertIn("verify-firebase-trigger.sh", configure)
+        verifier = self.read("deploy/gcp/verify-firebase-trigger.sh")
+        self.assertIn("read_trigger_substitution", verifier)
+        self.assertIn("Cloud Build trigger Firebase configuration verification failed.", verifier)
+        self.assertIn("The deployment build will not be started with incomplete Firebase substitutions.", verifier)
+        self.assertIn("Substitution ${key} was not persisted as expected.", verifier)
         self.assertIn(
             'BUILD_CONFIG="${BUILD_CONFIG:-cloudbuild.yaml}"',
             configure,
