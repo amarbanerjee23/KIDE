@@ -11,6 +11,7 @@ public final class ApiContractRegistry {
             new ApiOperation("getProject", HttpMethod.GET, "/api/v1/projects/{projectId}", "", "Project"),
             new ApiOperation("listModels", HttpMethod.GET, "/api/v1/projects/{projectId}/models", "", "ModelList"),
             new ApiOperation("createStarterModels", HttpMethod.POST, "/api/v1/projects/{projectId}/models", "", "ModelList"),
+            new ApiOperation("importProjectArchive", HttpMethod.POST, "/api/v1/projects/{projectId}/imports/archive", "ProjectArchiveImportRequest", "ProjectArchiveImportResult"),
             new ApiOperation("getModel", HttpMethod.GET, "/api/v1/projects/{projectId}/models/{modelId}", "", "Model"),
             new ApiOperation("putModel", HttpMethod.PUT, "/api/v1/projects/{projectId}/models/{modelId}", "ModelWriteRequest", "Model"),
             new ApiOperation("listPresence", HttpMethod.GET, "/api/v1/projects/{projectId}/collaboration/sessions", "", "PresenceList"),
