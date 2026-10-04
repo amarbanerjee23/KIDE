@@ -138,6 +138,15 @@ export const apiV1 = {
       responseSchema: "PresenceSession"
     };
   },
+  importProjectArchive(projectId: string): GeneratedApiCall {
+    return {
+      operationId: "importProjectArchive",
+      method: "POST",
+      path: `/projects/${segment(projectId)}/imports/archive`,
+      requestSchema: "ProjectArchiveImportRequest",
+      responseSchema: "ProjectArchiveImportResult"
+    };
+  },
   joinPresence(projectId: string): GeneratedApiCall {
     return {
       operationId: "joinPresence",

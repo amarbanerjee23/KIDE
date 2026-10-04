@@ -4,6 +4,8 @@ import * as monaco from "monaco-editor";
 import { KideApiClient, ApiClientError } from "./api";
 import { FirebaseAuthClient, FirebaseAuthError } from "./firebaseAuth";
 import {
+  bytesFromBase64,
+  bytesToBase64,
   editableText,
   exportProjectArchive,
   importProjectArchive,
@@ -53,6 +55,8 @@ const GATEWAY_ORIGIN =
 const FIREBASE_API_KEY = import.meta.env.VITE_FIREBASE_API_KEY ?? "";
 const FIREBASE_PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "";
 const WEB_BUILD_ID = import.meta.env.VITE_KIDE_WEB_BUILD_ID ?? "dev";
+const MAX_HOSTED_IMPORT_FILES = 256;
+const MAX_HOSTED_IMPORT_BYTES = 10 * 1024 * 1024;
 
 type SidebarView =
   | "explorer"
@@ -183,6 +187,7 @@ export default function App() {
   });
   const [authBusy, setAuthBusy] = useState(false);
   const [engineeringCockpitOpen, setEngineeringCockpitOpen] = useState(false);
+  const [localArchiveName, setLocalArchiveName] = useState<string>();
 
   const autosaves = useRef(new Map<string, AutosaveCoordinator>());
   const pendingDiagramPath = useRef<string | undefined>(undefined);
@@ -223,6 +228,8 @@ export default function App() {
   const canGenerate = Boolean(
     canReconfigure && generationKrlModelId.trim().toLowerCase().endsWith(".krl")
   );
+  const localArchiveOpen =
+    !project && entries.some((entry) => entry.source === "archive");
 
   workspaceChange.current = (path, value) => {
     const current = entriesRef.current.find((entry) => entry.path === path);
@@ -554,13 +561,14 @@ export default function App() {
     }
   }
 
-  async function openProject(item: Project) {
+  async function openProject(item: Project): Promise<boolean> {
     setNotice("");
     setConflict(undefined);
     try {
       const opened = await client.getProject(item.id);
       await resetProjectWorkspace();
       setProjectState(opened);
+      setLocalArchiveName(undefined);
 
       const modelList = await client.listModels(opened.id);
       updateEntries(() =>
@@ -586,8 +594,10 @@ export default function App() {
           `Opened ${opened.displayName}, but no editable DSL models are present yet.`
         );
       }
+      return true;
     } catch (error) {
       showError(error);
+      return false;
     }
   }
 
@@ -1284,7 +1294,7 @@ export default function App() {
       );
       await resetProjectWorkspace();
       setProjectState(undefined);
-      setProjects([]);
+      setLocalArchiveName(file.name);
       updateEntries(() => imported);
       const firstEditable = imported.find(
         (entry) => editableText(entry) !== null
@@ -1293,7 +1303,93 @@ export default function App() {
       setSaveState("clean");
       setLspStatus("Unavailable · local archive");
       setNotice(
-        `Imported ${imported.length} canonical project files locally. No server project was created.`
+        `Imported ${imported.length} canonical project files locally. Choose an empty authorized hosted project and select Promote here to attach engineering services.`
+      );
+    } catch (error) {
+      showError(error);
+    }
+  }
+
+  async function promoteArchiveToProject(target: Project) {
+    const localEntries = entriesRef.current.filter(
+      (entry) => entry.source === "archive"
+    );
+    if (!localEntries.length) {
+      setNotice("Import a local project ZIP before promoting it.");
+      return;
+    }
+    if (!firebaseAuth.user) {
+      setNotice("Sign in before promoting a local archive to a hosted project.");
+      return;
+    }
+
+    const materialized = localEntries.map((entry) => {
+      const text = workspace.text(entry.path);
+      return text === undefined
+        ? entry
+        : { ...entry, bytes: new TextEncoder().encode(text) };
+    });
+    const internalMetadata = materialized.find(
+      (entry) => entry.path === ".kide" || entry.path.startsWith(".kide/")
+    );
+    if (internalMetadata) {
+      setNotice(
+        `Hosted promotion refuses KIDE internal metadata (${internalMetadata.path}). Remove .kide/** from the archive before promotion; the hosted runtime owns its own project metadata.`
+      );
+      return;
+    }
+
+    const oversized = materialized.find(
+      (entry) => entry.bytes.byteLength > 2 * 1024 * 1024
+    );
+    if (oversized) {
+      setNotice(
+        `Hosted promotion supports at most 2 MiB per file; ${oversized.path} is larger.`
+      );
+      return;
+    }
+
+    const totalBytes = materialized.reduce(
+      (sum, entry) => sum + entry.bytes.byteLength,
+      0
+    );
+    if (materialized.length > MAX_HOSTED_IMPORT_FILES) {
+      setNotice(
+        `Hosted promotion supports at most ${MAX_HOSTED_IMPORT_FILES} files atomically; this archive contains ${materialized.length}.`
+      );
+      return;
+    }
+    if (totalBytes > MAX_HOSTED_IMPORT_BYTES) {
+      setNotice(
+        "Hosted promotion supports at most 10 MiB of expanded project content in one atomic import."
+      );
+      return;
+    }
+
+    setNotice(`Checking ${target.displayName} before promotion…`);
+    try {
+      const existing = await clientRef.current.listModels(target.id);
+      if (existing.items.length > 0) {
+        setNotice(
+          `${target.displayName} already contains ${existing.items.length} project file(s). PR84 promotion is non-destructive and requires an empty hosted target.`
+        );
+        return;
+      }
+
+      const result = await clientRef.current.importProjectArchive(
+        target.id,
+        materialized.map((entry) => ({
+          path: entry.path,
+          contentBase64: bytesToBase64(entry.bytes),
+          mediaType: entry.mediaType
+        })),
+        localArchiveName
+      );
+
+      const opened = await openProject(target);
+      if (!opened) return;
+      setNotice(
+        `Promoted ${result.importedCount} file(s) from ${localArchiveName ?? "the local archive"} to ${target.displayName} atomically. Xtext LSP, GLSP, collaboration and engineering services now use the hosted project.`
       );
     } catch (error) {
       showError(error);
@@ -2217,9 +2313,9 @@ export default function App() {
                     <strong>Local archive workspace</strong>
                     <p className="muted">
                       This ZIP is open only in the browser and has no hosted project/workspace ID.
-                      Reconnecting the API checks server availability and authorization, but cannot
-                      attach Xtext LSP, GLSP, collaboration, synthesis or generation to this local
-                      archive. Open an authorized hosted project to use those services.
+                      Reconnecting the API checks server availability and authorization. To attach
+                      Xtext LSP, GLSP, collaboration, synthesis and generation, promote this archive
+                      into an empty authorized hosted project from the Explorer.
                     </p>
                   </div>
                 )}
@@ -2281,6 +2377,11 @@ export default function App() {
                 <li key={item.id}>
                   <span>{item.displayName}</span>
                   <button onClick={() => void openProject(item)}>Open</button>
+                  {localArchiveOpen && (
+                    <button onClick={() => void promoteArchiveToProject(item)}>
+                      Promote here
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -3284,7 +3385,9 @@ export default function App() {
 function remoteEntry(projectId: string, model: Model): WorkspaceEntry {
   return {
     path: model.id,
-    bytes: new TextEncoder().encode(model.content),
+    bytes: model.contentBase64
+      ? bytesFromBase64(model.contentBase64)
+      : new TextEncoder().encode(model.content),
     mediaType: model.mediaType ?? mediaTypeFor(model.id),
     source: "remote",
     projectId,
