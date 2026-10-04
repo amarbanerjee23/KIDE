@@ -152,12 +152,39 @@ describe("KideApiClient synthesis boundary", () => {
         knowledgeRevision: 3,
         knowledgeEtag: "b".repeat(64),
         synthesisFingerprint: "c".repeat(64),
-        manifestJson: "{\"schemaVersion\":\"1\"}",
+        manifestJson: JSON.stringify({
+          schemaVersion: "1",
+          toolchainVersion: "1",
+          fingerprint: "e".repeat(64),
+          source: {
+            modelId: "flow.activity",
+            revision: "a".repeat(64),
+            etag: "a".repeat(64)
+          },
+          knowledge: { revision: 3, etag: "b".repeat(64) },
+          synthesis: { fingerprint: "c".repeat(64) },
+          krl: {
+            modelId: "bindings.krl",
+            revision: "d".repeat(64),
+            etag: "d".repeat(64)
+          },
+          targetVersions: { java: "1" },
+          artifacts: [{
+            path: "generated/ObserveBinding.java",
+            mediaType: "text/x-java-source",
+            bytes: 30,
+            sha256: "c0e8f86bbb0771ffd8c4d05f45a240b97ce43468116a5677b3221c16d9960d62",
+            targetId: "java",
+            targetVersion: "1",
+            targetName: "Java",
+            templateName: "reference"
+          }]
+        }),
         artifacts: [{
           path: "generated/ObserveBinding.java",
           mediaType: "text/x-java-source",
           contentBase64: "cHVibGljIGNsYXNzIE9ic2VydmVCaW5kaW5nIHt9",
-          sha256: "f".repeat(64),
+          sha256: "c0e8f86bbb0771ffd8c4d05f45a240b97ce43468116a5677b3221c16d9960d62",
           targetId: "java",
           targetVersion: "1"
         }]
