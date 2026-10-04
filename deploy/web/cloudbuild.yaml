@@ -14,6 +14,8 @@ steps:
       - VITE_FIREBASE_API_KEY=${_KIDE_FIREBASE_API_KEY}
       - --build-arg
       - VITE_FIREBASE_PROJECT_ID=${_KIDE_FIREBASE_PROJECT_ID}
+      - --build-arg
+      - VITE_KIDE_WEB_BUILD_ID=${_KIDE_WEB_BUILD_ID}
       - .
   - name: gcr.io/cloud-builders/docker
     args:
@@ -28,6 +30,7 @@ substitutions:
   _KIDE_BACKEND_ORIGIN: 'https://invalid.example'
   _KIDE_FIREBASE_API_KEY: ''
   _KIDE_FIREBASE_PROJECT_ID: '${PROJECT_ID}'
+  _KIDE_WEB_BUILD_ID: '${BUILD_ID}'
 timeout: 1800s
 options:
   machineType: E2_HIGHCPU_8

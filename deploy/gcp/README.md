@@ -260,3 +260,18 @@ The generic OIDC PKCE/device/client-credentials code in
 `com.kide.enterprise.identity` remains available for the Eclipse desktop
 product and enterprise integrations. PR57 changes the **hosted** server trust
 boundary only.
+
+
+## Web/backend build coherence
+
+Hosted deployment is accepted only when the live Web and backend services report
+the same deployment build identity.
+
+The Web image writes `/kide-version.json` at build time from
+`VITE_KIDE_WEB_BUILD_ID`. The backend exposes its build identity from
+`/api/v1/version`. Canonical Cloud Build configs stamp both from the same
+release qualifier and verify both live endpoints after deployment.
+
+A healthy Web root and healthy backend are not sufficient: a stale Web revision
+paired with a newer backend now fails the deployment qualification instead of
+being reported as complete.

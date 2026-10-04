@@ -44,6 +44,7 @@ jobs:
             --file deploy/web/Dockerfile \
             --build-arg VITE_KIDE_API_ORIGIN=https://backend.example.test \
             --build-arg VITE_KIDE_LSP_ORIGIN=https://backend.example.test \
+            --build-arg VITE_KIDE_WEB_BUILD_ID=ci${GITHUB_SHA:0:12} \
             --tag kide-web:ci \
             .
 
@@ -74,3 +75,4 @@ jobs:
 
           test "$ready" -eq 1
           curl --fail --silent http://127.0.0.1:18090/ | grep -q '<div id="root"></div>'
+          curl --fail --silent http://127.0.0.1:18090/kide-version.json | grep -q "\"buildId\":\"ci${GITHUB_SHA:0:12}\""

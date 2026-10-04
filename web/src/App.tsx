@@ -52,6 +52,7 @@ const GATEWAY_ORIGIN =
   import.meta.env.VITE_KIDE_LSP_ORIGIN ?? SERVICE_ORIGIN;
 const FIREBASE_API_KEY = import.meta.env.VITE_FIREBASE_API_KEY ?? "";
 const FIREBASE_PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "";
+const WEB_BUILD_ID = import.meta.env.VITE_KIDE_WEB_BUILD_ID ?? "dev";
 
 type SidebarView =
   | "explorer"
@@ -2204,8 +2205,8 @@ export default function App() {
                 {runtimeVersion && (
                   <div className="runtime-version-summary" aria-label="Runtime compatibility">
                     <small>
-                      Backend {runtimeVersion.productVersion} · build {runtimeVersion.buildId} ·
-                      engineering level {runtimeVersion.engineeringCompatibilityLevel} ·
+                      Web build {WEB_BUILD_ID} · Backend {runtimeVersion.productVersion} ·
+                      build {runtimeVersion.buildId} · engineering level {runtimeVersion.engineeringCompatibilityLevel} ·
                       project schema {runtimeVersion.projectSchemaVersion} ·
                       kernel schema {runtimeVersion.sharedKernelSchemaVersion}
                     </small>
