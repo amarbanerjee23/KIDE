@@ -75,7 +75,7 @@ def verify() -> list[str]:
         "sharedKernelSchemaVersion": str(contract["shared_kernel_schema_version"]),
     }
     for field, value in web_expectations.items():
-        if not re.search(rf"{field}:\s*{re.escape(value)}\b?", web):
+        if not re.search(rf"{field}:\s*{re.escape(value)}", web):
             errors.append(f"Web compatibility expectation for {field} drifted")
 
     project_match = re.search(r"CURRENT_VERSION\s*=\s*(\d+)", schema)
