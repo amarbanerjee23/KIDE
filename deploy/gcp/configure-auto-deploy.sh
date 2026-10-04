@@ -108,30 +108,9 @@ case "${TRIGGER_KIND}" in
     ;;
 esac
 
-read_trigger_substitution() {
-  local key="$1"
-  gcloud builds triggers describe "${TRIGGER_NAME}" \
-    --project "${PROJECT_ID}" \
-    --region "${TRIGGER_REGION}" \
-    --format="value(substitutions.${key})"
-}
-
-configured_firebase_project_id="$(read_trigger_substitution _KIDE_FIREBASE_PROJECT_ID)"
-configured_firebase_api_key="$(read_trigger_substitution _KIDE_FIREBASE_API_KEY)"
-configured_firebase_admin_uid="$(read_trigger_substitution _KIDE_FIREBASE_ADMIN_UID)"
-
-if [[ "${configured_firebase_project_id}" != "${KIDE_FIREBASE_PROJECT_ID}" \
-   || "${configured_firebase_api_key}" != "${KIDE_FIREBASE_API_KEY}" \
-   || "${configured_firebase_admin_uid}" != "${KIDE_FIREBASE_ADMIN_UID}" ]]; then
-  echo "Cloud Build trigger Firebase configuration verification failed." >&2
-  echo "Trigger: ${TRIGGER_NAME} (region: ${TRIGGER_REGION})" >&2
-  echo "The deployment build will not be started with incomplete Firebase substitutions." >&2
-  echo "Run ./deploy-kide-gcp.sh bootstrap again after confirming you selected the intended trigger." >&2
-  exit 2
-fi
-
-echo "Verified Firebase substitutions on Cloud Build trigger '${TRIGGER_NAME}'."
-
+export PROJECT_ID TRIGGER_NAME TRIGGER_REGION
+export KIDE_FIREBASE_PROJECT_ID KIDE_FIREBASE_API_KEY KIDE_FIREBASE_ADMIN_UID
+bash deploy/gcp/verify-firebase-trigger.sh
 echo
 echo "KIDE continuous deployment configured."
 echo "Project: ${PROJECT_ID}"
