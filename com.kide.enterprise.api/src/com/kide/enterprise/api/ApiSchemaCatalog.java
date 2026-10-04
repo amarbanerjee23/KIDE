@@ -26,10 +26,19 @@ public final class ApiSchemaCatalog {
                 Map.of("content", s(), "expectedRevision", s(), "mediaType", s()),
                 Set.of("content", "expectedRevision")));
         add(schemas, schema("Model",
-                Map.of("id", s(), "content", s(), "revision", s(), "etag", s(), "mediaType", s()),
+                Map.of("id", s(), "content", s(), "contentBase64", s(), "revision", s(), "etag", s(), "mediaType", s()),
                 Set.of("id", "content", "revision", "etag")));
         add(schemas, schema("ModelList",
                 Map.of("items", a(), "nextCursor", s()), Set.of("items")));
+        add(schemas, schema("ProjectArchiveImportEntry",
+                Map.of("path", s(), "contentBase64", s(), "mediaType", s()),
+                Set.of("path", "contentBase64")));
+        add(schemas, schema("ProjectArchiveImportRequest",
+                Map.of("items", a(), "archiveName", s()), Set.of("items")));
+        add(schemas, schema("ProjectArchiveImportResult",
+                Map.of("projectId", s(), "workspaceId", s(), "importedCount", i(),
+                        "totalBytes", i(), "items", a()),
+                Set.of("projectId", "workspaceId", "importedCount", "totalBytes", "items")));
         add(schemas, schema("PresenceJoinRequest",
                 Map.of("sessionId", s(), "modelId", s()), Set.of()));
         add(schemas, schema("PresenceHeartbeatRequest",
