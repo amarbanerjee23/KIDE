@@ -160,6 +160,18 @@ public final class ApiSchemaCatalog {
         add(schemas, schema("Health",
                 Map.of("status", s(), "version", s(), "dependencies", o()),
                 Set.of("status", "version")));
+        add(schemas, schema("RuntimeVersion",
+                Map.ofEntries(
+                        Map.entry("apiVersion", s()),
+                        Map.entry("engineeringCompatibilityLevel", i()),
+                        Map.entry("projectSchemaVersion", i()),
+                        Map.entry("sharedKernelSchemaVersion", i()),
+                        Map.entry("productLine", s()),
+                        Map.entry("productVersion", s()),
+                        Map.entry("buildId", s())),
+                Set.of("apiVersion", "engineeringCompatibilityLevel",
+                        "projectSchemaVersion", "sharedKernelSchemaVersion",
+                        "productLine", "productVersion", "buildId")));
         add(schemas, schema("ApiError",
                 Map.of("apiVersion", s(), "requestId", s(), "code", s(), "message", s(), "details", o()),
                 Set.of("apiVersion", "requestId", "code", "message")));
