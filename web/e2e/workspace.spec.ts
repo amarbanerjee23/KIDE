@@ -304,6 +304,57 @@ test("keeps API reachability distinct from denied project authorization", async 
 });
 
 
+test("blocks hosted engineering when runtime compatibility does not match", async ({ page }) => {
+  let projectCalls = 0;
+
+  await page.route("**/api/v1/health", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ status: "UP", version: "v1", dependencies: {} })
+    });
+  });
+
+  await page.route("**/api/v1/projects", async (route) => {
+    projectCalls += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items: [] })
+    });
+  });
+
+  await signInFirebase(page, {
+    apiVersion: "v1",
+    engineeringCompatibilityLevel: 2,
+    projectSchemaVersion: 1,
+    sharedKernelSchemaVersion: 1,
+    productLine: "1.0",
+    productVersion: "1.1.0.test",
+    buildId: "incompatible-backend"
+  });
+
+  await expect.poll(() => projectCalls).toBe(0);
+  await expect(page.locator(".status-bar")).toContainText("API Incompatible");
+
+  await page
+    .locator(".activity-bar")
+    .getByRole("button", { name: "Settings", exact: true })
+    .click();
+
+  await expect(page.getByLabel("Runtime compatibility")).toContainText(
+    "incompatible-backend"
+  );
+  await expect(
+    page.getByText(/runtime compatibility check failed/i)
+  ).toBeVisible();
+  await expect(page.getByText(/engineering level 2 != 1/)).toBeVisible();
+  await expect(
+    page.locator(".project-list").getByRole("button", { name: "Open", exact: true })
+  ).toHaveCount(0);
+});
+
+
 test("opens Activity through the secure GLSP browser boundary", async ({ page }) => {
   let requestedSourceUri = "";
   let requestedDiagramType = "";
@@ -961,7 +1012,26 @@ test("creates starter engineering models for an empty hosted project", async ({ 
 });
 
 
-async function signInFirebase(page: import("@playwright/test").Page) {
+async function signInFirebase(
+  page: import("@playwright/test").Page,
+  runtimeVersion: Record<string, unknown> = {
+    apiVersion: "v1",
+    engineeringCompatibilityLevel: 1,
+    projectSchemaVersion: 1,
+    sharedKernelSchemaVersion: 1,
+    productLine: "1.0",
+    productVersion: "1.0.0.test",
+    buildId: "playwright-compatible"
+  }
+) {
+  await page.route("**/api/v1/version", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(runtimeVersion)
+    });
+  });
+
   await page.route(
     "**/v1/accounts:signInWithPassword?*",
     async (route) => {
