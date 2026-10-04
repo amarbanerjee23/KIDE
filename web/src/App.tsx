@@ -25,6 +25,7 @@ import { RegisterPage } from "./RegisterPage";
 import { FileTree } from "./FileTree";
 import { diagramTypeFor } from "./glspClient";
 import { ensureTextMateLanguageSupport } from "./textmate";
+import { runtimeCompatibilityIssues } from "./runtimeCompatibility";
 import type {
   GenerationResult,
   Health,
@@ -39,6 +40,7 @@ import type {
   ReviewChangeSet,
   ReconfigurationCause,
   ReconfigurationResult,
+  RuntimeVersion,
   SaveState,
   SynthesisResult,
   WorkspaceEntry
@@ -110,6 +112,7 @@ export default function App() {
   clientRef.current = client;
 
   const [serviceStatus, setServiceStatus] = useState("Not connected");
+  const [runtimeVersion, setRuntimeVersion] = useState<RuntimeVersion>();
   const [lspStatus, setLspStatus] = useState("Not connected");
   const [projects, setProjects] = useState<Project[]>([]);
   const [project, setProject] = useState<Project>();
@@ -474,6 +477,7 @@ export default function App() {
     setProjects([]);
     await resetProjectWorkspace();
     setServiceStatus("Not connected");
+    setRuntimeVersion(undefined);
     setLspStatus("Not connected");
     setAuthStatus("Not signed in");
     setNotice("Signed out.");
@@ -488,10 +492,41 @@ export default function App() {
       health = await client.health();
       setServiceStatus(`Connected · ${health.status} · API ${health.version}`);
     } catch (error) {
+      setRuntimeVersion(undefined);
       setServiceStatus("Not connected");
       showError(error);
       return;
     }
+
+    let version: RuntimeVersion;
+    try {
+      version = await client.version();
+      setRuntimeVersion(version);
+    } catch (error) {
+      setProjects([]);
+      setRuntimeVersion(undefined);
+      setServiceStatus("Incompatible · version handshake unavailable");
+      setNotice(
+        "The KIDE API is reachable but did not provide the required runtime compatibility handshake. Engineering services are disabled."
+      );
+      return;
+    }
+
+    const compatibilityIssues = runtimeCompatibilityIssues(version);
+    if (compatibilityIssues.length > 0) {
+      setProjects([]);
+      if (projectRef.current) await resetProjectWorkspace();
+      setServiceStatus(`Incompatible · backend ${version.buildId}`);
+      setNotice(
+        `KIDE runtime compatibility check failed: ${compatibilityIssues.join("; ")}. ` +
+        "Project discovery and hosted engineering services are disabled."
+      );
+      return;
+    }
+
+    setServiceStatus(
+      `Connected · API ${version.apiVersion} · compatible · build ${version.buildId}`
+    );
 
     try {
       const list = await client.listProjects();
@@ -502,18 +537,18 @@ export default function App() {
     } catch (error) {
       setProjects([]);
       if (error instanceof ApiClientError && error.status === 403) {
-        setServiceStatus(`Connected · API ${health.version} · authorization required`);
+        setServiceStatus(`Connected · API ${version.apiVersion} · authorization required`);
         const principal = firebaseAuth.user
           ? `firebase:${FIREBASE_PROJECT_ID}#${firebaseAuth.user.uid}`
           : "the signed-in Firebase principal";
         const suffix = error.requestId ? ` Request ${error.requestId}.` : "";
         setNotice(
-          `API is reachable, but ${principal} has no KIDE project access. ` +
+          `API is reachable and compatible, but ${principal} has no KIDE project access. ` +
           `Grant an explicit ENGINEER or ADMINISTRATOR role binding on the hosted project.${suffix}`
         );
         return;
       }
-      setServiceStatus(`Connected · API ${health.version} · project listing failed`);
+      setServiceStatus(`Connected · API ${version.apiVersion} · project listing failed`);
       showError(error);
     }
   }
@@ -2166,6 +2201,16 @@ export default function App() {
                   <span><strong>Xtext LSP</strong>{lspStatus}</span>
                   <span><strong>Collaboration</strong>{collaborationStatus}</span>
                 </div>
+                {runtimeVersion && (
+                  <div className="runtime-version-summary" aria-label="Runtime compatibility">
+                    <small>
+                      Backend {runtimeVersion.productVersion} · build {runtimeVersion.buildId} ·
+                      engineering level {runtimeVersion.engineeringCompatibilityLevel} ·
+                      project schema {runtimeVersion.projectSchemaVersion} ·
+                      kernel schema {runtimeVersion.sharedKernelSchemaVersion}
+                    </small>
+                  </div>
+                )}
                 {!project && entries.some((entry) => entry.source !== "remote") && (
                   <div className="local-archive-service-note" role="status">
                     <strong>Local archive workspace</strong>
@@ -3399,6 +3444,7 @@ function problemSeverityGlyph(severity: monaco.MarkerSeverity): string {
 
 function connectionTone(status: string): string {
   const normalized = status.toLowerCase();
+  if (normalized.includes("incompatible")) return "status-error";
   if (
     normalized.includes("connected") ||
     normalized.startsWith("up") ||
@@ -3416,6 +3462,7 @@ function connectionTone(status: string): string {
 
 function connectionSummary(status: string): string {
   const normalized = status.toLowerCase();
+  if (normalized.includes("incompatible")) return "Incompatible";
   if (normalized.includes("not connected")) return "Offline";
   if (normalized.includes("connecting")) return "Connecting";
   if (normalized.includes("degraded")) return "Degraded";
