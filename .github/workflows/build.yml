@@ -68,6 +68,9 @@ jobs:
       - name: Verify deployed Web/backend build coherence
         run: python3 scripts/verify_deployment_build_coherence.py
 
+      - name: Verify end-to-end product journey quality contract
+        run: python3 scripts/verify_product_journey.py
+
       - name: Verify LSP feature parity matrix
         run: python3 scripts/verify_lsp_parity_matrix.py
 
