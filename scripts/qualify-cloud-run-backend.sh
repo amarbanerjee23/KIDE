@@ -53,7 +53,7 @@ import sys
 
 root = json.loads(sys.argv[1])
 health = json.loads(sys.argv[2])
-api_health = json.loads(sys.argv[3])
+api_health = json.loads(sys.argv[3])\nversion = json.loads(sys.argv[4])
 
 assert root == {
     "service": "kide-backend",
@@ -65,6 +65,14 @@ assert root == {
 for name, payload in (("healthz", health), ("api/v1/health", api_health)):
     assert payload.get("status") == "UP", (name, payload)
     assert payload.get("version") == "v1", (name, payload)
+
+assert version.get("apiVersion") == "v1", version
+assert version.get("engineeringCompatibilityLevel") == 1, version
+assert version.get("projectSchemaVersion") == 1, version
+assert version.get("sharedKernelSchemaVersion") == 1, version
+assert version.get("productLine") == "1.0", version
+assert isinstance(version.get("productVersion"), str) and version["productVersion"], version
+assert isinstance(version.get("buildId"), str) and version["buildId"], version
 PY
 
 unknown_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
