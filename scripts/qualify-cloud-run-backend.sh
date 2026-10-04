@@ -44,9 +44,10 @@ wait_for_http "${BASE_URL}/health" 120
 
 health_body="$(curl --fail --silent --show-error "${BASE_URL}/health")"
 api_health_body="$(curl --fail --silent --show-error "${BASE_URL}/api/v1/health")"
+version_body="$(curl --fail --silent --show-error "${BASE_URL}/api/v1/version")"
 root_body="$(curl --fail --silent --show-error "${BASE_URL}/")"
 
-python3 - "${root_body}" "${health_body}" "${api_health_body}" <<'PY'
+python3 - "${root_body}" "${health_body}" "${api_health_body}" "${version_body}" <<'PY'
 import json
 import sys
 
