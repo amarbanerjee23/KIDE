@@ -15,6 +15,7 @@ RUN git init \
     && mvn -B -ntp -DskipTests -DforceContextQualifier="${KIDE_BUILD_QUALIFIER}" clean verify
 
 FROM eclipse-temurin:21-jre-jammy AS runtime
+ARG KIDE_BUILD_QUALIFIER=container
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends nginx curl gettext-base ca-certificates \
@@ -32,6 +33,7 @@ RUN chmod 0755 /usr/local/bin/kide-cloud-run-entrypoint /opt/kide/kide-languages
     && chown -R kide:kide /opt/kide-cloud /usr/share/nginx/html
 
 USER 10001:10001
+ENV KIDE_BUILD_ID=${KIDE_BUILD_QUALIFIER}
 ENV PORT=8080
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/kide-cloud-run-entrypoint"]
