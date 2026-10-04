@@ -132,7 +132,7 @@ describe("KideApiClient", () => {
   it("uses generated route encoding and verbs for model reads", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe(
-        "https://kide.example/api/v1/projects/project%2Falpha/models/folder%2Fmodel.dml"
+        "https://kide.example/api/v1/projects/project%2Falpha/models/folder/model.dml"
       );
       expect(init?.method).toBe("GET");
       return new Response(
@@ -155,6 +155,16 @@ describe("KideApiClient", () => {
     await expect(
       client.getModel("project/alpha", "folder/model.dml")
     ).resolves.toMatchObject({ id: "folder/model.dml" });
+  });
+
+  it("rejects unsafe nested model path segments before issuing a request", () => {
+    const client = new KideApiClient("https://kide.example", () => "token-value");
+    expect(() => client.getModel("project-alpha", "folder/../secret.dml")).toThrow(
+      "Invalid model path."
+    );
+    expect(() => client.getModel("project-alpha", "/absolute.dml")).toThrow(
+      "Invalid model path."
+    );
   });
 
   it("fails closed when a generated response schema receives invalid JSON", async () => {
