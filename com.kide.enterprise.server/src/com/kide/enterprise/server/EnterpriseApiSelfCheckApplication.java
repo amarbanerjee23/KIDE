@@ -928,6 +928,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             HttpClient client, URI uri, String method, String authorization, String body)
             throws IOException, InterruptedException {
         HttpRequest.Builder builder = HttpRequest.newBuilder(uri)
+                .version(HttpClient.Version.HTTP_1_1)
                 .timeout(Duration.ofSeconds(8))
                 .header("Accept", "application/json")
                 .header("Origin", "https://web.example.test");
@@ -938,7 +939,15 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             builder.header("Content-Type", "application/json");
             builder.method(method, HttpRequest.BodyPublishers.ofString(body));
         }
-        return client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+        try {
+            return client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+        } catch (IOException failure) {
+            throw new IOException(
+                    "HTTP self-check transport failed for "
+                            + method + " " + uri
+                            + " using HTTP/1.1: " + failure.getMessage(),
+                    failure);
+        }
     }
 
     private static JsonObject json(HttpResponse<String> response) {

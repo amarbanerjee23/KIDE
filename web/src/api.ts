@@ -1,4 +1,5 @@
 import { apiV1, type GeneratedApiCall } from "./generated/api-v1";
+import { validateGenerationResult } from "./generationIntegrity";
 import type {
   ApiErrorEnvelope,
   GenerationResult,
@@ -296,7 +297,7 @@ export class KideApiClient {
     );
   }
 
-  generate(
+  async generate(
     projectId: string,
     sourceModelId: string,
     sourceRevision: string,
@@ -304,7 +305,7 @@ export class KideApiClient {
     krlRevision: string,
     synthesisFingerprint: string
   ): Promise<GenerationResult> {
-    return this.request<GenerationResult>(
+    const result = await this.request<GenerationResult>(
       apiV1.generate(projectId),
       {
         headers: { "Content-Type": "application/json" },
@@ -317,6 +318,13 @@ export class KideApiClient {
         })
       }
     );
+    return validateGenerationResult(result, {
+      sourceModelId,
+      sourceRevision,
+      krlModelId,
+      krlRevision,
+      synthesisFingerprint
+    });
   }
 
   queryKnowledge(
