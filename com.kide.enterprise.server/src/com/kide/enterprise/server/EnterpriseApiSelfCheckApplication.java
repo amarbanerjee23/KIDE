@@ -46,6 +46,7 @@ import com.kide.knowledge.KnowledgeTraceStore;
 import com.kide.knowledge.KnowledgeTriple;
 import com.kide.knowledge.KnowledgeVocabulary;
 import com.kide.synthesis.ProjectSynthesisService;
+import com.kide.enterprise.api.RuntimeCompatibility;
 import com.kide.synthesis.SynthesisVocabulary;
 
 public final class EnterpriseApiSelfCheckApplication implements IApplication {
@@ -215,6 +216,23 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             requireStatus(health, 200);
             if (!"UP".equals(json(health).get("status").getAsString())) {
                 throw new AssertionError("health status is not UP");
+            }
+
+            HttpResponse<String> version = send(
+                    client, base.resolve("/api/v1/version"), "GET", null, null);
+            requireStatus(version, 200);
+            JsonObject versionJson = json(version);
+            var expectedCompatibility = RuntimeCompatibility.current();
+            if (!expectedCompatibility.apiVersion().equals(
+                            versionJson.get("apiVersion").getAsString())
+                    || expectedCompatibility.engineeringCompatibilityLevel()
+                            != versionJson.get("engineeringCompatibilityLevel").getAsInt()
+                    || expectedCompatibility.projectSchemaVersion()
+                            != versionJson.get("projectSchemaVersion").getAsInt()
+                    || expectedCompatibility.sharedKernelSchemaVersion()
+                            != versionJson.get("sharedKernelSchemaVersion").getAsInt()
+                    || versionJson.get("buildId").getAsString().isBlank()) {
+                throw new AssertionError("runtime compatibility handshake is incomplete");
             }
 
             HttpResponse<String> denied = send(
@@ -792,6 +810,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             System.out.println("KIDE PR37 ENTERPRISE RECONFIGURATION SELF-CHECK OK");
             System.out.println("KIDE PR38 ENTERPRISE GENERATION SELF-CHECK OK");
             System.out.println("KIDE PR80 CROSS-ADAPTER SEMANTIC PARITY OK");
+            System.out.println("KIDE PR82 RUNTIME COMPATIBILITY HANDSHAKE OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
             String detail = failure.getMessage();

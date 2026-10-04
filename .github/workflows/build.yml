@@ -62,6 +62,9 @@ jobs:
       - name: Verify cross-adapter semantic qualification contract
         run: python3 scripts/verify_cross_adapter_semantics.py
 
+      - name: Verify runtime compatibility handshake contract
+        run: python3 scripts/verify_runtime_compatibility.py
+
       - name: Verify LSP feature parity matrix
         run: python3 scripts/verify_lsp_parity_matrix.py
 

@@ -83,14 +83,18 @@ def run_selfcheck(archive: Path, openapi_output: Path | None = None) -> None:
             check=False,
         )
         output = result.stdout or ""
-        marker = "KIDE PR20 API CONTRACT SELF-CHECK OK"
+        markers = (
+            "KIDE PR20 API CONTRACT SELF-CHECK OK",
+            "KIDE PR82 DESKTOP RUNTIME COMPATIBILITY OK",
+        )
         if result.returncode != 0:
             raise SmokeError(
                 f"packaged PR20 API contract self-check exited {result.returncode}\n{output[-6000:]}"
             )
-        if marker not in output:
+        missing = [marker for marker in markers if marker not in output]
+        if missing:
             raise SmokeError(
-                f"packaged PR20 API contract success marker missing\n{output[-6000:]}"
+                f"packaged API contract success markers missing: {missing}\n{output[-6000:]}"
             )
         if openapi_output is not None:
             if not openapi_output.is_file():

@@ -53,6 +53,8 @@ public class ApiContractTest {
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/collaboration/sessions")));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/reviews/changesets")));
         assertTrue(operations.stream().anyMatch(op -> op.path().equals("/api/v1/health")));
+        assertTrue(operations.stream().anyMatch(op ->
+                op.path().equals("/api/v1/version") && op.method() == HttpMethod.GET));
         assertTrue(operations.stream().allMatch(op -> op.path().startsWith(ApiVersion.V1.basePath())));
     }
 
@@ -184,6 +186,15 @@ public class ApiContractTest {
                     schemas.containsKey(operation.responseSchema()));
         }
         assertTrue(schemas.containsKey("ApiError"));
+        ApiSchema runtimeVersion = schemas.get("RuntimeVersion");
+        assertTrue(runtimeVersion.requiredFields().containsAll(Set.of(
+                "apiVersion",
+                "engineeringCompatibilityLevel",
+                "projectSchemaVersion",
+                "sharedKernelSchemaVersion",
+                "productLine",
+                "productVersion",
+                "buildId")));
     }
 
     private static int count(String value, String needle) {

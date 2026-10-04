@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "api_version": "v1",
+  "engineering_compatibility_level": 1,
+  "project_schema_version": 1,
+  "shared_kernel_schema_version": 1,
+  "product_line": "1.0",
+  "policy": {
+    "required_exact_match": [
+      "api_version",
+      "engineering_compatibility_level",
+      "project_schema_version",
+      "shared_kernel_schema_version"
+    ],
+    "diagnostic_only": [
+      "product_version",
+      "build_id"
+    ]
+  }
+}

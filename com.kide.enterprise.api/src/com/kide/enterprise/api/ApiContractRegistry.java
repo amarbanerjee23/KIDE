@@ -37,7 +37,8 @@ public final class ApiContractRegistry {
             new ApiOperation("reconfigure", HttpMethod.POST, "/api/v1/projects/{projectId}/reconfiguration", "ReconfigurationRequest", "ReconfigurationResult"),
             new ApiOperation("generate", HttpMethod.POST, "/api/v1/projects/{projectId}/generation", "GenerationRequest", "GenerationResult"),
             new ApiOperation("listEvidence", HttpMethod.GET, "/api/v1/projects/{projectId}/evidence", "", "EvidenceList"),
-            new ApiOperation("health", HttpMethod.GET, "/api/v1/health", "", "Health"));
+            new ApiOperation("health", HttpMethod.GET, "/api/v1/health", "", "Health"),
+            new ApiOperation("version", HttpMethod.GET, "/api/v1/version", "", "RuntimeVersion"));
 
     private ApiContractRegistry() { }
 

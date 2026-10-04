@@ -25,6 +25,18 @@ public final class ApiContractSelfCheckApplication implements IApplication {
                         + openApiOutput.toAbsolutePath().normalize());
             }
 
+            RuntimeCompatibility.Info compatibility = RuntimeCompatibility.current();
+            if (!ApiVersion.V1.token().equals(compatibility.apiVersion())
+                    || compatibility.engineeringCompatibilityLevel()
+                            != RuntimeCompatibility.ENGINEERING_COMPATIBILITY_LEVEL
+                    || compatibility.projectSchemaVersion()
+                            != RuntimeCompatibility.PROJECT_SCHEMA_VERSION
+                    || compatibility.sharedKernelSchemaVersion()
+                            != RuntimeCompatibility.SHARED_KERNEL_SCHEMA_VERSION
+                    || compatibility.buildId().isBlank()) {
+                return fail("runtime compatibility metadata is invalid");
+            }
+
             UUID requestId = UUID.randomUUID();
             ApiErrorEnvelope error = ApiExceptionMapper.map(
                     requestId, new RuntimeException("secret stack detail"));
@@ -42,6 +54,7 @@ public final class ApiContractSelfCheckApplication implements IApplication {
             if (decoded.code() != ApiErrorCode.NOT_FOUND) return fail("unknown-field compatibility failed");
 
             System.out.println("KIDE PR20 API CONTRACT SELF-CHECK OK");
+            System.out.println("KIDE PR82 DESKTOP RUNTIME COMPATIBILITY OK");
             return IApplication.EXIT_OK;
         } catch (Exception e) {
             return fail("guarded runtime failure: " + e.getClass().getSimpleName());
