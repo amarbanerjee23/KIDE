@@ -91,6 +91,32 @@ def verify() -> list[str]:
     if 'version(): GeneratedApiCall' not in generated or 'path: "/version"' not in generated:
         errors.append("generated Web API transport does not expose version handshake")
 
+    docker = read("deploy/gcp/Dockerfile")
+    if 'ENV KIDE_BUILD_ID=${KIDE_BUILD_QUALIFIER}' not in docker:
+        errors.append("Cloud Run image does not expose KIDE_BUILD_ID")
+
+    desktop_smoke = read("scripts/smoke_api_contract.py")
+    if "KIDE PR82 DESKTOP RUNTIME COMPATIBILITY OK" not in desktop_smoke:
+        errors.append("desktop packaged compatibility marker is not enforced")
+
+    backend_smoke = read("scripts/smoke_enterprise_api_server.py")
+    if "KIDE PR82 RUNTIME COMPATIBILITY HANDSHAKE OK" not in backend_smoke:
+        errors.append("backend packaged compatibility marker is not enforced")
+
+    cloud_qualifier = read("scripts/qualify-cloud-run-backend.sh")
+    for token in (
+        "/api/v1/version",
+        'version.get("engineeringCompatibilityLevel") == 1',
+        'version.get("projectSchemaVersion") == 1',
+        'version.get("sharedKernelSchemaVersion") == 1',
+    ):
+        if token not in cloud_qualifier:
+            errors.append(f"Cloud Run compatibility qualification is missing: {token}")
+
+    workflow = read(".github/workflows/build.yml")
+    if "python3 scripts/verify_runtime_compatibility.py" not in workflow:
+        errors.append("Build KIDE no longer runs runtime compatibility verification")
+
     policy = contract.get("policy", {})
     required = set(policy.get("required_exact_match", []))
     if required != {
