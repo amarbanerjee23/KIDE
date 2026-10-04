@@ -26,6 +26,35 @@ describe("KideApiClient", () => {
     await expect(client.listProjects()).resolves.toEqual({ items: [] });
   });
 
+  it("retrieves runtime compatibility without bearer authentication", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://kide.example/api/v1/version");
+      const headers = new Headers(init?.headers);
+      expect(headers.get("Authorization")).toBeNull();
+      expect(init?.method).toBe("GET");
+      return new Response(JSON.stringify({
+        apiVersion: "v1",
+        engineeringCompatibilityLevel: 1,
+        projectSchemaVersion: 1,
+        sharedKernelSchemaVersion: 1,
+        productLine: "1.0",
+        productVersion: "1.0.0.test",
+        buildId: "api-test-build"
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new KideApiClient("https://kide.example", () => "");
+    await expect(client.version()).resolves.toMatchObject({
+      apiVersion: "v1",
+      engineeringCompatibilityLevel: 1,
+      buildId: "api-test-build"
+    });
+  });
+
   it("lists project models and creates the canonical starter set through the collection endpoint", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("https://kide.example/api/v1/projects/p1/models");
