@@ -37,6 +37,7 @@ public final class ServerModelRepository implements ModelRepository {
 
     private final class Tx implements ModelTransaction {
         private final Map<ModelPath, Mutation> mutations = new LinkedHashMap<>();
+        private boolean requireEmpty;
         private boolean finished;
 
         @Override
@@ -58,6 +59,12 @@ public final class ServerModelRepository implements ModelRepository {
         }
 
         @Override
+        public void requireEmpty() {
+            ensureOpen();
+            requireEmpty = true;
+        }
+
+        @Override
         public void write(ModelPath path, byte[] content, String expectedEtag) {
             ensureOpen();
             checkCapacity(path);
@@ -76,6 +83,9 @@ public final class ServerModelRepository implements ModelRepository {
         public void commit() {
             ensureOpen();
             synchronized (ServerModelRepository.this) {
+                if (requireEmpty && !entries.isEmpty()) {
+                    throw new RevisionConflictException("hosted project is not empty");
+                }
                 for (Map.Entry<ModelPath, Mutation> item : mutations.entrySet()) {
                     Entry current = entries.get(item.getKey());
                     String currentEtag = current == null

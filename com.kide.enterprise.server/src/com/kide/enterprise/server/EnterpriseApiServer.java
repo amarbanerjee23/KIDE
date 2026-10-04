@@ -7,6 +7,8 @@ import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.Base64;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -23,6 +25,8 @@ import org.eclipse.jetty.util.Callback;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.kide.enterprise.api.ApiErrorCode;
@@ -62,6 +66,9 @@ public final class EnterpriseApiServer implements AutoCloseable {
     private static final String API_PREFIX = "/api/v1";
     private static final String CLIENT_ID = "kide-api-v1";
     private static final String MISSING_ETAG = "0".repeat(64);
+    private static final int MAX_IMPORT_FILES = 256;
+    private static final int MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024;
+    private static final int MAX_IMPORT_TOTAL_BYTES = 10 * 1024 * 1024;
 
     private final EnterpriseApiConfig config;
     private final Function<String, AuthenticatedSession> authenticator;
@@ -203,6 +210,10 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 writeError(response, callback, requestId, 403, ApiErrorCode.FORBIDDEN,
                         "The requested operation is not permitted.");
                 return true;
+            } catch (ProjectArchiveImportConflictException e) {
+                writeError(response, callback, requestId, 409, ApiErrorCode.CONFLICT,
+                        "Archive promotion requires an empty hosted project.");
+                return true;
             } catch (RevisionConflictException | KnowledgeRevisionConflictException e) {
                 writeError(response, callback, requestId, 409, ApiErrorCode.CONFLICT,
                         "The requested revision is stale.");
@@ -284,6 +295,23 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 return true;
             }
 
+            if (segments.length == 4
+                    && "imports".equals(segments[2])
+                    && "archive".equals(segments[3])) {
+                authorization.requireModelWrite(session, context);
+                if (!"POST".equals(request.getMethod())) {
+                    methodNotAllowed(response, callback, requestId);
+                    return true;
+                }
+                JsonObject input = readJsonObject(request);
+                JsonObject body = importProjectArchive(input);
+                audit(session, requestId, "project.archive.promote", "project", segments[1],
+                        AuditOutcome.SUCCESS,
+                        Integer.toString(body.get("importedCount").getAsInt()));
+                writeJson(response, callback, 201, body);
+                return true;
+            }
+
             if (segments.length == 3 && "models".equals(segments[2])) {
                 if ("GET".equals(request.getMethod())) {
                     authorization.requireModelRead(session, context);
@@ -306,8 +334,9 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 return true;
             }
 
-            if (segments.length == 4 && "models".equals(segments[2])) {
-                String modelId = decodeModelId(segments[3]);
+            if (segments.length >= 4 && "models".equals(segments[2])) {
+                String modelId = decodeModelId(String.join(
+                        "/", java.util.Arrays.copyOfRange(segments, 3, segments.length)));
                 ModelPath modelPath = new ModelPath(modelId);
                 if ("GET".equals(request.getMethod())) {
                     authorization.requireModelRead(session, context);
@@ -319,7 +348,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
                     }
                     audit(session, requestId, "model.read", "model", modelId,
                             AuditOutcome.SUCCESS, Long.toString(snapshot.revision().version()));
-                    writeJson(response, callback, 200, modelJson(snapshot, "text/plain"));
+                    writeJson(response, callback, 200, modelJson(snapshot, modelMediaType(modelId)));
                     return true;
                 }
                 if ("PUT".equals(request.getMethod())) {
@@ -822,6 +851,73 @@ public final class EnterpriseApiServer implements AutoCloseable {
         return body;
     }
 
+    private JsonObject importProjectArchive(JsonObject input) {
+        JsonElement rawItems = input.get("items");
+        if (rawItems == null || !rawItems.isJsonArray()) {
+            throw new IllegalArgumentException("items array is required");
+        }
+        JsonArray items = rawItems.getAsJsonArray();
+        if (items.size() == 0 || items.size() > MAX_IMPORT_FILES) {
+            throw new IllegalArgumentException(
+                    "archive promotion requires between 1 and " + MAX_IMPORT_FILES + " files");
+        }
+
+        record ImportEntry(ModelPath path, byte[] content) { }
+        java.util.ArrayList<ImportEntry> decoded = new java.util.ArrayList<>(items.size());
+        java.util.Set<String> seen = new HashSet<>();
+        long totalBytes = 0L;
+
+        for (JsonElement element : items) {
+            if (!element.isJsonObject()) {
+                throw new IllegalArgumentException("archive import item must be an object");
+            }
+            JsonObject item = element.getAsJsonObject();
+            String rawPath = requiredString(item, "path");
+            if (rawPath.length() > 512 || !seen.add(rawPath)) {
+                throw new IllegalArgumentException("archive import contains an invalid or duplicate path");
+            }
+            ModelPath modelPath = new ModelPath(rawPath);
+            byte[] content;
+            try {
+                content = Base64.getDecoder().decode(requiredString(item, "contentBase64"));
+            } catch (IllegalArgumentException invalidBase64) {
+                throw new IllegalArgumentException("archive import contains invalid base64 content");
+            }
+            if (content.length > MAX_IMPORT_FILE_BYTES) {
+                throw new RequestTooLargeException();
+            }
+            totalBytes += content.length;
+            if (totalBytes > MAX_IMPORT_TOTAL_BYTES) {
+                throw new RequestTooLargeException();
+            }
+            decoded.add(new ImportEntry(modelPath, content));
+        }
+
+        if (!models.list().isEmpty()) {
+            throw new ProjectArchiveImportConflictException();
+        }
+
+        try (ModelTransaction tx = models.beginTransaction()) {
+            tx.requireEmpty();
+            for (ImportEntry entry : decoded) {
+                tx.write(entry.path(), entry.content(), MISSING_ETAG);
+            }
+            try {
+                tx.commit();
+            } catch (RevisionConflictException concurrentChange) {
+                throw new ProjectArchiveImportConflictException();
+            }
+        }
+
+        JsonObject result = new JsonObject();
+        result.addProperty("projectId", context.project().id().value());
+        result.addProperty("workspaceId", context.workspace().id().value());
+        result.addProperty("importedCount", decoded.size());
+        result.addProperty("totalBytes", totalBytes);
+        result.add("items", modelListJson().getAsJsonArray("items"));
+        return result;
+    }
+
     private void createStarterModels() {
         java.util.LinkedHashMap<ModelPath, String> starter = new java.util.LinkedHashMap<>();
         starter.put(new ModelPath("starter.dml"),
@@ -900,6 +996,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
         JsonObject model = new JsonObject();
         model.addProperty("id", snapshot.path().value());
         model.addProperty("content", new String(snapshot.content(), StandardCharsets.UTF_8));
+        model.addProperty("contentBase64", Base64.getEncoder().encodeToString(snapshot.content()));
         model.addProperty("revision", Long.toString(snapshot.revision().version()));
         model.addProperty("etag", snapshot.revision().etag());
         model.addProperty("mediaType", mediaType);
@@ -943,10 +1040,10 @@ public final class EnterpriseApiServer implements AutoCloseable {
 
     private static String decodeModelId(String encoded) {
         String value = URLDecoder.decode(encoded, StandardCharsets.UTF_8);
-        if (value.isBlank() || value.length() > 512 || value.contains("/")) {
+        if (value.isBlank() || value.length() > 512) {
             throw new IllegalArgumentException("modelId is invalid");
         }
-        return value;
+        return new ModelPath(value).value();
     }
 
     private boolean originAllowed(String origin) {
@@ -1074,6 +1171,10 @@ public final class EnterpriseApiServer implements AutoCloseable {
     }
 
     private static final class ResourceNotFoundException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+    }
+
+    private static final class ProjectArchiveImportConflictException extends RuntimeException {
         private static final long serialVersionUID = 1L;
     }
 

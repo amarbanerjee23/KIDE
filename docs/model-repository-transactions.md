@@ -26,6 +26,13 @@ A transaction can stage reads, writes and deletes, then either commit or roll ba
 The repository enforces a bounded mutation count and a maximum individual model
 size. Closing an uncommitted transaction rolls it back.
 
+PR84 adds the optional `requireEmpty()` commit precondition. It is evaluated
+under the same repository lock as optimistic revision checks, so an archive
+promotion cannot race another writer between an emptiness preflight and commit.
+If the canonical project gains any model before commit,
+`RevisionConflictException` is raised and none of the staged promotion files
+are applied.
+
 The server reference repository implements the same optimistic-concurrency
 semantics in memory so service/API code can consume the exact same contract.
 A future durable server store can replace its backing implementation without
@@ -70,7 +77,9 @@ The PR21 test bundle covers:
 - path traversal and symbolic-link rejection;
 - large-file rejection;
 - transactional delete; and
-- desktop/server byte and ETag round-trip parity.
+- desktop/server byte and ETag round-trip parity;
+- atomic empty-project promotion; and
+- concurrent target population rejecting the entire staged promotion.
 
 The packaged desktop product also runs
 `com.kide.enterprise.modelrepo.selfcheck`, proving optimistic concurrency and

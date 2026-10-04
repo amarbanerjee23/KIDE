@@ -96,6 +96,28 @@ Successful browser responses also fail closed when the declared response schema
 receives an empty or malformed JSON payload. Unknown response fields remain
 forward-compatible as required by the v1 contract.
 
+## PR84 hosted archive promotion
+
+`POST /api/v1/projects/{projectId}/imports/archive` promotes a bounded local
+project archive into an existing authorized hosted project.
+
+The request contains project-relative paths and exact file bytes encoded as
+base64. The server requires model-write permission, rejects unsafe or duplicate
+paths, refuses '.kide/**' internals through the shared `ModelPath` boundary and
+enforces 256 files, 2 MiB per file and 10 MiB total content.
+
+Promotion is intentionally non-destructive. The target project must be empty and
+the empty-project condition is rechecked inside the same repository commit lock
+as revision preconditions. A concurrent write or already populated target yields
+HTTP 409 and the transaction commits nothing.
+
+`Model` responses also expose optional `contentBase64` so binary/non-text
+project files can round-trip through the hosted API without UTF-8 corruption.
+The existing `content` field remains for compatible text clients.
+
+This operation does not provision a new enterprise project identity. Project
+creation remains unavailable in the current single-context hosted runtime.
+
 ## Qualification
 
 The PR20 test bundle verifies the six required domain surfaces, deterministic
