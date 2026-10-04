@@ -23,6 +23,16 @@ export interface Health {
   dependencies?: Record<string, unknown>;
 }
 
+export interface RuntimeVersion {
+  apiVersion: string;
+  engineeringCompatibilityLevel: number;
+  projectSchemaVersion: number;
+  sharedKernelSchemaVersion: number;
+  productLine: string;
+  productVersion: string;
+  buildId: string;
+}
+
 export interface Project {
   id: string;
   displayName: string;
