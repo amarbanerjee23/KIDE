@@ -1006,6 +1006,9 @@ export default function App() {
       const entry = remoteEntry(currentProject.id, model);
       replaceRemoteEntry(entry);
       workspace.ensure(entry.path, model.content);
+      setOpenPaths((current) =>
+        current.includes(entry.path) ? current : [...current, entry.path]
+      );
       setSelectedPath(entry.path);
       setRevealRange(undefined);
       setSaveState("clean");
@@ -1258,6 +1261,9 @@ export default function App() {
       void loadSpecificModel(entry.path, true);
       return;
     }
+    setOpenPaths((current) =>
+      current.includes(entry.path) ? current : [...current, entry.path]
+    );
     setSelectedPath(entry.path);
     setRevealRange(undefined);
     setSaveState(entry.dirty ? "pending" : "clean");
@@ -1299,7 +1305,13 @@ export default function App() {
       const firstEditable = imported.find(
         (entry) => editableText(entry) !== null
       );
-      setSelectedPath(firstEditable?.path);
+      if (firstEditable) {
+        setOpenPaths([firstEditable.path]);
+        setSelectedPath(firstEditable.path);
+      } else {
+        setOpenPaths([]);
+        setSelectedPath(undefined);
+      }
       setSaveState("clean");
       setLspStatus("Unavailable · local archive");
       setNotice(
