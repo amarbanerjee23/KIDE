@@ -374,7 +374,7 @@ test("promotes a local ZIP atomically into an empty hosted project and attaches 
   );
 
   await page.route(
-    "**/api/v1/projects/P04-001/models/*",
+    "**/api/v1/projects/P04-001/models/**",
     async (route) => {
       const url = decodeURIComponent(route.request().url());
       const activity = url.endsWith("/models/models/main.activity");
