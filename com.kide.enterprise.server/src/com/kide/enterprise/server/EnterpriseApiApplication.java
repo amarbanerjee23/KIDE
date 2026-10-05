@@ -63,7 +63,7 @@ public final class EnterpriseApiApplication implements IApplication {
             EnterpriseApiConfig config = new EnterpriseApiConfig(
                     bind,
                     port,
-                    integer(env, "KIDE_API_MAX_REQUEST_BYTES", 1024 * 1024),
+                    integer(env, "KIDE_API_MAX_REQUEST_BYTES", 16 * 1024 * 1024),
                     Duration.ofSeconds(integer(env, "KIDE_API_IDLE_SECONDS", 30)),
                     !allowInsecureLoopback,
                     trustForwarded,

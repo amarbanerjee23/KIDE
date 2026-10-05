@@ -55,6 +55,21 @@ export interface ModelSummary {
 
 export interface Model extends ModelSummary {
   content: string;
+  contentBase64?: string;
+}
+
+export interface ProjectArchiveImportEntry {
+  path: string;
+  contentBase64: string;
+  mediaType: string;
+}
+
+export interface ProjectArchiveImportResult {
+  projectId: string;
+  workspaceId: string;
+  importedCount: number;
+  totalBytes: number;
+  items: ModelSummary[];
 }
 
 export interface ModelList {

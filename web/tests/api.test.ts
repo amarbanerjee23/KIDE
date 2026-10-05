@@ -82,10 +82,57 @@ describe("KideApiClient", () => {
     });
   });
 
+  it("promotes an archive through the generated atomic import operation", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe(
+        "https://kide.example/api/v1/projects/p1/imports/archive"
+      );
+      expect(init?.method).toBe("POST");
+      const headers = new Headers(init?.headers);
+      expect(headers.get("Authorization")).toBe("Bearer token-value");
+      const body = JSON.parse(String(init?.body));
+      expect(body).toEqual({
+        archiveName: "local.zip",
+        items: [{
+          path: "models/main.activity",
+          contentBase64: "AAEC/w==",
+          mediaType: "text/x-kide-activity"
+        }]
+      });
+      return new Response(JSON.stringify({
+        projectId: "p1",
+        workspaceId: "w1",
+        importedCount: 1,
+        totalBytes: 4,
+        items: [{
+          id: "models/main.activity",
+          revision: "1",
+          etag: "a".repeat(64),
+          mediaType: "text/x-kide-activity"
+        }]
+      }), {
+        status: 201,
+        headers: { "Content-Type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new KideApiClient("https://kide.example", () => "token-value");
+    await expect(client.importProjectArchive("p1", [{
+      path: "models/main.activity",
+      contentBase64: "AAEC/w==",
+      mediaType: "text/x-kide-activity"
+    }], "local.zip")).resolves.toMatchObject({
+      projectId: "p1",
+      workspaceId: "w1",
+      importedCount: 1
+    });
+  });
+
   it("uses generated route encoding and verbs for model reads", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe(
-        "https://kide.example/api/v1/projects/project%2Falpha/models/folder%2Fmodel.dml"
+        "https://kide.example/api/v1/projects/project%2Falpha/models/folder/model.dml"
       );
       expect(init?.method).toBe("GET");
       return new Response(
@@ -108,6 +155,16 @@ describe("KideApiClient", () => {
     await expect(
       client.getModel("project/alpha", "folder/model.dml")
     ).resolves.toMatchObject({ id: "folder/model.dml" });
+  });
+
+  it("rejects unsafe nested model path segments before issuing a request", () => {
+    const client = new KideApiClient("https://kide.example", () => "token-value");
+    expect(() => client.getModel("project-alpha", "folder/../secret.dml")).toThrow(
+      "Invalid model path."
+    );
+    expect(() => client.getModel("project-alpha", "/absolute.dml")).toThrow(
+      "Invalid model path."
+    );
   });
 
   it("fails closed when a generated response schema receives invalid JSON", async () => {

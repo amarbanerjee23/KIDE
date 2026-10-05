@@ -13,6 +13,8 @@ import type {
   PresenceList,
   PresenceSession,
   Project,
+  ProjectArchiveImportEntry,
+  ProjectArchiveImportResult,
   ProjectList,
   ReviewApplyResult,
   ReviewBundle,
@@ -86,6 +88,23 @@ export class KideApiClient {
     return this.request<ModelList>(
       apiV1.createStarterModels(projectId),
       {}
+    );
+  }
+
+  importProjectArchive(
+    projectId: string,
+    items: ProjectArchiveImportEntry[],
+    archiveName?: string
+  ): Promise<ProjectArchiveImportResult> {
+    return this.request<ProjectArchiveImportResult>(
+      apiV1.importProjectArchive(projectId),
+      {
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items,
+          ...(archiveName ? { archiveName } : {})
+        })
+      }
     );
   }
 

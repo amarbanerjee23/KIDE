@@ -62,7 +62,13 @@ class WebWorkspaceContractTest(unittest.TestCase):
 
         self.assertIn("listModels(projectId", api)
         self.assertIn("createStarterModels(projectId", api)
+        self.assertIn("importProjectArchive(", api)
         self.assertIn("Create starter engineering models", app)
+        self.assertIn("Promote here", app)
+        self.assertIn("MAX_HOSTED_IMPORT_FILES = 256", app)
+        self.assertIn("MAX_HOSTED_IMPORT_BYTES = 10 * 1024 * 1024", app)
+        self.assertIn('entry.path.startsWith(".kide/")', app)
+        self.assertIn("clientRef.current.importProjectArchive", app)
         self.assertIn("Refresh project files", app)
         self.assertIn("Synthesize", app)
         self.assertIn("Visualize flow", app)
@@ -108,6 +114,9 @@ class WebWorkspaceContractTest(unittest.TestCase):
 
         self.assertIn('"model.list"', server)
         self.assertIn('"model.starter.create"', server)
+        self.assertIn('"project.archive.promote"', server)
+        self.assertIn("tx.requireEmpty()", server)
+        self.assertIn("contentBase64", server)
         self.assertNotIn(
             "Model listing awaits the repository index phase.",
             server,

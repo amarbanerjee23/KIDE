@@ -109,6 +109,7 @@ public final class FileModelRepository implements ModelRepository {
 
     private final class Tx implements ModelTransaction {
         private final Map<ModelPath, Mutation> mutations = new LinkedHashMap<>();
+        private boolean requireEmpty;
         private boolean finished;
 
         @Override
@@ -125,6 +126,12 @@ public final class FileModelRepository implements ModelRepository {
                         staged.content));
             }
             return FileModelRepository.this.read(path);
+        }
+
+        @Override
+        public void requireEmpty() {
+            ensureOpen();
+            requireEmpty = true;
         }
 
         @Override
@@ -148,6 +155,9 @@ public final class FileModelRepository implements ModelRepository {
             synchronized (FileModelRepository.this) {
                 Path journal = null;
                 try {
+                    if (requireEmpty && !FileModelRepository.this.list().isEmpty()) {
+                        throw new RevisionConflictException("hosted project is not empty");
+                    }
                     for (Map.Entry<ModelPath, Mutation> item : mutations.entrySet()) {
                         String current = FileModelRepository.this.read(item.getKey())
                                 .map(s -> s.revision().etag())

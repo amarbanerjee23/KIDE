@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
 import {
+  bytesFromBase64,
+  bytesToBase64,
   editableText,
   exportProjectArchive,
   importProjectArchive,
@@ -25,6 +27,11 @@ describe("project archive boundary", () => {
       imported.map((entry) => entry.path)
     );
     expect(editableText(roundTrip[1])).toBe("domain Golden");
+  });
+
+  it("round-trips arbitrary binary project bytes through promotion encoding", () => {
+    const bytes = new Uint8Array([0, 1, 2, 3, 255]);
+    expect(bytesFromBase64(bytesToBase64(bytes))).toEqual(bytes);
   });
 
   it("rejects path traversal and Eclipse workspace metadata", () => {

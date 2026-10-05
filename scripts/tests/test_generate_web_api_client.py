@@ -36,6 +36,34 @@ class GeneratedWebApiClientTest(unittest.TestCase):
                         }
                     }
                 },
+                "/api/v1/projects/{projectId}/models/{modelId}": {
+                    "get": {
+                        "operationId": "getModel",
+                        "parameters": [
+                            {
+                                "name": "projectId",
+                                "in": "path",
+                                "required": True,
+                                "schema": {"type": "string"},
+                            },
+                            {
+                                "name": "modelId",
+                                "in": "path",
+                                "required": True,
+                                "schema": {"type": "string"},
+                            },
+                        ],
+                        "responses": {
+                            "200": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {"$ref": "#/components/schemas/Model"}
+                                    }
+                                }
+                            }
+                        },
+                    }
+                },
                 "/api/v1/projects/{projectId}/synthesis": {
                     "post": {
                         "operationId": "synthesize",
@@ -76,7 +104,10 @@ class GeneratedWebApiClientTest(unittest.TestCase):
         self.assertIn("health(): GeneratedApiCall", generated)
         self.assertIn('method: "GET"', generated)
         self.assertIn("synthesize(projectId: string): GeneratedApiCall", generated)
+        self.assertIn("getModel(projectId: string, modelId: string): GeneratedApiCall", generated)
         self.assertIn("segment(projectId)", generated)
+        self.assertIn("modelPath(modelId)", generated)
+        self.assertIn('throw new Error("Invalid model path.")', generated)
         self.assertIn("/projects/", generated)
         self.assertIn('requestSchema: "SynthesisRequest"', generated)
         self.assertIn('responseSchema: "SynthesisResult"', generated)

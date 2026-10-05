@@ -45,6 +45,41 @@ public class ModelRepositoryTest {
     }
 
     @Test
+    public void emptyProjectPreconditionCommitsWholePromotion() {
+        ServerModelRepository repository = new ServerModelRepository();
+        try (ModelTransaction tx = repository.beginTransaction()) {
+            tx.requireEmpty();
+            tx.write(new ModelPath("models/main.activity"), bytes("activity Main {}"), MISSING);
+            tx.write(new ModelPath("models/controller.mncspec"), bytes("MNC Controller {}"), MISSING);
+            tx.commit();
+        }
+        assertEquals(
+                java.util.List.of("models/controller.mncspec", "models/main.activity"),
+                repository.list().stream().map(ModelPath::value).toList());
+    }
+
+    @Test
+    public void emptyProjectPreconditionFailsAtomicallyWhenTargetChanged() {
+        ServerModelRepository repository = new ServerModelRepository();
+        ModelTransaction promotion = repository.beginTransaction();
+        promotion.requireEmpty();
+        promotion.write(new ModelPath("models/main.activity"), bytes("activity Main {}"), MISSING);
+        promotion.write(new ModelPath("models/controller.mncspec"), bytes("MNC Controller {}"), MISSING);
+
+        try (ModelTransaction concurrent = repository.beginTransaction()) {
+            concurrent.write(new ModelPath("existing.dml"), bytes("DataModel Existing {}"), MISSING);
+            concurrent.commit();
+        }
+
+        assertThrows(RevisionConflictException.class, promotion::commit);
+        promotion.rollback();
+        assertEquals(java.util.List.of("existing.dml"),
+                repository.list().stream().map(ModelPath::value).toList());
+        assertTrue(repository.read(new ModelPath("models/main.activity")).isEmpty());
+        assertTrue(repository.read(new ModelPath("models/controller.mncspec")).isEmpty());
+    }
+
+    @Test
     public void fileRepositoryCommitRollbackAndRestartPreserveCanonicalFiles() throws Exception {
         Path root = Files.createTempDirectory("kide-pr21-file-");
         try {

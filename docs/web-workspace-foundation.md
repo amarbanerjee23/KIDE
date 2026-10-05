@@ -50,6 +50,9 @@ The browser can:
 - autosave server-backed text models with the last observed ETag;
 - stop on HTTP 409 revision conflicts without silently overwriting another edit;
 - import a bounded ZIP of canonical project files into a local browser workspace;
+- promote a local ZIP workspace atomically into an existing authorized empty hosted project;
+- reopen the promoted project through the normal hosted Xtext LSP, GLSP, collaboration,
+  synthesis, reconfiguration and generation boundaries;
 - preserve binary/non-text files for export while editing supported text files;
 - export the current local project files back to ZIP; and
 - retain local/conflict drafts only in browser session storage.
@@ -95,8 +98,38 @@ individual expanded files over 2 MiB, total expanded content over 20 MiB, absolu
 or drive-qualified paths, empty segments, '..' traversal, backslash paths, and
 Eclipse '.metadata' workspace state.
 
-Project-level '.kide' files are preserved because project schema and enterprise
-identity metadata are canonical project content.
+Project-level '.kide' files are preserved for local ZIP round-trip because they
+may be canonical project metadata. They are deliberately **not** accepted by
+hosted promotion: the hosted runtime owns its own enterprise identity, schema,
+repository and collaboration metadata. Promotion therefore fails before upload
+when a local archive contains '.kide/**'; it never silently drops or overwrites
+those files.
+
+## Local ZIP to hosted project promotion
+
+PR84 bridges the former local-only archive mode into the shared engineering
+runtime without introducing a second project store.
+
+The user imports a ZIP locally, remains signed in, and chooses **Promote here**
+beside an authorized hosted target. The target must be empty. The browser
+preflights the target and sends one binary-safe base64 import request; the server
+validates every project-relative path and commits the complete archive in one
+`ModelRepository` transaction with a commit-time `requireEmpty()` precondition.
+
+Promotion is bounded to 256 files, 2 MiB per file and 10 MiB total expanded
+content. The HTTP request boundary is 16 MiB to accommodate base64/JSON overhead.
+If any path, size, authorization or empty-target precondition fails, no archive
+file is committed.
+
+After a successful commit the browser reopens the same hosted project and uses
+its stable workspace ID. From that point the promoted files are ordinary remote
+project entries: Monaco/Xtext, GLSP, collaboration, synthesis, reconfiguration
+and generation use the same shared Java services as every other hosted project.
+
+PR84 does not make `POST /api/v1/projects` a multi-project provisioning API.
+The current runtime still exposes the configured enterprise project. Persistent
+creation/registration of additional hosted project identities and dynamic LSP/
+GLSP workspace catalogs is a separate infrastructure change.
 
 ## Qualification
 

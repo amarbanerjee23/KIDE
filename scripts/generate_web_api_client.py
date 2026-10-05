@@ -131,7 +131,9 @@ def render_path(template: str, parameters: list[str]) -> str:
             .replace(tick, "\\" + tick)
             .replace(marker_prefix, "\\" + marker_prefix)
         )
-        pieces.append(marker_prefix + "segment(" + match.group(1) + ")}")
+        parameter = match.group(1)
+        encoder = "modelPath" if parameter == "modelId" else "segment"
+        pieces.append(marker_prefix + encoder + "(" + parameter + ")}")
         cursor = match.end()
     literal = template[cursor:]
     pieces.append(
@@ -163,6 +165,14 @@ def generate(document: dict[str, Any]) -> str:
         "",
         "function segment(value: string): string {",
         "  return encodeURIComponent(value);",
+        "}",
+        "",
+        "function modelPath(value: string): string {",
+        "  const parts = value.split(\"/\");",
+        "  if (parts.some((part) => !part || part === \".\" || part === \"..\")) {",
+        "    throw new Error(\"Invalid model path.\");",
+        "  }",
+        "  return parts.map((part) => encodeURIComponent(part)).join(\"/\");",
         "}",
         "",
         "export const apiV1 = {",

@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import java.util.Set;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.kide.codegen.ProjectGenerationService;
@@ -90,28 +92,28 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
                     new AuthorizationEnforcer(new AuthorizationService(policies)));
 
-            Files.writeString(project.resolve("device.mncspec"),
+            String deviceModel =
                     "Model Golden\n"
                     + "InterfaceDescription Device {\n"
                     + "  commands { Start[] }\n"
                     + "  events { Publish Ready[] }\n"
-                    + "}\n");
-            Files.writeString(project.resolve("observe.cap"),
+                    + "}\n";
+            String capabilityModel =
                     "Capability Observe compatible component interface Device {\n"
                     + "  providesControlCapabilities {\n"
                     + "    fireable commands : Start\n"
                     + "    receivable events : Ready\n"
                     + "  }\n"
-                    + "}\n");
-            Files.writeString(project.resolve("workflow.activity"),
+                    + "}\n";
+            String activityModel =
                     "ActivityDiagram GoldenWorkflow\n"
                     + "has activities {\n"
                     + "  Activity ObserveStep {\n"
                     + "    requireCapability : Observe { Start, Ready }\n"
                     + "    nextActivity : ObserveStep\n"
                     + "  }\n"
-                    + "}\n");
-            Files.writeString(project.resolve("bindings.krl"),
+                    + "}\n";
+            String krlModel =
                     "knowledge ApiBindings {\n"
                     + "  namespace kide = \"https://kide.dev/ontology/v1#\";\n"
                     + "  query FindObserve(capability: iri) {\n"
@@ -126,7 +128,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     + "    bind name: string = string \"ApiObserveBinding\";\n"
                     + "    bind resource: iri = query FindObserve(iri \"urn:kide:capability:Observe\").device;\n"
                     + "  }\n"
-                    + "}\n");
+                    + "}\n";
 
             InMemoryAuditLedger audit = new InMemoryAuditLedger(Clock.systemUTC());
             FileModelRepository modelRepository = new FileModelRepository(project);
@@ -254,6 +256,48 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 throw new AssertionError("workspace identity missing from browser project contract");
             }
 
+            String projectApi = "/api/v1/projects/" + context.project().id().value();
+            JsonObject importRequest = new JsonObject();
+            importRequest.addProperty("archiveName", "selfcheck-project.zip");
+            JsonArray importItems = new JsonArray();
+            addImportItem(importItems, "device.mncspec", deviceModel.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    "text/x-kide-mnc");
+            addImportItem(importItems, "observe.cap", capabilityModel.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    "text/x-kide-capability");
+            addImportItem(importItems, "workflow.activity", activityModel.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    "text/x-kide-activity");
+            addImportItem(importItems, "bindings.krl", krlModel.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    "text/x-kide-krl");
+            byte[] binaryFixture = new byte[] {0, 1, 2, 3, (byte) 255};
+            addImportItem(importItems, "assets/nested/sample.bin", binaryFixture, "application/octet-stream");
+            importRequest.add("items", importItems);
+
+            HttpResponse<String> imported = send(
+                    client, base.resolve(projectApi + "/imports/archive"), "POST",
+                    "Bearer pr26-self-check", importRequest.toString());
+            requireStatus(imported, 201);
+            JsonObject importedJson = json(imported);
+            if (importedJson.get("importedCount").getAsInt() != 5
+                    || !context.workspace().id().value().equals(
+                            importedJson.get("workspaceId").getAsString())) {
+                throw new AssertionError("archive promotion result mismatch");
+            }
+
+            HttpResponse<String> repeatedImport = send(
+                    client, base.resolve(projectApi + "/imports/archive"), "POST",
+                    "Bearer pr26-self-check", importRequest.toString());
+            requireStatus(repeatedImport, 409);
+
+            HttpResponse<String> binaryRead = send(
+                    client,
+                    base.resolve(projectApi + "/models/assets/nested/sample.bin"),
+                    "GET", "Bearer pr26-self-check", null);
+            requireStatus(binaryRead, 200);
+            if (!Base64.getEncoder().encodeToString(binaryFixture).equals(
+                    json(binaryRead).get("contentBase64").getAsString())) {
+                throw new AssertionError("binary archive file did not round-trip through hosted model API");
+            }
+
             String modelUri = "/api/v1/projects/" + context.project().id().value()
                     + "/models/selfcheck.dml";
             JsonObject create = new JsonObject();
@@ -281,7 +325,6 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                 throw new AssertionError("model round-trip mismatch");
             }
 
-            String projectApi = "/api/v1/projects/" + context.project().id().value();
             HttpResponse<String> modelList = send(
                     client, base.resolve(projectApi + "/models"),
                     "GET", "Bearer pr26-self-check", null);
@@ -811,6 +854,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             System.out.println("KIDE PR38 ENTERPRISE GENERATION SELF-CHECK OK");
             System.out.println("KIDE PR80 CROSS-ADAPTER SEMANTIC PARITY OK");
             System.out.println("KIDE PR82 RUNTIME COMPATIBILITY HANDSHAKE OK");
+            System.out.println("KIDE PR84 HOSTED ARCHIVE PROMOTION OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
             String detail = failure.getMessage();
@@ -922,6 +966,15 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                         "shared reconfiguration migration and HTTP adapter diverged");
             }
         }
+    }
+
+    private static void addImportItem(
+            JsonArray items, String path, byte[] content, String mediaType) {
+        JsonObject item = new JsonObject();
+        item.addProperty("path", path);
+        item.addProperty("contentBase64", Base64.getEncoder().encodeToString(content));
+        item.addProperty("mediaType", mediaType);
+        items.add(item);
     }
 
     private static HttpResponse<String> send(

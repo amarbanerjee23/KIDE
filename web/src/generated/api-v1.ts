@@ -18,6 +18,14 @@ function segment(value: string): string {
   return encodeURIComponent(value);
 }
 
+function modelPath(value: string): string {
+  const parts = value.split("/");
+  if (parts.some((part) => !part || part === "." || part === "..")) {
+    throw new Error("Invalid model path.");
+  }
+  return parts.map((part) => encodeURIComponent(part)).join("/");
+}
+
 export const apiV1 = {
   applyReview(projectId: string, changeSetId: string): GeneratedApiCall {
     return {
@@ -101,7 +109,7 @@ export const apiV1 = {
     return {
       operationId: "getModel",
       method: "GET",
-      path: `/projects/${segment(projectId)}/models/${segment(modelId)}`,
+      path: `/projects/${segment(projectId)}/models/${modelPath(modelId)}`,
       responseSchema: "Model"
     };
   },
@@ -136,6 +144,15 @@ export const apiV1 = {
       path: `/projects/${segment(projectId)}/collaboration/sessions/${segment(sessionId)}`,
       requestSchema: "PresenceHeartbeatRequest",
       responseSchema: "PresenceSession"
+    };
+  },
+  importProjectArchive(projectId: string): GeneratedApiCall {
+    return {
+      operationId: "importProjectArchive",
+      method: "POST",
+      path: `/projects/${segment(projectId)}/imports/archive`,
+      requestSchema: "ProjectArchiveImportRequest",
+      responseSchema: "ProjectArchiveImportResult"
     };
   },
   joinPresence(projectId: string): GeneratedApiCall {
@@ -223,7 +240,7 @@ export const apiV1 = {
     return {
       operationId: "putModel",
       method: "PUT",
-      path: `/projects/${segment(projectId)}/models/${segment(modelId)}`,
+      path: `/projects/${segment(projectId)}/models/${modelPath(modelId)}`,
       requestSchema: "ModelWriteRequest",
       responseSchema: "Model"
     };

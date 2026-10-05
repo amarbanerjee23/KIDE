@@ -35,6 +35,10 @@ public class ApiContractTest {
 
         assertTrue(operations.stream().anyMatch(op -> op.path().equals("/api/v1/projects")));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/models")));
+        assertTrue(operations.stream().anyMatch(op ->
+                op.operationId().equals("importProjectArchive")
+                && op.path().equals("/api/v1/projects/{projectId}/imports/archive")
+                && op.method() == HttpMethod.POST));
         assertTrue(operations.stream().anyMatch(op -> op.path().contains("/knowledge")));
         assertTrue(operations.stream().anyMatch(op ->
                 op.path().endsWith("/knowledge/query") && op.method() == HttpMethod.POST));
@@ -186,6 +190,12 @@ public class ApiContractTest {
                     schemas.containsKey(operation.responseSchema()));
         }
         assertTrue(schemas.containsKey("ApiError"));
+        assertTrue(schemas.containsKey("ProjectArchiveImportEntry"));
+        assertTrue(schemas.containsKey("ProjectArchiveImportRequest"));
+        ApiSchema importResult = schemas.get("ProjectArchiveImportResult");
+        assertTrue(importResult.requiredFields().containsAll(Set.of(
+                "projectId", "workspaceId", "importedCount", "totalBytes", "items")));
+        assertTrue(schemas.get("Model").fields().containsKey("contentBase64"));
         ApiSchema runtimeVersion = schemas.get("RuntimeVersion");
         assertTrue(runtimeVersion.requiredFields().containsAll(Set.of(
                 "apiVersion",
