@@ -585,7 +585,8 @@ export default function App() {
 
       const preferred = preferredModel(modelList.items);
       if (preferred) {
-        await loadSpecificModel(preferred.id);
+        const loaded = await loadSpecificModel(preferred.id);
+        if (!loaded) return false;
         setNotice(
           `Opened ${opened.displayName} · ${modelList.items.length} project file(s) · ${preferred.id} ready.`
         );
@@ -997,9 +998,9 @@ export default function App() {
     }
   }
 
-  async function loadSpecificModel(id: string, announce = false) {
+  async function loadSpecificModel(id: string, announce = false): Promise<boolean> {
     const currentProject = projectRef.current;
-    if (!currentProject || !id) return;
+    if (!currentProject || !id) return false;
     setConflict(undefined);
     try {
       const model = await clientRef.current.getModel(currentProject.id, id);
@@ -1015,8 +1016,10 @@ export default function App() {
       if (announce) {
         setNotice(`Loaded ${model.id} at revision ${model.revision}.`);
       }
+      return true;
     } catch (error) {
       showError(error);
+      return false;
     }
   }
 
