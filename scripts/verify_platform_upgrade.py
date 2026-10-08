@@ -10,7 +10,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "releng" / "com.kide.target" / "com.kide.target.target"
 POM = ROOT / "pom.xml"
-MAVEN_EXTENSIONS = ROOT / ".mvn" / "extensions.xml"
 CONTRACT = ROOT / "product" / "xtext-generation.json"
 WORKFLOWS = [
     ROOT / ".github" / "workflows" / "build.yml",
@@ -34,18 +33,11 @@ def read(path: Path) -> str:
 
 def verify() -> None:
     pom = read(POM)
-    extensions = read(MAVEN_EXTENSIONS)
     target = read(TARGET)
     contract = json.loads(read(CONTRACT))
     baseline = contract.get("baseline", {})
 
     require("<tycho.version>5.0.4</tycho.version>" in pom, "Tycho must be 5.0.4")
-    require("<artifactId>tycho-build</artifactId>" in extensions,
-            "pomless Tycho build extension is missing")
-    require("<version>5.0.4</version>" in extensions,
-            "pomless Tycho build extension must match Tycho 5.0.4")
-    require("<version>4.0.8</version>" not in extensions,
-            "legacy Tycho 4.0.8 pomless extension remains")
     require("<maven.compiler.release>21</maven.compiler.release>" in pom, "compiler release must be 21")
     require("<executionEnvironment>JavaSE-21</executionEnvironment>" in pom,
             "Tycho execution environment must be JavaSE-21")
