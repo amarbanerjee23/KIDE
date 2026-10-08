@@ -1,10 +1,8 @@
 package com.kide.languageserver.gateway;
 
 import java.net.http.HttpClient;
-import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -17,14 +15,8 @@ import org.eclipse.equinox.app.IApplicationContext;
 import com.kide.enterprise.authorization.AuthorizationEnforcer;
 import com.kide.enterprise.authorization.AuthorizationService;
 import com.kide.enterprise.authorization.InMemoryAuthorizationPolicyStore;
-import com.kide.enterprise.authorization.Role;
 import com.kide.enterprise.authorization.RoleBinding;
 import com.kide.enterprise.authorization.ServerAuthorizationGate;
-import com.kide.enterprise.context.EnterpriseContext;
-import com.kide.enterprise.context.EnterpriseContextResult;
-import com.kide.enterprise.context.EnterpriseContextStore;
-import com.kide.enterprise.context.EnterpriseId;
-import com.kide.enterprise.context.EnterpriseScope;
 import com.kide.enterprise.identity.FirebaseIdTokenAuthenticator;
 import com.kide.enterprise.identity.FirebaseIdTokenConfig;
 import com.kide.enterprise.identity.GoogleFirebaseKeyProvider;
@@ -58,14 +50,17 @@ public final class GatewayApplication implements IApplication {
                     csv(env.get("KIDE_GATEWAY_TRUSTED_PROXY_ADDRESSES")),
                     csv(env.get("KIDE_GATEWAY_ALLOWED_ORIGINS")));
 
-            GatewayWorkspaceBinding workspaceBinding = loadContext(env);
-            EnterpriseContext enterpriseContext = workspaceBinding.context();
-            InMemoryGatewayWorkspaceCatalog catalog = new InMemoryGatewayWorkspaceCatalog();
-            catalog.register(workspaceBinding);
+            GatewayWorkspaceRuntime workspaceRuntime =
+                    GatewayWorkspaceRuntime.load(
+                            env,
+                            "KIDE_GATEWAY_WORKSPACE_ROOT",
+                            "KIDE_GATEWAY_PROJECT_ROOT");
+            GatewayWorkspaceCatalog catalog = workspaceRuntime.catalog();
 
-            List<RoleBinding> bindings = parseBindings(
+            List<RoleBinding> bindings = GatewayRoleBindings.parse(
                     required(env, "KIDE_GATEWAY_ROLE_BINDINGS"),
-                    enterpriseContext);
+                    workspaceRuntime.contexts(),
+                    "KIDE_GATEWAY_ROLE_BINDINGS");
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
                     new AuthorizationEnforcer(
                             new AuthorizationService(
@@ -117,50 +112,6 @@ public final class GatewayApplication implements IApplication {
             }
         }
         closeConfig();
-    }
-
-    private static GatewayWorkspaceBinding loadContext(Map<String, String> env) {
-        Path workspace = Path.of(required(env, "KIDE_GATEWAY_WORKSPACE_ROOT"));
-        Path project = Path.of(required(env, "KIDE_GATEWAY_PROJECT_ROOT"));
-        EnterpriseContextResult result = new EnterpriseContextStore().load(workspace, project);
-        if (!result.isReady()) {
-            throw new IllegalStateException("Gateway enterprise context is not ready: " + result.summary());
-        }
-        return new GatewayWorkspaceBinding(result.context().orElseThrow(), project);
-    }
-
-    private static List<RoleBinding> parseBindings(String raw, EnterpriseContext context) {
-        List<RoleBinding> result = new ArrayList<>();
-        for (String entry : raw.split(";")) {
-            if (entry.isBlank()) continue;
-            String[] parts = entry.split("\\|", -1);
-            if (parts.length != 3) {
-                throw new IllegalArgumentException(
-                        "Each KIDE_GATEWAY_ROLE_BINDINGS entry must be principal|ROLE|scopeId");
-            }
-            String principal = parts[0].trim();
-            Role role = Role.valueOf(parts[1].trim());
-            EnterpriseId id = parseContextId(parts[2].trim(), context);
-            result.add(RoleBinding.allow(principal, role, id));
-        }
-        if (result.isEmpty()) {
-            throw new IllegalArgumentException("At least one gateway role binding is required");
-        }
-        return List.copyOf(result);
-    }
-
-    private static EnterpriseId parseContextId(String raw, EnterpriseContext context) {
-        for (EnterpriseScope scope : EnterpriseScope.values()) {
-            EnterpriseId id = EnterpriseId.tryParse(scope, raw).orElse(null);
-            if (id != null) {
-                if (!id.equals(context.node(scope).id())) {
-                    throw new IllegalArgumentException(
-                            "Gateway role binding scope is outside the configured enterprise context");
-                }
-                return id;
-            }
-        }
-        throw new IllegalArgumentException("Gateway role binding contains an invalid E04 scope ID");
     }
 
     private static String required(Map<String, String> env, String key) {
