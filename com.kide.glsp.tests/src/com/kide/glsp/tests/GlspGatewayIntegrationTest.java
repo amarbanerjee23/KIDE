@@ -297,10 +297,11 @@ public class GlspGatewayIntegrationTest {
 
             String credential =
                     BrowserWebSocketCredential.encodeBearerProtocol("pr87-self-check");
+            MessageListener listener = new MessageListener();
             socket = HttpClient.newHttpClient().newWebSocketBuilder()
                     .connectTimeout(Duration.ofSeconds(8))
                     .subprotocols(BrowserWebSocketCredential.GLSP_PROTOCOL, credential)
-                    .buildAsync(endpoint, new MessageListener())
+                    .buildAsync(endpoint, listener)
                     .get(10, TimeUnit.SECONDS);
             assertEquals(
                     BrowserWebSocketCredential.GLSP_PROTOCOL,
@@ -309,6 +310,18 @@ public class GlspGatewayIntegrationTest {
                     context.workspace().id(),
                     catalog.resolve(context.workspace().id().value())
                             .orElseThrow().context().workspace().id());
+
+            send(socket,
+                    "{\"jsonrpc\":\"2.0\",\"id\":87,"
+                    + "\"method\":\"initialize\",\"params\":{"
+                    + "\"applicationId\":\"KIDE Dynamic Registry GLSP Test\","
+                    + "\"protocolVersion\":\"1.0.0\"}}");
+            JsonObject initialize = listener.await(
+                    message -> responseId(message, 87));
+            assertEquals(
+                    "1.0.0",
+                    initialize.getAsJsonObject("result")
+                            .get("protocolVersion").getAsString());
         } finally {
             if (socket != null) {
                 try {
