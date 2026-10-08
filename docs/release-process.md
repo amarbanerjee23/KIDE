@@ -24,7 +24,7 @@ timestamp.
 2. **Set versions.**
 
    ```bash
-   mvn org.eclipse.tycho:tycho-versions-plugin:4.0.8:set-version -DnewVersion=1.1.0-SNAPSHOT
+   mvn org.eclipse.tycho:tycho-versions-plugin:5.0.4:set-version -DnewVersion=1.1.0-SNAPSHOT
    ```
 
    This updates every manifest, feature, product and pom together. Check the
