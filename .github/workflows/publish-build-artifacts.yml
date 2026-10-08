@@ -78,7 +78,7 @@ jobs:
         run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 
       - name: Build Eclipse desktop products
-        run: mvn -B -ntp clean verify
+        run: bash scripts/run_maven.sh -B -ntp clean verify
 
       - name: Stage runnable platform bundles
         run: |
