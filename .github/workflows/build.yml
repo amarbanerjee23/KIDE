@@ -92,7 +92,7 @@ jobs:
       - name: Build Eclipse plug-ins and portable products
         run: |
           set +e
-          mvn -B -ntp clean verify
+          bash scripts/run_maven.sh -B -ntp clean verify
           status=$?
           if [ "$status" -ne 0 ]; then
             echo "::group::Tycho/Equinox failure diagnostics"
