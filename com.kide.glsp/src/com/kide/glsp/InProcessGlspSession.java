@@ -130,7 +130,16 @@ final class InProcessGlspSession implements Closeable {
 
         Thread serverWorker = serverThread;
         Thread readerWorker = readerThread;
-        if (serverWorker != null) serverWorker.interrupt();
+
+        /*
+         * Do not interrupt the GLSP server thread here. A client can disconnect
+         * while Guice is still loading DefaultGLSPServer for the first time.
+         * Interrupting that thread during JVM class initialization can abort
+         * Log4j provider discovery and permanently poison DefaultGLSPServer for
+         * the enclosing OSGi test/runtime classloader. Closing the pipes and
+         * executor is sufficient to make the launcher unwind once startup has
+         * completed safely.
+         */
         if (readerWorker != null) readerWorker.interrupt();
 
         executor.shutdownNow();
