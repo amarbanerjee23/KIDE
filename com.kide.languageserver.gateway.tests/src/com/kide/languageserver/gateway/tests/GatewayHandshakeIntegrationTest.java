@@ -30,6 +30,7 @@ import com.kide.enterprise.authorization.ServerAuthorizationGate;
 import com.kide.enterprise.context.EnterpriseContext;
 import com.kide.enterprise.context.EnterpriseContextResult;
 import com.kide.enterprise.context.EnterpriseContextStore;
+import com.kide.enterprise.context.FileHostedProjectRegistry;
 import com.kide.enterprise.identity.AuthenticatedSession;
 import com.kide.enterprise.identity.AuthenticationException;
 import com.kide.enterprise.identity.AuthenticationMethod;
@@ -40,6 +41,7 @@ import com.kide.languageserver.gateway.GatewayAuthenticator;
 import com.kide.languageserver.gateway.GatewayConfig;
 import com.kide.languageserver.gateway.GatewayWorkspaceBinding;
 import com.kide.languageserver.gateway.InMemoryGatewayWorkspaceCatalog;
+import com.kide.languageserver.gateway.RegistryGatewayWorkspaceCatalog;
 import com.kide.languageserver.gateway.SecureLspWebSocketGateway;
 
 public class GatewayHandshakeIntegrationTest {
@@ -127,6 +129,110 @@ public class GatewayHandshakeIntegrationTest {
             assertEquals(BrowserWebSocketCredential.LSP_PROTOCOL, browserSocket.getSubprotocol());
             browserSocket.sendClose(WebSocket.NORMAL_CLOSURE, "browser qualified").join();
         } finally {
+            if (gateway != null) gateway.close();
+            deleteTree(root);
+        }
+    }
+
+    @Test
+    public void discoversRegistryWorkspaceAfterLspGatewayStartup() throws Exception {
+        Path root = Files.createTempDirectory("kide-pr87-lsp-registry-");
+        SecureLspWebSocketGateway gateway = null;
+        WebSocket socket = null;
+        try {
+            Path registryRoot = Files.createDirectories(root.resolve("registry"));
+            Path staging = Files.createDirectory(root.resolve("staging"));
+            Path project = Files.createDirectories(
+                    staging.resolve(FileHostedProjectRegistry.PROJECT_DIR));
+            Path workspace = Files.createDirectories(
+                    staging.resolve(FileHostedProjectRegistry.WORKSPACE_DIR));
+
+            EnterpriseContextResult provisioned = new EnterpriseContextStore().provision(
+                    workspace, project,
+                    "Registry LSP Org", "Registry LSP Portfolio",
+                    "Registry LSP Project", "Registry LSP Workspace");
+            if (!provisioned.isReady()) {
+                throw new AssertionError(provisioned.summary());
+            }
+            EnterpriseContext context = provisioned.context().orElseThrow();
+
+            PrincipalIdentity principal = new PrincipalIdentity(
+                    "selfcheck:registry-lsp-user",
+                    "Registry LSP User",
+                    PrincipalKind.LOCAL_OFFLINE,
+                    AuthenticationMethod.LOCAL_OFFLINE,
+                    "",
+                    "registry-lsp-user",
+                    Map.of("offline", "true"));
+
+            GatewayAuthenticator authenticator = header -> {
+                if (!"Bearer pr87-self-check".equals(header)) {
+                    throw new AuthenticationException("Bearer authentication is invalid");
+                }
+                return new AuthenticatedSession(principal, null, Clock.systemUTC());
+            };
+
+            RegistryGatewayWorkspaceCatalog catalog =
+                    new RegistryGatewayWorkspaceCatalog(
+                            new FileHostedProjectRegistry(registryRoot));
+            assertEquals(0, catalog.bindings().size());
+
+            ServerAuthorizationGate authorization = new ServerAuthorizationGate(
+                    new AuthorizationEnforcer(
+                            new AuthorizationService(
+                                    new InMemoryAuthorizationPolicyStore(List.of(
+                                            RoleBinding.allow(
+                                                    principal.id(),
+                                                    Role.ENGINEER,
+                                                    context.project().id()))))));
+
+            GatewayConfig config = new GatewayConfig(
+                    "127.0.0.1",
+                    0,
+                    Duration.ofSeconds(30),
+                    1024 * 1024,
+                    5000,
+                    4,
+                    false,
+                    false,
+                    Set.of(),
+                    Set.of());
+
+            gateway = new SecureLspWebSocketGateway(
+                    config, authenticator, catalog, authorization, Clock.systemUTC());
+            gateway.start();
+
+            Files.move(
+                    staging,
+                    registryRoot.resolve(context.project().id().uuid().toString()));
+
+            URI endpoint = URI.create(
+                    "ws://127.0.0.1:" + gateway.localPort()
+                    + "/lsp?workspaceId="
+                    + URLEncoder.encode(
+                            context.workspace().id().value(), StandardCharsets.UTF_8));
+
+            String credential =
+                    BrowserWebSocketCredential.encodeBearerProtocol("pr87-self-check");
+            socket = HttpClient.newHttpClient().newWebSocketBuilder()
+                    .connectTimeout(Duration.ofSeconds(8))
+                    .subprotocols(BrowserWebSocketCredential.LSP_PROTOCOL, credential)
+                    .buildAsync(endpoint, new PassiveListener())
+                    .get(10, TimeUnit.SECONDS);
+            assertEquals(
+                    BrowserWebSocketCredential.LSP_PROTOCOL,
+                    socket.getSubprotocol());
+            assertEquals(
+                    context.workspace().id(),
+                    catalog.resolve(context.workspace().id().value())
+                            .orElseThrow().context().workspace().id());
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.sendClose(
+                            WebSocket.NORMAL_CLOSURE, "registry qualified").join();
+                } catch (RuntimeException ignored) { }
+            }
             if (gateway != null) gateway.close();
             deleteTree(root);
         }
