@@ -98,7 +98,7 @@ jobs:
       - name: Build and cryptographically sign Eclipse bundles
         env:
           KIDE_KEYSTORE: ${{ runner.temp }}/kide-release-keystore
-        run: mvn -B -ntp clean verify -Psign
+        run: bash scripts/run_maven.sh -B -ntp clean verify -Psign
 
       - name: Qualify and stage standalone desktop products
         run: |
