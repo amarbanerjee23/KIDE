@@ -4,7 +4,7 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 /**
  * PR89: strictly real, staging-only engineering acceptance.
  * No page.route(), routeWebSocket(), static fixtures substituted for API data,
- * token stubs, or test.skip() are permitted.
+ * token stubs, or skipped acceptance tests are permitted.
  *
  * Every request targets the provided deployed Cloud Run/Firebase services.
  * The test creates a uniquely named, disposable staging tenant and does NOT
