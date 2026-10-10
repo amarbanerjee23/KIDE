@@ -28,6 +28,14 @@ http {
         server_name _;
         client_max_body_size 16m;
 
+        # PR91: security headers on every API, health and gateway response,
+        # including errors (the browser frontend has a separate Cloud Run origin).
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "no-referrer" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+        add_header Cache-Control "no-store" always;
+
         location = /health {
             proxy_set_header X-Forwarded-Proto https;
             proxy_pass http://127.0.0.1:18081/api/v1/health;

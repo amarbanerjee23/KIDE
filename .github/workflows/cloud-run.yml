@@ -76,3 +76,23 @@ jobs:
           test "$ready" -eq 1
           curl --fail --silent http://127.0.0.1:18090/ | grep -q '<div id="root"></div>'
           curl --fail --silent http://127.0.0.1:18090/kide-version.json | grep -q "\"buildId\":\"ci${GITHUB_SHA:0:12}\""
+
+          # Test real nginx headers and ensure no production source maps ship.
+          headers="$(curl --fail --silent --show-error -D - -o /dev/null http://127.0.0.1:18090/ | tr -d '\r')"
+          for required in \
+            "X-Content-Type-Options: nosniff" \
+            "X-Frame-Options: DENY" \
+            "Referrer-Policy: no-referrer" \
+            "Cross-Origin-Opener-Policy: same-origin"; do
+            if ! grep -iqFx "$required" <<< "$headers"; then
+              echo "Web image missing required security header: $required" >&2
+              exit 1
+            fi
+          done
+          version_headers="$(curl --fail --silent --show-error -D - -o /dev/null http://127.0.0.1:18090/kide-version.json | tr -d '\r')"
+          grep -iqFx "Cache-Control: no-cache" <<< "$version_headers"
+          if docker exec "$container_id" sh -c 'find /usr/share/nginx/html -type f -name "*.map" | grep -q .'; then
+            echo "Production Web image unexpectedly contains source map files" >&2
+            exit 1
+          fi
+
