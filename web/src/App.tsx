@@ -563,19 +563,30 @@ export default function App() {
       const list = await client.listProjects();
       setProjects(list.items);
       if (list.items.length === 0) {
-        setNotice("API connected. No authorized server projects are available for this account.");
+        setLspStatus("Awaiting authorized project");
+        setCollaborationStatus("Awaiting authorized project");
+        setNotice(health.projectCreationEnabled
+          ? "API connected. Create a hosted engineering project to enable Xtext, GLSP and collaboration."
+          : "API connected, but your Firebase account has no authorized project. Ask the operator to grant an ENGINEER role to your exact Firebase UID.");
+      } else if (!projectRef.current && list.items.length === 1 &&
+                 !entriesRef.current.some((entry) => entry.source === "archive")) {
+        // A lone authorized project is unambiguous. Opening it also activates
+        // the real Xtext LSP and collaboration services without another click.
+        await openProject(list.items[0]);
       }
     } catch (error) {
       setProjects([]);
       if (error instanceof ApiClientError && error.status === 403) {
         setServiceStatus(`Connected · API ${version.apiVersion} · authorization required`);
+        setLspStatus("Awaiting project authorization");
+        setCollaborationStatus("Awaiting project authorization");
         const principal = firebaseAuth.user
           ? `firebase:${FIREBASE_PROJECT_ID}#${firebaseAuth.user.uid}`
           : "the signed-in Firebase principal";
         const suffix = error.requestId ? ` Request ${error.requestId}.` : "";
         setNotice(
           `API is reachable and compatible, but ${principal} has no KIDE project access. ` +
-          `Grant an explicit ENGINEER or ADMINISTRATOR role binding on the hosted project.${suffix}`
+          `Ask the deployment operator to add your UID to KIDE_FIREBASE_ENGINEER_UIDS for the legacy project, or grant a project-scoped ENGINEER role in registry mode. Then use Reconnect API.${suffix}`
         );
         return;
       }
@@ -3608,6 +3619,8 @@ function problemSeverityGlyph(severity: monaco.MarkerSeverity): string {
 function connectionTone(status: string): string {
   const normalized = status.toLowerCase();
   if (normalized.includes("incompatible")) return "status-error";
+  if (normalized.includes("authorization required") ||
+      normalized.includes("listing failed")) return "status-error";
   if (
     normalized.includes("connected") ||
     normalized.startsWith("up") ||
@@ -3626,6 +3639,9 @@ function connectionTone(status: string): string {
 function connectionSummary(status: string): string {
   const normalized = status.toLowerCase();
   if (normalized.includes("incompatible")) return "Incompatible";
+  if (normalized.includes("authorization required")) return "Unauthorized";
+  if (normalized.includes("listing failed")) return "Degraded";
+  if (normalized.includes("awaiting")) return "Waiting";
   if (normalized.includes("not connected")) return "Offline";
   if (normalized.includes("connecting")) return "Connecting";
   if (normalized.includes("degraded")) return "Degraded";
