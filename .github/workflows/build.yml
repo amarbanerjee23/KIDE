@@ -77,6 +77,9 @@ jobs:
       - name: Verify end-to-end product journey quality contract
         run: python3 scripts/verify_product_journey.py
 
+      - name: Verify real hosted staging acceptance boundary
+        run: python3 scripts/verify_live_acceptance.py
+
       - name: Verify LSP feature parity matrix
         run: python3 scripts/verify_lsp_parity_matrix.py
 
@@ -278,3 +281,7 @@ jobs:
       - name: Qualify browser workspace
         working-directory: web
         run: npm run test:e2e
+
+      - name: Type-check discovery of real hosted acceptance suite (no live credentials)
+        working-directory: web
+        run: npx playwright test --config playwright.live.config.ts --list
