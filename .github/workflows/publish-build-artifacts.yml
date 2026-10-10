@@ -271,13 +271,11 @@ jobs:
           echo "image=${image}" >> "$GITHUB_OUTPUT"
           echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
           echo "immutable_tag=${image}:sha-${SOURCE_SHA}" >> "$GITHUB_OUTPUT"
-          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
-            echo "moving_tag=${image}:main" >> "$GITHUB_OUTPUT"
-          elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            echo "moving_tag=${image}:pr-${{ github.event.pull_request.number }}-latest" >> "$GITHUB_OUTPUT"
-          else
-            echo "moving_tag=${image}:release-latest" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_NAME" != "main" ]]; then
+            echo "::error::Image publishing is restricted to main."
+            exit 2
           fi
+          echo "moving_tag=${image}:main" >> "$GITHUB_OUTPUT"
 
       - name: Build Cloud Run image
         shell: bash
