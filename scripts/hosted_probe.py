@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import ssl
-import statistics
 import sys
 import time
 import urllib.error
@@ -51,6 +50,20 @@ def get_json(url: str, timeout: float) -> tuple[dict, int]:
     return body, elapsed
 
 
+
+def check_web_health(url: str, timeout: float) -> int:
+    """Static Nginx /health returns plain text 'ok', not JSON."""
+    request = urllib.request.Request(url, method="GET")
+    started = time.monotonic()
+    with urllib.request.urlopen(request, timeout=timeout,
+                                context=ssl.create_default_context()) as response:
+        code = response.status
+        body = response.read(17)
+    if code != 200 or body.strip() != b"ok":
+        raise ProbeFailure("static Web health endpoint failed")
+    return int((time.monotonic() - started) * 1000)
+
+
 def check(api_url: str, web_url: str, timeout: float = 10.0,
           maximum_ms: int = 5000) -> dict:
     api, web = origin(api_url), origin(web_url)
@@ -58,7 +71,7 @@ def check(api_url: str, web_url: str, timeout: float = 10.0,
         raise ProbeFailure("Web and API origins must be separate services")
     health, api_ms = get_json(api + "/api/v1/health", timeout)
     version, version_ms = get_json(api + "/api/v1/version", timeout)
-    web_health, web_ms = get_json(web + "/health", timeout)
+    web_ms = check_web_health(web + "/health", timeout)
     frontend, frontend_ms = get_json(web + "/kide-version.json", timeout)
     checks = {
         "backendHealth": api_ms, "backendVersion": version_ms,
