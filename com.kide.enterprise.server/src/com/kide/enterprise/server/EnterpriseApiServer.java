@@ -295,6 +295,10 @@ public final class EnterpriseApiServer implements AutoCloseable {
 
         if (segments.length == 1 && "projects".equals(segments[0])) {
             if ("GET".equals(request.getMethod())) {
+                if (hostedProjects == null) {
+                    // Preserve PR79's explicit legacy authorization error.
+                    authorization.requireApiProjectAccess(session, context);
+                }
                 JsonObject body = new JsonObject();
                 JsonArray items = new JsonArray();
                 java.util.List<HostedApiProjectRuntime> available =
