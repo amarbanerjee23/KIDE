@@ -918,6 +918,32 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                         client, live.resolve("/api/v1/projects/" + hostedProjectId),
                         "GET", "Bearer pr33-reviewer", null);
                 requireStatus(blockedTenant, 403);
+                HttpResponse<String> otherModelRead = send(
+                        client, live.resolve("/api/v1/projects/" + hostedProjectId + "/models"),
+                        "GET", "Bearer pr33-reviewer", null);
+                requireStatus(otherModelRead, 403);
+                HttpResponse<String> reviewerProject = send(
+                        client, live.resolve("/api/v1/projects"), "POST",
+                        "Bearer pr33-reviewer", "{\"displayName\":\"Reviewer's Own Project\"}");
+                requireStatus(reviewerProject, 201);
+                String reviewerProjectId = json(reviewerProject).get("id").getAsString();
+                if (reviewerProjectId.equals(hostedProjectId)) {
+                    throw new AssertionError("different creators were given one project");
+                }
+                HttpResponse<String> reviewerOwnList = send(
+                        client, live.resolve("/api/v1/projects"), "GET",
+                        "Bearer pr33-reviewer", null);
+                requireStatus(reviewerOwnList, 200);
+                if (json(reviewerOwnList).getAsJsonArray("items").size() != 1
+                        || !reviewerProjectId.equals(json(reviewerOwnList)
+                                .getAsJsonArray("items").get(0).getAsJsonObject()
+                                .get("id").getAsString())) {
+                    throw new AssertionError("cross-tenant project listing escaped its owner");
+                }
+                HttpResponse<String> ownerCannotOpenOther = send(
+                        client, live.resolve("/api/v1/projects/" + reviewerProjectId),
+                        "GET", "Bearer pr26-self-check", null);
+                requireStatus(ownerCannotOpenOther, 403);
                 HttpResponse<String> starter = send(
                         client, live.resolve("/api/v1/projects/" + hostedProjectId + "/models"),
                         "POST", "Bearer pr26-self-check", null);
