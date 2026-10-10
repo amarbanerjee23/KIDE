@@ -22,15 +22,16 @@ class HostedProjectRegistryContractTest(unittest.TestCase):
         module = load_module()
         self.assertEqual([], module.verify())
 
-    def test_pr87_keeps_creation_disabled_until_api_is_registry_aware(self):
+    def test_pr88_enables_creation_only_in_registry_mode(self):
         contract = json.loads(
             (ROOT / "product" / "hosted-project-registry.json")
             .read_text(encoding="utf-8")
         )
-        self.assertFalse(contract["project_creation_enabled"])
+        self.assertTrue(contract["project_creation_enabled"])
+        self.assertEqual("registry-only", contract["project_creation_mode"])
         self.assertTrue(contract["legacy_single_project_fallback"])
         self.assertEqual(
-            {"xtext-lsp", "glsp"},
+            {"enterprise-rest", "xtext-lsp", "glsp"},
             set(contract["dynamic_consumers"]),
         )
 
@@ -47,6 +48,10 @@ class HostedProjectRegistryContractTest(unittest.TestCase):
                 "unique-workspace-id",
                 "registry-rescanned-on-workspace-resolution",
                 "role-binding-scope-must-exist-in-registry",
+                "atomic-publish-or-fail-closed",
+                "persistent-creator-role-binding",
+                "tenant-scoped-rest-model-services",
+                "legacy-project-creation-disabled",
             },
             set(contract["requirements"]),
         )
