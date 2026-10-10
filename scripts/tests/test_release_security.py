@@ -55,7 +55,7 @@ class ReleaseSecurityTest(unittest.TestCase):
             ".github/workflows/release.yml",
             lambda s: s.replace("    needs: verify-release-source\n", "", 1)
         )
-        self.assertTrue(any("before source verification" in error for error in errors), errors)
+        self.assertTrue(any("stable release must depend" in error for error in errors), errors)
 
     def test_release_must_not_interpolate_manual_version_inside_shell(self):
         expr = "$" + "{{ github.event.inputs.version }}"
@@ -80,18 +80,36 @@ class ReleaseSecurityTest(unittest.TestCase):
         )
         self.assertTrue(any("X-Frame-Options" in error for error in errors), errors)
 
-    def test_release_clobber_is_rejected(self):
+    def test_unsigned_ci_release_publication_is_rejected(self):
         errors = self.altered(
             ".github/workflows/publish-build-artifacts.yml",
             lambda s: s.replace(
-                "Existing KIDE preview release is immutable",
-                "Existing KIDE preview release is immutable"
-            ).replace(
-                'gh release create "$RELEASE_TAG"',
-                'gh release upload "$RELEASE_TAG" --clobber\n          gh release create "$RELEASE_TAG"'
+                "  publish-cloud-run:",
+                "  publish-desktop:\n    name: Unsigned release preview\n"
+                "    steps:\n      - run: gh release create release-preview --prerelease\n\n"
+                "  publish-cloud-run:",
+                1,
             ),
         )
-        self.assertTrue(any("overwritten" in error for error in errors), errors)
+        self.assertTrue(any("unsigned desktop" in error for error in errors), errors)
+        self.assertTrue(any("outside trusted release" in error for error in errors), errors)
+
+    def test_trusted_publisher_without_retention_is_rejected(self):
+        errors = self.altered(
+            ".github/workflows/release.yml",
+            lambda s: s.replace(
+                "python3 scripts/retain_latest_stable_release.py",
+                "echo skip-release-retention",
+            ),
+        )
+        self.assertTrue(any("trusted stable publisher" in error for error in errors), errors)
+
+    def test_signing_secrets_require_successful_quality_gate(self):
+        errors = self.altered(
+            ".github/workflows/release.yml",
+            lambda s: s.replace("    needs: verify-quality-gates\n", "", 1),
+        )
+        self.assertTrue(any("before quality verification" in error for error in errors), errors)
 
 
 if __name__ == "__main__":
