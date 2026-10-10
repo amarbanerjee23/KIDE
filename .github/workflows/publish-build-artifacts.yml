@@ -33,8 +33,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 env:
   SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -43,6 +42,12 @@ jobs:
   desktop:
     name: Build runnable desktop bundles
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      short_sha: ${{ steps.meta.outputs.short_sha }}
+      release_tag: ${{ steps.meta.outputs.release_tag }}
+      release_title: ${{ steps.meta.outputs.release_title }}
     timeout-minutes: 60
 
     steps:
@@ -145,37 +150,11 @@ jobs:
           retention-days: 30
 
 
-      - name: Publish runnable desktop bundles to GitHub Releases
-        if: (github.event_name == 'push' && github.ref_name != 'main') || github.event_name == 'workflow_dispatch'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
-          RELEASE_TITLE: ${{ steps.meta.outputs.release_title }}
-        run: |
-          set -euo pipefail
-
-          assets=(
-            dist/KIDE-*.zip
-            dist/KIDE-*.tar.gz
-            dist/release-manifest.json
-            dist/SHA256SUMS.txt
-          )
-
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
-          else
-            gh release create "$RELEASE_TAG" "${assets[@]}" \
-              --target "$SOURCE_SHA" \
-              --title "$RELEASE_TITLE" \
-              --prerelease \
-              --notes "Automated runnable KIDE desktop build from commit \`$SOURCE_SHA\`. This is an unsigned CI/pre-release build, not the trusted production release. It contains Windows x86_64, Linux x86_64, macOS Intel, and macOS Apple Silicon bundles plus checksums and the release manifest."
-          fi
-
-          gh release view "$RELEASE_TAG" --json url,tagName,name,isPrerelease
 
   cloud-run:
-    name: Build, qualify and push Cloud Run image
+    name: Build and qualify Cloud Run image (no publication)
+    permissions:
+      contents: read
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -220,6 +199,93 @@ jobs:
         shell: bash
         run: bash scripts/qualify-cloud-run-backend.sh "${{ steps.image.outputs.immutable_tag }}"
 
+  publish-desktop:
+    name: Publish qualified desktop bundles (trusted main manual only)
+    needs: desktop
+    if: github.event_name == 'workflow_dispatch' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download qualified desktop artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: kide-desktop-${{ needs.desktop.outputs.short_sha }}
+          path: dist
+
+      - name: Publish qualified desktop bundles to GitHub Releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.desktop.outputs.release_tag }}
+          RELEASE_TITLE: ${{ needs.desktop.outputs.release_title }}
+        run: |
+          set -euo pipefail
+
+          assets=(
+            dist/KIDE-*.zip
+            dist/KIDE-*.tar.gz
+            dist/release-manifest.json
+            dist/SHA256SUMS.txt
+          )
+
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$RELEASE_TAG" "${assets[@]}" \
+              --target "$SOURCE_SHA" \
+              --title "$RELEASE_TITLE" \
+              --prerelease \
+              --notes "Automated runnable KIDE desktop build from commit \`$SOURCE_SHA\`. This is an unsigned CI/pre-release build, not the trusted production release. It contains Windows x86_64, Linux x86_64, macOS Intel, and macOS Apple Silicon bundles plus checksums and the release manifest."
+          fi
+
+          gh release view "$RELEASE_TAG" --json url,tagName,name,isPrerelease
+
+
+  publish-cloud-run:
+    name: Publish qualified Cloud Run image (trusted main only)
+    needs: cloud-run
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ env.SOURCE_SHA }}
+
+      - name: Resolve image metadata
+        id: image
+        shell: bash
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner}/kide-cloud-run"
+          short_sha="${SOURCE_SHA:0:12}"
+          echo "image=${image}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${short_sha}" >> "$GITHUB_OUTPUT"
+          echo "immutable_tag=${image}:sha-${SOURCE_SHA}" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+            echo "moving_tag=${image}:main" >> "$GITHUB_OUTPUT"
+          elif [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            echo "moving_tag=${image}:pr-${{ github.event.pull_request.number }}-latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "moving_tag=${image}:release-latest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build Cloud Run image
+        shell: bash
+        run: |
+          docker build \
+            --file deploy/gcp/Dockerfile \
+            --build-arg KIDE_BUILD_QUALIFIER="ci${SOURCE_SHA:0:12}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${SOURCE_SHA}" \
+            --tag "${{ steps.image.outputs.immutable_tag }}" \
+            --tag "${{ steps.image.outputs.moving_tag }}" \
+            .
       - name: Authenticate to GitHub Container Registry
         shell: bash
         env:
