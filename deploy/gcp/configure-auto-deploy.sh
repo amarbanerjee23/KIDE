@@ -84,7 +84,7 @@ for service_account in "${RUNTIME_SA}" "${WEB_RUNTIME_SA}"; do
   gcloud iam service-accounts add-iam-policy-binding "${service_account}" --project "${PROJECT_ID}" --member="serviceAccount:${BUILD_SERVICE_ACCOUNT_EMAIL}" --role="roles/iam.serviceAccountUser" >/dev/null
 done
 
-substitutions="_KIDE_RELEASE_ENABLED=true,_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_SERVICE_NAME=${KIDE_SERVICE_NAME},_KIDE_WEB_SERVICE_NAME=${KIDE_WEB_SERVICE_NAME},_KIDE_DATA_BUCKET=${DATA_BUCKET},_KIDE_RUNTIME_SA=${RUNTIME_SA},_KIDE_WEB_RUNTIME_SA=${WEB_RUNTIME_SA},_KIDE_FIREBASE_PROJECT_ID=${KIDE_FIREBASE_PROJECT_ID},_KIDE_FIREBASE_API_KEY=${KIDE_FIREBASE_API_KEY},_KIDE_FIREBASE_ADMIN_UID=${KIDE_FIREBASE_ADMIN_UID},_KIDE_GITHUB_REPOSITORY=${KIDE_GITHUB_REPOSITORY},_KIDE_GITHUB_TOKEN_SECRET=${KIDE_GITHUB_TOKEN_SECRET}"
+substitutions="_KIDE_RELEASE_ENABLED=true,_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_SERVICE_NAME=${KIDE_SERVICE_NAME},_KIDE_WEB_SERVICE_NAME=${KIDE_WEB_SERVICE_NAME},_KIDE_DATA_BUCKET=${DATA_BUCKET},_KIDE_RUNTIME_SA=${RUNTIME_SA},_KIDE_WEB_RUNTIME_SA=${WEB_RUNTIME_SA},_KIDE_FIREBASE_PROJECT_ID=${KIDE_FIREBASE_PROJECT_ID},_KIDE_FIREBASE_API_KEY=${KIDE_FIREBASE_API_KEY},_KIDE_FIREBASE_ADMIN_UID=${KIDE_FIREBASE_ADMIN_UID},_KIDE_FIREBASE_ENGINEER_UIDS=${KIDE_FIREBASE_ENGINEER_UIDS:-},_KIDE_GITHUB_REPOSITORY=${KIDE_GITHUB_REPOSITORY},_KIDE_GITHUB_TOKEN_SECRET=${KIDE_GITHUB_TOKEN_SECRET}"
 
 common=(
   "${TRIGGER_NAME}"
@@ -119,10 +119,12 @@ read_trigger_substitution() {
 configured_firebase_project_id="$(read_trigger_substitution _KIDE_FIREBASE_PROJECT_ID)"
 configured_firebase_api_key="$(read_trigger_substitution _KIDE_FIREBASE_API_KEY)"
 configured_firebase_admin_uid="$(read_trigger_substitution _KIDE_FIREBASE_ADMIN_UID)"
+configured_firebase_engineer_uids="$(read_trigger_substitution _KIDE_FIREBASE_ENGINEER_UIDS)"
 
 if [[ "${configured_firebase_project_id}" != "${KIDE_FIREBASE_PROJECT_ID}" \
    || "${configured_firebase_api_key}" != "${KIDE_FIREBASE_API_KEY}" \
-   || "${configured_firebase_admin_uid}" != "${KIDE_FIREBASE_ADMIN_UID}" ]]; then
+   || "${configured_firebase_admin_uid}" != "${KIDE_FIREBASE_ADMIN_UID}" \
+   || "${configured_firebase_engineer_uids}" != "${KIDE_FIREBASE_ENGINEER_UIDS:-}" ]]; then
   echo "Cloud Build trigger Firebase configuration verification failed." >&2
   echo "Trigger: ${TRIGGER_NAME} (region: ${TRIGGER_REGION})" >&2
   echo "The deployment build will not be started with incomplete Firebase substitutions." >&2
