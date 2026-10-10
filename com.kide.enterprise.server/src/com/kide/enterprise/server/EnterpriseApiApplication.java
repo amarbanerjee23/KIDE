@@ -19,6 +19,9 @@ import com.kide.enterprise.audit.InMemoryAuditLedger;
 import com.kide.enterprise.authorization.AuthorizationEnforcer;
 import com.kide.enterprise.authorization.AuthorizationService;
 import com.kide.enterprise.authorization.InMemoryAuthorizationPolicyStore;
+import com.kide.enterprise.authorization.AuthorizationPolicyStore;
+import com.kide.enterprise.authorization.HostedRegistryAuthorizationPolicyStore;
+import com.kide.enterprise.context.FileHostedProjectRegistry;
 import com.kide.enterprise.authorization.Role;
 import com.kide.enterprise.authorization.RoleBinding;
 import com.kide.enterprise.authorization.ServerAuthorizationGate;
@@ -82,10 +85,15 @@ public final class EnterpriseApiApplication implements IApplication {
 
             List<RoleBinding> bindings = parseBindings(
                     required(env, "KIDE_API_ROLE_BINDINGS"), context);
+            String registryRoot = env.get("KIDE_HOSTED_PROJECTS_ROOT");
+            FileHostedProjectRegistry registry =
+                    registryRoot == null || registryRoot.isBlank() ? null
+                            : new FileHostedProjectRegistry(Path.of(registryRoot.trim()));
+            AuthorizationPolicyStore policies = registry == null
+                    ? new InMemoryAuthorizationPolicyStore(bindings)
+                    : new HostedRegistryAuthorizationPolicyStore(registry, bindings);
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
-                    new AuthorizationEnforcer(
-                            new AuthorizationService(
-                                    new InMemoryAuthorizationPolicyStore(bindings))));
+                    new AuthorizationEnforcer(new AuthorizationService(policies)));
 
             firebaseConfig = new FirebaseIdTokenConfig(
                     required(env, "KIDE_FIREBASE_PROJECT_ID"),
@@ -123,18 +131,20 @@ public final class EnterpriseApiApplication implements IApplication {
                     projectRoot, modelRepository, knowledgeRepository);
             ProjectGenerationService generation = new ProjectGenerationService(
                     projectRoot, modelRepository, knowledgeRepository, synthesis);
-            server = new EnterpriseApiServer(
-                    config,
-                    authenticator::authenticateAuthorizationHeader,
-                    context,
-                    authorization,
-                    modelRepository,
-                    collaboration,
-                    knowledge,
-                    synthesis,
-                    generation,
-                    new InMemoryAuditLedger(Clock.systemUTC()),
-                    Clock.systemUTC());
+            InMemoryAuditLedger audit = new InMemoryAuditLedger(Clock.systemUTC());
+            if (registry == null) {
+                server = new EnterpriseApiServer(
+                        config, authenticator::authenticateAuthorizationHeader,
+                        context, authorization, modelRepository, collaboration,
+                        knowledge, synthesis, generation, audit, Clock.systemUTC());
+            } else {
+                HostedApiProjectCatalog projects =
+                        new HostedApiProjectCatalog(registry, authorization, Clock.systemUTC());
+                server = new EnterpriseApiServer(
+                        config, authenticator::authenticateAuthorizationHeader,
+                        context, authorization, modelRepository, collaboration,
+                        knowledge, synthesis, generation, audit, Clock.systemUTC(), projects);
+            }
             server.start();
             System.out.println("KIDE ENTERPRISE API READY port=" + server.localPort());
             server.join();
