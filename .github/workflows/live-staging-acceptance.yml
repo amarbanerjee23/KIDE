@@ -1,0 +1,87 @@
+name: Live Staging Engineering Acceptance
+
+# Explicit operator action only. Pull requests never receive live credentials
+# and never write to a hosted staging registry by accident.
+on:
+  workflow_dispatch:
+    inputs:
+      staging_web_url:
+        description: "Deployed staging Web HTTPS origin (not production)"
+        required: true
+        type: string
+      staging_api_origin:
+        description: "Deployed staging backend HTTPS origin (not production)"
+        required: true
+        type: string
+      approved_web_hostname:
+        description: "Expected staging Web hostname (independent approval)"
+        required: true
+        type: string
+      approved_api_hostname:
+        description: "Expected staging API hostname (independent approval)"
+        required: true
+        type: string
+      writes_approved:
+        description: "Enter staging-only to authorize creation of disposable staging data"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-staging-acceptance
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    name: Real Firebase / REST / Xtext / GLSP / generation staging acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Configure a protected GitHub staging environment with required reviewers.
+    # These environment-scoped secrets must NEVER be production credentials.
+    environment: staging
+    env:
+      KIDE_LIVE_WEB_URL: ${{ inputs.staging_web_url }}
+      KIDE_LIVE_API_ORIGIN: ${{ inputs.staging_api_origin }}
+      KIDE_LIVE_APPROVED_WEB_HOST: ${{ inputs.approved_web_hostname }}
+      KIDE_LIVE_APPROVED_API_HOST: ${{ inputs.approved_api_hostname }}
+      KIDE_LIVE_ALLOW_WRITES: ${{ inputs.writes_approved }}
+      KIDE_LIVE_FIREBASE_API_KEY: ${{ secrets.KIDE_STAGING_FIREBASE_API_KEY }}
+      KIDE_LIVE_ENGINEER_EMAIL: ${{ secrets.KIDE_STAGING_ENGINEER_EMAIL }}
+      KIDE_LIVE_ENGINEER_PASSWORD: ${{ secrets.KIDE_STAGING_ENGINEER_PASSWORD }}
+      KIDE_LIVE_OTHER_ENGINEER_EMAIL: ${{ secrets.KIDE_STAGING_OTHER_ENGINEER_EMAIL }}
+      KIDE_LIVE_OTHER_ENGINEER_PASSWORD: ${{ secrets.KIDE_STAGING_OTHER_ENGINEER_PASSWORD }}
+    steps:
+      - name: Fail closed unless approved staging is explicitly selected
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$KIDE_LIVE_ALLOW_WRITES" = "staging-only"
+          test -n "$KIDE_LIVE_FIREBASE_API_KEY"
+          test -n "$KIDE_LIVE_ENGINEER_EMAIL"
+          test -n "$KIDE_LIVE_ENGINEER_PASSWORD"
+          test -n "$KIDE_LIVE_OTHER_ENGINEER_EMAIL"
+          test -n "$KIDE_LIVE_OTHER_ENGINEER_PASSWORD"
+          # No credential contents are ever logged.
+          echo "Staging approval and secret presence verified."
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+
+      - name: Install exact Web dependencies
+        working-directory: web
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: Run unmocked hosted engineering acceptance
+        working-directory: web
+        # Disable tracing/screenshots/videos: Firebase sessions are live secrets.
+        run: npm run test:live
