@@ -111,7 +111,7 @@ def verify() -> list[str]:
     for marker in (
         "hostedProjects.create(",
         "hostedProjects.resolve(",
-        "hostedProjects.list()",
+        "hostedProjects.list(session)",
         "requireApiProjectAccess(session, project.context())",
     ):
         if marker not in api:
