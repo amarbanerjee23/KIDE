@@ -20,6 +20,7 @@ export interface ApiErrorEnvelope {
 export interface Health {
   status: string;
   version: string;
+  projectCreationEnabled?: boolean;
   dependencies?: Record<string, unknown>;
 }
 
