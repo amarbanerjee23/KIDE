@@ -4,17 +4,23 @@
   "slot_layout": "<project-uuid>/{project,workspace}",
   "max_projects": 512,
   "dynamic_consumers": [
+    "enterprise-rest",
     "xtext-lsp",
     "glsp"
   ],
   "legacy_single_project_fallback": true,
-  "project_creation_enabled": false,
+  "project_creation_enabled": true,
   "requirements": [
     "no-symbolic-link-registry-entries",
     "slot-name-matches-project-uuid",
     "unique-project-id",
     "unique-workspace-id",
     "registry-rescanned-on-workspace-resolution",
-    "role-binding-scope-must-exist-in-registry"
-  ]
+    "role-binding-scope-must-exist-in-registry",
+    "atomic-publish-or-fail-closed",
+    "persistent-creator-role-binding",
+    "tenant-scoped-rest-model-services",
+    "legacy-project-creation-disabled"
+  ],
+  "project_creation_mode": "registry-only"
 }
