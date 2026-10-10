@@ -1,0 +1,39 @@
+name: Hosted Runtime Health Watch
+
+# Anonymous health/version metadata only. Not an SLA or paging system.
+on:
+  schedule:
+    - cron: "13,43 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hosted-runtime-health-watch
+  cancel-in-progress: false
+
+jobs:
+  public-health:
+    name: Web/API health and build coherence
+    if: ${{ vars.KIDE_MONITOR_API_ORIGIN != '' && vars.KIDE_MONITOR_WEB_ORIGIN != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      KIDE_MONITOR_API_ORIGIN: ${{ vars.KIDE_MONITOR_API_ORIGIN }}
+      KIDE_MONITOR_WEB_ORIGIN: ${{ vars.KIDE_MONITOR_WEB_ORIGIN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Probe hosted runtime
+        run: |
+          python3 scripts/hosted_probe.py \
+            --api "$KIDE_MONITOR_API_ORIGIN" \
+            --web "$KIDE_MONITOR_WEB_ORIGIN" \
+            --max-latency-ms 5000
+
+      - name: Record operator warning
+        if: failure()
+        run: |
+          echo 'Hosted runtime read-only probe failed. Review service logs and status.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'No automated failover or rollback is performed by this workflow.' >> "$GITHUB_STEP_SUMMARY"
