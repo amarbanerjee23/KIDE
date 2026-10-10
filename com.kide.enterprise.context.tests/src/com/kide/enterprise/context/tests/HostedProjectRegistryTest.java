@@ -137,7 +137,7 @@ public class HostedProjectRegistryTest {
             assertThrows(IllegalArgumentException.class,
                     () -> registry.createProject("", owner));
             assertThrows(IllegalArgumentException.class,
-                    () -> registry.createProject("Invalid", "bad\\nowner"));
+                    () -> registry.createProject("Invalid", "bad" + (char) 10 + "owner"));
             assertEquals(1, registry.list().size());
         } finally {
             deleteTree(root);
