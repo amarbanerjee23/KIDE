@@ -23,7 +23,7 @@ public final class GatewayWorkspaceRuntime {
             List<EnterpriseContext> contexts) {
         this.catalog = catalog;
         this.contexts = List.copyOf(contexts);
-        if (this.contexts.isEmpty()) {
+        if (this.contexts.isEmpty() && !(catalog instanceof RegistryGatewayWorkspaceCatalog)) {
             throw new IllegalArgumentException(
                     "At least one hosted enterprise context is required");
         }

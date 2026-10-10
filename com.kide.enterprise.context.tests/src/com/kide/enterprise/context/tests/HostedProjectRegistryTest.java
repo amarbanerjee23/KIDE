@@ -19,6 +19,7 @@ import com.kide.enterprise.context.EnterpriseContextResult;
 import com.kide.enterprise.context.EnterpriseContextStore;
 import com.kide.enterprise.context.FileHostedProjectRegistry;
 import com.kide.enterprise.context.HostedProjectRegistration;
+import com.kide.enterprise.context.HostedProjectOwnership;
 
 public class HostedProjectRegistryTest {
     @Test
@@ -114,6 +115,32 @@ public class HostedProjectRegistryTest {
         } finally {
             deleteTree(root);
             deleteTree(outside);
+        }
+    }
+
+    @Test
+    public void provisionsOwnedProjectWithStableIdentityAndAtomicPublish() throws Exception {
+        Path root = Files.createTempDirectory("kide-pr88-provision-");
+        try {
+            FileHostedProjectRegistry registry = new FileHostedProjectRegistry(root);
+            String owner = "firebase:example#engineer-1";
+            HostedProjectRegistration created =
+                    registry.createProject("Control Engineering", owner);
+            assertEquals(1, registry.list().size());
+            assertEquals("Control Engineering", created.context().project().displayName());
+            assertEquals(owner, HostedProjectOwnership.principalId(created));
+            assertEquals(created.context().project().id(),
+                    new FileHostedProjectRegistry(root)
+                            .resolveWorkspace(created.context().workspace().id().value())
+                            .orElseThrow().context().project().id());
+            // A malformed creator or name cannot produce a discoverable slot.
+            assertThrows(IllegalArgumentException.class,
+                    () -> registry.createProject("", owner));
+            assertThrows(IllegalArgumentException.class,
+                    () -> registry.createProject("Invalid", "bad" + (char) 10 + "owner"));
+            assertEquals(1, registry.list().size());
+        } finally {
+            deleteTree(root);
         }
     }
 

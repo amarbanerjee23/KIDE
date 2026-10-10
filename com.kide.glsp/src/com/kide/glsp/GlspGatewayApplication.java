@@ -15,6 +15,10 @@ import org.eclipse.equinox.app.IApplicationContext;
 import com.kide.enterprise.authorization.AuthorizationEnforcer;
 import com.kide.enterprise.authorization.AuthorizationService;
 import com.kide.enterprise.authorization.InMemoryAuthorizationPolicyStore;
+import com.kide.enterprise.authorization.AuthorizationPolicyStore;
+import com.kide.enterprise.authorization.HostedRegistryAuthorizationPolicyStore;
+import com.kide.enterprise.context.FileHostedProjectRegistry;
+import java.nio.file.Path;
 import com.kide.enterprise.authorization.RoleBinding;
 import com.kide.enterprise.authorization.ServerAuthorizationGate;
 import com.kide.languageserver.gateway.GatewayAuthenticator;
@@ -71,14 +75,20 @@ public final class GlspGatewayApplication implements IApplication {
                             "KIDE_GLSP_PROJECT_ROOT");
             GatewayWorkspaceCatalog catalog = workspaceRuntime.catalog();
 
-            List<RoleBinding> bindings = GatewayRoleBindings.parse(
-                    required(env, "KIDE_GLSP_ROLE_BINDINGS"),
-                    workspaceRuntime.contexts(),
-                    "KIDE_GLSP_ROLE_BINDINGS");
+            // An empty registry has no configured tenants at first boot.
+            // Only persisted creator grants can authorize a newly created project.
+            List<RoleBinding> bindings =
+                    !env.getOrDefault(GatewayWorkspaceRuntime.HOSTED_PROJECTS_ROOT, "").isBlank()
+                            && env.getOrDefault("KIDE_GLSP_ROLE_BINDINGS", "").isBlank()
+                            ? List.of()
+                            : GatewayRoleBindings.parse(
+                                    required(env, "KIDE_GLSP_ROLE_BINDINGS"),
+                                    workspaceRuntime.contexts(),
+                                    "KIDE_GLSP_ROLE_BINDINGS");
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
                     new AuthorizationEnforcer(
                             new AuthorizationService(
-                                    new InMemoryAuthorizationPolicyStore(bindings))));
+                                    authorizationPolicy(env, bindings))));
 
             firebaseConfig = new FirebaseIdTokenConfig(
                     required(env, "KIDE_FIREBASE_PROJECT_ID"),
@@ -134,6 +144,16 @@ public final class GlspGatewayApplication implements IApplication {
             }
         }
         closeConfig();
+    }
+
+    private static AuthorizationPolicyStore authorizationPolicy(
+            Map<String, String> env, List<RoleBinding> configured) {
+        String root = env.get(GatewayWorkspaceRuntime.HOSTED_PROJECTS_ROOT);
+        if (root == null || root.isBlank()) {
+            return new InMemoryAuthorizationPolicyStore(configured);
+        }
+        return new HostedRegistryAuthorizationPolicyStore(
+                new FileHostedProjectRegistry(Path.of(root.trim())), configured);
     }
 
     private static String required(Map<String, String> env, String key) {

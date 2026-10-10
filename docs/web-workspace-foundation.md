@@ -42,6 +42,7 @@ project files, URLs or logs.
 The browser can:
 
 - connect to the enterprise HTTP runtime and list/open authorized projects;
+- create an independent authorized hosted project in opt-in registry mode (PR88);
 - discover canonical project models through the revision-safe repository index;
 - automatically open a production DSL and expose Monaco/Xtext editor actions;
 - create the six canonical starter DSL models in an empty hosted project;
@@ -126,10 +127,13 @@ its stable workspace ID. From that point the promoted files are ordinary remote
 project entries: Monaco/Xtext, GLSP, collaboration, synthesis, reconfiguration
 and generation use the same shared Java services as every other hosted project.
 
-PR84 does not make `POST /api/v1/projects` a multi-project provisioning API.
-The current runtime still exposes the configured enterprise project. Persistent
-creation/registration of additional hosted project identities and dynamic LSP/
-GLSP workspace catalogs is a separate infrastructure change.
+PR88 enables `POST /api/v1/projects` only when REST/LSP/GLSP use the shared
+persistent `KIDE_HOSTED_PROJECTS_ROOT` registry. Each project is published in
+one atomic rename with a persisted owner grant and separate model/knowledge/
+collaboration services. The existing single-context Cloud Run deployment does
+not implicitly enable creation or migrate its legacy project. See
+`docs/hosted-project-registry.md` for atomic-storage limitations and staging
+requirements.
 
 ## Qualification
 

@@ -26,6 +26,28 @@ describe("KideApiClient", () => {
     await expect(client.listProjects()).resolves.toEqual({ items: [] });
   });
 
+  it("creates a hosted project through generated OpenAPI with authenticated JSON", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(input)).toBe("https://kide.example/api/v1/projects");
+      expect(init?.method).toBe("POST");
+      expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer token-value");
+      expect(JSON.parse(String(init?.body))).toEqual({ displayName: "Engineering One" });
+      return new Response(JSON.stringify({
+        id: "kide:project:11111111-1111-4111-8111-111111111111",
+        displayName: "Engineering One",
+        revision: "1",
+        workspaceId: "kide:workspace:22222222-2222-4222-8222-222222222222"
+      }), {
+        status: 201,
+        headers: { "Content-Type": "application/json" }
+      });
+    }));
+    const client = new KideApiClient("https://kide.example", () => "token-value");
+    await expect(client.createProject("Engineering One")).resolves.toMatchObject({
+      displayName: "Engineering One"
+    });
+  });
+
   it("retrieves runtime compatibility without bearer authentication", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       expect(String(input)).toBe("https://kide.example/api/v1/version");

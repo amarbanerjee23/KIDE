@@ -84,6 +84,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
     private final Gson gson = new GsonBuilder().disableHtmlEscaping().create();
     private final Server server;
     private final ServerConnector connector;
+    private HostedApiProjectCatalog hostedProjects;
 
     public EnterpriseApiServer(
             EnterpriseApiConfig config,
@@ -116,6 +117,30 @@ public final class EnterpriseApiServer implements AutoCloseable {
         connector.setIdleTimeout(config.idleTimeout().toMillis());
         server.addConnector(connector);
         server.setHandler(new ApiHandler());
+    }
+
+    public EnterpriseApiServer(
+            EnterpriseApiConfig config,
+            Function<String, AuthenticatedSession> authenticator,
+            EnterpriseContext context,
+            ServerAuthorizationGate authorization,
+            ModelRepository models,
+            ProjectCollaborationService collaboration,
+            ProjectKnowledgeService knowledge,
+            ProjectSynthesisService synthesis,
+            ProjectGenerationService generation,
+            AuditLedger audit,
+            Clock clock,
+            HostedApiProjectCatalog hostedProjects) {
+        this(config, authenticator, context, authorization, models,
+                collaboration, knowledge, synthesis, generation, audit, clock);
+        this.hostedProjects = Objects.requireNonNull(hostedProjects, "hostedProjects");
+    }
+
+    private HostedApiProjectRuntime legacyRuntime() {
+        return new HostedApiProjectRuntime(
+                context, authorization, models, collaboration,
+                knowledge, synthesis, generation);
     }
 
     public void start() throws Exception { server.start(); }
@@ -175,6 +200,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
                     JsonObject health = new JsonObject();
                     health.addProperty("status", "UP");
                     health.addProperty("version", ApiVersion.V1.token());
+                    health.addProperty("projectCreationEnabled", hostedProjects != null);
                     JsonObject dependencies = new JsonObject();
                     dependencies.addProperty("modelRepository", "AVAILABLE");
                     dependencies.addProperty("knowledgeRepository", "AVAILABLE");
@@ -209,6 +235,14 @@ public final class EnterpriseApiServer implements AutoCloseable {
             } catch (AccessDeniedException e) {
                 writeError(response, callback, requestId, 403, ApiErrorCode.FORBIDDEN,
                         "The requested operation is not permitted.");
+                return true;
+            } catch (HostedApiProjectCatalog.QuotaExceededException e) {
+                writeError(response, callback, requestId, 429, ApiErrorCode.RATE_LIMITED,
+                        "Hosted project quota has been reached.");
+                return true;
+            } catch (HostedApiProjectCatalog.ProvisioningUnavailableException e) {
+                writeError(response, callback, requestId, 503, ApiErrorCode.SERVICE_UNAVAILABLE,
+                        "Hosted project provisioning storage is unavailable.");
                 return true;
             } catch (ProjectArchiveImportConflictException e) {
                 writeError(response, callback, requestId, 409, ApiErrorCode.CONFLICT,
@@ -260,20 +294,45 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 .toArray(String[]::new);
 
         if (segments.length == 1 && "projects".equals(segments[0])) {
-            authorization.requireApiProjectAccess(session, context);
             if ("GET".equals(request.getMethod())) {
+                if (hostedProjects == null) {
+                    // Preserve PR79's explicit legacy authorization error.
+                    authorization.requireApiProjectAccess(session, context);
+                }
                 JsonObject body = new JsonObject();
-                com.google.gson.JsonArray items = new com.google.gson.JsonArray();
-                items.add(projectJson());
+                JsonArray items = new JsonArray();
+                java.util.List<HostedApiProjectRuntime> available =
+                        hostedProjects == null
+                                ? java.util.List.of(legacyRuntime()) : hostedProjects.list(session);
+                for (HostedApiProjectRuntime project : available) {
+                    try {
+                        project.authorization().requireApiProjectAccess(session, project.context());
+                    } catch (AccessDeniedException denied) {
+                        continue; // Never disclose other customers' project identities.
+                    }
+                    items.add(projectJson(project));
+                    audit(project, session, requestId, "project.list", "project",
+                            project.context().project().id().value(),
+                            AuditOutcome.SUCCESS, "context-v1");
+                }
                 body.add("items", items);
-                audit(session, requestId, "project.list", "project",
-                        context.project().id().value(), AuditOutcome.SUCCESS, "context-v1");
                 writeJson(response, callback, 200, body);
                 return true;
             }
             if ("POST".equals(request.getMethod())) {
-                unavailable(response, callback, requestId,
-                        "Project creation is not enabled in this runtime phase.");
+                if (hostedProjects == null) {
+                    unavailable(response, callback, requestId,
+                            "Project creation is not enabled in this runtime phase.");
+                    return true;
+                }
+                JsonObject input = readJsonObject(request);
+                HostedApiProjectRuntime created = hostedProjects.create(
+                        session, requiredString(input, "displayName"));
+                created.authorization().requireApiProjectAccess(session, created.context());
+                audit(created, session, requestId, "project.create", "project",
+                        created.context().project().id().value(),
+                        AuditOutcome.SUCCESS, "context-v1");
+                writeJson(response, callback, 201, projectJson(created));
                 return true;
             }
             methodNotAllowed(response, callback, requestId);
@@ -281,31 +340,35 @@ public final class EnterpriseApiServer implements AutoCloseable {
         }
 
         if (segments.length >= 2 && "projects".equals(segments[0])) {
-            requireProject(segments[1]);
-            authorization.requireApiProjectAccess(session, context);
+            HostedApiProjectRuntime p = hostedProjects == null
+                    ? legacyRuntime()
+                    : hostedProjects.resolve(segments[1], session)
+                            .orElseThrow(ResourceNotFoundException::new);
+            requireProject(p, segments[1]);
+            p.authorization().requireApiProjectAccess(session, p.context());
 
             if (segments.length == 2) {
                 if (!"GET".equals(request.getMethod())) {
                     methodNotAllowed(response, callback, requestId);
                     return true;
                 }
-                audit(session, requestId, "project.read", "project", segments[1],
+                audit(p, session, requestId, "project.read", "project", segments[1],
                         AuditOutcome.SUCCESS, "context-v1");
-                writeJson(response, callback, 200, projectJson());
+                writeJson(response, callback, 200, projectJson(p));
                 return true;
             }
 
             if (segments.length == 4
                     && "imports".equals(segments[2])
                     && "archive".equals(segments[3])) {
-                authorization.requireModelWrite(session, context);
+                p.authorization().requireModelWrite(session, p.context());
                 if (!"POST".equals(request.getMethod())) {
                     methodNotAllowed(response, callback, requestId);
                     return true;
                 }
                 JsonObject input = readJsonObject(request);
-                JsonObject body = importProjectArchive(input);
-                audit(session, requestId, "project.archive.promote", "project", segments[1],
+                JsonObject body = importProjectArchive(p, input);
+                audit(p, session, requestId, "project.archive.promote", "project", segments[1],
                         AuditOutcome.SUCCESS,
                         Integer.toString(body.get("importedCount").getAsInt()));
                 writeJson(response, callback, 201, body);
@@ -314,17 +377,17 @@ public final class EnterpriseApiServer implements AutoCloseable {
 
             if (segments.length == 3 && "models".equals(segments[2])) {
                 if ("GET".equals(request.getMethod())) {
-                    authorization.requireModelRead(session, context);
-                    JsonObject body = modelListJson();
-                    audit(session, requestId, "model.list", "project", segments[1],
+                    p.authorization().requireModelRead(session, p.context());
+                    JsonObject body = modelListJson(p);
+                    audit(p, session, requestId, "model.list", "project", segments[1],
                             AuditOutcome.SUCCESS,
                             Integer.toString(body.getAsJsonArray("items").size()));
                     writeJson(response, callback, 200, body);
                 } else if ("POST".equals(request.getMethod())) {
-                    authorization.requireModelWrite(session, context);
-                    createStarterModels();
-                    JsonObject body = modelListJson();
-                    audit(session, requestId, "model.starter.create", "project", segments[1],
+                    p.authorization().requireModelWrite(session, p.context());
+                    createStarterModels(p);
+                    JsonObject body = modelListJson(p);
+                    audit(p, session, requestId, "model.starter.create", "project", segments[1],
                             AuditOutcome.SUCCESS,
                             Integer.toString(body.getAsJsonArray("items").size()));
                     writeJson(response, callback, 201, body);
@@ -339,30 +402,30 @@ public final class EnterpriseApiServer implements AutoCloseable {
                         "/", java.util.Arrays.copyOfRange(segments, 3, segments.length)));
                 ModelPath modelPath = new ModelPath(modelId);
                 if ("GET".equals(request.getMethod())) {
-                    authorization.requireModelRead(session, context);
-                    ModelSnapshot snapshot = models.read(modelPath).orElse(null);
+                    p.authorization().requireModelRead(session, p.context());
+                    ModelSnapshot snapshot = p.models().read(modelPath).orElse(null);
                     if (snapshot == null) {
                         writeError(response, callback, requestId, 404, ApiErrorCode.NOT_FOUND,
                                 "The requested model was not found.");
                         return true;
                     }
-                    audit(session, requestId, "model.read", "model", modelId,
+                    audit(p, session, requestId, "model.read", "model", modelId,
                             AuditOutcome.SUCCESS, Long.toString(snapshot.revision().version()));
                     writeJson(response, callback, 200, modelJson(snapshot, modelMediaType(modelId)));
                     return true;
                 }
                 if ("PUT".equals(request.getMethod())) {
-                    authorization.requireModelWrite(session, context);
+                    p.authorization().requireModelWrite(session, p.context());
                     JsonObject input = readJsonObject(request);
                     String content = requiredString(input, "content");
                     String expected = requiredString(input, "expectedRevision");
                     String mediaType = optionalString(input, "mediaType", "text/plain");
-                    try (ModelTransaction tx = models.beginTransaction()) {
+                    try (ModelTransaction tx = p.models().beginTransaction()) {
                         tx.write(modelPath, content.getBytes(StandardCharsets.UTF_8), expected);
                         tx.commit();
                     }
-                    ModelSnapshot snapshot = models.read(modelPath).orElseThrow();
-                    audit(session, requestId, "model.write", "model", modelId,
+                    ModelSnapshot snapshot = p.models().read(modelPath).orElseThrow();
+                    audit(p, session, requestId, "model.write", "model", modelId,
                             AuditOutcome.SUCCESS, Long.toString(snapshot.revision().version()));
                     writeJson(response, callback, 200, modelJson(snapshot, mediaType));
                     return true;
@@ -375,31 +438,31 @@ public final class EnterpriseApiServer implements AutoCloseable {
                     && "collaboration".equals(segments[2])
                     && "sessions".equals(segments[3])) {
                 return handlePresence(
-                        request, response, callback, requestId, session, segments);
+                        p, request, response, callback, requestId, session, segments);
             }
 
             if (segments.length >= 4
                     && "reviews".equals(segments[2])
                     && "changesets".equals(segments[3])) {
                 return handleReviews(
-                        request, response, callback, requestId, session, segments);
+                        p, request, response, callback, requestId, session, segments);
             }
 
             if (segments.length >= 4 && "knowledge".equals(segments[2])) {
                 return handleKnowledge(
-                        request, response, callback, requestId, session, segments);
+                        p, request, response, callback, requestId, session, segments);
             }
 
             if (segments.length == 3 && "synthesis".equals(segments[2])) {
-                authorization.requireModelSynthesis(session, context);
+                p.authorization().requireModelSynthesis(session, p.context());
                 if (!"POST".equals(request.getMethod())) {
                     methodNotAllowed(response, callback, requestId);
                 } else {
                     JsonObject input = readJsonObject(request);
                     String modelId = requiredString(input, "modelId");
                     String modelRevision = requiredString(input, "modelRevision");
-                    var result = synthesis.synthesize(modelId, modelRevision);
-                    audit(session, requestId, "synthesis.run", "model", modelId,
+                    var result = p.synthesis().synthesize(modelId, modelRevision);
+                    audit(p, session, requestId, "p.synthesis().run", "model", modelId,
                             AuditOutcome.SUCCESS, result.revision());
                     writeJson(response, callback, 200,
                             gson.toJsonTree(result).getAsJsonObject());
@@ -408,7 +471,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
             }
 
             if (segments.length == 3 && "reconfiguration".equals(segments[2])) {
-                authorization.requireModelSynthesis(session, context);
+                p.authorization().requireModelSynthesis(session, p.context());
                 if (!"POST".equals(request.getMethod())) {
                     methodNotAllowed(response, callback, requestId);
                 } else {
@@ -432,9 +495,9 @@ public final class EnterpriseApiServer implements AutoCloseable {
                                 requiredString(binding, "requirementId"),
                                 requiredString(binding, "resourceId")));
                     }
-                    var result = synthesis.reconfigure(
+                    var result = p.synthesis().reconfigure(
                             modelId, modelRevision, cause, bindings);
-                    audit(session, requestId, "reconfiguration.run", "model", modelId,
+                    audit(p, session, requestId, "reconfiguration.run", "model", modelId,
                             AuditOutcome.SUCCESS, result.revision());
                     writeJson(response, callback, 200,
                             gson.toJsonTree(result).getAsJsonObject());
@@ -443,7 +506,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
             }
 
             if (segments.length == 3 && "generation".equals(segments[2])) {
-                authorization.requireModelSynthesis(session, context);
+                p.authorization().requireModelSynthesis(session, p.context());
                 if (!"POST".equals(request.getMethod())) {
                     methodNotAllowed(response, callback, requestId);
                 } else {
@@ -454,13 +517,13 @@ public final class EnterpriseApiServer implements AutoCloseable {
                     String krlRevision = requiredString(input, "krlRevision");
                     String synthesisFingerprint =
                             requiredString(input, "synthesisFingerprint");
-                    var result = generation.generate(
+                    var result = p.generation().generate(
                             sourceModelId,
                             sourceRevision,
                             krlModelId,
                             krlRevision,
                             synthesisFingerprint);
-                    audit(session, requestId, "generation.run", "model", sourceModelId,
+                    audit(p, session, requestId, "p.generation().run", "model", sourceModelId,
                             AuditOutcome.SUCCESS, result.fingerprint());
                     writeJson(response, callback, 200,
                             gson.toJsonTree(result).getAsJsonObject());
@@ -469,7 +532,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
             }
 
             if (segments.length == 3 && "evidence".equals(segments[2])) {
-                authorization.requireEvidenceRead(session, context);
+                p.authorization().requireEvidenceRead(session, p.context());
                 if (!"GET".equals(request.getMethod())) {
                     methodNotAllowed(response, callback, requestId);
                 } else {
@@ -486,13 +549,14 @@ public final class EnterpriseApiServer implements AutoCloseable {
     }
 
     private boolean handleKnowledge(
+            HostedApiProjectRuntime p,
             Request request,
             Response response,
             Callback callback,
             UUID requestId,
             AuthenticatedSession session,
             String[] segments) {
-        authorization.requireKnowledgeRead(session, context);
+        p.authorization().requireKnowledgeRead(session, p.context());
 
         if (segments.length == 4 && "query".equals(segments[3])) {
             if (!"POST".equals(request.getMethod())) {
@@ -507,7 +571,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
             }
             String type = optionalString(input, "typeIri", "");
             int limit = optionalInteger(input, "limit", 100);
-            var result = knowledge.query(
+            var result = p.knowledge().query(
                     optionalString(input, "query", ""), type, limit);
             writeJson(response, callback, 200,
                     gson.toJsonTree(result).getAsJsonObject());
@@ -517,21 +581,21 @@ public final class EnterpriseApiServer implements AutoCloseable {
         if (segments.length == 4 && "traces".equals(segments[3])) {
             if ("GET".equals(request.getMethod())) {
                 writeJson(response, callback, 200,
-                        gson.toJsonTree(knowledge.traces()).getAsJsonObject());
+                        gson.toJsonTree(p.knowledge().traces()).getAsJsonObject());
                 return true;
             }
             if ("POST".equals(request.getMethod())) {
-                authorization.requireKnowledgeTraceWrite(session, context);
+                p.authorization().requireKnowledgeTraceWrite(session, p.context());
                 JsonObject input = readJsonObject(request);
-                var result = knowledge.createTrace(
+                var result = p.knowledge().createTrace(
                         requiredString(input, "knowledgeIri"),
                         requiredString(input, "modelId"),
                         optionalString(input, "semanticId", ""),
                         requiredString(input, "relation"),
                         session.principal().id(),
                         requiredString(input, "expectedTraceEtag"));
-                audit(session, requestId, "knowledge.trace.create", "knowledge-traces",
-                        context.project().id().value(), AuditOutcome.SUCCESS,
+                audit(p, session, requestId, "p.knowledge().trace.create", "knowledge-traces",
+                        p.context().project().id().value(), AuditOutcome.SUCCESS,
                         Long.toString(result.revision()));
                 writeJson(response, callback, 200,
                         gson.toJsonTree(result).getAsJsonObject());
@@ -542,17 +606,17 @@ public final class EnterpriseApiServer implements AutoCloseable {
         }
 
         if (segments.length == 5 && "traces".equals(segments[3])) {
-            authorization.requireKnowledgeTraceWrite(session, context);
+            p.authorization().requireKnowledgeTraceWrite(session, p.context());
             String traceId = segments[4];
             if ("PUT".equals(request.getMethod())) {
                 JsonObject input = readJsonObject(request);
-                var result = knowledge.rebindTrace(
+                var result = p.knowledge().rebindTrace(
                         traceId,
                         requiredString(input, "modelId"),
                         optionalString(input, "semanticId", ""),
                         session.principal().id(),
                         requiredString(input, "expectedTraceEtag"));
-                audit(session, requestId, "knowledge.trace.rebind", "knowledge-trace",
+                audit(p, session, requestId, "p.knowledge().trace.rebind", "knowledge-trace",
                         traceId, AuditOutcome.SUCCESS, Long.toString(result.revision()));
                 writeJson(response, callback, 200,
                         gson.toJsonTree(result).getAsJsonObject());
@@ -560,9 +624,9 @@ public final class EnterpriseApiServer implements AutoCloseable {
             }
             if ("DELETE".equals(request.getMethod())) {
                 JsonObject input = readJsonObject(request);
-                var result = knowledge.deleteTrace(
+                var result = p.knowledge().deleteTrace(
                         traceId, requiredString(input, "expectedTraceEtag"));
-                audit(session, requestId, "knowledge.trace.delete", "knowledge-trace",
+                audit(p, session, requestId, "p.knowledge().trace.delete", "knowledge-trace",
                         traceId, AuditOutcome.SUCCESS, Long.toString(result.revision()));
                 writeJson(response, callback, 200,
                         gson.toJsonTree(result).getAsJsonObject());
@@ -578,7 +642,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 return true;
             }
             JsonObject input = readJsonObject(request);
-            var result = knowledge.impact(
+            var result = p.knowledge().impact(
                     optionalString(input, "knowledgeIri", ""),
                     optionalString(input, "modelId", ""));
             writeJson(response, callback, 200,
@@ -592,19 +656,20 @@ public final class EnterpriseApiServer implements AutoCloseable {
     }
 
     private boolean handlePresence(
+            HostedApiProjectRuntime p,
             Request request,
             Response response,
             Callback callback,
             UUID requestId,
             AuthenticatedSession session,
             String[] segments) {
-        authorization.requireCollaborationRead(session, context);
+        p.authorization().requireCollaborationRead(session, p.context());
 
         if (segments.length == 4) {
             if ("GET".equals(request.getMethod())) {
                 JsonObject body = new JsonObject();
                 com.google.gson.JsonArray items = new com.google.gson.JsonArray();
-                for (var presence : collaboration.listPresence()) {
+                for (var presence : p.collaboration().listPresence()) {
                     items.add(gson.toJsonTree(presence));
                 }
                 body.add("items", items);
@@ -613,11 +678,11 @@ public final class EnterpriseApiServer implements AutoCloseable {
             }
             if ("POST".equals(request.getMethod())) {
                 JsonObject input = readJsonObject(request);
-                var joined = collaboration.join(
+                var joined = p.collaboration().join(
                         session.principal(),
                         optionalString(input, "sessionId", ""),
                         optionalString(input, "modelId", ""));
-                audit(session, requestId, "collaboration.presence.join", "presence",
+                audit(p, session, requestId, "p.collaboration().presence.join", "presence",
                         joined.id(), AuditOutcome.SUCCESS, "presence-v1");
                 writeJson(response, callback, 200,
                         gson.toJsonTree(joined).getAsJsonObject());
@@ -631,7 +696,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
             String sessionId = segments[4];
             if ("PUT".equals(request.getMethod())) {
                 JsonObject input = readJsonObject(request);
-                var refreshed = collaboration.heartbeat(
+                var refreshed = p.collaboration().heartbeat(
                         session.principal(), sessionId,
                         optionalString(input, "modelId", ""));
                 writeJson(response, callback, 200,
@@ -639,8 +704,8 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 return true;
             }
             if ("DELETE".equals(request.getMethod())) {
-                var departed = collaboration.leave(session.principal(), sessionId);
-                audit(session, requestId, "collaboration.presence.leave", "presence",
+                var departed = p.collaboration().leave(session.principal(), sessionId);
+                audit(p, session, requestId, "p.collaboration().presence.leave", "presence",
                         departed.id(), AuditOutcome.SUCCESS, "presence-v1");
                 writeJson(response, callback, 200,
                         gson.toJsonTree(departed).getAsJsonObject());
@@ -654,19 +719,20 @@ public final class EnterpriseApiServer implements AutoCloseable {
     }
 
     private boolean handleReviews(
+            HostedApiProjectRuntime p,
             Request request,
             Response response,
             Callback callback,
             UUID requestId,
             AuthenticatedSession session,
             String[] segments) {
-        authorization.requireCollaborationRead(session, context);
+        p.authorization().requireCollaborationRead(session, p.context());
 
         if (segments.length == 4) {
             if ("GET".equals(request.getMethod())) {
                 JsonObject body = new JsonObject();
                 com.google.gson.JsonArray items = new com.google.gson.JsonArray();
-                for (var set : collaboration.listChangeSets()) {
+                for (var set : p.collaboration().listChangeSets()) {
                     items.add(changeSetJson(set, false));
                 }
                 body.add("items", items);
@@ -674,16 +740,16 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 return true;
             }
             if ("POST".equals(request.getMethod())) {
-                authorization.requireCollaborationWrite(session, context);
-                authorization.requireModelRead(session, context);
+                p.authorization().requireCollaborationWrite(session, p.context());
+                p.authorization().requireModelRead(session, p.context());
                 JsonObject input = readJsonObject(request);
-                var set = collaboration.createChangeSet(
+                var set = p.collaboration().createChangeSet(
                         session.principal(),
                         requiredString(input, "modelId"),
                         requiredString(input, "baseEtag"),
                         requiredString(input, "proposedContent"),
                         optionalString(input, "mediaType", "text/plain"));
-                audit(session, requestId, "review.changeset.create", "reviewChangeSet",
+                audit(p, session, requestId, "review.changeset.create", "reviewChangeSet",
                         set.id(), AuditOutcome.SUCCESS, Long.toString(set.reviewRevision()));
                 writeJson(response, callback, 200, changeSetJson(set, true));
                 return true;
@@ -695,23 +761,23 @@ public final class EnterpriseApiServer implements AutoCloseable {
         String changeSetId = segments[4];
         if (segments.length == 5) {
             if ("GET".equals(request.getMethod())) {
-                authorization.requireModelRead(session, context);
-                var set = collaboration.findChangeSet(changeSetId)
+                p.authorization().requireModelRead(session, p.context());
+                var set = p.collaboration().findChangeSet(changeSetId)
                         .orElseThrow(ResourceNotFoundException::new);
-                ModelSnapshot current = collaboration.currentModel(changeSetId);
-                writeJson(response, callback, 200, reviewBundleJson(set, current));
+                ModelSnapshot current = p.collaboration().currentModel(changeSetId);
+                writeJson(response, callback, 200, reviewBundleJson(p, set, current));
                 return true;
             }
             if ("PUT".equals(request.getMethod())) {
-                authorization.requireCollaborationWrite(session, context);
-                authorization.requireModelRead(session, context);
+                p.authorization().requireCollaborationWrite(session, p.context());
+                p.authorization().requireModelRead(session, p.context());
                 JsonObject input = readJsonObject(request);
-                var set = collaboration.rebase(
+                var set = p.collaboration().rebase(
                         session.principal(),
                         changeSetId,
                         requiredString(input, "expectedCurrentEtag"),
                         requiredString(input, "proposedContent"));
-                audit(session, requestId, "review.changeset.rebase", "reviewChangeSet",
+                audit(p, session, requestId, "review.changeset.rebase", "reviewChangeSet",
                         set.id(), AuditOutcome.SUCCESS, Long.toString(set.reviewRevision()));
                 writeJson(response, callback, 200, changeSetJson(set, true));
                 return true;
@@ -723,26 +789,26 @@ public final class EnterpriseApiServer implements AutoCloseable {
         if (segments.length == 6) {
             String operation = segments[5];
             if ("ready".equals(operation) && "POST".equals(request.getMethod())) {
-                authorization.requireCollaborationWrite(session, context);
-                var set = collaboration.markReady(session.principal(), changeSetId);
-                audit(session, requestId, "review.changeset.ready", "reviewChangeSet",
+                p.authorization().requireCollaborationWrite(session, p.context());
+                var set = p.collaboration().markReady(session.principal(), changeSetId);
+                audit(p, session, requestId, "review.changeset.ready", "reviewChangeSet",
                         set.id(), AuditOutcome.SUCCESS, Long.toString(set.reviewRevision()));
                 writeJson(response, callback, 200, changeSetJson(set, true));
                 return true;
             }
             if ("approve".equals(operation) && "POST".equals(request.getMethod())) {
-                authorization.requireReviewApprove(session, context);
-                var set = collaboration.approve(session.principal(), changeSetId);
-                audit(session, requestId, "review.changeset.approve", "reviewChangeSet",
+                p.authorization().requireReviewApprove(session, p.context());
+                var set = p.collaboration().approve(session.principal(), changeSetId);
+                audit(p, session, requestId, "review.changeset.approve", "reviewChangeSet",
                         set.id(), AuditOutcome.SUCCESS, Long.toString(set.reviewRevision()));
                 writeJson(response, callback, 200, changeSetJson(set, true));
                 return true;
             }
             if ("apply".equals(operation) && "POST".equals(request.getMethod())) {
-                authorization.requireCollaborationWrite(session, context);
-                authorization.requireModelWrite(session, context);
-                var applied = collaboration.apply(session.principal(), changeSetId);
-                audit(session, requestId, "review.changeset.apply", "model",
+                p.authorization().requireCollaborationWrite(session, p.context());
+                p.authorization().requireModelWrite(session, p.context());
+                var applied = p.collaboration().apply(session.principal(), changeSetId);
+                audit(p, session, requestId, "review.changeset.apply", "model",
                         applied.model().path().value(), AuditOutcome.SUCCESS,
                         Long.toString(applied.model().revision().version()));
                 JsonObject body = new JsonObject();
@@ -756,7 +822,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 if ("GET".equals(request.getMethod())) {
                     JsonObject body = new JsonObject();
                     com.google.gson.JsonArray items = new com.google.gson.JsonArray();
-                    for (var comment : collaboration.comments(changeSetId)) {
+                    for (var comment : p.collaboration().comments(changeSetId)) {
                         items.add(gson.toJsonTree(comment));
                     }
                     body.add("items", items);
@@ -764,14 +830,14 @@ public final class EnterpriseApiServer implements AutoCloseable {
                     return true;
                 }
                 if ("POST".equals(request.getMethod())) {
-                    authorization.requireReviewComment(session, context);
+                    p.authorization().requireReviewComment(session, p.context());
                     JsonObject input = readJsonObject(request);
-                    var comment = collaboration.addComment(
+                    var comment = p.collaboration().addComment(
                             session.principal(),
                             changeSetId,
                             requiredString(input, "body"),
                             optionalString(input, "anchor", ""));
-                    audit(session, requestId, "review.comment.create", "reviewComment",
+                    audit(p, session, requestId, "review.comment.create", "reviewComment",
                             comment.id(), AuditOutcome.SUCCESS, "review-v1");
                     writeJson(response, callback, 200,
                             gson.toJsonTree(comment).getAsJsonObject());
@@ -785,12 +851,12 @@ public final class EnterpriseApiServer implements AutoCloseable {
         if (segments.length == 7
                 && "comments".equals(segments[5])
                 && "PUT".equals(request.getMethod())) {
-            authorization.requireReviewComment(session, context);
+            p.authorization().requireReviewComment(session, p.context());
             JsonObject input = readJsonObject(request);
-            var comment = collaboration.resolveComment(
+            var comment = p.collaboration().resolveComment(
                     session.principal(), changeSetId, segments[6],
                     requiredBoolean(input, "resolved"));
-            audit(session, requestId, "review.comment.update", "reviewComment",
+            audit(p, session, requestId, "review.comment.update", "reviewComment",
                     comment.id(), AuditOutcome.SUCCESS, "review-v1");
             writeJson(response, callback, 200,
                     gson.toJsonTree(comment).getAsJsonObject());
@@ -801,13 +867,14 @@ public final class EnterpriseApiServer implements AutoCloseable {
     }
 
     private JsonObject reviewBundleJson(
+            HostedApiProjectRuntime p,
             ProjectCollaborationService.ChangeSet set,
             ModelSnapshot current) {
         JsonObject body = new JsonObject();
         body.add("changeSet", changeSetJson(set, true));
         body.add("currentModel", modelJson(current, set.mediaType()));
         com.google.gson.JsonArray comments = new com.google.gson.JsonArray();
-        for (var comment : collaboration.comments(set.id())) {
+        for (var comment : p.collaboration().comments(set.id())) {
             comments.add(gson.toJsonTree(comment));
         }
         body.add("comments", comments);
@@ -824,21 +891,21 @@ public final class EnterpriseApiServer implements AutoCloseable {
         return value;
     }
 
-    private JsonObject projectJson() {
+    private JsonObject projectJson(HostedApiProjectRuntime p) {
         JsonObject project = new JsonObject();
-        project.addProperty("id", context.project().id().value());
-        project.addProperty("displayName", context.project().displayName());
+        project.addProperty("id", p.context().project().id().value());
+        project.addProperty("displayName", p.context().project().displayName());
         project.addProperty("revision", "1");
-        project.addProperty("portfolioId", context.portfolio().id().value());
-        project.addProperty("workspaceId", context.workspace().id().value());
+        project.addProperty("portfolioId", p.context().portfolio().id().value());
+        project.addProperty("workspaceId", p.context().workspace().id().value());
         return project;
     }
 
-    private JsonObject modelListJson() {
+    private JsonObject modelListJson(HostedApiProjectRuntime p) {
         JsonObject body = new JsonObject();
         com.google.gson.JsonArray items = new com.google.gson.JsonArray();
-        for (ModelPath path : models.list()) {
-            ModelSnapshot snapshot = models.read(path).orElse(null);
+        for (ModelPath path : p.models().list()) {
+            ModelSnapshot snapshot = p.models().read(path).orElse(null);
             if (snapshot == null) continue;
             JsonObject item = new JsonObject();
             item.addProperty("id", path.value());
@@ -851,7 +918,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
         return body;
     }
 
-    private JsonObject importProjectArchive(JsonObject input) {
+    private JsonObject importProjectArchive(HostedApiProjectRuntime p, JsonObject input) {
         JsonElement rawItems = input.get("items");
         if (rawItems == null || !rawItems.isJsonArray()) {
             throw new IllegalArgumentException("items array is required");
@@ -893,11 +960,11 @@ public final class EnterpriseApiServer implements AutoCloseable {
             decoded.add(new ImportEntry(modelPath, content));
         }
 
-        if (!models.list().isEmpty()) {
+        if (!p.models().list().isEmpty()) {
             throw new ProjectArchiveImportConflictException();
         }
 
-        try (ModelTransaction tx = models.beginTransaction()) {
+        try (ModelTransaction tx = p.models().beginTransaction()) {
             tx.requireEmpty();
             for (ImportEntry entry : decoded) {
                 tx.write(entry.path(), entry.content(), MISSING_ETAG);
@@ -910,15 +977,15 @@ public final class EnterpriseApiServer implements AutoCloseable {
         }
 
         JsonObject result = new JsonObject();
-        result.addProperty("projectId", context.project().id().value());
-        result.addProperty("workspaceId", context.workspace().id().value());
+        result.addProperty("projectId", p.context().project().id().value());
+        result.addProperty("workspaceId", p.context().workspace().id().value());
         result.addProperty("importedCount", decoded.size());
         result.addProperty("totalBytes", totalBytes);
-        result.add("items", modelListJson().getAsJsonArray("items"));
+        result.add("items", modelListJson(p).getAsJsonArray("items"));
         return result;
     }
 
-    private void createStarterModels() {
+    private void createStarterModels(HostedApiProjectRuntime p) {
         java.util.LinkedHashMap<ModelPath, String> starter = new java.util.LinkedHashMap<>();
         starter.put(new ModelPath("starter.dml"),
                 "Package Starter\n"
@@ -969,7 +1036,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 + "  }\n"
                 + "}\n");
 
-        try (ModelTransaction tx = models.beginTransaction()) {
+        try (ModelTransaction tx = p.models().beginTransaction()) {
             for (Map.Entry<ModelPath, String> item : starter.entrySet()) {
                 tx.write(
                         item.getKey(),
@@ -1020,6 +1087,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
     }
 
     private void audit(
+            HostedApiProjectRuntime p,
             AuthenticatedSession session,
             UUID requestId,
             String action,
@@ -1028,12 +1096,12 @@ public final class EnterpriseApiServer implements AutoCloseable {
             AuditOutcome outcome,
             String revision) {
         audit.append(AuditEventDraft.of(
-                session.principal(), CLIENT_ID, context, revision, action,
+                session.principal(), CLIENT_ID, p.context(), revision, action,
                 resourceType, resourceId, outcome, requestId, requestId, Map.of()));
     }
 
-    private void requireProject(String projectId) {
-        if (!context.project().id().value().equals(projectId)) {
+    private void requireProject(HostedApiProjectRuntime p, String projectId) {
+        if (!p.context().project().id().value().equals(projectId)) {
             throw new ResourceNotFoundException();
         }
     }

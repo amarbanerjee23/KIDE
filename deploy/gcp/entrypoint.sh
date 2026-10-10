@@ -95,7 +95,14 @@ export KIDE_GATEWAY_BIND=127.0.0.1
 export KIDE_GATEWAY_PORT=18082
 export KIDE_GATEWAY_WORKSPACE_ROOT="${WORKSPACE_ROOT}"
 export KIDE_GATEWAY_PROJECT_ROOT="${PROJECT_ROOT}"
-export KIDE_GATEWAY_ROLE_BINDINGS="${role_bindings}"
+if [[ -n "${KIDE_HOSTED_PROJECTS_ROOT:-}" ]]; then
+  # Registry projects use persisted creator grants. Legacy bootstrap binding
+  # belongs to a different context and must not be injected into the gateways.
+  export KIDE_GATEWAY_ROLE_BINDINGS="${KIDE_GATEWAY_ROLE_BINDINGS:-}"
+  export KIDE_GLSP_ROLE_BINDINGS="${KIDE_GLSP_ROLE_BINDINGS:-}"
+else
+  export KIDE_GATEWAY_ROLE_BINDINGS="${role_bindings}"
+fi
 export KIDE_GATEWAY_TRUST_FORWARDED_PROTO=true
 export KIDE_GATEWAY_TRUSTED_PROXY_ADDRESSES="127.0.0.1,::1"
 export KIDE_GATEWAY_ALLOWED_ORIGINS="${allowed_origins}"
@@ -105,7 +112,9 @@ export KIDE_GLSP_BIND=127.0.0.1
 export KIDE_GLSP_PORT=18083
 export KIDE_GLSP_WORKSPACE_ROOT="${WORKSPACE_ROOT}"
 export KIDE_GLSP_PROJECT_ROOT="${PROJECT_ROOT}"
-export KIDE_GLSP_ROLE_BINDINGS="${role_bindings}"
+if [[ -z "${KIDE_HOSTED_PROJECTS_ROOT:-}" ]]; then
+  export KIDE_GLSP_ROLE_BINDINGS="${role_bindings}"
+fi
 export KIDE_GLSP_TRUST_FORWARDED_PROTO=true
 export KIDE_GLSP_TRUSTED_PROXY_ADDRESSES="127.0.0.1,::1"
 export KIDE_GLSP_ALLOWED_ORIGINS="${allowed_origins}"

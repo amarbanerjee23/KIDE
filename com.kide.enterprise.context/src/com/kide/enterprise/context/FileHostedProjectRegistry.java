@@ -5,6 +5,10 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.util.Map;
+import java.util.UUID;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -42,6 +46,70 @@ public final class FileHostedProjectRegistry implements HostedProjectRegistry {
             this.rootReal = this.root.toRealPath();
         } catch (IOException e) {
             throw new IllegalArgumentException("hosted project registry cannot be canonicalized", e);
+        }
+    }
+
+    /**
+     * Create a fully initialized project outside the discoverable registry and
+     * publish it in one atomic rename. Unsupported atomic filesystems fail closed.
+     * A crashed provisional directory is never visible to API/LSP/GLSP.
+     */
+    public synchronized HostedProjectRegistration createProject(
+            String displayName, String creatorPrincipalId) {
+        if (creatorPrincipalId == null || creatorPrincipalId.isBlank()
+                || creatorPrincipalId.length() > 512
+                || creatorPrincipalId.chars().anyMatch(ch -> ch < 32 || ch == 127)) {
+            throw new IllegalArgumentException("A valid authenticated creator is required");
+        }
+        if (list().size() >= MAX_PROJECTS) {
+            throw new IllegalStateException("hosted project registry is full");
+        }
+        Path staging = null;
+        try {
+            // Sibling staging is outside the directory enumerated by list().
+            staging = Files.createTempDirectory(
+                    root.getParent(), ".kide-project-stage-");
+            Path project = Files.createDirectory(staging.resolve(PROJECT_DIR));
+            Path workspace = Files.createDirectory(staging.resolve(WORKSPACE_DIR));
+            EnterpriseContextResult created = contexts.provision(
+                    workspace, project,
+                    "KIDE Cloud", "Default Portfolio", displayName, "Cloud Workspace");
+            if (!created.isReady()) {
+                throw new IllegalArgumentException("Invalid hosted project details");
+            }
+            EnterpriseContextResult owned = contexts.updateMetadata(
+                    workspace, project, EnterpriseScope.PROJECT,
+                    Map.of(HostedProjectOwnership.OWNER_KEY, creatorPrincipalId));
+            if (!owned.isReady()) {
+                throw new IllegalStateException("Hosted project ownership could not be persisted");
+            }
+            String uuid = owned.context().orElseThrow().project().id().uuid().toString();
+            Path destination = root.resolve(uuid);
+            if (Files.exists(destination, LinkOption.NOFOLLOW_LINKS)) {
+                throw new IllegalStateException("Hosted project identity collision");
+            }
+            // Never degrade to a non-atomic move on mounted object storage.
+            Files.move(staging, destination, StandardCopyOption.ATOMIC_MOVE);
+            staging = null;
+            return resolveProject(owned.context().orElseThrow().project().id().value())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Published hosted project cannot be resolved"));
+        } catch (AtomicMoveNotSupportedException e) {
+            throw new IllegalStateException(
+                    "Hosted project provisioning requires atomic filesystem rename", e);
+        } catch (IOException e) {
+            throw new IllegalStateException("Hosted project could not be created safely", e);
+        } finally {
+            if (staging != null) {
+                try (var entries = Files.walk(staging)) {
+                    entries.sorted(Comparator.reverseOrder()).forEach(path -> {
+                        try { Files.deleteIfExists(path); }
+                        catch (IOException ignored) { /* orphan cleanup is best effort */ }
+                    });
+                } catch (IOException ignored) {
+                    // Staging is outside discovery, never a live project.
+                }
+            }
         }
     }
 

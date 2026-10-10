@@ -120,6 +120,9 @@ export default function App() {
   const [runtimeVersion, setRuntimeVersion] = useState<RuntimeVersion>();
   const [lspStatus, setLspStatus] = useState("Not connected");
   const [projects, setProjects] = useState<Project[]>([]);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [canCreateProjects, setCanCreateProjects] = useState(false);
   const [project, setProject] = useState<Project>();
   const projectRef = useRef<Project | undefined>(undefined);
   projectRef.current = project;
@@ -491,6 +494,24 @@ export default function App() {
     setNotice("Signed out.");
   }
 
+  async function createHostedProject() {
+    const name = newProjectName.trim();
+    if (!name || creatingProject || !firebaseAuth.user || !runtimeVersion) return;
+    setCreatingProject(true);
+    try {
+      const created = await client.createProject(name);
+      setProjects((current) => [...current, created].sort(
+        (a, b) => a.displayName.localeCompare(b.displayName)
+      ));
+      setNewProjectName("");
+      setNotice(`Hosted project "${created.displayName}" created. Open it to begin engineering.`);
+    } catch (error) {
+      showError(error);
+    } finally {
+      setCreatingProject(false);
+    }
+  }
+
   async function connect() {
     setNotice("");
     setConflict(undefined);
@@ -498,9 +519,11 @@ export default function App() {
     let health: Health;
     try {
       health = await client.health();
+      setCanCreateProjects(health.projectCreationEnabled === true);
       setServiceStatus(`Connected · ${health.status} · API ${health.version}`);
     } catch (error) {
       setRuntimeVersion(undefined);
+      setCanCreateProjects(false);
       setServiceStatus("Not connected");
       showError(error);
       return;
@@ -2373,6 +2396,27 @@ export default function App() {
                   ⌕
                 </button>
               </div>
+          {firebaseAuth.user && runtimeVersion && canCreateProjects && (
+            <form
+              aria-label="Create hosted project"
+              className="project-actions"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void createHostedProject();
+              }}
+            >
+              <input
+                aria-label="New project name"
+                maxLength={128}
+                value={newProjectName}
+                onChange={(event) => setNewProjectName(event.target.value)}
+                placeholder="New engineering project"
+              />
+              <button type="submit" disabled={creatingProject || !newProjectName.trim()}>
+                {creatingProject ? "Creating…" : "Create hosted project"}
+              </button>
+            </form>
+          )}
           {projects.length === 0 ? (
             <div className="explorer-empty">
               <p className="muted">
