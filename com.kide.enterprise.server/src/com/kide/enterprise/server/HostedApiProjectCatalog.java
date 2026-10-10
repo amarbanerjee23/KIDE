@@ -39,9 +39,18 @@ public final class HostedApiProjectCatalog {
     public HostedApiProjectCatalog(
             FileHostedProjectRegistry registry,
             ServerAuthorizationGate authorization, Clock clock) {
+        this(registry, authorization, clock, false);
+    }
+
+    public HostedApiProjectCatalog(
+            FileHostedProjectRegistry registry,
+            ServerAuthorizationGate authorization,
+            Clock clock,
+            boolean bootstrapStarterKnowledge) {
         this.registry = Objects.requireNonNull(registry, "registry");
         this.authorization = Objects.requireNonNull(authorization, "authorization");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.bootstrapStarterKnowledge = bootstrapStarterKnowledge;
     }
 
     public List<HostedApiProjectRuntime> list(AuthenticatedSession session) {
