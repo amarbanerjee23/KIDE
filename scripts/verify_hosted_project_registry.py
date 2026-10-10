@@ -24,8 +24,12 @@ def verify() -> list[str]:
         errors.append("registry project limit drifted")
     if contract.get("legacy_single_project_fallback") is not True:
         errors.append("legacy single-project fallback must remain enabled in PR87")
-    if contract.get("project_creation_enabled") is not False:
-        errors.append("PR87 must not silently enable project creation")
+    if contract.get("project_creation_enabled") is not True:
+        errors.append("PR88 registry-mode project creation must be declared")
+    if contract.get("project_creation_mode") != "registry-only":
+        errors.append("legacy single-context API must keep project creation disabled")
+    if set(contract.get("dynamic_consumers", [])) != {"enterprise-rest", "xtext-lsp", "glsp"}:
+        errors.append("REST/LSP/GLSP must share the same registry")
 
     registry = read(
         "com.kide.enterprise.context/src/com/kide/enterprise/context/"
@@ -41,6 +45,11 @@ def verify() -> list[str]:
     ):
         if token not in registry:
             errors.append(f"file registry invariant missing: {token}")
+
+    if "Files.move(staging, destination, StandardCopyOption.ATOMIC_MOVE)" not in registry:
+        errors.append("new registry slot must be published atomically")
+    if "HostedProjectOwnership.OWNER_KEY" not in registry:
+        errors.append("creator ownership must be durable")
 
     runtime = read(
         "com.kide.languageserver.gateway/src/com/kide/languageserver/gateway/"
@@ -98,7 +107,35 @@ def verify() -> list[str]:
         "EnterpriseApiServer.java"
     )
     if "Project creation is not enabled in this runtime phase." not in api:
-        errors.append("PR87 must keep REST project creation disabled")
+        errors.append("legacy mode must fail closed for project creation")
+    for marker in (
+        "hostedProjects.create(",
+        "hostedProjects.resolve(",
+        "hostedProjects.list()",
+        "requireApiProjectAccess(session, project.context())",
+    ):
+        if marker not in api:
+            errors.append(f"registry-aware API routing missing: {marker}")
+    catalog = read(
+        "com.kide.enterprise.server/src/com/kide/enterprise/server/"
+        "HostedApiProjectCatalog.java"
+    )
+    for marker in ("registry.createProject(", "MAX_PROJECTS_PER_CREATOR",
+                   "new FileModelRepository(root)", "new ProjectGenerationService"):
+        if marker not in catalog:
+            errors.append(f"project runtime capability missing: {marker}")
+    policy = read(
+        "com.kide.enterprise.authorization/src/com/kide/enterprise/"
+        "authorization/HostedRegistryAuthorizationPolicyStore.java"
+    )
+    if "registry.list()" not in policy or "Role.ADMINISTRATOR" not in policy:
+        errors.append("dynamic creator authorization must be present")
+    selfcheck = read(
+        "com.kide.enterprise.server/src/com/kide/enterprise/server/"
+        "EnterpriseApiSelfCheckApplication.java"
+    )
+    if "KIDE PR88 HOSTED PROJECT LIFECYCLE OK" not in selfcheck:
+        errors.append("packaged tenant-isolation qualification is missing")
 
     workflow = read(".github/workflows/build.yml")
     if "python3 scripts/verify_hosted_project_registry.py" not in workflow:
