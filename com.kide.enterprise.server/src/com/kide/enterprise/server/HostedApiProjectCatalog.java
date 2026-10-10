@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.kide.codegen.ProjectGenerationService;
 import com.kide.enterprise.authorization.ServerAuthorizationGate;
+import com.kide.enterprise.authorization.AccessDeniedException;
 import com.kide.enterprise.context.FileHostedProjectRegistry;
 import com.kide.enterprise.context.HostedProjectOwnership;
 import com.kide.enterprise.context.HostedProjectRegistration;
@@ -43,12 +44,32 @@ public final class HostedApiProjectCatalog {
         this.clock = Objects.requireNonNull(clock, "clock");
     }
 
-    public List<HostedApiProjectRuntime> list() {
-        return registry.list().stream().map(this::runtime).toList();
+    public List<HostedApiProjectRuntime> list(AuthenticatedSession session) {
+        // Authorize against cheap context metadata before constructing any
+        // per-tenant repository or seeding its knowledge data.
+        session.requireActive();
+        return registry.list().stream()
+                .filter(registration -> canRead(session, registration))
+                .map(this::runtime).toList();
     }
 
-    public Optional<HostedApiProjectRuntime> resolve(String projectId) {
-        return registry.resolveProject(projectId).map(this::runtime);
+    public Optional<HostedApiProjectRuntime> resolve(
+            String projectId, AuthenticatedSession session) {
+        session.requireActive();
+        return registry.resolveProject(projectId).map(registration -> {
+            authorization.requireApiProjectAccess(session, registration.context());
+            return runtime(registration);
+        });
+    }
+
+    private boolean canRead(
+            AuthenticatedSession session, HostedProjectRegistration registration) {
+        try {
+            authorization.requireApiProjectAccess(session, registration.context());
+            return true;
+        } catch (AccessDeniedException denied) {
+            return false;
+        }
     }
 
     public synchronized HostedApiProjectRuntime create(
