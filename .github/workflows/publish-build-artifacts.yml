@@ -233,14 +233,15 @@ jobs:
           )
 
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
-          else
-            gh release create "$RELEASE_TAG" "${assets[@]}" \
-              --target "$SOURCE_SHA" \
-              --title "$RELEASE_TITLE" \
-              --prerelease \
-              --notes "Automated runnable KIDE desktop build from commit \`$SOURCE_SHA\`. This is an unsigned CI/pre-release build, not the trusted production release. It contains Windows x86_64, Linux x86_64, macOS Intel, and macOS Apple Silicon bundles plus checksums and the release manifest."
+            echo "::error::Existing KIDE preview release is immutable; refusing overwrite."
+            exit 1
           fi
+          gh release create "$RELEASE_TAG" "${assets[@]}" \
+            --target "$SOURCE_SHA" \
+            --title "$RELEASE_TITLE" \
+            --prerelease \
+            --notes "Automated runnable KIDE desktop build from commit \`$SOURCE_SHA\`. This is an unsigned CI/pre-release build, not the trusted production release. It contains Windows x86_64, Linux x86_64, macOS Intel, and macOS Apple Silicon bundles plus checksums and the release manifest."
+
 
           gh release view "$RELEASE_TAG" --json url,tagName,name,isPrerelease
 
