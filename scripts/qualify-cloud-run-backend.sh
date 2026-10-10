@@ -76,6 +76,19 @@ assert isinstance(version.get("productVersion"), str) and version["productVersio
 assert isinstance(version.get("buildId"), str) and version["buildId"], version
 PY
 
+# Verify actual nginx response behavior, not only static config text.
+security_headers="$(curl --fail --silent --show-error -D - -o /dev/null "${BASE_URL}/api/v1/health" | tr -d '\r')"
+for required in \
+  "X-Content-Type-Options: nosniff" \
+  "X-Frame-Options: DENY" \
+  "Referrer-Policy: no-referrer" \
+  "Cache-Control: no-store"; do
+  if ! grep -iqFx "$required" <<< "$security_headers"; then
+    echo "Backend is missing required HTTP security header: $required" >&2
+    exit 1
+  fi
+done
+
 unknown_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
   "${BASE_URL}/definitely-not-a-kide-route")"
 if [[ "${unknown_status}" != "404" ]]; then
