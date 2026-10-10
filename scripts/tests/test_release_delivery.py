@@ -43,7 +43,10 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
     def test_repository_publication_builds_and_pushes_outputs(self):
         workflow = self.read(".github/workflows/publish-build-artifacts.yml")
 
-        self.assertIn("contents: write", workflow)
+        # CI qualifies desktop packages and publishes GHCR only, never a
+        # GitHub Release or mutable unsigned preview build.
+        self.assertIn("permissions:\n  contents: read", workflow)
+        self.assertNotIn("contents: write", workflow)
         self.assertIn("packages: write", workflow)
         self.assertIn("Build Eclipse desktop products", workflow)
         self.assertIn("prepare_desktop_release.py", workflow)
@@ -58,22 +61,22 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
         self.assertIn("SOURCE_SHA:", workflow)
         self.assertIn("org.opencontainers.image.source", workflow)
         self.assertIn("kide-cloud-run-image.txt", workflow)
-        self.assertIn("Publish qualified desktop bundles to GitHub Releases", workflow)
-        self.assertIn(
-            "if: github.event_name == 'workflow_dispatch' && github.ref_name == 'main'",
-            workflow,
-        )
-        self.assertIn("needs: desktop", workflow)
-        self.assertIn("needs: cloud-run", workflow)
-        self.assertIn("permissions:\n  contents: read", workflow)
-        self.assertIn("name: Publish qualified Cloud Run image (trusted main only)", workflow)
-        self.assertIn("gh release create", workflow)
+        self.assertNotIn("  publish-desktop:", workflow)
+        self.assertNotIn("gh release create", workflow)
         self.assertNotIn("gh release upload", workflow)
-        self.assertIn("--prerelease", workflow)
-        self.assertIn("branch-${branch_slug}-build-${short_sha}", workflow)
-        self.assertNotIn("pr45-build-", workflow)
-        self.assertIn("dist/KIDE-*.zip", workflow)
-        self.assertIn("dist/KIDE-*.tar.gz", workflow)
+        self.assertNotIn("--prerelease", workflow)
+        self.assertIn("needs: cloud-run", workflow)
+        self.assertIn("name: Publish qualified Cloud Run image (trusted main only)", workflow)
+
+        stable = self.read(".github/workflows/release.yml")
+        self.assertIn("python3 scripts/verify_stable_build.py", stable)
+        self.assertIn("python3 scripts/check_stable_release_version.py", stable)
+        self.assertIn("gh release create", stable)
+        self.assertIn("--latest", stable)
+        self.assertIn("python3 scripts/retain_latest_stable_release.py", stable)
+        self.assertNotIn("--prerelease", stable)
+        self.assertIn("actions/attest-build-provenance@", stable)
+        self.assertIn("group: kide-single-stable-release", stable)
 
     def test_gcp_backend_image_does_not_embed_browser_bundle(self):
         dockerfile = self.read("deploy/gcp/Dockerfile")

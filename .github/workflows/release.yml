@@ -12,6 +12,11 @@ on:
 permissions:
   contents: read
 
+# Never race two trusted publishers or a cleanup with a later release.
+concurrency:
+  group: kide-single-stable-release
+  cancel-in-progress: false
+
 jobs:
   verify-release-source:
     name: Require release source on protected main
@@ -30,7 +35,7 @@ jobs:
           if [[ "$KIDE_EVENT_NAME" == "workflow_dispatch" ]]; then
             test "$KIDE_REF" = "refs/heads/main"
           elif [[ "$KIDE_EVENT_NAME" == "push" ]]; then
-            [[ "$KIDE_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
+            [[ "$KIDE_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]
           else
             echo "::error::Untrusted release event."
             exit 1
@@ -47,10 +52,29 @@ jobs:
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main ||
             { echo "::error::Release commit is not reachable from trusted main."; exit 1; }
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA" ||
+            { echo "::error::Only the latest qualified main commit can be released."; exit 1; }
+
+  verify-quality-gates:
+    name: Require successful main Build KIDE and Enterprise CI
+    needs: verify-release-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify CI conclusions against exact release SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/verify_stable_build.py
 
   validate-release:
     name: Validate trusted-release credentials
-    needs: verify-release-source
+    needs: verify-quality-gates
     environment: trusted-release
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -122,12 +146,18 @@ jobs:
           else
             VERSION="${GITHUB_REF_NAME#v}"
           fi
-          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid release version: $VERSION" >&2
             exit 1
           fi
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse downgrade or re-publish of stable version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.build-release.outputs.tag }}
+        run: python3 scripts/check_stable_release_version.py --tag "$RELEASE_TAG"
 
       - name: Materialize Java signing keystore
         shell: bash
@@ -361,23 +391,6 @@ jobs:
             dist/release-manifest.json
             dist/SHA256SUMS.txt
 
-      - name: Refuse to replace an existing release
-        shell: bash
-        run: |
-          if gh release view '${{ needs.build-release.outputs.tag }}' >/dev/null 2>&1; then
-            echo "::error::Release ${{ needs.build-release.outputs.tag }} already exists; enterprise releases are immutable."
-            exit 1
-          fi
-
-      - name: Publish immutable GitHub release
-        shell: bash
-        run: |
-          gh release create '${{ needs.build-release.outputs.tag }}' dist/* \
-            --target "$GITHUB_SHA" \
-            --title "KIDE ${{ needs.build-release.outputs.version }}" \
-            --generate-notes \
-            --notes "Trusted KIDE desktop release. Windows is Authenticode signed; macOS Intel and Apple silicon are Developer ID signed, notarized and stapled. SHA256SUMS.txt, release-manifest.json, CycloneDX SBOM and GitHub build-provenance attestations accompany the binaries."
-
       - name: Download p2 site
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -391,3 +404,33 @@ jobs:
           publish_dir: p2-site
           destination_dir: updates
           keep_files: true
+
+      - name: Refuse to replace an existing release
+        shell: bash
+        run: |
+          if gh release view '${{ needs.build-release.outputs.tag }}' >/dev/null 2>&1; then
+            echo "::error::Release ${{ needs.build-release.outputs.tag }} already exists; enterprise releases are immutable."
+            exit 1
+          fi
+
+      - name: Publish immutable GitHub release
+        shell: bash
+        run: |
+          gh release create '${{ needs.build-release.outputs.tag }}' dist/* \
+            --target "$GITHUB_SHA" \
+            --latest \
+            --title "KIDE ${{ needs.build-release.outputs.version }}" \
+            --generate-notes \
+            --notes "Trusted KIDE desktop release. Windows is Authenticode signed; macOS Intel and Apple silicon are Developer ID signed, notarized and stapled. SHA256SUMS.txt, release-manifest.json, CycloneDX SBOM and GitHub build-provenance attestations accompany the binaries."
+
+      - name: Retire all older releases after verifying latest stable publication
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP_TAG: ${{ needs.build-release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          python3 scripts/retain_latest_stable_release.py \
+            --keep-tag "$KEEP_TAG" \
+            --expected-sha "$GITHUB_SHA" \
+            --apply

@@ -10,16 +10,16 @@ After PR91:
 - The workflow defaults to contents: read.
 - The desktop and Cloud Run qualification jobs explicitly retain read-only tokens and cannot publish releases or container images.
 - A separate publish-cloud-run job has package-write rights and is gated to push/main or manual main dispatch, after Cloud Run qualification completes. The published image is rebuilt from the same source commit, but bytewise reproducibility has not been independently attested.
-- A separate publish-desktop job has content-write rights and runs only after a successful manually dispatched main build. Desktop prereleases use immutable tags and never overwrite existing release assets.
+- PR93 removes the separate unsigned desktop GitHub Release publisher. Build jobs continue uploading short-lived GitHub Actions artifacts for CI inspection, but GitHub Releases are created only by the signed, qualified trusted-release workflow.
 - All third-party actions remain pinned to immutable commits.
 
 ## Trusted signed desktop releases
 
-The trusted release pipeline now starts with a secret-free verify-release-source job. Manual release runs must originate from main, version tags must have a valid vX.Y.Z version shape, and the source commit must be reachable from main.
+The trusted release pipeline now starts with a secret-free verify-release-source job. Manual release runs must originate from main, version tags must have a valid vX.Y.Z version shape, and the source commit must equal current main HEAD, and Build KIDE plus Enterprise CI must have completed successfully for that exact commit.
 
 Production signing and publishing jobs use the trusted-release GitHub environment. Repository administrators MUST configure it with required reviewers, branch restrictions and controlled secrets; referencing an environment in YAML does not automatically activate protective rules.
 
-Manual release version input is passed as an environment variable, not interpolated into shell source. Existing Windows signing, macOS notarization, Eclipse signing and provenance checks remain required.
+Manual release version input is passed as an environment variable, not interpolated into shell source. Existing Windows signing, macOS notarization, Eclipse signing and provenance checks remain required. PR93 enforces stable vX.Y.Z versions, publishes the latest signed release, then deletes older GitHub Release records only after validating its signed assets; version tags remain intact.
 
 ## Real Nginx/Web browser protections
 

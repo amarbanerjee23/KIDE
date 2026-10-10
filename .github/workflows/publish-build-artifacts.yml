@@ -199,53 +199,6 @@ jobs:
         shell: bash
         run: bash scripts/qualify-cloud-run-backend.sh "${{ steps.image.outputs.immutable_tag }}"
 
-  publish-desktop:
-    name: Publish qualified desktop bundles (trusted main manual only)
-    needs: desktop
-    if: github.event_name == 'workflow_dispatch' && github.ref_name == 'main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ env.SOURCE_SHA }}
-      - name: Download qualified desktop artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: kide-desktop-${{ needs.desktop.outputs.short_sha }}
-          path: dist
-
-      - name: Publish qualified desktop bundles to GitHub Releases
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.desktop.outputs.release_tag }}
-          RELEASE_TITLE: ${{ needs.desktop.outputs.release_title }}
-        run: |
-          set -euo pipefail
-
-          assets=(
-            dist/KIDE-*.zip
-            dist/KIDE-*.tar.gz
-            dist/release-manifest.json
-            dist/SHA256SUMS.txt
-          )
-
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            echo "::error::Existing KIDE preview release is immutable; refusing overwrite."
-            exit 1
-          fi
-          gh release create "$RELEASE_TAG" "${assets[@]}" \
-            --target "$SOURCE_SHA" \
-            --title "$RELEASE_TITLE" \
-            --prerelease \
-            --notes "Automated runnable KIDE desktop build from commit \`$SOURCE_SHA\`. This is an unsigned CI/pre-release build, not the trusted production release. It contains Windows x86_64, Linux x86_64, macOS Intel, and macOS Apple Silicon bundles plus checksums and the release manifest."
-
-
-          gh release view "$RELEASE_TAG" --json url,tagName,name,isPrerelease
-
-
   publish-cloud-run:
     name: Publish qualified Cloud Run image (trusted main only)
     needs: cloud-run
