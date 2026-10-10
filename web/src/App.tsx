@@ -759,6 +759,14 @@ export default function App() {
         connection.abort();
         return;
       }
+      const activeConnection = connection;
+      activeConnection.onDisconnect(() => {
+        if (isCurrent() && lspClient.current === activeConnection) {
+          setLspStatus("Connection degraded");
+          setSymbols([]);
+          setOutlineItems([]);
+        }
+      });
       const controller = new MonacoLspController(
         connection, workspace, { ensureDocument: ensureLspDocument }
       );
