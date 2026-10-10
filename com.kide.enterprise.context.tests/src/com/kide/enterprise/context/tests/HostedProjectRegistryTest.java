@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.Properties;
 import java.util.UUID;
 
 import org.junit.Test;
@@ -72,14 +73,31 @@ public class HostedProjectRegistryTest {
                     .resolve(second.project().id().uuid().toString())
                     .resolve(FileHostedProjectRegistry.WORKSPACE_DIR)
                     .resolve(EnterpriseContextStore.WORKSPACE_DESCRIPTOR);
-            String text = Files.readString(secondWorkspaceDescriptor, StandardCharsets.UTF_8);
-            text = text.replace(
-                    "workspace.id=" + second.workspace().id().value(),
-                    "workspace.id=" + first.workspace().id().value());
-            Files.writeString(secondWorkspaceDescriptor, text, StandardCharsets.UTF_8);
+            Properties properties = new Properties();
+            try (var reader = Files.newBufferedReader(
+                    secondWorkspaceDescriptor, StandardCharsets.UTF_8)) {
+                properties.load(reader);
+            }
+            assertEquals(second.workspace().id().value(),
+                    properties.getProperty("workspace.id"));
+            properties.setProperty("workspace.id", first.workspace().id().value());
+            try (var writer = Files.newBufferedWriter(
+                    secondWorkspaceDescriptor, StandardCharsets.UTF_8)) {
+                properties.store(writer, "PR87 duplicate-workspace fixture");
+            }
+
+            Properties mutated = new Properties();
+            try (var reader = Files.newBufferedReader(
+                    secondWorkspaceDescriptor, StandardCharsets.UTF_8)) {
+                mutated.load(reader);
+            }
+            assertEquals(first.workspace().id().value(),
+                    mutated.getProperty("workspace.id"));
 
             FileHostedProjectRegistry registry = new FileHostedProjectRegistry(root);
-            assertThrows(IllegalStateException.class, registry::list);
+            IllegalStateException duplicate = assertThrows(
+                    IllegalStateException.class, registry::list);
+            assertTrue(duplicate.getMessage().contains("duplicate hosted workspace identity"));
         } finally {
             deleteTree(root);
         }
