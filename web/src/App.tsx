@@ -1044,9 +1044,10 @@ export default function App() {
   async function refreshKnowledgeTraces(projectId = projectRef.current?.id) {
     if (!projectId) return;
     try {
-      setKnowledgeTraces(await clientRef.current.listKnowledgeTraces(projectId));
+      const traces = await clientRef.current.listKnowledgeTraces(projectId);
+      if (projectRef.current?.id === projectId) setKnowledgeTraces(traces);
     } catch (error) {
-      showError(error);
+      if (projectRef.current?.id === projectId) showError(error);
     }
   }
 
