@@ -187,6 +187,38 @@ describe("KideLspClient", () => {
     expect(socket.sent.some((message) => message.method === "exit")).toBe(true);
   });
 
+  it("immediately cancels a connecting socket without allowing a late initialization", async () => {
+    vi.stubGlobal("WebSocket", FakeWebSocket as unknown as typeof WebSocket);
+    const client = new KideLspClient("https://gateway.example", "jwt", "W04-001");
+    const pending = client.connect();
+    const socket = FakeWebSocket.last!;
+    expect(socket.readyState).toBe(FakeWebSocket.CONNECTING);
+    client.abort();
+    expect(client.isConnected).toBe(false);
+    expect(socket.readyState).toBe(FakeWebSocket.CLOSED);
+    await expect(pending).rejects.toThrow(/closed|superseded/);
+    await Promise.resolve(); // The fake socket's queued open must not revive it.
+    expect(client.isConnected).toBe(false);
+  });
+
+  it("rejects outstanding JSON-RPC work immediately on project switch", async () => {
+    vi.stubGlobal("WebSocket", FakeWebSocket as unknown as typeof WebSocket);
+    const client = new KideLspClient("https://gateway.example", "jwt", "W04-001");
+    await client.connect();
+    const socket = FakeWebSocket.last!;
+    const originalSend = socket.send.bind(socket);
+    socket.send = (raw: string) => {
+      const request = JSON.parse(raw);
+      if (request.method === "textDocument/hover") return; // Simulate a stalled server.
+      originalSend(raw);
+    };
+    const pending = client.hover("kide-workspace:/stale.dml", { line: 0, character: 0 });
+    client.abort();
+    await expect(pending).rejects.toThrow("superseded");
+    expect(client.isConnected).toBe(false);
+    expect(socket.readyState).toBe(FakeWebSocket.CLOSED);
+  });
+
   it("reports loss of a live gateway socket instead of showing stale Online status", async () => {
     vi.stubGlobal("WebSocket", FakeWebSocket as unknown as typeof WebSocket);
     const client = new KideLspClient("https://gateway.example", "jwt", "W04-001");
