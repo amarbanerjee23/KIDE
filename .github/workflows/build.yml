@@ -68,6 +68,9 @@ jobs:
       - name: Verify hosted archive promotion contract
         run: python3 scripts/verify_archive_promotion.py
 
+      - name: Verify hosted project registry contract
+        run: python3 scripts/verify_hosted_project_registry.py
+
       - name: Verify deployed Web/backend build coherence
         run: python3 scripts/verify_deployment_build_coherence.py
 
@@ -89,7 +92,7 @@ jobs:
       - name: Build Eclipse plug-ins and portable products
         run: |
           set +e
-          mvn -B -ntp clean verify
+          bash scripts/run_maven.sh -B -ntp clean verify
           status=$?
           if [ "$status" -ne 0 ]; then
             echo "::group::Tycho/Equinox failure diagnostics"

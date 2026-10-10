@@ -17,6 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -36,6 +37,7 @@ import com.kide.enterprise.authorization.ServerAuthorizationGate;
 import com.kide.enterprise.context.EnterpriseContext;
 import com.kide.enterprise.context.EnterpriseContextResult;
 import com.kide.enterprise.context.EnterpriseContextStore;
+import com.kide.enterprise.context.FileHostedProjectRegistry;
 import com.kide.enterprise.identity.AuthenticatedSession;
 import com.kide.enterprise.identity.AuthenticationException;
 import com.kide.enterprise.identity.AuthenticationMethod;
@@ -47,6 +49,7 @@ import com.kide.languageserver.gateway.GatewayAuthenticator;
 import com.kide.languageserver.gateway.GatewayConfig;
 import com.kide.languageserver.gateway.GatewayWorkspaceBinding;
 import com.kide.languageserver.gateway.InMemoryGatewayWorkspaceCatalog;
+import com.kide.languageserver.gateway.RegistryGatewayWorkspaceCatalog;
 
 public class GlspGatewayIntegrationTest {
     @Test
@@ -207,6 +210,123 @@ public class GlspGatewayIntegrationTest {
                 try {
                     socket.sendClose(
                             WebSocket.NORMAL_CLOSURE, "qualified").join();
+                } catch (RuntimeException ignored) { }
+            }
+            if (gateway != null) gateway.close();
+            deleteTree(root);
+        }
+    }
+
+    @Test
+    public void discoversRegistryWorkspaceAfterGatewayStartup() throws Exception {
+        Path root = Files.createTempDirectory("kide-pr87-glsp-registry-");
+        SecureGlspWebSocketGateway gateway = null;
+        WebSocket socket = null;
+        try {
+            Path registryRoot = Files.createDirectories(root.resolve("registry"));
+            Path staging = Files.createDirectory(root.resolve("staging"));
+            Path project = Files.createDirectories(
+                    staging.resolve(FileHostedProjectRegistry.PROJECT_DIR));
+            Path workspace = Files.createDirectories(
+                    staging.resolve(FileHostedProjectRegistry.WORKSPACE_DIR));
+
+            EnterpriseContextResult provisioned = new EnterpriseContextStore().provision(
+                    workspace, project,
+                    "Registry GLSP Org", "Registry GLSP Portfolio",
+                    "Registry GLSP Project", "Registry GLSP Workspace");
+            if (!provisioned.isReady()) {
+                throw new AssertionError(provisioned.summary());
+            }
+            EnterpriseContext context = provisioned.context().orElseThrow();
+
+            PrincipalIdentity principal = new PrincipalIdentity(
+                    "selfcheck:registry-glsp-user",
+                    "Registry GLSP User",
+                    PrincipalKind.LOCAL_OFFLINE,
+                    AuthenticationMethod.LOCAL_OFFLINE,
+                    "",
+                    "registry-glsp-user",
+                    Map.of("offline", "true"));
+
+            GatewayAuthenticator authenticator = header -> {
+                if (!"Bearer pr87-self-check".equals(header)) {
+                    throw new AuthenticationException("Bearer authentication is invalid");
+                }
+                return new AuthenticatedSession(principal, null, Clock.systemUTC());
+            };
+
+            RegistryGatewayWorkspaceCatalog catalog =
+                    new RegistryGatewayWorkspaceCatalog(
+                            new FileHostedProjectRegistry(registryRoot));
+            assertTrue(catalog.bindings().isEmpty());
+
+            ServerAuthorizationGate authorization = new ServerAuthorizationGate(
+                    new AuthorizationEnforcer(new AuthorizationService(
+                            new InMemoryAuthorizationPolicyStore(List.of(
+                                    RoleBinding.allow(
+                                            principal.id(),
+                                            Role.ENGINEER,
+                                            context.project().id()))))));
+
+            GatewayConfig config = new GatewayConfig(
+                    "127.0.0.1",
+                    0,
+                    Duration.ofSeconds(30),
+                    1024 * 1024,
+                    5000,
+                    4,
+                    false,
+                    false,
+                    Set.of(),
+                    Set.of());
+
+            gateway = new SecureGlspWebSocketGateway(
+                    config, authenticator, catalog, authorization, Clock.systemUTC());
+            gateway.start();
+
+            Files.move(
+                    staging,
+                    registryRoot.resolve(context.project().id().uuid().toString()));
+
+            URI endpoint = URI.create(
+                    "ws://127.0.0.1:" + gateway.localPort()
+                    + "/glsp?workspaceId="
+                    + URLEncoder.encode(
+                            context.workspace().id().value(),
+                            StandardCharsets.UTF_8));
+
+            String credential =
+                    BrowserWebSocketCredential.encodeBearerProtocol("pr87-self-check");
+            MessageListener listener = new MessageListener();
+            socket = HttpClient.newHttpClient().newWebSocketBuilder()
+                    .connectTimeout(Duration.ofSeconds(8))
+                    .subprotocols(BrowserWebSocketCredential.GLSP_PROTOCOL, credential)
+                    .buildAsync(endpoint, listener)
+                    .get(10, TimeUnit.SECONDS);
+            assertEquals(
+                    BrowserWebSocketCredential.GLSP_PROTOCOL,
+                    socket.getSubprotocol());
+            assertEquals(
+                    context.workspace().id(),
+                    catalog.resolve(context.workspace().id().value())
+                            .orElseThrow().context().workspace().id());
+
+            send(socket,
+                    "{\"jsonrpc\":\"2.0\",\"id\":87,"
+                    + "\"method\":\"initialize\",\"params\":{"
+                    + "\"applicationId\":\"KIDE Dynamic Registry GLSP Test\","
+                    + "\"protocolVersion\":\"1.0.0\"}}");
+            JsonObject initialize = listener.await(
+                    message -> responseId(message, 87));
+            assertEquals(
+                    "1.0.0",
+                    initialize.getAsJsonObject("result")
+                            .get("protocolVersion").getAsString());
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.sendClose(
+                            WebSocket.NORMAL_CLOSURE, "registry qualified").join();
                 } catch (RuntimeException ignored) { }
             }
             if (gateway != null) gateway.close();

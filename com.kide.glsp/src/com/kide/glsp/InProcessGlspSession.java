@@ -7,6 +7,7 @@ import java.io.PipedOutputStream;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.glsp.server.gson.ServerGsonConfigurator;
@@ -26,6 +27,7 @@ final class InProcessGlspSession implements Closeable {
     }
 
     private static final int PIPE_BUFFER_BYTES = 1024 * 1024;
+    private static final long SHUTDOWN_WAIT_MILLIS = 2000L;
 
     private final int maxMessageBytes;
     private final Outbound outbound;
@@ -125,9 +127,42 @@ final class InProcessGlspSession implements Closeable {
         closeQuietly(serverInput);
         closeQuietly(serverOutput);
         closeQuietly(serverToClient);
+
+        Thread serverWorker = serverThread;
+        Thread readerWorker = readerThread;
+
+        /*
+         * Do not interrupt the GLSP server thread here. A client can disconnect
+         * while Guice is still loading DefaultGLSPServer for the first time.
+         * Interrupting that thread during JVM class initialization can abort
+         * Log4j provider discovery and permanently poison DefaultGLSPServer for
+         * the enclosing OSGi test/runtime classloader. Closing the pipes and
+         * executor is sufficient to make the launcher unwind once startup has
+         * completed safely.
+         */
+        if (readerWorker != null) readerWorker.interrupt();
+
         executor.shutdownNow();
-        if (serverThread != null) serverThread.interrupt();
-        if (readerThread != null) readerThread.interrupt();
+        awaitExecutorTermination(executor);
+        joinWorker(serverWorker);
+        joinWorker(readerWorker);
+    }
+
+    private static void awaitExecutorTermination(ExecutorService executor) {
+        try {
+            executor.awaitTermination(SHUTDOWN_WAIT_MILLIS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static void joinWorker(Thread worker) {
+        if (worker == null || worker == Thread.currentThread()) return;
+        try {
+            worker.join(SHUTDOWN_WAIT_MILLIS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private static void closeQuietly(Closeable closeable) {
