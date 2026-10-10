@@ -213,7 +213,7 @@ steps:
           --max 1 \
           --session-affinity \
           --add-volume "mount-path=/data,type=cloud-storage,bucket=${_KIDE_DATA_BUCKET},readonly=false,mount-options=uid=10001;gid=10001" \
-          --set-env-vars "^|^KIDE_FIREBASE_PROJECT_ID=$${KIDE_FIREBASE_PROJECT_ID}|KIDE_FIREBASE_ADMIN_UID=${KIDE_FIREBASE_ADMIN_UID}|KIDE_FIREBASE_ENGINEER_UIDS=${_KIDE_FIREBASE_ENGINEER_UIDS}" \
+          --set-env-vars "^|^KIDE_FIREBASE_PROJECT_ID=$${KIDE_FIREBASE_PROJECT_ID}|KIDE_FIREBASE_ADMIN_UID=$${KIDE_FIREBASE_ADMIN_UID}|KIDE_FIREBASE_ENGINEER_UIDS=${_KIDE_FIREBASE_ENGINEER_UIDS}" \
           --labels "kide-component=backend,kide-build-id=${BUILD_ID}" \
           --quiet
 
