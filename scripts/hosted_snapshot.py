@@ -8,6 +8,7 @@ Cloud Storage FUSE mount without separately qualifying atomic rename.
 from __future__ import annotations
 
 import argparse
+import ctypes
 import datetime as dt
 import hashlib
 import json
@@ -28,9 +29,9 @@ PROJECT_ID = re.compile(r"kide:project:([0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{
 WORKSPACE_ID = re.compile(r"kide:workspace:[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\Z")
 PROJECT_DESCRIPTOR = "project/.kide/enterprise-context.properties"
 WORKSPACE_DESCRIPTOR = "workspace/.metadata/.plugins/com.kide.enterprise.context/workspace.properties"
-MAX_FILES = 200_000
-MAX_BYTES = 2 * 1024 * 1024 * 1024
-MAX_FILE_BYTES = 64 * 1024 * 1024
+MAX_FILES = 50_000
+MAX_BYTES = 256 * 1024 * 1024
+MAX_FILE_BYTES = 32 * 1024 * 1024
 MAX_MANIFEST_BYTES = 32 * 1024 * 1024
 
 
@@ -71,6 +72,11 @@ def descriptor(data: bytes) -> dict[str, str]:
 
 def validate_contexts(files: dict[str, bytes], directories: set[str]) -> int:
     slots = {name.split("/", 1)[0] for name in files}
+    all_roots = {name.split("/", 1)[0] for name in files} | {
+        name.split("/", 1)[0] for name in directories
+    }
+    if not all_roots.issubset(slots):
+        raise RecoveryError("registry has unregistered directory roots")
     if not slots:
         raise RecoveryError("empty registry is not a recovery-qualified snapshot")
     if len(slots) > 512:
@@ -172,10 +178,35 @@ def fingerprint(directories: list[str], files: dict[str, bytes]) -> str:
 
 
 def parent_safe(path: pathlib.Path) -> None:
-    if path.is_symlink() or path.parent.is_symlink():
+    candidate = path.absolute()
+    if candidate.is_symlink():
         raise RecoveryError("snapshot or restore path contains a symbolic link")
-    if not path.parent.is_dir():
+    for part in (candidate.parent, *candidate.parent.parents):
+        if part.is_symlink():
+            raise RecoveryError("snapshot or restore parent contains a symbolic link")
+    if not candidate.parent.is_dir():
         raise RecoveryError("destination parent must already exist")
+
+
+def rename_no_replace(source: pathlib.Path, target: pathlib.Path) -> None:
+    """Linux renameat2(RENAME_NOREPLACE): atomic publish without replacement.
+
+    We never downgrade to os.rename (which can replace an existing empty
+    directory when another process creates it after our preflight).
+    """
+    if sys.platform != "linux":
+        raise RecoveryError("atomic no-replace restore requires Linux renameat2")
+    libc = ctypes.CDLL(None, use_errno=True)
+    operation = getattr(libc, "renameat2", None)
+    if operation is None:
+        raise RecoveryError("filesystem cannot provide atomic no-replace restore")
+    operation.argtypes = [ctypes.c_int, ctypes.c_char_p,
+                          ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    operation.restype = ctypes.c_int
+    result = operation(-100, os.fsencode(source), -100, os.fsencode(target), 1)
+    if result:
+        err = ctypes.get_errno()
+        raise RecoveryError("atomic no-replace restore failed: " + os.strerror(err))
 
 
 def snapshot(root: pathlib.Path, output: pathlib.Path) -> dict:
@@ -299,7 +330,7 @@ def restore(archive_path: pathlib.Path, target: pathlib.Path) -> dict:
         # Empty-destination + sibling staging. Filesystem must support atomic rename.
         if target.exists() or target.is_symlink():
             raise RecoveryError("restore destination appeared during extraction")
-        os.rename(staging, target)
+        rename_no_replace(staging, target)
         return summary
     finally:
         if staging.exists():
