@@ -577,7 +577,7 @@ test("keeps API reachability distinct from denied project authorization", async 
   );
   await expect(page.getByText(/API is reachable and compatible, but firebase:kide-playwright#firebase-browser-user/))
     .toBeVisible();
-  await expect(page.getByText(/Grant an explicit ENGINEER or ADMINISTRATOR role binding/))
+  await expect(page.getByText(/KIDE_FIREBASE_ENGINEER_UIDS/))
     .toBeVisible();
   await expect(page.getByText(/24f8a8d8-739c-41ec-b291-1299550f4ba9/))
     .toBeVisible();
