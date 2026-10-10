@@ -58,13 +58,17 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
         self.assertIn("SOURCE_SHA:", workflow)
         self.assertIn("org.opencontainers.image.source", workflow)
         self.assertIn("kide-cloud-run-image.txt", workflow)
-        self.assertIn("Publish runnable desktop bundles to GitHub Releases", workflow)
+        self.assertIn("Publish qualified desktop bundles to GitHub Releases", workflow)
         self.assertIn(
-            "(github.event_name == 'push' && github.ref_name != 'main') || github.event_name == 'workflow_dispatch'",
+            "if: github.event_name == 'workflow_dispatch' && github.ref_name == 'main'",
             workflow,
         )
+        self.assertIn("needs: desktop", workflow)
+        self.assertIn("needs: cloud-run", workflow)
+        self.assertIn("permissions:\n  contents: read", workflow)
+        self.assertIn("name: Publish qualified Cloud Run image (trusted main only)", workflow)
         self.assertIn("gh release create", workflow)
-        self.assertIn("gh release upload", workflow)
+        self.assertNotIn("gh release upload", workflow)
         self.assertIn("--prerelease", workflow)
         self.assertIn("branch-${branch_slug}-build-${short_sha}", workflow)
         self.assertNotIn("pr45-build-", workflow)
