@@ -163,6 +163,7 @@ export class KideLspClient {
   private readonly notifications = new Map<string, Set<NotificationHandler>>();
   private applyEditHandler: ApplyEditHandler | undefined;
   private connected = false;
+  private readonly disconnectListeners = new Set<() => void>();
 
   capabilities: ServerCapabilities = {};
 
@@ -211,11 +212,16 @@ export class KideLspClient {
 
     socket.addEventListener("message", (event) => this.onMessage(event.data));
     socket.addEventListener("close", () => {
+      if (this.socket !== socket) return;
       this.connected = false;
       this.rejectPending(new Error("Language service connection closed."));
+      this.emitDisconnect();
     });
     socket.addEventListener("error", () => {
+      if (this.socket !== socket) return;
+      this.connected = false;
       this.rejectPending(new Error("Language service connection failed."));
+      this.emitDisconnect();
     });
 
     const initialized = await this.request<{ capabilities?: ServerCapabilities }>(
@@ -236,6 +242,15 @@ export class KideLspClient {
     this.capabilities = initialized?.capabilities ?? {};
     this.notify("initialized", {});
     this.connected = true;
+  }
+
+  onDisconnect(listener: () => void): () => void {
+    this.disconnectListeners.add(listener);
+    return () => this.disconnectListeners.delete(listener);
+  }
+
+  private emitDisconnect(): void {
+    for (const listener of this.disconnectListeners) listener();
   }
 
   setApplyEditHandler(handler: ApplyEditHandler | undefined): void {
