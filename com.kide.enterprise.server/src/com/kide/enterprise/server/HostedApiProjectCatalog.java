@@ -16,6 +16,7 @@ import com.kide.enterprise.context.HostedProjectRegistration;
 import com.kide.enterprise.identity.AuthenticatedSession;
 import com.kide.enterprise.modelrepo.FileModelRepository;
 import com.kide.knowledge.EmbeddedKnowledgeRepository;
+import com.kide.knowledge.KnowledgeRepository;
 import com.kide.knowledge.KnowledgeTraceStore;
 import com.kide.knowledge.ProjectKnowledgeService;
 import com.kide.synthesis.ProjectSynthesisService;
@@ -30,6 +31,7 @@ public final class HostedApiProjectCatalog {
     private final FileHostedProjectRegistry registry;
     private final ServerAuthorizationGate authorization;
     private final Clock clock;
+    private final boolean bootstrapStarterKnowledge;
     private final ConcurrentMap<String, HostedApiProjectRuntime> runtimes =
             new ConcurrentHashMap<>();
 
@@ -57,14 +59,26 @@ public final class HostedApiProjectCatalog {
         if (registry.list().stream().filter(project ->
                 principal.equals(HostedProjectOwnership.principalId(project))).count()
                 >= MAX_PROJECTS_PER_CREATOR) {
-            throw new IllegalStateException("Hosted project creator quota exceeded");
+            throw new QuotaExceededException();
         }
         if (displayName == null || displayName.isBlank() || displayName.length() > 128) {
             throw new IllegalArgumentException("displayName must be 1 to 128 characters");
         }
-        HostedProjectRegistration created =
-                registry.createProject(displayName, principal);
-        return runtime(created);
+        try {
+            HostedProjectRegistration created =
+                    registry.createProject(displayName, principal);
+            return runtime(created);
+        } catch (IllegalStateException unavailable) {
+            throw new ProvisioningUnavailableException();
+        }
+    }
+
+    public static final class QuotaExceededException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+    }
+
+    public static final class ProvisioningUnavailableException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
     }
 
     private HostedApiProjectRuntime runtime(HostedProjectRegistration registration) {
@@ -82,6 +96,11 @@ public final class HostedApiProjectCatalog {
         return runtimes.computeIfAbsent(id, key -> {
             FileModelRepository models = new FileModelRepository(root);
             EmbeddedKnowledgeRepository knowledge = new EmbeddedKnowledgeRepository(root);
+            if (bootstrapStarterKnowledge && knowledge.snapshot().isEmpty()) {
+                knowledge.replace(
+                        EnterpriseApiApplication.starterKnowledge(registration.context()),
+                        KnowledgeRepository.MISSING_ETAG);
+            }
             ProjectSynthesisService synthesis =
                     new ProjectSynthesisService(root, models, knowledge);
             return new HostedApiProjectRuntime(
