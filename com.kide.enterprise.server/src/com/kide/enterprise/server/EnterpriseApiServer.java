@@ -200,6 +200,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
                     JsonObject health = new JsonObject();
                     health.addProperty("status", "UP");
                     health.addProperty("version", ApiVersion.V1.token());
+                    health.addProperty("projectCreationEnabled", hostedProjects != null);
                     JsonObject dependencies = new JsonObject();
                     dependencies.addProperty("modelRepository", "AVAILABLE");
                     dependencies.addProperty("knowledgeRepository", "AVAILABLE");
@@ -234,6 +235,14 @@ public final class EnterpriseApiServer implements AutoCloseable {
             } catch (AccessDeniedException e) {
                 writeError(response, callback, requestId, 403, ApiErrorCode.FORBIDDEN,
                         "The requested operation is not permitted.");
+                return true;
+            } catch (HostedApiProjectCatalog.QuotaExceededException e) {
+                writeError(response, callback, requestId, 429, ApiErrorCode.RATE_LIMITED,
+                        "Hosted project quota has been reached.");
+                return true;
+            } catch (HostedApiProjectCatalog.ProvisioningUnavailableException e) {
+                writeError(response, callback, requestId, 503, ApiErrorCode.SERVICE_UNAVAILABLE,
+                        "Hosted project provisioning storage is unavailable.");
                 return true;
             } catch (ProjectArchiveImportConflictException e) {
                 writeError(response, callback, requestId, 409, ApiErrorCode.CONFLICT,
