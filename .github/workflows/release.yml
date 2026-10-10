@@ -30,7 +30,7 @@ jobs:
           if [[ "$KIDE_EVENT_NAME" == "workflow_dispatch" ]]; then
             test "$KIDE_REF" = "refs/heads/main"
           elif [[ "$KIDE_EVENT_NAME" == "push" ]]; then
-            [[ "$KIDE_REF" =~ ^refs/tags/v[0-9]+\\.[0-9]+\\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
+            [[ "$KIDE_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
           else
             echo "::error::Untrusted release event."
             exit 1
