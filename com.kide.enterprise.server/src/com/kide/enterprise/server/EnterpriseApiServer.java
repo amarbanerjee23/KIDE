@@ -299,7 +299,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
                 JsonArray items = new JsonArray();
                 java.util.List<HostedApiProjectRuntime> available =
                         hostedProjects == null
-                                ? java.util.List.of(legacyRuntime()) : hostedProjects.list();
+                                ? java.util.List.of(legacyRuntime()) : hostedProjects.list(session);
                 for (HostedApiProjectRuntime project : available) {
                     try {
                         project.authorization().requireApiProjectAccess(session, project.context());
@@ -338,7 +338,7 @@ public final class EnterpriseApiServer implements AutoCloseable {
         if (segments.length >= 2 && "projects".equals(segments[0])) {
             HostedApiProjectRuntime p = hostedProjects == null
                     ? legacyRuntime()
-                    : hostedProjects.resolve(segments[1])
+                    : hostedProjects.resolve(segments[1], session)
                             .orElseThrow(ResourceNotFoundException::new);
             requireProject(p, segments[1]);
             p.authorization().requireApiProjectAccess(session, p.context());
