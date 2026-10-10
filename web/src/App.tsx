@@ -199,6 +199,7 @@ export default function App() {
   const serviceRecoveryBusy = useRef(false);
   const lspAttemptRef = useRef(0);
   const collaborationAttemptRef = useRef(0);
+  const projectOpenAttemptRef = useRef(0);
   const lspSessionTokenRef = useRef("");
   const lspSessionOriginRef = useRef("");
   const lspController = useRef<MonacoLspController | undefined>(undefined);
@@ -523,6 +524,7 @@ export default function App() {
   }
 
   async function signOutFirebase() {
+    ++projectOpenAttemptRef.current;
     firebaseAuth.signOut();
     setToken("");
     setProjects([]);
@@ -586,7 +588,11 @@ export default function App() {
     const compatibilityIssues = runtimeCompatibilityIssues(version);
     if (compatibilityIssues.length > 0) {
       setProjects([]);
-      if (projectRef.current) await resetProjectWorkspace();
+      if (projectRef.current) {
+        ++projectOpenAttemptRef.current;
+        await resetProjectWorkspace();
+        setProjectState(undefined);
+      }
       setServiceStatus(`Incompatible · backend ${version.buildId}`);
       setNotice(
         `KIDE runtime compatibility check failed: ${compatibilityIssues.join("; ")}. ` +
@@ -636,15 +642,22 @@ export default function App() {
   }
 
   async function openProject(item: Project): Promise<boolean> {
+    const attempt = ++projectOpenAttemptRef.current;
+    const uid = firebaseAuth.user?.uid;
+    const valid = () => projectOpenAttemptRef.current === attempt &&
+      firebaseAuth.user?.uid === uid && Boolean(uid);
     setNotice("");
     setConflict(undefined);
     try {
       const opened = await client.getProject(item.id);
+      if (!valid()) return false;
       await resetProjectWorkspace();
+      if (!valid()) return false;
       setProjectState(opened);
       setLocalArchiveName(undefined);
 
       const modelList = await client.listModels(opened.id);
+      if (!valid() || projectRef.current?.id !== opened.id) return false;
       updateEntries(() =>
         modelList.items.map((model) => remoteSummaryEntry(opened.id, model))
       );
@@ -654,12 +667,16 @@ export default function App() {
       if (krl) setGenerationKrlModelId(krl.id);
 
       await connectLanguageServices(opened);
+      if (!valid() || projectRef.current?.id !== opened.id) return false;
       await connectCollaboration(opened);
+      if (!valid() || projectRef.current?.id !== opened.id) return false;
       await refreshKnowledgeTraces(opened.id);
+      if (!valid() || projectRef.current?.id !== opened.id) return false;
 
       const preferred = preferredModel(modelList.items);
       if (preferred) {
         const loaded = await loadSpecificModel(preferred.id);
+        if (!valid() || projectRef.current?.id !== opened.id) return false;
         if (!loaded) return false;
         setNotice(
           `Opened ${opened.displayName} · ${modelList.items.length} project file(s) · ${preferred.id} ready.`
@@ -671,7 +688,7 @@ export default function App() {
       }
       return true;
     } catch (error) {
-      showError(error);
+      if (valid()) showError(error);
       return false;
     }
   }
@@ -1116,6 +1133,7 @@ export default function App() {
     setConflict(undefined);
     try {
       const model = await clientRef.current.getModel(currentProject.id, id);
+      if (projectRef.current?.id !== currentProject.id) return false;
       const entry = remoteEntry(currentProject.id, model);
       replaceRemoteEntry(entry);
       workspace.ensure(entry.path, model.content);
@@ -1413,6 +1431,7 @@ export default function App() {
       const imported = importProjectArchive(
         new Uint8Array(await file.arrayBuffer())
       );
+      ++projectOpenAttemptRef.current;
       await resetProjectWorkspace();
       setProjectState(undefined);
       setLocalArchiveName(file.name);
