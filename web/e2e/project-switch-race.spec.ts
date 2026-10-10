@@ -79,7 +79,11 @@ test("switching projects cancels a stalled Xtext handshake without reviving the 
       })
     }));
     await page.route(`**/api/v1/projects/${project.id}/collaboration/sessions*`, (route) => {
-      if (route.request().method() === "POST") {
+      // A model-change pulse uses POST .../sessions/{id}/heartbeat, which
+      // is not a second join. Count only POST /collaboration/sessions.
+      const isJoin = route.request().method() === "POST" &&
+        new URL(route.request().url()).pathname.endsWith("/collaboration/sessions");
+      if (isJoin) {
         if (project.id === first.id) oldPresenceJoins += 1;
         else newPresenceJoins += 1;
       }
