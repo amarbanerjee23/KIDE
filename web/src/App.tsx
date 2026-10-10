@@ -196,6 +196,7 @@ export default function App() {
   const pendingDiagramPath = useRef<string | undefined>(undefined);
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
   const lspClient = useRef<KideLspClient | undefined>(undefined);
+  const serviceRecoveryBusy = useRef(false);
   const lspController = useRef<MonacoLspController | undefined>(undefined);
   const workspaceChange = useRef<(path: string, value: string) => void>(() => {});
   const workspace = useMemo(
@@ -290,6 +291,32 @@ export default function App() {
     if (!token || !projectRef.current) return;
     void connectLanguageServices(projectRef.current);
   }, [token]);
+  // Gateway WebSockets can be closed by Cloud Run or idle proxies. Re-establish
+  // a real authenticated session, never fabricate an Online health state.
+  useEffect(() => {
+    const timer = globalThis.setInterval(() => {
+      const opened = projectRef.current;
+      if (!opened || !firebaseAuth.user || serviceRecoveryBusy.current) return;
+      const needsLsp = lspStatus !== "Connecting…" &&
+        !lspClient.current?.isConnected;
+      const needsCollaboration = !collaborationStatus.startsWith("Connected") &&
+        collaborationStatus !== "Connecting…";
+      if (!needsLsp && !needsCollaboration) return;
+      serviceRecoveryBusy.current = true;
+      void (async () => {
+        try {
+          if (needsLsp) await connectLanguageServices(opened);
+          if (needsCollaboration && projectRef.current?.id === opened.id) {
+            await connectCollaboration(opened);
+          }
+        } finally {
+          serviceRecoveryBusy.current = false;
+        }
+      })();
+    }, 30_000);
+    return () => globalThis.clearInterval(timer);
+  }, [lspStatus, collaborationStatus, gatewayOrigin, firebaseAuth]);
+
 
   useEffect(() => {
     const openRequestedDiagram =
@@ -701,8 +728,9 @@ export default function App() {
     }
 
     setLspStatus("Connecting…");
+    let connection: KideLspClient | undefined;
     try {
-      const connection = new KideLspClient(
+      connection = new KideLspClient(
         gatewayOrigin,
         accessToken,
         opened.workspaceId
@@ -721,6 +749,7 @@ export default function App() {
         void refreshOutline(selectedPathRef.current);
       }
     } catch (error) {
+      if (connection) await connection.dispose();
       setLspStatus("Connection failed");
       showError(error);
     }
