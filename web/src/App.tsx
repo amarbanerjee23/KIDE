@@ -122,6 +122,7 @@ export default function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [newProjectName, setNewProjectName] = useState("");
   const [creatingProject, setCreatingProject] = useState(false);
+  const [canCreateProjects, setCanCreateProjects] = useState(false);
   const [project, setProject] = useState<Project>();
   const projectRef = useRef<Project | undefined>(undefined);
   projectRef.current = project;
@@ -518,9 +519,11 @@ export default function App() {
     let health: Health;
     try {
       health = await client.health();
+      setCanCreateProjects(health.projectCreationEnabled === true);
       setServiceStatus(`Connected · ${health.status} · API ${health.version}`);
     } catch (error) {
       setRuntimeVersion(undefined);
+      setCanCreateProjects(false);
       setServiceStatus("Not connected");
       showError(error);
       return;
@@ -2393,7 +2396,7 @@ export default function App() {
                   ⌕
                 </button>
               </div>
-          {firebaseAuth.user && runtimeVersion && (
+          {firebaseAuth.user && runtimeVersion && canCreateProjects && (
             <form
               aria-label="Create hosted project"
               className="project-actions"
