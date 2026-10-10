@@ -56,18 +56,14 @@ def verify() -> list[str]:
             if dangerous in section:
                 failures.append("PR qualification includes write or publication: " + name)
 
-    desktop = job(workflow, "publish-desktop")
-    for marker in (
-        "needs: desktop",
-        "github.event_name == 'workflow_dispatch' && github.ref_name == 'main'",
-        "permissions:\n      contents: write",
-        "Existing KIDE preview release is immutable",
-        "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
-    ):
-        if marker not in desktop:
-            failures.append("trusted desktop publisher missing: " + marker)
-    if "--clobber" in desktop:
-        failures.append("desktop releases must not be overwritten")
+    # PR93: CI may retain Actions artifacts but must never publish GitHub Releases.
+    if job(workflow, "publish-desktop"):
+        failures.append("unsigned desktop GitHub Release publisher is forbidden")
+    for marker in ("gh release create ", "gh release upload ", "gh release delete "):
+        if marker in workflow:
+            failures.append("GitHub Release mutation is forbidden outside trusted release workflow")
+    if "contents: write" in workflow:
+        failures.append("artifact qualification workflow needs no GitHub content-write token")
 
     image = job(workflow, "publish-cloud-run")
     for marker in (
@@ -97,8 +93,41 @@ def verify() -> list[str]:
                  "sign-macos", "publish"):
         if "environment: trusted-release" not in job(release, name):
             failures.append("trusted-release environment missing from: " + name)
-    if "needs: verify-release-source" not in job(release, "validate-release"):
-        failures.append("release secrets can be accessed before source verification")
+    gate = job(release, "verify-quality-gates")
+    for marker in (
+        "needs: verify-release-source",
+        "actions: read",
+        "python3 scripts/verify_stable_build.py",
+    ):
+        if marker not in gate:
+            failures.append("stable release must depend on green exact-main CI: " + marker)
+    if "needs: verify-quality-gates" not in job(release, "validate-release"):
+        failures.append("release secrets can be accessed before quality verification")
+    if "git rev-parse origin/main" not in source:
+        failures.append("release source must be the current main HEAD")
+    if "group: kide-single-stable-release" not in release:
+        failures.append("stable release publication/cleanup must be serialized")
+    publish = job(release, "publish")
+    for marker in (
+        "needs: [build-release, sign-windows, sign-macos]",
+        "python3 scripts/finalize_release_evidence.py",
+        "actions/attest-build-provenance@",
+        "gh release create ",
+        "--latest",
+        "python3 scripts/retain_latest_stable_release.py",
+        "--keep-tag",
+        "--expected-sha",
+        "--apply",
+    ):
+        if marker not in publish:
+            failures.append("trusted stable publisher is missing: " + marker)
+    if "--prerelease" in publish:
+        failures.append("stable publisher must not mark output as prerelease")
+    if publish.find("gh release create ") >= publish.find("python3 scripts/retain_latest_stable_release.py"):
+        failures.append("cleanup must occur only after successful stable publication")
+    if "python3 scripts/check_stable_release_version.py" not in job(release, "build-release"):
+        failures.append("stable release must reject stale or downgraded versions")
+
     if "KIDE_REQUESTED_VERSION: " + EXPR + " inputs.version }}" not in release:
         failures.append("manual release input must use an environment variable")
     if '"' + EXPR + " github.event.inputs.version }}" + '"' in release:
