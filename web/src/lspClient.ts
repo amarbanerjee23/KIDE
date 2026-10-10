@@ -166,6 +166,10 @@ export class KideLspClient {
 
   capabilities: ServerCapabilities = {};
 
+  get isConnected(): boolean {
+    return this.connected && this.socket?.readyState === WebSocket.OPEN;
+  }
+
   constructor(
     private readonly gatewayOrigin: string,
     private readonly accessToken: string,

@@ -97,6 +97,7 @@ describe("KideLspClient", () => {
     );
 
     await client.connect();
+    expect(client.isConnected).toBe(true);
     const socket = FakeWebSocket.last!;
     expect(socket.url).toBe(
       "wss://gateway.example/lsp?workspaceId=W04-001"
@@ -181,7 +182,18 @@ describe("KideLspClient", () => {
     }
 
     await client.dispose();
+    expect(client.isConnected).toBe(false);
     expect(socket.sent.some((message) => message.method === "shutdown")).toBe(true);
     expect(socket.sent.some((message) => message.method === "exit")).toBe(true);
+  });
+
+  it("reports loss of a live gateway socket instead of showing stale Online status", async () => {
+    vi.stubGlobal("WebSocket", FakeWebSocket as unknown as typeof WebSocket);
+    const client = new KideLspClient("https://gateway.example", "jwt", "W04-001");
+    await client.connect();
+    expect(client.isConnected).toBe(true);
+    FakeWebSocket.last!.close();
+    expect(client.isConnected).toBe(false);
+    await client.dispose();
   });
 });

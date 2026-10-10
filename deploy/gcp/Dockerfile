@@ -28,6 +28,7 @@ RUN apt-get update \
 COPY --from=kide-builder /src/releng/com.kide.languageserver.repository/target/products/com.kide.languageserver.product/linux/gtk/x86_64/ /opt/kide/
 COPY deploy/gcp/nginx.conf.template /opt/kide-cloud/nginx.conf.template
 COPY deploy/gcp/entrypoint.sh /usr/local/bin/kide-cloud-run-entrypoint
+COPY deploy/gcp/legacy-role-bindings.sh /opt/kide-cloud/legacy-role-bindings.sh
 
 RUN chmod 0755 /usr/local/bin/kide-cloud-run-entrypoint /opt/kide/kide-languageserver-headless \
     && chown -R kide:kide /opt/kide-cloud /usr/share/nginx/html
