@@ -200,7 +200,14 @@ export class KideLspClient {
         globalThis.clearTimeout(timer);
         reject(new Error("Language service WebSocket could not be opened."));
       }, { once: true });
+      socket.addEventListener("close", () => {
+        globalThis.clearTimeout(timer);
+        reject(new Error("Language service WebSocket closed before opening."));
+      }, { once: true });
     });
+    if (this.socket !== socket || socket.readyState !== WebSocket.OPEN) {
+      throw new Error("Language service connection was superseded.");
+    }
 
     socket.addEventListener("message", (event) => this.onMessage(event.data));
     socket.addEventListener("close", () => {
@@ -223,6 +230,9 @@ export class KideLspClient {
         capabilities: clientCapabilities()
       }
     );
+    if (this.socket !== socket || socket.readyState !== WebSocket.OPEN) {
+      throw new Error("Language service initialization was superseded.");
+    }
     this.capabilities = initialized?.capabilities ?? {};
     this.notify("initialized", {});
     this.connected = true;
@@ -379,6 +389,22 @@ export class KideLspClient {
       command,
       arguments: args
     });
+  }
+
+  /**
+   * Immediate teardown for project switches, sign-out and stale handshakes.
+   * Never wait for an LSP shutdown RPC from an unavailable Cloud Run gateway.
+   */
+  abort(): void {
+    const socket = this.socket;
+    this.socket = undefined;
+    this.connected = false;
+    this.capabilities = {};
+    this.rejectPending(new Error("Language service session superseded."));
+    if (socket && (socket.readyState === WebSocket.CONNECTING ||
+                   socket.readyState === WebSocket.OPEN)) {
+      socket.close(1000, "KIDE web session superseded");
+    }
   }
 
   async dispose(): Promise<void> {
