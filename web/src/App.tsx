@@ -197,6 +197,10 @@ export default function App() {
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
   const lspClient = useRef<KideLspClient | undefined>(undefined);
   const serviceRecoveryBusy = useRef(false);
+  const lspAttemptRef = useRef(0);
+  const collaborationAttemptRef = useRef(0);
+  const lspSessionTokenRef = useRef("");
+  const lspSessionOriginRef = useRef("");
   const lspController = useRef<MonacoLspController | undefined>(undefined);
   const workspaceChange = useRef<(path: string, value: string) => void>(() => {});
   const workspace = useMemo(
@@ -272,14 +276,19 @@ export default function App() {
 
   useEffect(() => {
     const timer = globalThis.setInterval(() => {
-      if (!firebaseAuth.user) return;
+      const uid = firebaseAuth.user?.uid;
+      if (!uid) return;
       void firebaseAuth.idToken()
         .then((nextToken) => {
+          if (firebaseAuth.user?.uid !== uid) return;
           if (nextToken !== tokenRef.current) setToken(nextToken);
         })
         .catch((error) => {
+          if (firebaseAuth.user?.uid !== uid) return;
           firebaseAuth.signOut();
           setToken("");
+          void resetProjectWorkspace();
+          setServiceStatus("Not connected");
           setAuthStatus("Session expired");
           setNotice(error instanceof Error ? error.message : "Firebase session expired.");
         });
@@ -288,9 +297,13 @@ export default function App() {
   }, [firebaseAuth]);
 
   useEffect(() => {
-    if (!token || !projectRef.current) return;
-    void connectLanguageServices(projectRef.current);
-  }, [token]);
+    const opened = projectRef.current;
+    if (!token || !opened || !firebaseAuth.user || !lspClient.current) return;
+    if (lspSessionTokenRef.current !== token ||
+        lspSessionOriginRef.current !== gatewayOrigin) {
+      void connectLanguageServices(opened);
+    }
+  }, [token, gatewayOrigin]);
   // Gateway WebSockets can be closed by Cloud Run or idle proxies. Re-establish
   // a real authenticated session, never fabricate an Online health state.
   useEffect(() => {
@@ -713,72 +726,92 @@ export default function App() {
 
   async function connectLanguageServices(opened = projectRef.current) {
     if (!opened) return;
-    await disposeLanguageServices();
-    if (!opened.workspaceId) {
-      setLspStatus("Unavailable · workspace ID missing");
-      return;
-    }
-    let accessToken = "";
-    try {
-      accessToken = (await firebaseAuth.idToken()).trim();
-      if (accessToken !== tokenRef.current) setToken(accessToken);
-    } catch {
-      setLspStatus("Unavailable · Firebase sign-in required");
-      return;
-    }
-
+    // Monotonically invalidate every earlier handshake before an await can
+    // resume. Disconnect old clients immediately instead of waiting on an
+    // orphaned shutdown request while switching projects.
+    const attempt = ++lspAttemptRef.current;
+    const uid = firebaseAuth.user?.uid;
+    const isCurrent = () => lspAttemptRef.current === attempt &&
+      projectRef.current?.id === opened.id && firebaseAuth.user?.uid === uid &&
+      Boolean(uid);
+    lspController.current?.dispose();
+    lspController.current = undefined;
+    lspClient.current?.abort();
+    lspClient.current = undefined;
+    lspSessionTokenRef.current = "";
+    lspSessionOriginRef.current = "";
     setLspStatus("Connecting…");
+
+    if (!opened.workspaceId) {
+      if (isCurrent()) setLspStatus("Unavailable · workspace ID missing");
+      return;
+    }
     let connection: KideLspClient | undefined;
     try {
-      connection = new KideLspClient(
-        gatewayOrigin,
-        accessToken,
-        opened.workspaceId
-      );
+      const accessToken = (await firebaseAuth.idToken()).trim();
+      if (!isCurrent()) return;
+      if (!accessToken) throw new Error("Firebase sign-in required for Xtext.");
+      if (accessToken !== tokenRef.current) setToken(accessToken);
+
+      connection = new KideLspClient(gatewayOrigin, accessToken, opened.workspaceId);
       await connection.connect();
+      if (!isCurrent()) {
+        connection.abort();
+        return;
+      }
       const controller = new MonacoLspController(
-        connection,
-        workspace,
-        { ensureDocument: ensureLspDocument }
+        connection, workspace, { ensureDocument: ensureLspDocument }
       );
       lspClient.current = connection;
       lspController.current = controller;
+      lspSessionTokenRef.current = accessToken;
+      lspSessionOriginRef.current = gatewayOrigin;
       setLspStatus("Connected · Xtext LSP");
       setSymbols([]);
-      if (selectedPathRef.current) {
-        void refreshOutline(selectedPathRef.current);
-      }
+      if (selectedPathRef.current) void refreshOutline(selectedPathRef.current);
     } catch (error) {
-      if (connection) await connection.dispose();
-      setLspStatus("Connection failed");
-      showError(error);
+      connection?.abort();
+      if (isCurrent()) {
+        setLspStatus("Connection failed");
+        showError(error);
+      }
     }
   }
 
   async function connectCollaboration(opened = projectRef.current) {
     if (!opened) return;
-    await disposeCollaboration();
+    const attempt = ++collaborationAttemptRef.current;
+    const uid = firebaseAuth.user?.uid;
+    const old = collaboration.current;
+    collaboration.current = undefined;
+    setPresence([]);
     setCollaborationStatus("Connecting…");
+    if (old) await old.disconnect();
+    const valid = () => collaborationAttemptRef.current === attempt &&
+      projectRef.current?.id === opened.id && firebaseAuth.user?.uid === uid &&
+      Boolean(uid);
+    if (!valid()) return;
 
     const coordinator = new CollaborationCoordinator(
       clientRef.current,
       opened.id,
       {
         onPresence(items) {
-          setPresence(items);
+          if (valid() && collaboration.current === coordinator) setPresence(items);
         },
         onSession(session) {
+          if (!valid() || collaboration.current !== coordinator) return;
           setCollaborationStatus(`Connected · ${session.displayName}`);
           try {
             sessionStorage.setItem(
-              `kide:collaboration-session:${opened.id}`,
-              session.id
+              `kide:collaboration-session:${opened.id}`, session.id
             );
           } catch {
             // Presence remains functional without browser session persistence.
           }
         },
         onError(error) {
+          if (!valid() || collaboration.current !== coordinator) return;
           setCollaborationStatus("Connection degraded");
           setNotice(error.message);
         }
@@ -795,20 +828,28 @@ export default function App() {
     }
     try {
       await coordinator.connect(existingSessionId, selectedPathRef.current);
+      if (!valid() || collaboration.current !== coordinator) {
+        await coordinator.disconnect();
+        return;
+      }
       await refreshReviews(opened.id);
     } catch (error) {
-      collaboration.current = undefined;
-      setCollaborationStatus("Connection failed");
-      showError(error);
+      await coordinator.disconnect();
+      if (valid() && collaboration.current === coordinator) {
+        collaboration.current = undefined;
+        setCollaborationStatus("Connection failed");
+        showError(error);
+      }
     }
   }
 
   async function disposeCollaboration() {
+    ++collaborationAttemptRef.current;
     const current = collaboration.current;
     collaboration.current = undefined;
-    if (current) await current.disconnect();
     setPresence([]);
     setCollaborationStatus("Not connected");
+    if (current) await current.disconnect();
   }
 
   async function refreshReviews(projectId = projectRef.current?.id) {
@@ -1628,11 +1669,13 @@ export default function App() {
   }
 
   async function disposeLanguageServices() {
+    ++lspAttemptRef.current;
     lspController.current?.dispose();
     lspController.current = undefined;
-    const connection = lspClient.current;
+    lspClient.current?.abort();
     lspClient.current = undefined;
-    if (connection) await connection.dispose();
+    lspSessionTokenRef.current = "";
+    lspSessionOriginRef.current = "";
     setLspStatus("Not connected");
   }
 
