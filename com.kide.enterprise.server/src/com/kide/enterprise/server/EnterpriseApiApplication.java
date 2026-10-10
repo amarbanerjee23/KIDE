@@ -139,7 +139,8 @@ public final class EnterpriseApiApplication implements IApplication {
                         knowledge, synthesis, generation, audit, Clock.systemUTC());
             } else {
                 HostedApiProjectCatalog projects =
-                        new HostedApiProjectCatalog(registry, authorization, Clock.systemUTC());
+                        new HostedApiProjectCatalog(registry, authorization, Clock.systemUTC(),
+                                bool(env, "KIDE_API_BOOTSTRAP_STARTER_KNOWLEDGE", false));
                 server = new EnterpriseApiServer(
                         config, authenticator::authenticateAuthorizationHeader,
                         context, authorization, modelRepository, collaboration,
@@ -173,7 +174,7 @@ public final class EnterpriseApiApplication implements IApplication {
         closeConfig();
     }
 
-    private static KnowledgeDataset starterKnowledge(EnterpriseContext context) {
+    static KnowledgeDataset starterKnowledge(EnterpriseContext context) {
         String capability = "urn:kide:capability:Observe";
         String device = "urn:kide:device:camera";
         return new KnowledgeDataset(
