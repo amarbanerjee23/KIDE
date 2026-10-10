@@ -70,6 +70,16 @@ export class KideApiClient {
     return this.request<ProjectList>(apiV1.listProjects(), {});
   }
 
+  createProject(displayName: string): Promise<Project> {
+    return this.request<Project>(
+      apiV1.createProject(),
+      {
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName })
+      }
+    );
+  }
+
   getProject(projectId: string): Promise<Project> {
     return this.request<Project>(
       apiV1.getProject(projectId),
