@@ -26,12 +26,14 @@ import com.kide.enterprise.audit.InMemoryAuditLedger;
 import com.kide.enterprise.authorization.AuthorizationEnforcer;
 import com.kide.enterprise.authorization.AuthorizationService;
 import com.kide.enterprise.authorization.InMemoryAuthorizationPolicyStore;
+import com.kide.enterprise.authorization.HostedRegistryAuthorizationPolicyStore;
 import com.kide.enterprise.authorization.Role;
 import com.kide.enterprise.authorization.RoleBinding;
 import com.kide.enterprise.authorization.ServerAuthorizationGate;
 import com.kide.enterprise.context.EnterpriseContext;
 import com.kide.enterprise.context.EnterpriseContextResult;
 import com.kide.enterprise.context.EnterpriseContextStore;
+import com.kide.enterprise.context.FileHostedProjectRegistry;
 import com.kide.enterprise.identity.AuthenticatedSession;
 import com.kide.enterprise.identity.AuthenticationException;
 import com.kide.enterprise.identity.AuthenticationMethod;
@@ -842,6 +844,104 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
                     "Bearer pr33-reviewer", synthesisRequest.toString());
             requireStatus(reviewerCannotSynthesize, 403);
 
+            // PR88: real HTTP integration using the same registry and dynamic
+            // authorization policies as production REST/LSP/GLSP.
+            Path hostedRoot = Files.createDirectories(root.resolve("hosted-projects"));
+            FileHostedProjectRegistry hostedRegistry =
+                    new FileHostedProjectRegistry(hostedRoot);
+            ServerAuthorizationGate hostedAuth = new ServerAuthorizationGate(
+                    new AuthorizationEnforcer(
+                            new AuthorizationService(
+                                    new HostedRegistryAuthorizationPolicyStore(
+                                            hostedRegistry, List.of()))));
+            HostedApiProjectCatalog hostedCatalog =
+                    new HostedApiProjectCatalog(
+                            hostedRegistry, hostedAuth, Clock.systemUTC(), true);
+            try (EnterpriseApiServer hosted = new EnterpriseApiServer(
+                    new EnterpriseApiConfig(
+                            "127.0.0.1", 0, 1024 * 1024, Duration.ofSeconds(20),
+                            false, false, Set.of(), Set.of()),
+                    header -> {
+                        if ("Bearer pr26-self-check".equals(header)) {
+                            return new AuthenticatedSession(
+                                    principal, null, Clock.systemUTC());
+                        }
+                        if ("Bearer pr33-reviewer".equals(header)) {
+                            return new AuthenticatedSession(
+                                    reviewer, null, Clock.systemUTC());
+                        }
+                        throw new AuthenticationException("invalid bearer");
+                    },
+                    context, authorization, modelRepository, collaboration,
+                    knowledge, synthesis, generation,
+                    audit, Clock.systemUTC(), hostedCatalog)) {
+                hosted.start();
+                URI live = URI.create("http://127.0.0.1:" + hosted.localPort());
+                HttpResponse<String> before = send(
+                        client, live.resolve("/api/v1/projects"), "GET",
+                        "Bearer pr26-self-check", null);
+                requireStatus(before, 200);
+                if (json(before).getAsJsonArray("items").size() != 0) {
+                    throw new AssertionError("empty registry disclosed a legacy project");
+                }
+                HttpResponse<String> rejectedUnauthenticated = send(
+                        client, live.resolve("/api/v1/projects"), "POST",
+                        null, "{\"displayName\":\"Not Authorized\"}");
+                requireStatus(rejectedUnauthenticated, 401);
+
+                HttpResponse<String> created = send(
+                        client, live.resolve("/api/v1/projects"), "POST",
+                        "Bearer pr26-self-check", "{\"displayName\":\"Owned Engineering\"}");
+                requireStatus(created, 201);
+                String hostedProjectId = json(created).get("id").getAsString();
+                String hostedWorkspaceId = json(created).get("workspaceId").getAsString();
+                if (hostedRegistry.resolveProject(hostedProjectId).isEmpty()
+                        || hostedRegistry.resolveWorkspace(hostedWorkspaceId).isEmpty()) {
+                    throw new AssertionError("created identity is not registered");
+                }
+
+                HttpResponse<String> ownerList = send(
+                        client, live.resolve("/api/v1/projects"), "GET",
+                        "Bearer pr26-self-check", null);
+                requireStatus(ownerList, 200);
+                if (json(ownerList).getAsJsonArray("items").size() != 1) {
+                    throw new AssertionError("owner does not see registered project");
+                }
+                HttpResponse<String> otherList = send(
+                        client, live.resolve("/api/v1/projects"), "GET",
+                        "Bearer pr33-reviewer", null);
+                requireStatus(otherList, 200);
+                if (json(otherList).getAsJsonArray("items").size() != 0) {
+                    throw new AssertionError("another principal can enumerate tenant identities");
+                }
+                HttpResponse<String> blockedTenant = send(
+                        client, live.resolve("/api/v1/projects/" + hostedProjectId),
+                        "GET", "Bearer pr33-reviewer", null);
+                requireStatus(blockedTenant, 403);
+                HttpResponse<String> starter = send(
+                        client, live.resolve("/api/v1/projects/" + hostedProjectId + "/models"),
+                        "POST", "Bearer pr26-self-check", null);
+                requireStatus(starter, 201);
+                if (json(starter).getAsJsonArray("items").size() != 6) {
+                    throw new AssertionError("new project cannot run model services");
+                }
+                // The role is recovered from E04 metadata, not session memory.
+                FileHostedProjectRegistry reopened =
+                        new FileHostedProjectRegistry(hostedRoot);
+                var ownerRegistration = reopened.resolveProject(hostedProjectId).orElseThrow();
+                var freshPolicy = new HostedRegistryAuthorizationPolicyStore(
+                        reopened, List.of());
+                var freshGate = new ServerAuthorizationGate(
+                        new AuthorizationEnforcer(new AuthorizationService(freshPolicy)));
+                try (AuthenticatedSession recovered = new AuthenticatedSession(
+                        principal, null, Clock.systemUTC())) {
+                    freshGate.requireApiProjectAccess(
+                            recovered, ownerRegistration.context());
+                    freshGate.requireLspWorkspaceAccess(
+                            recovered, ownerRegistration.context());
+                }
+            }
+
             if (!audit.verify() || audit.snapshot().size() < 20) {
                 throw new AssertionError("audit evidence missing or invalid");
             }
@@ -855,6 +955,7 @@ public final class EnterpriseApiSelfCheckApplication implements IApplication {
             System.out.println("KIDE PR80 CROSS-ADAPTER SEMANTIC PARITY OK");
             System.out.println("KIDE PR82 RUNTIME COMPATIBILITY HANDSHAKE OK");
             System.out.println("KIDE PR84 HOSTED ARCHIVE PROMOTION OK");
+            System.out.println("KIDE PR88 HOSTED PROJECT LIFECYCLE OK");
             return IApplication.EXIT_OK;
         } catch (Throwable failure) {
             String detail = failure.getMessage();
