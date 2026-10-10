@@ -61,10 +61,16 @@ public final class GatewayApplication implements IApplication {
                             "KIDE_GATEWAY_PROJECT_ROOT");
             GatewayWorkspaceCatalog catalog = workspaceRuntime.catalog();
 
-            List<RoleBinding> bindings = GatewayRoleBindings.parse(
-                    required(env, "KIDE_GATEWAY_ROLE_BINDINGS"),
-                    workspaceRuntime.contexts(),
-                    "KIDE_GATEWAY_ROLE_BINDINGS");
+            // An empty registry has no configured tenants at first boot.
+            // Only persisted creator grants can authorize a newly created project.
+            List<RoleBinding> bindings =
+                    !env.getOrDefault(GatewayWorkspaceRuntime.HOSTED_PROJECTS_ROOT, "").isBlank()
+                            && env.getOrDefault("KIDE_GATEWAY_ROLE_BINDINGS", "").isBlank()
+                            ? List.of()
+                            : GatewayRoleBindings.parse(
+                                    required(env, "KIDE_GATEWAY_ROLE_BINDINGS"),
+                                    workspaceRuntime.contexts(),
+                                    "KIDE_GATEWAY_ROLE_BINDINGS");
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
                     new AuthorizationEnforcer(
                             new AuthorizationService(
