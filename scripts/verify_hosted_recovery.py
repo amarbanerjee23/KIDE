@@ -32,7 +32,7 @@ def verify() -> list[str]:
     snapshot = read("scripts/hosted_snapshot.py")
     for token in (
         "MAX_BYTES", "MAX_FILES", "MAX_FILE_BYTES",
-        "project.meta.hosted.ownerPrincipalId",  # optional metadata: handled opaquely
+        "PROJECT_DESCRIPTOR",  # metadata preserved byte-for-byte, no role rewrite
         "validate_contexts(", "fingerprint(",
         "registry changed during snapshot",
         "O_NOFOLLOW",
