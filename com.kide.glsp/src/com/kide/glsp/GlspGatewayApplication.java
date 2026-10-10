@@ -15,6 +15,10 @@ import org.eclipse.equinox.app.IApplicationContext;
 import com.kide.enterprise.authorization.AuthorizationEnforcer;
 import com.kide.enterprise.authorization.AuthorizationService;
 import com.kide.enterprise.authorization.InMemoryAuthorizationPolicyStore;
+import com.kide.enterprise.authorization.AuthorizationPolicyStore;
+import com.kide.enterprise.authorization.HostedRegistryAuthorizationPolicyStore;
+import com.kide.enterprise.context.FileHostedProjectRegistry;
+import java.nio.file.Path;
 import com.kide.enterprise.authorization.RoleBinding;
 import com.kide.enterprise.authorization.ServerAuthorizationGate;
 import com.kide.languageserver.gateway.GatewayAuthenticator;
@@ -78,7 +82,7 @@ public final class GlspGatewayApplication implements IApplication {
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
                     new AuthorizationEnforcer(
                             new AuthorizationService(
-                                    new InMemoryAuthorizationPolicyStore(bindings))));
+                                    authorizationPolicy(env, bindings))));
 
             firebaseConfig = new FirebaseIdTokenConfig(
                     required(env, "KIDE_FIREBASE_PROJECT_ID"),
@@ -134,6 +138,16 @@ public final class GlspGatewayApplication implements IApplication {
             }
         }
         closeConfig();
+    }
+
+    private static AuthorizationPolicyStore authorizationPolicy(
+            Map<String, String> env, List<RoleBinding> configured) {
+        String root = env.get(GatewayWorkspaceRuntime.HOSTED_PROJECTS_ROOT);
+        if (root == null || root.isBlank()) {
+            return new InMemoryAuthorizationPolicyStore(configured);
+        }
+        return new HostedRegistryAuthorizationPolicyStore(
+                new FileHostedProjectRegistry(Path.of(root.trim())), configured);
     }
 
     private static String required(Map<String, String> env, String key) {
