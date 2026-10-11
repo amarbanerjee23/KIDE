@@ -24,6 +24,7 @@ qualify = load("pr102_qualify", "scripts/qualify_registry_storage.py")
 def cloud_service(*, mode="", root="", nfs=False):
     env = [
         {"name": "KIDE_STORAGE_MODE", "value": mode},
+        {"name": "KIDE_FIREBASE_PROJECT_ID", "value": "kide-staging"},
         {"name": "KIDE_HOSTED_PROJECTS_ROOT", "value": root},
     ]
     vol = ({"name": "data", "nfs": {"server": "10.1.2.3", "path": "/registry"}}
@@ -58,13 +59,15 @@ class HostedStorageGuardTest(unittest.TestCase):
         service = cloud_service(
             mode="registry-posix", root="/data/hosted-projects", nfs=True
         )
-        stage.verify_existing(service, "10.1.2.3", "/registry")
+        stage.verify_existing(service, "10.1.2.3", "/registry", "kide-staging")
         with self.assertRaises(stage.StagingRefusal):
-            stage.verify_existing(service, "10.1.2.4", "/registry")
+            stage.verify_existing(service, "10.1.2.4", "/registry", "kide-staging")
         with self.assertRaises(stage.StagingRefusal):
-            stage.verify_existing(service, "10.1.2.3", "/another")
+            stage.verify_existing(service, "10.1.2.3", "/another", "kide-staging")
         with self.assertRaises(stage.StagingRefusal):
-            stage.verify_existing(cloud_service(), "10.1.2.3", "/registry")
+            stage.verify_existing(cloud_service(), "10.1.2.3", "/registry", "kide-staging")
+        with self.assertRaises(stage.StagingRefusal):
+            stage.verify_existing(service, "10.1.2.3", "/registry", "wrong-tenant")
 
     def test_staging_requires_separate_service_rfc1918_and_pinned_digest(self):
         image = "asia-south1-docker.pkg.dev/stage/kide/backend@sha256:" + "a" * 64
