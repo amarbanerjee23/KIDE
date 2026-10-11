@@ -6,9 +6,9 @@ PR97 prevents old *projects* from applying stale API results, but it does not di
 
 ## Changes
 
-- Track a monotonic **model-open intent** independently from project scope. Selecting any file or tab, closing a tab, and resetting a project invalidates earlier lazy model requests.
+- Publish new model listing metadata to the synchronous entries ref before scheduling React rendering; a model fetch must not misclassify a newly inserted starter-model summary as a competing update. Track a monotonic **model-open intent** independently from project scope. Selecting any file or tab, closing a tab, and resetting a project invalidates earlier lazy model requests.
 - Capture the requested file's current Monaco text and server ETag *before* fetching. On response, compare against the live text and ETag; if either changed during the request, discard the server response.
-- Reject a background/navigation reload if the file is dirty or has an active autosave coordinator. Never dispose that autosave or synchronize over the local draft.
+- Reject a background/navigation reload if the file is dirty or has an autosave **pending or in flight**. An idle coordinator after a successful save is not considered a pending write. Never dispose an active autosave or synchronize over the local draft.
 - An explicit **Reload server revision** action is the only way to discard an already-dirty draft; it first backs up local text to `sessionStorage` using the existing project-specific conflict key. Even an explicit reload refuses to overwrite text that changed while its GET was running.
 - Only announce a successful conflict/graphical reload when the model was genuinely refreshed, not when an outdated result was discarded.
 
