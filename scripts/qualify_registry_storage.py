@@ -123,7 +123,7 @@ def qualify(root: Path, fs_type: str | None = None) -> dict:
     fd, name = tempfile.mkstemp(prefix=".kide-marker-", dir=parent)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as output:
-            os.fchmod(output.fileno(), stat.S_IRUSR | stat.S_IWUSR)
+            os.fchmod(output.fileno(), stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
             output.write(SENTINEL + "\n")
             output.flush()
             os.fsync(output.fileno())
