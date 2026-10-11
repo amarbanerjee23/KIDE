@@ -199,7 +199,7 @@ steps:
           --project "${PROJECT_ID}" \
           --region "${_REGION}" \
           --service "${_KIDE_SERVICE_NAME}" \
-          --firebase-project "${KIDE_FIREBASE_PROJECT_ID}" \
+          --firebase-project "$${KIDE_FIREBASE_PROJECT_ID}" \
           --engineers "${_KIDE_FIREBASE_ENGINEER_UIDS}"
 
         gcloud run deploy "${_KIDE_SERVICE_NAME}" \
