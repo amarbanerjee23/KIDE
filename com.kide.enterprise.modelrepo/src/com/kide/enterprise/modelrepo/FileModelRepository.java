@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -27,11 +28,16 @@ public final class FileModelRepository implements ModelRepository {
     private static final String STATE_FILE = "state";
     private static final String STATE_COMMITTING = "COMMITTING";
     private static final String STATE_COMMITTED = "COMMITTED";
+    // Atomic directory acquisition, not NFS flock(): Cloud Run NFS lacks locking.
+    // A crash leaves this directory and blocks writes until a supervised offline
+    // recovery explicitly inspects the journal and removes the stale guard.
+    private static final String WRITER_GUARD_DIR = "writer.guard";
 
     private final Path root;
     private final Path metadataRoot;
     private final Path revisionsFile;
     private final Path transactionsRoot;
+    private final Path writerGuardDir;
 
     public FileModelRepository(Path projectRoot) {
         try {
@@ -47,8 +53,13 @@ public final class FileModelRepository implements ModelRepository {
             metadataRoot = root.resolve(INTERNAL_DIR);
             revisionsFile = metadataRoot.resolve(REVISIONS_FILE);
             transactionsRoot = metadataRoot.resolve(TX_DIR);
+            writerGuardDir = metadataRoot.resolve(WRITER_GUARD_DIR);
             Files.createDirectories(transactionsRoot);
-            recoverTransactions();
+            // A second REST/GLSP repository must not replay an in-flight
+            // transaction from a different JVM while the real writer is alive.
+            try (WriterGuard ignored = acquireWriterGuard()) {
+                recoverTransactions();
+            }
         } catch (IOException e) {
             throw new ModelRepositoryException("model repository initialization failed", e);
         }
@@ -153,8 +164,12 @@ public final class FileModelRepository implements ModelRepository {
         public void commit() {
             ensureOpen();
             synchronized (FileModelRepository.this) {
-                Path journal = null;
-                try {
+                // Serializes commits across distinct repository instances AND
+                // REST/GLSP processes sharing a POSIX/NFS registry mount.
+                // No unprotected optimistic revision check may run first.
+                try (WriterGuard ignored = acquireWriterGuard()) {
+                    Path journal = null;
+                    try {
                     if (requireEmpty && !FileModelRepository.this.list().isEmpty()) {
                         throw new RevisionConflictException("hosted project is not empty");
                     }
@@ -202,17 +217,18 @@ public final class FileModelRepository implements ModelRepository {
                     deleteTree(journal);
                     finished = true;
                     mutations.clear();
-                } catch (RevisionConflictException e) {
-                    throw e;
-                } catch (IOException | RuntimeException e) {
-                    if (journal != null) {
-                        try {
-                            rollbackJournal(journal);
-                        } catch (IOException rollbackFailure) {
-                            e.addSuppressed(rollbackFailure);
+                    } catch (RevisionConflictException e) {
+                        throw e;
+                    } catch (IOException | RuntimeException e) {
+                        if (journal != null) {
+                            try {
+                                rollbackJournal(journal);
+                            } catch (IOException rollbackFailure) {
+                                e.addSuppressed(rollbackFailure);
+                            }
                         }
+                        throw new ModelRepositoryException("model transaction commit failed", e);
                     }
-                    throw new ModelRepositoryException("model transaction commit failed", e);
                 }
             }
         }
@@ -233,6 +249,42 @@ public final class FileModelRepository implements ModelRepository {
 
         private void ensureOpen() {
             if (finished) throw new IllegalStateException("transaction is closed");
+        }
+    }
+
+    /**
+     * An atomic create-directory guards the full read-check/commit/journal
+     * operation across repository instances and JVMs. We deliberately do not
+     * use FileChannel.lock: Cloud Run's NFS mounts provide no file locking.
+     * If the guard survives a process crash, no process may remove it online.
+     */
+    private WriterGuard acquireWriterGuard() {
+        try {
+            Files.createDirectory(writerGuardDir);
+            return new WriterGuard();
+        } catch (FileAlreadyExistsException e) {
+            throw new RevisionConflictException(
+                    "model repository writer busy or offline recovery required");
+        } catch (IOException e) {
+            throw new ModelRepositoryException("model repository writer guard unavailable", e);
+        }
+    }
+
+    private final class WriterGuard implements AutoCloseable {
+        private boolean closed;
+
+        @Override
+        public void close() {
+            if (closed) return;
+            try {
+                Files.delete(writerGuardDir);
+                closed = true;
+            } catch (IOException e) {
+                // Do not replace or force-remove an unrecognized guard.
+                // The next writer must fail closed until an operator recovers.
+                throw new ModelRepositoryException(
+                        "model repository writer guard release failed; offline recovery required", e);
+            }
         }
     }
 

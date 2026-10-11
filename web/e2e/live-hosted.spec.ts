@@ -508,4 +508,56 @@ test("PR89 live staging engineering: Firebase, tenant isolation, REST, LSP, GLSP
   await expect(page.getByLabel("KIDE graphical model")).toBeVisible();
   await workflow.getByRole("button", { name: "State machine", exact: true }).click();
   await expect(page.getByTestId("glsp-editor")).toBeVisible();
+
+  // PR104: a bounded two-session race on a disposable staging-only model.
+  // Both sessions share the exact persisted ETag. They must not both commit.
+  // The separate Firebase principal above remains forbidden from this tenant.
+  const stressIterations = Number(process.env.KIDE_LIVE_DURABILITY_ITERATIONS ?? "8");
+  if (!Number.isInteger(stressIterations) ||
+      stressIterations < 1 || stressIterations > 32) {
+    throw new Error("KIDE_LIVE_DURABILITY_ITERATIONS must be between 1 and 32");
+  }
+  const racePath = projectPath + "/models/pr104-concurrent.dml";
+  const seed = await apiCall<Model>(
+    request, cfg.api, engineer.token, "PUT", racePath, 200,
+    { content: "Package RaceSeed\\nDataModel Race { primitives { int value } }\\n",
+      expectedRevision: MISSING_ETAG, mediaType: "text/x-kide-dml" }
+  );
+  let expected = seed.etag;
+  for (let iteration = 0; iteration < stressIterations; iteration++) {
+    const candidates = [
+      "Package RaceA" + iteration + "\\nDataModel Race { primitives { int a } }\\n",
+      "Package RaceB" + iteration + "\\nDataModel Race { primitives { int b } }\\n"
+    ];
+    const commit = (content: string) => request.put(cfg.api + "/api/v1" + racePath, {
+      headers: { Authorization: "Bearer " + engineer.token,
+        "Content-Type": "application/json" },
+      data: { content, expectedRevision: expected, mediaType: "text/x-kide-dml" },
+      timeout: 30_000
+    });
+    const responses = await Promise.all(candidates.map(commit));
+    const statuses = responses.map(response => response.status()).sort((a, b) => a - b);
+    expect(statuses).toEqual([200, 409]);
+    const winnerIndex = responses.findIndex(response => response.status() === 200);
+    const acknowledged = await responses[winnerIndex].json() as Model;
+    const readback = await apiCall<Model>(
+      request, cfg.api, engineer.token, "GET", racePath, 200
+    );
+    expect(readback.content).toBe(candidates[winnerIndex]);
+    expect(readback.etag).toBe(acknowledged.etag);
+    expect(validSha(readback.etag)).toBe(true);
+    expect(readback.etag).not.toBe(expected);
+    expected = readback.etag;
+    // An unapproved second principal can neither observe nor overwrite a
+    // winning revision, including after multiple iterations of churn.
+    if (sharedMode === "true") {
+      const secondEngineerRead = await apiCall<Model>(
+        request, cfg.api, other.token, "GET", racePath, 200
+      );
+      expect(secondEngineerRead.etag).toBe(readback.etag);
+      expect(secondEngineerRead.content).toBe(readback.content);
+    } else {
+      await apiCall(request, cfg.api, other.token, "GET", racePath, 403);
+    }
+  }
 });

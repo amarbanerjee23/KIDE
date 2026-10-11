@@ -14,6 +14,11 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
@@ -283,6 +288,92 @@ public class ModelRepositoryTest {
             Optional<ModelSnapshot> deleted = repository.read(path);
             assertTrue(deleted.isEmpty());
         } finally {
+            deleteTree(root);
+        }
+    }
+
+    @Test
+    public void writerGuardRefusesConcurrentInstanceAndDoesNotDestroyCommittedModel() throws Exception {
+        Path root = Files.createTempDirectory("kide-pr104-exclusive-");
+        try {
+            FileModelRepository first = new FileModelRepository(root);
+            FileModelRepository other = new FileModelRepository(root);
+            ModelPath path = new ModelPath("models/shared.activity");
+            try (ModelTransaction tx = first.beginTransaction()) {
+                tx.write(path, bytes("committed"), MISSING);
+                tx.commit();
+            }
+            ModelSnapshot saved = first.read(path).orElseThrow();
+            Path guard = root.resolve(".kide/model-repository/writer.guard");
+            Files.createDirectory(guard); // simulate another JVM mid-commit
+            try {
+                try (ModelTransaction tx = other.beginTransaction()) {
+                    tx.write(path, bytes("wrong"), saved.revision().etag());
+                    assertThrows(RevisionConflictException.class, tx::commit);
+                }
+                // Restart must not roll back the other live writer's journal.
+                assertThrows(RevisionConflictException.class, () -> new FileModelRepository(root));
+                assertArrayEquals(bytes("committed"), first.read(path).orElseThrow().content());
+            } finally {
+                Files.delete(guard); // explicit offline writer-quiesced recovery simulation
+            }
+            try (ModelTransaction tx = other.beginTransaction()) {
+                tx.write(path, bytes("new committed"), saved.revision().etag());
+                tx.commit();
+            }
+            FileModelRepository restarted = new FileModelRepository(root);
+            assertArrayEquals(bytes("new committed"), restarted.read(path).orElseThrow().content());
+            assertFalse(Files.exists(guard));
+        } finally {
+            deleteTree(root);
+        }
+    }
+
+    @Test
+    public void simultaneousEngineersCannotBothCommitSameExpectedRevision() throws Exception {
+        Path root = Files.createTempDirectory("kide-pr104-race-");
+        ExecutorService pool = Executors.newFixedThreadPool(8);
+        try {
+            ModelPath path = new ModelPath("models/concurrent.mncspec");
+            FileModelRepository seed = new FileModelRepository(root);
+            try (ModelTransaction tx = seed.beginTransaction()) {
+                tx.write(path, bytes("base"), MISSING);
+                tx.commit();
+            }
+            String originalEtag = seed.read(path).orElseThrow().revision().etag();
+            CountDownLatch ready = new CountDownLatch(8);
+            CountDownLatch fire = new CountDownLatch(1);
+            java.util.List<Future<Boolean>> attempts = new java.util.ArrayList<>();
+            for (int i = 0; i < 8; i++) {
+                final int engineer = i;
+                FileModelRepository session = new FileModelRepository(root);
+                attempts.add(pool.submit(() -> {
+                    ready.countDown();
+                    if (!fire.await(15, TimeUnit.SECONDS)) {
+                        throw new AssertionError("engineer start barrier expired");
+                    }
+                    try (ModelTransaction tx = session.beginTransaction()) {
+                        tx.write(path, bytes("engineer-" + engineer), originalEtag);
+                        tx.commit();
+                        return true;
+                    } catch (RevisionConflictException expected) {
+                        return false;
+                    }
+                }));
+            }
+            assertTrue("worker setup timed out", ready.await(15, TimeUnit.SECONDS));
+            fire.countDown();
+            int successes = 0;
+            for (Future<Boolean> attempt : attempts) {
+                if (attempt.get(30, TimeUnit.SECONDS)) successes++;
+            }
+            assertEquals("only one revision-checked engineer may win", 1, successes);
+            ModelSnapshot committed = new FileModelRepository(root).read(path).orElseThrow();
+            assertTrue(new String(committed.content(), StandardCharsets.UTF_8).startsWith("engineer-"));
+            assertEquals(2L, committed.revision().version());
+            assertFalse(Files.exists(root.resolve(".kide/model-repository/writer.guard")));
+        } finally {
+            pool.shutdownNow();
             deleteTree(root);
         }
     }
