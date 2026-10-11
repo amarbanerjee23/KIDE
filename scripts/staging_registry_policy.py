@@ -41,6 +41,44 @@ def validate(service: str, ip: str, path: str, image: str,
         raise StagingRefusal("Candidate backend must reference a pinned image digest")
 
 
+
+def verify_existing(service: dict, ip: str, path: str) -> None:
+    spec = service.get("spec", {}).get("template", {}).get("spec", {})
+    containers = spec.get("containers") or service.get("template", {}).get("containers") or []
+    if not containers:
+        raise StagingRefusal("Existing staging backend lacks runtime configuration")
+    env = {item.get("name"): item.get("value", "") for item in containers[0].get("env", [])
+           if isinstance(item, dict) and item.get("name")}
+    if env.get("KIDE_STORAGE_MODE") != "registry-posix" or (
+        env.get("KIDE_HOSTED_PROJECTS_ROOT") != "/data/hosted-projects"
+    ):
+        raise StagingRefusal("Existing staging service has a different storage mode")
+    volumes = spec.get("volumes") or service.get("template", {}).get("volumes") or []
+    if len(volumes) != 1 or volumes[0].get("nfs", {}).get("server") != ip or (
+        volumes[0].get("nfs", {}).get("path") != path
+    ):
+        raise StagingRefusal("Existing staging NFS endpoint differs; no implicit migration")
+    mounts = containers[0].get("volumeMounts") or []
+    if not any(item.get("mountPath") == "/data" and
+               item.get("name") == volumes[0].get("name") for item in mounts):
+        raise StagingRefusal("Existing staging backend does not mount the approved NFS volume")
+
+
+def verify_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="Validate existing staging registry mount")
+    parser.add_argument("--nfs-ip", required=True)
+    parser.add_argument("--nfs-export", required=True)
+    args = parser.parse_args(argv)
+    try:
+        import json
+        verify_existing(json.load(sys.stdin), args.nfs_ip, args.nfs_export)
+        print("Existing staging mode and NFS identity verified")
+        return 0
+    except (StagingRefusal, ValueError) as exc:
+        print("Registry staging update refused: " + str(exc), file=sys.stderr)
+        return 2
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     for name in ("service", "nfs-ip", "nfs-export", "image", "network",
@@ -58,4 +96,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "verify-existing":
+        raise SystemExit(verify_main(sys.argv[2:]))
     raise SystemExit(main())
