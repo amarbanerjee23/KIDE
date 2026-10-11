@@ -45,6 +45,7 @@ const MISSING_ETAG = "0".repeat(64);
 const fixture = {
   "golden.dml": readFileSync(new URL("../../qualification/golden/languages/valid/golden.dml", import.meta.url), "utf8"),
   "golden.op": readFileSync(new URL("../../qualification/golden/languages/valid/golden.op", import.meta.url), "utf8"),
+  "golden.krl": readFileSync(new URL("../../qualification/golden/languages/valid/golden.krl", import.meta.url), "utf8"),
   "device.mncspec": [
     "Model Golden",
     "InterfaceDescription Device {",
@@ -375,7 +376,7 @@ test("PR89 live staging engineering: Firebase, tenant isolation, REST, LSP, GLSP
       }))
     }
   );
-  expect(imported.importedCount).toBe(6);
+  expect(imported.importedCount).toBe(7);
   expect(imported.workspaceId).toBe(created.workspaceId);
 
   const source = await apiCall<Model>(request, cfg.api, engineer.token,
@@ -472,6 +473,8 @@ test("PR89 live staging engineering: Firebase, tenant isolation, REST, LSP, GLSP
   await expect(workflow.getByRole("button", { name: "Synthesize", exact: true })).toBeEnabled();
   await workflow.getByRole("button", { name: "Synthesize", exact: true }).click();
   await expect(page.getByLabel("Synthesis result")).toContainText("SUCCESS");
+  // The editor-parity golden KRL must not silently replace the synthesis input.
+  await page.getByLabel("KRL model ID").fill("bindings.krl");
   await expect(workflow.getByRole("button", { name: "Generate code", exact: true })).toBeEnabled();
   await workflow.getByRole("button", { name: "Generate code", exact: true }).click();
   await expect(page.getByLabel("Generation result")).toContainText("generated/ApiObserveBinding.java");
