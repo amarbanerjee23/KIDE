@@ -25,7 +25,7 @@ export class CollaborationCoordinator {
       KideApiClient,
       "joinPresence" | "heartbeatPresence" | "leavePresence" | "listPresence"
     >,
-    private readonly projectId: string,
+    readonly projectId: string,
     private readonly events: CollaborationEvents,
     private readonly heartbeatMs = 20_000
   ) {}
