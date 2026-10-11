@@ -155,6 +155,40 @@ class HostedSnapshotTest(unittest.TestCase):
                 snapshot.snapshot(self.registry, self.archive)
         self.assertFalse(self.archive.exists())
 
+    def test_refuses_locked_registry_snapshot_and_does_not_publish_archive(self):
+        guard = self.project / ".kide" / "model-repository" / "writer.guard"
+        guard.mkdir(parents=True)
+        with self.assertRaisesRegex(snapshot.RecoveryError, "writer guard"):
+            snapshot.snapshot(self.registry, self.archive)
+        self.assertFalse(self.archive.exists())
+        guard.rmdir()
+        snapshot.snapshot(self.registry, self.archive)
+
+    def test_refuses_incomplete_model_transaction_journals(self):
+        journal = self.project / ".kide" / "model-repository" / "transactions" / "interrupted"
+        journal.mkdir(parents=True)
+        (journal / "state").write_text("COMMITTING")
+        with self.assertRaisesRegex(snapshot.RecoveryError, "unresolved transaction"):
+            snapshot.snapshot(self.registry, self.archive)
+        self.assertFalse(self.archive.exists())
+
+    def test_rejects_replay_of_archive_containing_a_writer_guard(self):
+        snapshot.snapshot(self.registry, self.archive)
+        bad = self.base / "tampered.zip"
+        import io
+        with zipfile.ZipFile(self.archive) as source, zipfile.ZipFile(bad, "w") as dest:
+            for entry in source.infolist():
+                contents = source.read(entry.filename)
+                if entry.filename == "manifest.json":
+                    manifest = json.loads(contents)
+                    manifest["directories"].append(
+                        PROJECT_A + "/project/.kide/model-repository/writer.guard"
+                    )
+                    contents = json.dumps(manifest).encode()
+                dest.writestr(entry.filename, contents)
+        with self.assertRaises(snapshot.RecoveryError):
+            snapshot.verify(bad)
+
     def test_rejects_duplicate_archived_entries(self):
         snapshot.snapshot(self.registry, self.archive)
         corrupt = self.base / "duplicate.zip"

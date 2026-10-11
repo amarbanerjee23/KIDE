@@ -160,4 +160,88 @@ describe("AutosaveCoordinator", () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
+  it("preserves the newest edit after an older in-flight 409 conflict", async () => {
+    let rejectFirst!: (error: Error) => void;
+    const pendingFirst = new Promise<Model>((_, reject) => { rejectFirst = reject; });
+    const save = vi.fn()
+      .mockReturnValueOnce(pendingFirst)
+      .mockResolvedValueOnce(model("newest editor text", "etag-2", "2"));
+    const onConflict = vi.fn();
+    const onSaved = vi.fn();
+    const coordinator = new AutosaveCoordinator("etag-1", save, {
+      onState: vi.fn(), onSaved, onConflict, onError: vi.fn()
+    }, 60_000);
+
+    coordinator.update("older pending text");
+    const first = coordinator.flush();
+    coordinator.update("newest editor text");
+    rejectFirst(new ApiClientError("conflict", 409, {
+      apiVersion: "v1", requestId: "f64c927d-436d-483b-97b7-e5a992d7e00d",
+      code: "CONFLICT", message: "stale revision"
+    }));
+    await first;
+
+    expect(onConflict).toHaveBeenCalledWith(
+      expect.any(ApiClientError), "newest editor text", "etag-1"
+    );
+    expect(coordinator.hasUnsettledWork).toBe(true);
+    await coordinator.flush();
+    expect(save).toHaveBeenNthCalledWith(2, "newest editor text", "etag-1");
+    expect(onSaved).toHaveBeenCalledWith(model("newest editor text", "etag-2", "2"));
+    coordinator.dispose();
+  });
+
+  it("never replaces a newer draft after a previous transport failure", async () => {
+    let fail!: (reason: Error) => void;
+    const firstPending = new Promise<Model>((_, reject) => { fail = reject; });
+    const save = vi.fn()
+      .mockReturnValueOnce(firstPending)
+      .mockResolvedValueOnce(model("typed after request", "etag-new", "2"));
+    const onError = vi.fn();
+    const coordinator = new AutosaveCoordinator("base-etag", save, {
+      onState: vi.fn(), onSaved: vi.fn(), onConflict: vi.fn(), onError
+    }, 60_000);
+
+    coordinator.update("old in flight");
+    const first = coordinator.flush();
+    coordinator.update("typed after request");
+    fail(new Error("connection interrupted"));
+    await first;
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(coordinator.hasUnsettledWork).toBe(true);
+    await coordinator.flush();
+    expect(save).toHaveBeenNthCalledWith(2, "typed after request", "base-etag");
+    coordinator.dispose();
+  });
+
+  it("does not automatically retry an obsolete revision after a newer keystroke", async () => {
+    vi.useFakeTimers();
+    try {
+      let rejectOlder!: (error: Error) => void;
+      const older = new Promise<Model>((_, reject) => { rejectOlder = reject; });
+      const save = vi.fn().mockReturnValueOnce(older)
+        .mockResolvedValueOnce(model("latest", "new-etag", "3"));
+      const coordinator = new AutosaveCoordinator("old-etag", save, {
+        onState: vi.fn(), onSaved: vi.fn(), onConflict: vi.fn(), onError: vi.fn()
+      }, 10);
+      coordinator.update("original");
+      const first = coordinator.flush();
+      coordinator.update("latest");
+      rejectOlder(new ApiClientError("stale", 409, {
+        apiVersion: "v1", requestId: "f64c927d-436d-483b-97b7-e5a992d7e00d",
+        code: "CONFLICT", message: "revision conflict"
+      }));
+      await first;
+      await vi.advanceTimersByTimeAsync(100);
+      expect(save).toHaveBeenCalledTimes(1);
+      expect(coordinator.hasUnsettledWork).toBe(true);
+      await coordinator.flush();
+      expect(save).toHaveBeenNthCalledWith(2, "latest", "old-etag");
+      coordinator.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+
 });

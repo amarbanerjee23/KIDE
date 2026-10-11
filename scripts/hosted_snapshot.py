@@ -71,6 +71,18 @@ def descriptor(data: bytes) -> dict[str, str]:
 
 
 def validate_contexts(files: dict[str, bytes], directories: set[str]) -> int:
+    # PR104: never certify a restore containing active or abandoned writers,
+    # or an incomplete model-repository transaction. Otherwise the restored
+    # service could boot with a stale write guard or partially saved model.
+    for name in directories | set(files):
+        components = name.split("/")
+        if len(components) >= 5 and components[1:4] == [
+            "project", ".kide", "model-repository"
+        ]:
+            if components[4] == "writer.guard":
+                raise RecoveryError("model repository writer guard present; stop writers and recover offline")
+            if components[4] == "transactions" and len(components) > 5:
+                raise RecoveryError("model repository has an unresolved transaction journal")
     slots = {name.split("/", 1)[0] for name in files}
     all_roots = {name.split("/", 1)[0] for name in files} | {
         name.split("/", 1)[0] for name in directories

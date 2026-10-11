@@ -89,6 +89,9 @@ jobs:
       - name: Verify live six-DSL editor and GLSP semantic parity
         run: python3 scripts/verify_pr103_live_editor_parity.py
 
+      - name: Verify PR104 concurrent engineering and durable recovery boundary
+        run: python3 scripts/verify_pr104_durability.py
+
       - name: Verify authenticated read-only hosted service monitoring boundary
         run: python3 scripts/verify_authenticated_monitor.py
 
