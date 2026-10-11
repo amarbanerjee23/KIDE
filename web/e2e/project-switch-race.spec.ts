@@ -135,4 +135,34 @@ test("switching projects cancels a stalled Xtext handshake without reviving the 
   await expect.poll(() => newPresenceJoins).toBe(1);
   expect(oldPresenceJoins).toBe(0);
   await expect(page.locator(".editor-tabs")).not.toContainText("first.dml");
+
+  // PR97: a review list response for the previously active project must
+  // never reappear under a newer project after the user switches workspaces.
+  await page.locator(".activity-bar")
+    .getByRole("button", { name: "Collaboration", exact: true }).click();
+  let releaseReviews!: () => void;
+  let reviewsStarted!: () => void;
+  const blockedReviews = new Promise<void>((resolve) => { releaseReviews = resolve; });
+  const requestStarted = new Promise<void>((resolve) => { reviewsStarted = resolve; });
+  await page.route("**/api/v1/projects/P04-SECOND/reviews/changesets*", async (route) => {
+    reviewsStarted();
+    await blockedReviews;
+    await route.fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify({ items: [{
+        id: "stale-review", modelId: "old-project-review.dml",
+        status: "OPEN", authorName: "Old project collaborator"
+      }] })
+    });
+  });
+  await page.locator(".collaboration-panel")
+    .getByRole("button", { name: "Refresh", exact: true }).click();
+  await requestStarted;
+
+  await projects.locator("li").filter({ hasText: "First Engineering Project" })
+    .getByRole("button", { name: "Open" }).click();
+  await expect(page.locator(".model-loader")).toContainText("First Engineering Project");
+  releaseReviews();
+  await expect(page.locator(".collaboration-panel")).toContainText("No review change sets yet.");
+  await expect(page.locator(".collaboration-panel")).not.toContainText("old-project-review.dml");
 });
