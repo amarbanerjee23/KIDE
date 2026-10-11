@@ -82,6 +82,10 @@ python3 deploy/gcp/firebase-access.py validate --engineers "${KIDE_FIREBASE_ENGI
 
 if [[ ! -v KIDE_SHARED_FIREBASE_ENGINEERS ]]; then
   KIDE_SHARED_FIREBASE_ENGINEERS=false
+  if [[ -z "${current_service:-}" ]]; then
+    current_service="$(gcloud run services describe "${KIDE_SERVICE_NAME}" \
+      --project "${PROJECT_ID}" --region "${REGION}" --format=json 2>/dev/null || true)"
+  fi
   if [[ -n "${current_service:-}" ]]; then
     KIDE_SHARED_FIREBASE_ENGINEERS="$(printf '%s' "${current_service}" | \
       python3 deploy/gcp/firebase-access.py extract-env --key KIDE_SHARED_FIREBASE_ENGINEERS)"
