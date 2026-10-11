@@ -319,7 +319,7 @@ export async function assertLiveXtextParity(
             throw new Error("Real " + item.id + " code action protocol is incompatible");
           }
         }
-        const semantic = await request("textDocument/semanticTokens/full", { textDocument })
+        const semantic = (await request("textDocument/semanticTokens/full", { textDocument }))
           as { data?: unknown } | null;
         if (item.semantic_tokens_min > 0) {
           if (!semantic || !Array.isArray(semantic.data) ||
