@@ -653,7 +653,7 @@ export default function App() {
       if (projectRef.current) {
         ++projectOpenAttemptRef.current;
         await resetProjectWorkspace();
-      if (!isCurrent()) return;
+        if (!isCurrent()) return;
         setProjectState(undefined);
       }
       setServiceStatus(`Incompatible · backend ${version.buildId}`);
