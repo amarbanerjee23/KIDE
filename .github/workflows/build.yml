@@ -86,6 +86,9 @@ jobs:
       - name: Verify real hosted staging acceptance boundary
         run: python3 scripts/verify_live_acceptance.py
 
+      - name: Verify authenticated read-only hosted service monitoring boundary
+        run: python3 scripts/verify_authenticated_monitor.py
+
       - name: Verify LSP feature parity matrix
         run: python3 scripts/verify_lsp_parity_matrix.py
 
@@ -291,3 +294,7 @@ jobs:
       - name: Type-check discovery of real hosted acceptance suite (no live credentials)
         working-directory: web
         run: npx playwright test --config playwright.live.config.ts --list
+
+      - name: Verify authenticated read-only hosted monitor discovery (no live credentials)
+        working-directory: web
+        run: npx playwright test --config playwright.connectivity.config.ts --list

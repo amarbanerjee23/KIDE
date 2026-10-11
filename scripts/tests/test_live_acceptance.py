@@ -51,7 +51,7 @@ class LiveAcceptanceGovernanceTest(unittest.TestCase):
         def mocked_read(path):
             value = original(path)
             if path == "web/playwright.config.ts":
-                return value.replace('testIgnore: "**/live-hosted.spec.ts",', "")
+                return value.replace('"**/live-hosted.spec.ts"', '"**/not-the-live-suite.spec.ts"')
             return value
 
         with patch.object(mod, "read", side_effect=mocked_read):
