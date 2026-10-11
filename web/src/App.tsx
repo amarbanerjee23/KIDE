@@ -197,6 +197,8 @@ export default function App() {
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
   const lspClient = useRef<KideLspClient | undefined>(undefined);
   const serviceRecoveryBusy = useRef(false);
+  const authOperationRef = useRef(0);
+  const apiConnectAttemptRef = useRef(0);
   const lspAttemptRef = useRef(0);
   const collaborationAttemptRef = useRef(0);
   const projectOpenAttemptRef = useRef(0);
@@ -279,19 +281,34 @@ export default function App() {
     const timer = globalThis.setInterval(() => {
       const uid = firebaseAuth.user?.uid;
       if (!uid) return;
+      const version = firebaseAuth.sessionVersion;
+      const authOperation = authOperationRef.current;
       void firebaseAuth.idToken()
         .then((nextToken) => {
-          if (firebaseAuth.user?.uid !== uid) return;
+          if (firebaseAuth.sessionVersion !== version ||
+              firebaseAuth.user?.uid !== uid) return;
           if (nextToken !== tokenRef.current) setToken(nextToken);
         })
         .catch((error) => {
-          if (firebaseAuth.user?.uid !== uid) return;
-          firebaseAuth.signOut();
+          // Do not mistake a pending refresh from a previous login or an
+          // explicit sign-out for the expiry of the current account.
+          if (authOperationRef.current !== authOperation) return;
+          if (firebaseAuth.sessionVersion === version && firebaseAuth.user?.uid === uid) {
+            // Transient token-provider outage. A later refresh can retry;
+            // never tear down a still-authorized identity on a network error.
+            setNotice(error instanceof Error ? error.message : "Firebase refresh unavailable.");
+            return;
+          }
+          if (firebaseAuth.user) return;
+          ++projectOpenAttemptRef.current;
+          ++apiConnectAttemptRef.current;
+          setProjectState(undefined);
           setToken("");
+          setProjects([]);
           void resetProjectWorkspace();
           setServiceStatus("Not connected");
           setAuthStatus("Session expired");
-          setNotice(error instanceof Error ? error.message : "Firebase session expired.");
+          setNotice("Firebase session expired. Sign in again.");
         });
     }, 5 * 60 * 1000);
     return () => globalThis.clearInterval(timer);
@@ -469,34 +486,41 @@ export default function App() {
   }, []);
 
   async function signInFirebase() {
+    const operation = ++authOperationRef.current;
+    ++apiConnectAttemptRef.current;
     setNotice("");
     setAuthBusy(true);
     try {
       const user = await firebaseAuth.signInWithEmailPassword(
-        firebaseEmail,
-        firebasePassword
+        firebaseEmail, firebasePassword
       );
+      const version = firebaseAuth.sessionVersion;
+      if (authOperationRef.current !== operation) return;
       const nextToken = await firebaseAuth.idToken();
+      if (authOperationRef.current !== operation ||
+          firebaseAuth.sessionVersion !== version ||
+          firebaseAuth.user?.uid !== user.uid) return;
       setToken(nextToken);
       setFirebasePassword("");
       setAuthStatus(`Signed in · ${user.email}`);
       await connect();
+      if (authOperationRef.current !== operation ||
+          firebaseAuth.sessionVersion !== version) return;
       setActiveSidebar("explorer");
       setSidebarVisible(true);
     } catch (error) {
+      if (authOperationRef.current !== operation) return;
       setToken("");
       setAuthStatus("Sign-in failed");
-      setNotice(
-        error instanceof FirebaseAuthError || error instanceof Error
-          ? error.message
-          : "Firebase sign-in failed."
-      );
+      setNotice(error instanceof Error ? error.message : "Firebase sign-in failed.");
     } finally {
-      setAuthBusy(false);
+      if (authOperationRef.current === operation) setAuthBusy(false);
     }
   }
 
   async function registerFirebase() {
+    const operation = ++authOperationRef.current;
+    ++apiConnectAttemptRef.current;
     setNotice("");
     if (firebasePassword !== firebaseConfirmPassword) {
       setAuthStatus("Registration failed");
@@ -506,42 +530,44 @@ export default function App() {
     setAuthBusy(true);
     try {
       const user = await firebaseAuth.registerWithEmailPassword(
-        firebaseEmail,
-        firebasePassword
+        firebaseEmail, firebasePassword
       );
+      const version = firebaseAuth.sessionVersion;
+      if (authOperationRef.current !== operation) return;
       const nextToken = await firebaseAuth.idToken();
+      if (authOperationRef.current !== operation ||
+          firebaseAuth.sessionVersion !== version ||
+          firebaseAuth.user?.uid !== user.uid) return;
       setToken(nextToken);
       setFirebasePassword("");
       setFirebaseConfirmPassword("");
       setAuthStatus(`Account created · ${user.email}`);
-      setNotice(
-        "Account created and signed in. Engineering access is granted through KIDE role bindings."
-      );
+      setNotice("Account created and signed in. Engineering access is granted through KIDE role bindings.");
       navigate("home");
     } catch (error) {
+      if (authOperationRef.current !== operation) return;
       setToken("");
       setAuthStatus("Registration failed");
-      setNotice(
-        error instanceof FirebaseAuthError || error instanceof Error
-          ? error.message
-          : "Firebase registration failed."
-      );
+      setNotice(error instanceof Error ? error.message : "Firebase registration failed.");
     } finally {
-      setAuthBusy(false);
+      if (authOperationRef.current === operation) setAuthBusy(false);
     }
   }
 
   async function signOutFirebase() {
+    ++authOperationRef.current;
+    ++apiConnectAttemptRef.current;
     ++projectOpenAttemptRef.current;
     firebaseAuth.signOut();
+    setProjectState(undefined);
     setToken("");
     setProjects([]);
-    await resetProjectWorkspace();
-    setServiceStatus("Not connected");
     setRuntimeVersion(undefined);
-    setLspStatus("Not connected");
+    setServiceStatus("Not connected");
+    setCanCreateProjects(false);
     setAuthStatus("Not signed in");
     setNotice("Signed out.");
+    await resetProjectWorkspace();
   }
 
   async function createHostedProject() {
@@ -563,15 +589,21 @@ export default function App() {
   }
 
   async function connect() {
+    const attempt = ++apiConnectAttemptRef.current;
+    const versionAtStart = firebaseAuth.sessionVersion;
+    const isCurrent = () => apiConnectAttemptRef.current === attempt &&
+      firebaseAuth.sessionVersion === versionAtStart;
     setNotice("");
     setConflict(undefined);
 
     let health: Health;
     try {
       health = await client.health();
+      if (!isCurrent()) return;
       setCanCreateProjects(health.projectCreationEnabled === true);
       setServiceStatus(`Connected · ${health.status} · API ${health.version}`);
     } catch (error) {
+      if (!isCurrent()) return;
       setRuntimeVersion(undefined);
       setCanCreateProjects(false);
       setServiceStatus("Not connected");
@@ -582,8 +614,10 @@ export default function App() {
     let version: RuntimeVersion;
     try {
       version = await client.version();
+      if (!isCurrent()) return;
       setRuntimeVersion(version);
     } catch (error) {
+      if (!isCurrent()) return;
       setProjects([]);
       setRuntimeVersion(undefined);
       setServiceStatus("Incompatible · version handshake unavailable");
@@ -599,6 +633,7 @@ export default function App() {
       if (projectRef.current) {
         ++projectOpenAttemptRef.current;
         await resetProjectWorkspace();
+      if (!isCurrent()) return;
         setProjectState(undefined);
       }
       setServiceStatus(`Incompatible · backend ${version.buildId}`);
@@ -615,6 +650,7 @@ export default function App() {
 
     try {
       const list = await client.listProjects();
+      if (!isCurrent()) return;
       setProjects(list.items);
       if (list.items.length === 0) {
         setLspStatus("Awaiting authorized project");
@@ -627,8 +663,10 @@ export default function App() {
         // A lone authorized project is unambiguous. Opening it also activates
         // the real Xtext LSP and collaboration services without another click.
         await openProject(list.items[0]);
+      if (!isCurrent()) return;
       }
     } catch (error) {
+      if (!isCurrent()) return;
       setProjects([]);
       if (error instanceof ApiClientError && error.status === 403) {
         setServiceStatus(`Connected · API ${version.apiVersion} · authorization required`);
