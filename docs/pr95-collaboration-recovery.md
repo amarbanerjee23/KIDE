@@ -2,9 +2,9 @@
 
 ## Observed behavior
 
-PR94 blocked stale project WebSocket/presence callbacks but its two-project browser regression showed more than one **actual POST /collaboration/sessions** on the current project. The active project became Online, but a degraded presence listing led the Web IDE to dispose the current coordinator and POST another join on the next periodic recovery tick.
+PR94 blocked stale WebSocket/presence callbacks, but the two-project browser regression counted two **POST /collaboration/sessions** calls. PR95's request-stack trace established the precise cause: the test mocked the collection URL `/sessions` but not the generated heartbeat resource URL `/sessions/{id}`. Playwright's `*` glob does not match a slash; the unhandled PUT therefore fell through to the development server and returned 404. The existing client legitimately rejoined an apparently expired session. **The second join was caused by the test fixture, not evidence of a production duplicate-join defect.** This PR explicitly mocks session-resource PUT/DELETE and restores a strict exactly-one-join acceptance test.
 
-A presence list or heartbeat failure can be transient. A 503/timeout or a Firebase authorization 401/403 **must not be interpreted as proof that the server forgot the session**. Only a 404 for the active session on a heartbeat is evidence that a rejoin is needed.
+Separately, recovery after genuine transient listing/heartbeat failures previously destroyed the active coordinator and issued a new POST during the periodic retry. A 503/timeout or Firebase authorization 401/403 **must not be treated as proof the server forgot the session**. Only a 404 on an actual active-session heartbeat authorizes a rejoin.
 
 ## Recovery semantics
 
