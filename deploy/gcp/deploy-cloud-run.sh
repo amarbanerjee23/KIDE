@@ -71,10 +71,10 @@ done
 
 # An omitted engineer list on a manual release must not wipe runtime grants.
 if [[ ! -v KIDE_FIREBASE_ENGINEER_UIDS ]]; then
-  current_service="$(gcloud run services describe "${KIDE_SERVICE_NAME}" \\
+  current_service="$(gcloud run services describe "${KIDE_SERVICE_NAME}" \
     --project "${PROJECT_ID}" --region "${REGION}" --format=json 2>/dev/null || true)"
   if [[ -n "${current_service}" ]]; then
-    KIDE_FIREBASE_ENGINEER_UIDS="$(printf '%s' "${current_service}" | \\
+    KIDE_FIREBASE_ENGINEER_UIDS="$(printf '%s' "${current_service}" | \
       python3 deploy/gcp/firebase-access.py extract-env --key KIDE_FIREBASE_ENGINEER_UIDS)"
   fi
 fi
