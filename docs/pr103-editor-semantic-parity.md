@@ -18,11 +18,12 @@ model response.
 PR103 **extends the existing operator-approved staging acceptance**, not
 the mocked CI suite:
 
-1. Imports **all six** canonical source files into a real isolated hosted
-   project. DML/Operation are read from the same golden language fixtures
-   used for the packaged desktop qualification; the existing MNC/Capability/
-   Activity/KRL engineering synthesis corpus remains untouched.
-2. Reads all six models back from the actual REST repository, requiring
+1. Imports **seven** models across all six production DSLs into a real
+   isolated hosted project. DML/Operation and a separate KRL golden source
+   are read from the exact canonical language fixtures used by packaged
+   Eclipse qualification; the existing four-model MNC/Capability/Activity/
+   bindings.krl engineering synthesis corpus remains untouched.
+2. Reads all seven models back from the actual REST repository, requiring
    byte-for-byte equality, model IDs and SHA-256 revision/ETag identity.
 3. Opens an authenticated production-protocol Xtext WebSocket and checks
    the mandatory server capabilities from the canonical parity manifest.
@@ -36,10 +37,10 @@ the mocked CI suite:
    **MNC state-machine** diagram types; initializes an ephemeral session,
    requests an actual diagram model, verifies a nonempty EMF-derived GModel
    and queries the real edit shape/edge hints. No diagram mutations are sent.
-5. Signs into the deployed Web UI and opens **each of the six DSL files**
+5. Signs into the deployed Web UI and opens **all seven model files across the six DSLs**
    through the real project tree into an active Monaco editor tab, verifying
    the selected path, breadcrumbs and visible editor before returning to
-   Activity synthesis. This is a browser action on actual persisted models,
+   Activity synthesis. The UI KRL input is pinned to the original\n   bindings.krl for code generation. This is a browser action on actual persisted models,
    not a network-replayed or hand-constructed Monaco instance.
 6. Preserves the PR89 actual synthesis/code generation, repeatability and
    artifact integrity tests and a second-user negative tenant-access check.
