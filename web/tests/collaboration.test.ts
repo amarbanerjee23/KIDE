@@ -142,7 +142,7 @@ describe("CollaborationCoordinator", () => {
     const client = new CollaborationCoordinator(api, "project-1", {
       onSession: vi.fn(), onPresence: vi.fn(), onError: vi.fn()
     });
-    await client.connect();
+    await client.connect(undefined, "model.dml");
     const first = client.recover();
     const second = client.recover();
     expect(api.heartbeatPresence).toHaveBeenCalledTimes(1);
