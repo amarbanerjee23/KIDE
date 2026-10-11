@@ -14,6 +14,22 @@ test("switching projects cancels a stalled Xtext handshake without reviving the 
     portfolioId: "PF04", workspaceId: "W04-SECOND", revision: "1"
   };
 
+  // Diagnostic capture stays within this regression: call-site stacks reveal
+  // whether duplicate POSTs originate from a second coordinator or 404 rejoin.
+  await page.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    const trace: Array<{ url: string; stack: string }> = [];
+    (window as typeof window & { __kideJoinTrace?: typeof trace }).__kideJoinTrace = trace;
+    window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input instanceof URL
+        ? input.href : input.url;
+      if (init?.method === "POST" && /\/collaboration\/sessions$/.test(url)) {
+        trace.push({ url, stack: new Error("presence join call").stack ?? "" });
+      }
+      return nativeFetch(input, init);
+    };
+  });
+
   await page.routeWebSocket("**/lsp?*", (ws) => {
     const isFirst = ws.url().includes("W04-FIRST");
     ws.onMessage((message) => {
@@ -128,7 +144,16 @@ test("switching projects cancels a stalled Xtext handshake without reviving the 
   await expect.poll(() => newInitialize).toBe(1);
   // PR95: one authorized presence join for the active project.
   // Heartbeat/recovery must not issue duplicate POST /sessions calls.
-  await expect.poll(() => newPresenceJoins).toBe(1);
+  try {
+    await expect.poll(() => newPresenceJoins).toBe(1);
+  } catch (error) {
+    const trace = await page.evaluate(() =>
+      (window as typeof window & { __kideJoinTrace?: unknown }).__kideJoinTrace
+    );
+    throw new Error(`Expected one active-project join; got ${newPresenceJoins}. Call sites: ${JSON.stringify(trace)}`, {
+      cause: error
+    });
+  }
   expect(oldPresenceJoins).toBe(0);
   await expect(page.locator(".editor-tabs")).not.toContainText("first.dml");
 });
