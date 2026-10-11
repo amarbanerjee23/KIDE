@@ -10,9 +10,16 @@ import com.kide.enterprise.identity.PrincipalIdentity;
 
 public final class AuthorizationService {
     private final AuthorizationPolicyStore store;
+    private final SharedFirebaseEngineeringPolicy sharedFirebase;
 
     public AuthorizationService(AuthorizationPolicyStore store) {
+        this(store, SharedFirebaseEngineeringPolicy.disabled());
+    }
+
+    public AuthorizationService(
+            AuthorizationPolicyStore store, SharedFirebaseEngineeringPolicy sharedFirebase) {
         this.store = Objects.requireNonNull(store, "store");
+        this.sharedFirebase = Objects.requireNonNull(sharedFirebase, "sharedFirebase");
     }
 
     public AuthorizationDecision decide(
@@ -29,7 +36,10 @@ public final class AuthorizationService {
         EnterpriseId target = lineage.get(targetScope);
         if (target == null) return AuthorizationDecision.deny("DENY_UNKNOWN_TARGET");
 
-        boolean allowed = false;
+        // In explicit shared-workspace deployments, every verified Firebase
+        // identity from this deployment's Firebase project has ENGINEER access.
+        // Tenant-specific explicit DENY bindings always win.
+        boolean allowed = sharedFirebase.grants(principal, permission);
         for (RoleBinding binding : store.snapshot().bindings()) {
             if (!principal.id().equals(binding.principalId())) continue;
             if (!binding.role().grants(permission)) continue;
