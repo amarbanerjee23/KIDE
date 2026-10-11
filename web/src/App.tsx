@@ -19,6 +19,7 @@ import { KideLspClient, type DocumentSymbol, type SymbolInformation } from "./ls
 import { MonacoEditor } from "./MonacoEditor";
 import { MonacoLspController } from "./monacoLsp";
 import { MonacoWorkspace } from "./monacoWorkspace";
+import { modelLoadBlockReason } from "./modelLoadPolicy";
 import { GraphicalEditor } from "./GraphicalEditor";
 import { EngineeringCockpit } from "./EngineeringCockpit";
 import { QuickPick, type QuickPickItem } from "./QuickPick";
@@ -202,6 +203,8 @@ export default function App() {
   const lspAttemptRef = useRef(0);
   const collaborationAttemptRef = useRef(0);
   const projectOpenAttemptRef = useRef(0);
+  // A slow GET for file A must not select A after the engineer chose file B.
+  const modelOpenIntentRef = useRef(0);
   // Project scope advances before any asynchronous teardown starts. Even a
   // delayed response for the same project ID may belong to an older opening.
   const projectScopeRef = useRef(0);
@@ -1262,14 +1265,34 @@ export default function App() {
     }
   }
 
-  async function loadSpecificModel(id: string, announce = false): Promise<boolean> {
+  async function loadSpecificModel(
+    id: string,
+    announce = false,
+    allowDiscard = false
+  ): Promise<boolean> {
     const currentProject = projectRef.current;
     if (!currentProject || !id) return false;
-    const isCurrent = captureProjectScope(currentProject.id);
-    setConflict(undefined);
+    const isProjectCurrent = captureProjectScope(currentProject.id);
+    const intent = ++modelOpenIntentRef.current;
+    const isCurrent = () => isProjectCurrent() && modelOpenIntentRef.current === intent;
+    const existing = entriesRef.current.find((entry) => entry.path === id);
+    const initial = { text: workspace.text(id), etag: existing?.etag };
     try {
       const model = await clientRef.current.getModel(currentProject.id, id);
       if (!isCurrent()) return false;
+      const live = entriesRef.current.find((entry) => entry.path === id);
+      const block = modelLoadBlockReason(initial, {
+        text: workspace.text(id),
+        etag: live?.etag,
+        dirty: live?.dirty ?? false,
+        autosaveActive: autosaves.current.get(id)?.hasUnsettledWork ?? false
+      }, allowDiscard);
+      if (block) {
+        setNotice(block === "changed-while-loading"
+          ? `Local model ${id} changed while loading. The server response was discarded; reopen it after saving your edits.`
+          : `Model ${id} has unsaved edits or a pending save. Finish saving or explicitly reload the server revision before replacing them.`);
+        return false;
+      }
       const entry = remoteEntry(currentProject.id, model);
       replaceRemoteEntry(entry);
       workspace.ensure(entry.path, model.content);
@@ -1279,6 +1302,7 @@ export default function App() {
       setSelectedPath(entry.path);
       setRevealRange(undefined);
       setSaveState("clean");
+      setConflict(undefined);
       if (announce) {
         setNotice(`Loaded ${model.id} at revision ${model.revision}.`);
       }
@@ -1550,6 +1574,8 @@ export default function App() {
   }
 
   function selectEntry(entry: WorkspaceEntry) {
+    // A click on any already-loaded tab supersedes an in-flight lazy open.
+    ++modelOpenIntentRef.current;
     if (entry.source === "remote" && entry.loaded === false) {
       void loadSpecificModel(entry.path, true);
       return;
@@ -1577,7 +1603,10 @@ export default function App() {
         // Server reload remains safe without session storage.
       }
     }
-    await loadSpecificModel(selected.path);
+    // This is the sole explicit discard path. Preserve the local draft
+    // first; never silently replace a draft as a side effect of navigation.
+    const loaded = await loadSpecificModel(selected.path, false, true);
+    if (!loaded) return;
     setConflict(undefined);
     setNotice("Reloaded the server revision. The pre-reload local draft remains in this browser session.");
   }
@@ -1761,13 +1790,20 @@ export default function App() {
   async function openSymbol(symbol: SymbolInformation) {
     const controller = lspController.current;
     if (!controller) return;
+    const currentProject = projectRef.current;
+    const isProjectCurrent = currentProject
+      ? captureProjectScope(currentProject.id)
+      : () => !projectRef.current;
+    const intent = ++modelOpenIntentRef.current;
+    const isCurrent = () => modelOpenIntentRef.current === intent &&
+      lspController.current === controller && isProjectCurrent();
     try {
       const target = await controller.revealLocation(symbol.location);
-      if (!target) return;
+      if (!target || !isCurrent()) return;
       setSelectedPath(target.path);
       setRevealRange(target.range);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
@@ -1797,7 +1833,10 @@ export default function App() {
 
     pendingDiagramPath.current = path;
     if (entry.loaded === false) {
-      await loadSpecificModel(path);
+      const loaded = await loadSpecificModel(path);
+      if (!loaded && pendingDiagramPath.current === path) {
+        pendingDiagramPath.current = undefined;
+      }
     } else {
       selectEntry(entry);
     }
@@ -1822,11 +1861,14 @@ export default function App() {
   }
 
   async function refreshAfterGraphicalSave(path: string) {
-    await loadSpecificModel(path);
-    setNotice("Graphical save completed. The Monaco model was refreshed from the same canonical project file.");
+    const loaded = await loadSpecificModel(path);
+    if (loaded) {
+      setNotice("Graphical save completed. The Monaco model was refreshed from the same canonical project file.");
+    }
   }
 
   async function resetProjectWorkspace() {
+    ++modelOpenIntentRef.current;
     const scope = ++projectScopeRef.current;
     ++reviewRequestRef.current;
     ++workspaceSearchAttemptRef.current;
@@ -1882,11 +1924,12 @@ export default function App() {
   function updateEntries(
     update: (current: WorkspaceEntry[]) => WorkspaceEntry[]
   ) {
-    setEntries((current) => {
-      const next = update(current);
-      entriesRef.current = next;
-      return next;
-    });
+    // Request guards inspect entriesRef synchronously. React may defer a
+    // functional setState updater until *after* the following model GET starts;
+    // publish the canonical entry snapshot before scheduling its render.
+    const next = update(entriesRef.current);
+    entriesRef.current = next;
+    setEntries(next);
   }
 
   function setProjectState(next: Project | undefined) {
@@ -1974,6 +2017,7 @@ export default function App() {
   }
 
   function closeEditor(path: string) {
+    ++modelOpenIntentRef.current;
     const index = openPaths.indexOf(path);
     const next = openPaths.filter((candidate) => candidate !== path);
     setOpenPaths(next);
@@ -2102,7 +2146,7 @@ export default function App() {
     const entry = entriesRef.current.find((candidate) => candidate.path === match.path);
     if (!entry) return;
     if (entry.source === "remote" && entry.loaded === false) {
-      await loadSpecificModel(entry.path);
+      if (!await loadSpecificModel(entry.path)) return;
     } else {
       selectEntry(entry);
     }
@@ -2120,7 +2164,7 @@ export default function App() {
     const entry = entriesRef.current.find((candidate) => candidate.path === problem.path);
     if (!entry) return;
     if (entry.source === "remote" && entry.loaded === false) {
-      await loadSpecificModel(entry.path);
+      if (!await loadSpecificModel(entry.path)) return;
     } else {
       selectEntry(entry);
     }
