@@ -18,6 +18,7 @@ import com.kide.codegen.ProjectGenerationService;
 import com.kide.enterprise.audit.InMemoryAuditLedger;
 import com.kide.enterprise.authorization.AuthorizationEnforcer;
 import com.kide.enterprise.authorization.AuthorizationService;
+import com.kide.enterprise.authorization.SharedFirebaseEngineeringPolicy;
 import com.kide.enterprise.authorization.InMemoryAuthorizationPolicyStore;
 import com.kide.enterprise.authorization.AuthorizationPolicyStore;
 import com.kide.enterprise.authorization.HostedRegistryAuthorizationPolicyStore;
@@ -106,7 +107,8 @@ public final class EnterpriseApiApplication implements IApplication {
                     ? new InMemoryAuthorizationPolicyStore(bindings)
                     : new HostedRegistryAuthorizationPolicyStore(registry, bindings);
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
-                    new AuthorizationEnforcer(new AuthorizationService(policies)));
+                    new AuthorizationEnforcer(new AuthorizationService(policies,
+                            SharedFirebaseEngineeringPolicy.fromEnvironment(env))));
 
             firebaseConfig = new FirebaseIdTokenConfig(
                     required(env, "KIDE_FIREBASE_PROJECT_ID"),
