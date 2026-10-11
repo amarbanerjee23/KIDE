@@ -27,6 +27,10 @@ interface Probe {
   document_highlights_min: number;
   document_highlight_token: string;
   completion: { text: string; position: { line: number; character: number } };
+  definition?: { token: string; target_extension: string; occurrence?: number };
+  rename_targets: string[];
+  code_action?: { diagnostic_code: string; title: string; replacement: string };
+  workspace_symbol?: string;
 }
 interface Case extends Probe {
   id: string;
@@ -129,6 +133,21 @@ export async function assertLiveXtextParity(
       const before = text.slice(0, index);
       const pieces = before.split("\n");
       return { line: pieces.length - 1, character: pieces[pieces.length - 1].length + 1 };
+    };
+    const locateOccurrence = (text: string, token: string, occurrence: number) => {
+      if (!Number.isInteger(occurrence) || occurrence < 1) {
+        throw new Error("Invalid canonical navigation occurrence");
+      }
+      let from = 0;
+      let index = -1;
+      for (let count = 0; count < occurrence; count += 1) {
+        index = text.indexOf(token, from);
+        if (index < 0) throw new Error("Canonical navigation target is missing");
+        from = index + token.length;
+      }
+      const before = text.slice(0, index);
+      const lines = before.split("\\n");
+      return { line: lines.length - 1, character: lines[lines.length - 1].length + 1 };
     };
     const symbolNames = (symbols: unknown): string[] => {
       if (!Array.isArray(symbols)) return [];
@@ -235,6 +254,70 @@ export async function assertLiveXtextParity(
         });
         if (formatted !== null && !Array.isArray(formatted)) {
           throw new Error("Real " + item.id + " formatting returned an invalid edit shape");
+        }
+        const rangeEdits = await request("textDocument/rangeFormatting", {
+          textDocument,
+          range: {
+            start: { line: 0, character: 0 },
+            end: { line: item.content.split("\\n").length - 1, character: 0 }
+          },
+          options: { tabSize: 2, insertSpaces: true }
+        });
+        if (rangeEdits !== null && !Array.isArray(rangeEdits)) {
+          throw new Error("Real " + item.id + " range formatting is incompatible");
+        }
+        if (item.definition) {
+          const destination = await request("textDocument/definition", {
+            textDocument,
+            position: locateOccurrence(item.content, item.definition.token,
+              item.definition.occurrence ?? 1)
+          });
+          const locations = Array.isArray(destination)
+            ? destination : destination ? [destination] : [];
+          if (!locations.some(location =>
+            location && typeof location === "object" &&
+            typeof (location as { uri?: unknown }).uri === "string" &&
+            ((location as { uri: string }).uri).endsWith("." + item.definition!.target_extension)
+          )) {
+            throw new Error("Real " + item.id + " cross-DSL definition navigation failed");
+          }
+        }
+        const rename = await request("textDocument/rename", {
+          textDocument, position: locate(item.content, item.symbol),
+          newName: "KideParityRenamed"
+        }) as { changes?: Record<string, unknown>; documentChanges?: unknown[] } | null;
+        const targets = [
+          ...Object.keys(rename?.changes ?? {}),
+          ...(rename?.documentChanges ?? []).flatMap(change => {
+            if (!change || typeof change !== "object") return [];
+            const info = change as { textDocument?: { uri?: string } };
+            return info.textDocument?.uri ? [info.textDocument.uri] : [];
+          })
+        ];
+        if (!targets.length ||
+            !item.rename_targets.every(originalPath => targets.some(target =>
+              target.endsWith("." + originalPath.split(".").pop())
+            ))) {
+          throw new Error("Real " + item.id + " rename omitted Eclipse target documents");
+        }
+        if (item.workspace_symbol) {
+          const workspaceSymbols = await request("workspace/symbol", {
+            query: item.workspace_symbol
+          });
+          if (!symbolNames(workspaceSymbols).includes(item.workspace_symbol)) {
+            throw new Error("Real " + item.id + " workspace symbols are missing");
+          }
+        }
+        if (item.code_action) {
+          const actions = await request("textDocument/codeAction", {
+            textDocument,
+            range: { start: { line: 0, character: 0 },
+              end: { line: 0, character: 1 } },
+            context: { diagnostics: [] }
+          });
+          if (actions !== null && !Array.isArray(actions)) {
+            throw new Error("Real " + item.id + " code action protocol is incompatible");
+          }
         }
         const semantic = await request("textDocument/semanticTokens/full", { textDocument })
           as { data?: unknown } | null;
