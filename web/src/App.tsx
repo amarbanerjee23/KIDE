@@ -618,15 +618,18 @@ export default function App() {
   async function createHostedProject() {
     const name = newProjectName.trim();
     if (!name || creatingProject || !firebaseAuth.user || !runtimeVersion) return;
+    const version = firebaseAuth.sessionVersion;
     setCreatingProject(true);
     try {
       const created = await client.createProject(name);
+      if (firebaseAuth.sessionVersion !== version || !firebaseAuth.user) return;
       setProjects((current) => [...current, created].sort(
         (a, b) => a.displayName.localeCompare(b.displayName)
       ));
       setNewProjectName("");
       setNotice(`Hosted project "${created.displayName}" created. Open it to begin engineering.`);
     } catch (error) {
+      if (firebaseAuth.sessionVersion !== version) return;
       showError(error);
     } finally {
       setCreatingProject(false);
@@ -787,10 +790,12 @@ export default function App() {
   async function createStarterEngineeringModels() {
     const currentProject = projectRef.current;
     if (!currentProject) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     setNotice("");
     setConflict(undefined);
     try {
       const modelList = await clientRef.current.createStarterModels(currentProject.id);
+      if (!isCurrent()) return;
       updateEntries(() =>
         modelList.items.map((model) => remoteSummaryEntry(currentProject.id, model))
       );
@@ -801,20 +806,23 @@ export default function App() {
 
       const preferred = preferredModel(modelList.items);
       if (preferred) await loadSpecificModel(preferred.id);
+      if (!isCurrent()) return;
       setNotice(
         `Created ${modelList.items.length} canonical starter model(s) atomically.`
       );
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function refreshProjectModels() {
     const currentProject = projectRef.current;
     if (!currentProject) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     setNotice("");
     try {
       const modelList = await clientRef.current.listModels(currentProject.id);
+      if (!isCurrent()) return;
       updateEntries((current) =>
         mergeRemoteModelListing(currentProject.id, current, modelList.items)
       );
@@ -825,10 +833,11 @@ export default function App() {
       if (!selectedPathRef.current) {
         const preferred = preferredModel(modelList.items);
         if (preferred) await loadSpecificModel(preferred.id);
+      if (!isCurrent()) return;
       }
       setNotice(`Refreshed ${modelList.items.length} project file(s).`);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
@@ -977,26 +986,31 @@ export default function App() {
 
   async function refreshReviews(projectId = projectRef.current?.id) {
     if (!projectId) return;
+    const isCurrent = captureProjectScope(projectId);
     try {
       const list = await clientRef.current.listReviewChangeSets(projectId);
-      setReviews(list.items);
+      if (isCurrent()) setReviews(list.items);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
-  async function openReview(changeSetId: string) {
-    const currentProject = projectRef.current;
-    if (!currentProject) return;
+  async function openReview(
+    changeSetId: string, projectId = projectRef.current?.id
+  ) {
+    if (!projectId) return;
+    const isCurrent = captureProjectScope(projectId);
+    const request = ++reviewRequestRef.current;
     try {
       const bundle = await clientRef.current.getReviewChangeSet(
-        currentProject.id,
+        projectId,
         changeSetId
       );
+      if (!isCurrent() || reviewRequestRef.current !== request) return;
       setActiveReview(bundle);
       setReviewProposal(bundle.changeSet.proposedContent);
     } catch (error) {
-      showError(error);
+      if (isCurrent() && reviewRequestRef.current === request) showError(error);
     }
   }
 
@@ -1229,10 +1243,11 @@ export default function App() {
   async function loadSpecificModel(id: string, announce = false): Promise<boolean> {
     const currentProject = projectRef.current;
     if (!currentProject || !id) return false;
+    const isCurrent = captureProjectScope(currentProject.id);
     setConflict(undefined);
     try {
       const model = await clientRef.current.getModel(currentProject.id, id);
-      if (projectRef.current?.id !== currentProject.id) return false;
+      if (!isCurrent()) return false;
       const entry = remoteEntry(currentProject.id, model);
       replaceRemoteEntry(entry);
       workspace.ensure(entry.path, model.content);
@@ -1247,7 +1262,7 @@ export default function App() {
       }
       return true;
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
       return false;
     }
   }
@@ -1265,7 +1280,9 @@ export default function App() {
 
     const currentProject = projectRef.current;
     if (!currentProject) return undefined;
+    const isCurrent = captureProjectScope(currentProject.id);
     const model = await clientRef.current.getModel(currentProject.id, path);
+    if (!isCurrent()) return undefined;
     const entry = remoteEntry(currentProject.id, model);
     replaceRemoteEntry(entry);
     return workspace.ensure(path, model.content);
