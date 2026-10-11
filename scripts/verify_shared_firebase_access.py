@@ -29,6 +29,7 @@ def verify() -> list[str]:
         "deploy/gcp/configure-auto-deploy.sh",
         "deploy/gcp/deploy-cloud-run.sh",
         "docs/pr105-shared-firebase-engineering.md",
+        "web/e2e/live-hosted.spec.ts",
         ".github/workflows/build.yml",
     ]
     for path in required:
@@ -113,6 +114,18 @@ def verify() -> list[str]:
         ):
             if token not in code:
                 problems.append("deployment mode retention or consent missing: " + path + " " + token)
+
+    live = read(required[15])
+    for token in (
+        'KIDE_LIVE_SHARED_FIREBASE_ENGINEERS',
+        'if (sharedMode === "true")',
+        'expect(otherProjects.items.some((item) => item.id === created.id)).toBe(true)',
+        'await assertGateway(page, cfg.api, other.token, created.workspaceId, "lsp")',
+        'await assertGateway(page, cfg.api, other.token, created.workspaceId, "glsp")',
+        'other.token, "GET", projectPath, 403',
+    ):
+        if token not in live:
+            problems.append("live shared/private transport acceptance missing: " + token)
 
     doc = read(required[13])
     for token in ("every KIDE project", "single trusted team", "Reconnect API",
