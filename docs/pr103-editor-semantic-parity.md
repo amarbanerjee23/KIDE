@@ -36,7 +36,12 @@ the mocked CI suite:
    **MNC state-machine** diagram types; initializes an ephemeral session,
    requests an actual diagram model, verifies a nonempty EMF-derived GModel
    and queries the real edit shape/edge hints. No diagram mutations are sent.
-5. Preserves the PR89 actual synthesis/code generation, repeatability and
+5. Signs into the deployed Web UI and opens **each of the six DSL files**
+   through the real project tree into an active Monaco editor tab, verifying
+   the selected path, breadcrumbs and visible editor before returning to
+   Activity synthesis. This is a browser action on actual persisted models,
+   not a network-replayed or hand-constructed Monaco instance.
+6. Preserves the PR89 actual synthesis/code generation, repeatability and
    artifact integrity tests and a second-user negative tenant-access check.
    The browser still logs in with actual Firebase credentials and uses the
    real Monaco and graphical renderers for the engineering workflow.
