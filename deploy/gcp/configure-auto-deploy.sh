@@ -87,8 +87,8 @@ done
 # An omitted allowlist means preserve already-approved trigger grants, NOT
 # erase them. Use the operator grant/revocation workflows for deliberate changes.
 if [[ ! -v KIDE_FIREBASE_ENGINEER_UIDS ]]; then
-  KIDE_FIREBASE_ENGINEER_UIDS="$(gcloud builds triggers describe "${TRIGGER_NAME}" \\
-    --project "${PROJECT_ID}" --region "${TRIGGER_REGION}" \\
+  KIDE_FIREBASE_ENGINEER_UIDS="$(gcloud builds triggers describe "${TRIGGER_NAME}" \
+    --project "${PROJECT_ID}" --region "${TRIGGER_REGION}" \
     --format='value(substitutions._KIDE_FIREBASE_ENGINEER_UIDS)')"
 fi
 python3 deploy/gcp/firebase-access.py validate --engineers "${KIDE_FIREBASE_ENGINEER_UIDS}"
