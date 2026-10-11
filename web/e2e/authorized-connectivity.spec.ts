@@ -120,4 +120,13 @@ test("recovers from missing role binding and starts real UI service sessions", a
   await expect(page.locator(".editor-tabs")).toContainText("workflow.activity");
   await expect.poll(() => lspInitialize).toBeGreaterThan(0);
   await expect.poll(() => collaborationJoins).toBeGreaterThan(0);
+
+  // A signed-out browser may still enter the public engineering shell, but
+  // it must have no selected hosted project, models, or authorized sessions.
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await page.getByRole("link", { name: "Open Engineering Workspace" }).click();
+  await expect(page.locator(".project-list")).toHaveCount(0);
+  await expect(page.locator(".editor-tabs")).not.toContainText("workflow.activity");
+  await expect(page.getByLabel("Workbench status")).not.toContainText("Xtext Online");
+  await expect(page.getByLabel("Workbench status")).not.toContainText("Collaboration Online");
 });
