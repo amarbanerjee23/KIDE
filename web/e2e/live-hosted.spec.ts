@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { assertLiveXtextParity, assertLiveGlspModels } from "./live-editor-parity";
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
 /**
@@ -41,6 +43,8 @@ interface Model {
 const SHA256 = /^[0-9a-f]{64}$/;
 const MISSING_ETAG = "0".repeat(64);
 const fixture = {
+  "golden.dml": readFileSync(new URL("../../qualification/golden/languages/valid/golden.dml", import.meta.url), "utf8"),
+  "golden.op": readFileSync(new URL("../../qualification/golden/languages/valid/golden.op", import.meta.url), "utf8"),
   "device.mncspec": [
     "Model Golden",
     "InterfaceDescription Device {",
@@ -371,7 +375,7 @@ test("PR89 live staging engineering: Firebase, tenant isolation, REST, LSP, GLSP
       }))
     }
   );
-  expect(imported.importedCount).toBe(4);
+  expect(imported.importedCount).toBe(6);
   expect(imported.workspaceId).toBe(created.workspaceId);
 
   const source = await apiCall<Model>(request, cfg.api, engineer.token,
@@ -383,10 +387,27 @@ test("PR89 live staging engineering: Firebase, tenant isolation, REST, LSP, GLSP
   expect(validSha(source.etag)).toBe(true);
   expect(validSha(krl.etag)).toBe(true);
 
+  // Every shipping DSL must survive an actual hosted import and round trip.
+  // This is real server persistence, not an in-browser reconstructed parser.
+  for (const [modelId, sourceBytes] of Object.entries(fixture)) {
+    const model = await apiCall<Model>(
+      request, cfg.api, engineer.token, "GET",
+      projectPath + "/models/" + encodeURIComponent(modelId), 200
+    );
+    expect(model.id).toBe(modelId);
+    expect(model.content).toBe(sourceBytes);
+    expect(validSha(model.etag)).toBe(true);
+  }
+
   // Real gateway handshakes use the same authenticated Firebase JWT.
   await page.goto(cfg.web + "/");
   await assertGateway(page, cfg.api, engineer.token, created.workspaceId, "lsp");
   await assertGateway(page, cfg.api, engineer.token, created.workspaceId, "glsp");
+  // These are unmocked semantic requests against the same deployed Xtext/EMF
+  // services consumed by Eclipse, rather than mere WebSocket reachability.
+  await assertLiveXtextParity(page, cfg.api, engineer.token, created.workspaceId, fixture);
+  await assertLiveGlspModels(page, cfg.api, engineer.token, created.workspaceId,
+    ["workflow.activity", "device.mncspec"]);
 
   const synthesisPayload = { modelId: source.id, modelRevision: source.etag };
   const synthesis = await apiCall<{
