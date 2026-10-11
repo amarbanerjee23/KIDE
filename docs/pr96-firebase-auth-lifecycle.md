@@ -10,9 +10,9 @@ The React shell also cleared its editor contents on sign-out without immediately
 
 - **Single-flight refresh:** simultaneous calls to `idToken()` share one HTTP request. Only a complete and consistent refresh response atomically changes the in-memory ID token, refresh token and expiry.
 - **Monotonic session versions:** signing in, registering or signing out increments a generation. Every pending password-auth or refresh response checks that generation before changing the identity. Stale responses reject as superseded without logging out a newer session.
-- **Identity binding:** refresh success must return the same Firebase UID; unexpected identity or invalid response fails closed. A real provider rejection clears that session; a transient network/transport failure retains its identity but never supplies an expired token.
+- **Identity binding:** refresh success must return the same Firebase UID; unexpected identity or invalid response fails closed. A real provider rejection clears that session; a transient network/transport failure, HTTP 429 or provider HTTP 5xx retains its identity but never supplies an expired token.
 - **UI generation checks:** delayed sign-in/register continuations and API health/version/project discovery cannot update the UI after logout or a different account has been established. Sign-out clears active project state and authorizations, not just Monaco editor resources.
-- **Refresh timer:** ignores results from older operations, retries transient failures, and clears active workspace when Firebase itself invalidates the current session.
+- **Refresh timer:** ignores results from older operations, retries transient failures, and clears active workspace when Firebase itself invalidates the current session. Switching accounts closes the prior workspace before the new sign-in begins.
 
 ## Verification
 
