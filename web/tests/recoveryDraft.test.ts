@@ -59,6 +59,20 @@ describe("session-scoped remote recovery drafts", () => {
     expect(saveRecoveryDraft(s, base)).toBe(false);
   });
 
+  it("fails safely when browser security policy blocks storage reads or removal", () => {
+    const inaccessible = {
+      getItem: () => { throw new Error("SecurityError"); },
+      setItem: () => { throw new Error("SecurityError"); },
+      removeItem: () => { throw new Error("SecurityError"); }
+    };
+    expect(saveRecoveryDraft(inaccessible, base)).toBe(false);
+    expect(loadRecoveryDraft(inaccessible, base.uid, base.projectId, base.path))
+      .toBeUndefined();
+    expect(() => clearRecoveryDraft(
+      inaccessible, base.uid, base.projectId, base.path
+    )).not.toThrow();
+  });
+
   it("rejects corrupt and cross-scoped payloads even if stored under a matching key", () => {
     const s = store();
     const key = recoveryDraftKey(base.uid, base.projectId, base.path);
