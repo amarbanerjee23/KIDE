@@ -24,7 +24,10 @@ def validate(service: str, ip: str, path: str, image: str,
         addr = ipaddress.ip_address(ip)
     except ValueError as exc:
         raise StagingRefusal("NFS server must be an explicit private IPv4 address") from exc
-    if addr.version != 4 or not addr.is_private or addr.is_loopback or addr.is_link_local:
+    private_v4 = (ipaddress.ip_network("10.0.0.0/8"),
+                  ipaddress.ip_network("172.16.0.0/12"),
+                  ipaddress.ip_network("192.168.0.0/16"))
+    if addr.version != 4 or not any(addr in network for network in private_v4):
         raise StagingRefusal("NFS server must use a private, non-loopback IPv4 address")
     # Paths are literal mount paths, never shell- or gcloud-option segments.
     if not re.fullmatch(r"/[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*", path):
