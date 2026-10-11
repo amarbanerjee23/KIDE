@@ -115,7 +115,7 @@ def verify() -> list[str]:
             if token not in code:
                 problems.append("deployment mode retention or consent missing: " + path + " " + token)
 
-    live = read(required[15])
+    live = read(required[14])
     for token in (
         'KIDE_LIVE_SHARED_FIREBASE_ENGINEERS',
         'if (sharedMode === "true")',
@@ -133,7 +133,7 @@ def verify() -> list[str]:
         if token.lower() not in doc.lower():
             # User-facing wording may differ, but a clear rollout and safety statement is mandatory.
             problems.append("shared project policy operator documentation missing: " + token)
-    if "python3 scripts/verify_shared_firebase_access.py" not in read(required[14]):
+    if "python3 scripts/verify_shared_firebase_access.py" not in read(required[15]):
         problems.append("shared Firebase access contract must run in PR CI")
     return problems
 
