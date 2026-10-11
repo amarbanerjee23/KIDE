@@ -254,6 +254,28 @@ describe("FirebaseAuthClient", () => {
     expect(auth.user).toBeUndefined();
   });
 
+  it("retries Firebase 503 without clearing identity or returning stale credentials", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        localId: "uid-A", email: "a@example.test", idToken: "expired",
+        refreshToken: "refresh-A", expiresIn: "1"
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        error: { message: "SERVICE_UNAVAILABLE" }
+      }), { status: 503 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        user_id: "uid-A", id_token: "recovered",
+        refresh_token: "rotated", expires_in: "3600"
+      }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const auth = new FirebaseAuthClient("api-key");
+    await auth.signInWithEmailPassword("a@example.test", "password");
+    await expect(auth.idToken()).rejects.toThrow("temporarily unavailable");
+    expect(auth.user?.uid).toBe("uid-A");
+    await expect(auth.idToken()).resolves.toBe("recovered");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
   it("retains the identity across a transient Firebase refresh outage", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
