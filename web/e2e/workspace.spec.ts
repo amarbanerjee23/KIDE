@@ -533,6 +533,8 @@ test("refuses local ZIP promotion when the hosted target is not empty", async ({
 
 
 test("keeps API reachability distinct from denied project authorization", async ({ page }) => {
+  await page.clock.install();
+  let authorized = false;
   let healthCalls = 0;
   let projectCalls = 0;
 
@@ -547,6 +549,14 @@ test("keeps API reachability distinct from denied project authorization", async 
 
   await page.route("**/api/v1/projects", async (route) => {
     projectCalls += 1;
+    if (authorized) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ items: [] })
+      });
+      return;
+    }
     await route.fulfill({
       status: 403,
       contentType: "application/json",
@@ -582,12 +592,22 @@ test("keeps API reachability distinct from denied project authorization", async 
   await expect(page.getByText(/24f8a8d8-739c-41ec-b291-1299550f4ba9/))
     .toBeVisible();
 
-  await page.getByRole("button", { name: "Reconnect API", exact: true }).click();
-  await expect.poll(() => healthCalls).toBe(2);
+  // Signed-in denied users are rechecked without needing to reload the page.
+  await page.clock.fastForward(31_000);
   await expect.poll(() => projectCalls).toBe(2);
-  await expect(page.locator(".connection-summary")).toContainText(
-    "Connected · API v1 · authorization required"
-  );
+  await expect(page.locator(".connection-summary")).toContainText("authorization required");
+
+  // A new operator-approved grant is discovered on the next interval.
+  authorized = true;
+  await page.clock.fastForward(31_000);
+  await expect.poll(() => projectCalls).toBe(3);
+  await expect(page.locator(".connection-summary")).toContainText("compatible");
+
+  // Manual reconnect remains available and does not revoke a recovered session.
+  await page.getByRole("button", { name: "Reconnect API", exact: true }).click();
+  await expect.poll(() => healthCalls).toBe(4);
+  await expect.poll(() => projectCalls).toBe(4);
+  await expect(page.locator(".connection-summary")).toContainText("compatible");
 });
 
 

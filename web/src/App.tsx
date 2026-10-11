@@ -210,6 +210,11 @@ export default function App() {
   const serviceRecoveryBusy = useRef(false);
   const authOperationRef = useRef(0);
   const apiConnectAttemptRef = useRef(0);
+  // A denied UID remains denied until an operator approves it. Retry discovery
+  // in the background after a grant without bypassing backend RBAC.
+  const authorizationRetryRef = useRef(false);
+  const authorizationRetryBusyRef = useRef(false);
+  const connectRef = useRef<(silent?: boolean) => Promise<void>>(async () => {});
   const lspAttemptRef = useRef(0);
   const collaborationAttemptRef = useRef(0);
   const projectOpenAttemptRef = useRef(0);
@@ -260,6 +265,8 @@ export default function App() {
   );
   const localArchiveOpen =
     !project && entries.some((entry) => entry.source === "archive");
+
+  connectRef.current = connect;
 
   workspaceChange.current = (path, value) => {
     const current = entriesRef.current.find((entry) => entry.path === path);
@@ -351,6 +358,18 @@ export default function App() {
       void connectLanguageServices(opened);
     }
   }, [token, gatewayOrigin]);
+  useEffect(() => {
+    const timer = globalThis.setInterval(() => {
+      if (!authorizationRetryRef.current || authorizationRetryBusyRef.current ||
+          !firebaseAuth.user || projectRef.current) return;
+      authorizationRetryBusyRef.current = true;
+      void connectRef.current(true).finally(() => {
+        authorizationRetryBusyRef.current = false;
+      });
+    }, 30_000);
+    return () => globalThis.clearInterval(timer);
+  }, [firebaseAuth]);
+
   // Gateway WebSockets can be closed by Cloud Run or idle proxies. Re-establish
   // a real authenticated session, never fabricate an Online health state.
   useEffect(() => {
@@ -515,6 +534,7 @@ export default function App() {
   }, []);
 
   async function prepareAuthenticationTransition(operation: number): Promise<boolean> {
+    authorizationRetryRef.current = false;
     if (!firebaseAuth.user && !projectRef.current) {
       return authOperationRef.current === operation;
     }
@@ -536,6 +556,7 @@ export default function App() {
   async function signInFirebase() {
     const operation = ++authOperationRef.current;
     ++apiConnectAttemptRef.current;
+    authorizationRetryRef.current = false;
     setNotice("");
     setAuthBusy(true);
     try {
@@ -605,6 +626,7 @@ export default function App() {
   }
 
   async function signOutFirebase() {
+    authorizationRetryRef.current = false;
     ++authOperationRef.current;
     ++apiConnectAttemptRef.current;
     ++projectOpenAttemptRef.current;
@@ -722,13 +744,15 @@ export default function App() {
     }
   }
 
-  async function connect() {
+  async function connect(silent = false) {
     const attempt = ++apiConnectAttemptRef.current;
     const versionAtStart = firebaseAuth.sessionVersion;
     const isCurrent = () => apiConnectAttemptRef.current === attempt &&
       firebaseAuth.sessionVersion === versionAtStart;
-    setNotice("");
-    setConflict(undefined);
+    if (!silent) {
+      setNotice("");
+      setConflict(undefined);
+    }
 
     let health: Health;
     try {
@@ -763,6 +787,7 @@ export default function App() {
 
     const compatibilityIssues = runtimeCompatibilityIssues(version);
     if (compatibilityIssues.length > 0) {
+      authorizationRetryRef.current = false;
       setProjects([]);
       if (projectRef.current) {
         ++projectOpenAttemptRef.current;
@@ -785,6 +810,7 @@ export default function App() {
     try {
       const list = await client.listProjects();
       if (!isCurrent()) return;
+      authorizationRetryRef.current = false;
       setProjects(list.items);
       if (list.items.length === 0) {
         setLspStatus("Awaiting authorized project");
@@ -803,6 +829,7 @@ export default function App() {
       if (!isCurrent()) return;
       setProjects([]);
       if (error instanceof ApiClientError && error.status === 403) {
+        authorizationRetryRef.current = true;
         setServiceStatus(`Connected · API ${version.apiVersion} · authorization required`);
         setLspStatus("Awaiting project authorization");
         setCollaborationStatus("Awaiting project authorization");
@@ -812,7 +839,7 @@ export default function App() {
         const suffix = error.requestId ? ` Request ${error.requestId}.` : "";
         setNotice(
           `API is reachable and compatible, but ${principal} has no KIDE project access. ` +
-          `Ask the deployment operator to add your UID to KIDE_FIREBASE_ENGINEER_UIDS for the legacy project, or grant a project-scoped ENGINEER role in registry mode. Then use Reconnect API.${suffix}`
+          `Ask the deployment operator to add your UID to KIDE_FIREBASE_ENGINEER_UIDS for the legacy project, or grant a project-scoped ENGINEER role in registry mode. KIDE will recheck authorization automatically; Reconnect API checks immediately.${suffix}`
         );
         return;
       }
