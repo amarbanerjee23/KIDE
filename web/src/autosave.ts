@@ -54,13 +54,15 @@ export class AutosaveCoordinator {
     } catch (error) {
       if (this.disposed) return;
       const normalized = error instanceof Error ? error : new Error("Autosave failed.");
+      // An engineer may type another edit while this request is in flight.
+      // A failure of the older request must NEVER replace the newer draft
+      // with the stale content that was originally submitted.
+      if (this.pending === undefined) this.pending = content;
       if (normalized instanceof ApiClientError && normalized.code === "CONFLICT") {
-        this.pending = content;
         this.events.onState("conflict");
-        this.events.onConflict(normalized, content, expectedEtag);
+        this.events.onConflict(normalized, this.pending, expectedEtag);
         return;
       }
-      this.pending = content;
       this.events.onState("error");
       this.events.onError(normalized);
       return;
