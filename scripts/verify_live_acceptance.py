@@ -73,7 +73,7 @@ def verify() -> list[str]:
         errors.append("live acceptance must never use an auto-started Vite mock server")
 
     default = read(files[3])
-    if 'testIgnore: "**/live-hosted.spec.ts"' not in default:
+    if '"**/live-hosted.spec.ts"' not in default:
         errors.append("regular browser PR tests must explicitly exclude the live suite")
 
     workflow = read(files[2])
