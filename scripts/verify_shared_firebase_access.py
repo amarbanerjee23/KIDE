@@ -115,7 +115,7 @@ def verify() -> list[str]:
                 problems.append("deployment mode retention or consent missing: " + path + " " + token)
 
     doc = read(required[13])
-    for token in ("every KIDE project", "single trusted team", "Reconnection",
+    for token in ("every KIDE project", "single trusted team", "Reconnect API",
                   "KIDE_SHARED_FIREBASE_ENGINEERS=true", "private"):
         if token.lower() not in doc.lower():
             # User-facing wording may differ, but a clear rollout and safety statement is mandatory.
