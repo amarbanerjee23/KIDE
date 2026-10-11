@@ -94,7 +94,7 @@ def verify() -> list[str]:
         'item.semantic_tokens_min',
         'item.completion.text',
         'item.rename_targets',
-        'item.definition.target_extension',
+        'item.definition!.target_extension',
         'item.workspace_symbol',
         'item.code_action',
         'sourceUri: "kide-workspace:/"',
