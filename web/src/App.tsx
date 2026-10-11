@@ -1382,6 +1382,7 @@ export default function App() {
     baseEtag: string
   ) {
     if (!entry.projectId) return;
+    const isCurrent = captureProjectScope(entry.projectId);
     try {
       const set = await clientRef.current.createReviewChangeSet(
         entry.projectId,
@@ -1390,21 +1391,24 @@ export default function App() {
         localContent,
         entry.mediaType
       );
+      if (!isCurrent()) return;
       await refreshReviews(entry.projectId);
-      await openReview(set.id);
+      if (!isCurrent()) return;
+      await openReview(set.id, entry.projectId);
       if (entry.path === selectedPathRef.current) {
         setConflict(
           `Server revision changed. Local edits were captured as review change set ${set.id.slice(0, 8)}; no server content was overwritten.`
         );
       }
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function createReviewFromEditor() {
     const currentProject = projectRef.current;
     if (!currentProject || !selected || selected.source !== "remote" || !selected.etag) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     const proposed = workspace.text(selected.path) ?? editableText(selected);
     if (proposed === null || proposed === undefined) return;
     try {
@@ -1415,17 +1419,20 @@ export default function App() {
         proposed,
         selected.mediaType
       );
+      if (!isCurrent()) return;
       await refreshReviews(currentProject.id);
-      await openReview(set.id);
+      await openReview(set.id, currentProject.id);
+      if (!isCurrent()) return;
       setNotice(`Created review change set ${set.id.slice(0, 8)}.`);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function rebaseActiveReview() {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const updated = await clientRef.current.rebaseReviewChangeSet(
         currentProject.id,
@@ -1433,70 +1440,82 @@ export default function App() {
         activeReview.currentModel.etag,
         reviewProposal
       );
+      if (!isCurrent()) return;
       await refreshReviews(currentProject.id);
-      await openReview(updated.id);
+      await openReview(updated.id, currentProject.id);
+      if (!isCurrent()) return;
       setNotice("Review proposal rebased explicitly on the current server revision.");
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function markActiveReviewReady() {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const updated = await clientRef.current.markReviewReady(
         currentProject.id,
         activeReview.changeSet.id
       );
+      if (!isCurrent()) return;
       await refreshReviews(currentProject.id);
-      await openReview(updated.id);
+      await openReview(updated.id, currentProject.id);
+      if (!isCurrent()) return;
       setNotice("Change set is ready for independent review.");
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function approveActiveReview() {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const updated = await clientRef.current.approveReview(
         currentProject.id,
         activeReview.changeSet.id
       );
+      if (!isCurrent()) return;
       await refreshReviews(currentProject.id);
-      await openReview(updated.id);
+      await openReview(updated.id, currentProject.id);
+      if (!isCurrent()) return;
       setNotice("Change set approved.");
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function applyActiveReview() {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const applied = await clientRef.current.applyReview(
         currentProject.id,
         activeReview.changeSet.id
       );
+      if (!isCurrent()) return;
       const entry = remoteEntry(currentProject.id, applied.model);
       replaceRemoteEntry(entry);
       workspace.sync(entry.path, applied.model.content);
       await refreshReviews(currentProject.id);
-      await openReview(applied.changeSet.id);
+      await openReview(applied.changeSet.id, currentProject.id);
       setSaveState("clean");
       setConflict(undefined);
+      if (!isCurrent()) return;
       setNotice("Approved change set applied to the canonical model.");
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function addActiveReviewComment() {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview || !reviewComment.trim()) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       await clientRef.current.addReviewComment(
         currentProject.id,
@@ -1504,16 +1523,18 @@ export default function App() {
         reviewComment.trim(),
         activeReview.changeSet.modelId
       );
+      if (!isCurrent()) return;
       setReviewComment("");
-      await openReview(activeReview.changeSet.id);
+      await openReview(activeReview.changeSet.id, currentProject.id);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function setCommentResolved(commentId: string, resolved: boolean) {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       await clientRef.current.updateReviewComment(
         currentProject.id,
@@ -1521,9 +1542,10 @@ export default function App() {
         commentId,
         resolved
       );
-      await openReview(activeReview.changeSet.id);
+      if (!isCurrent()) return;
+      await openReview(activeReview.changeSet.id, currentProject.id);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
