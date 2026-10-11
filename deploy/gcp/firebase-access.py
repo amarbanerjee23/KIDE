@@ -73,6 +73,8 @@ def main():
     sub = parser.add_subparsers(dest="command", required=True)
     extract = sub.add_parser("extract-env")
     extract.add_argument("--key", required=True)
+    validate = sub.add_parser("validate")
+    validate.add_argument("--engineers", required=True)
     combined = sub.add_parser("merge")
     combined.add_argument("--live", required=True)
     combined.add_argument("--trigger", required=True)
@@ -90,6 +92,9 @@ def main():
                                 "KIDE_HOSTED_PROJECTS_ROOT"):
                 raise ValueError("Unsupported environment key")
             print(environment(json.load(sys.stdin)).get(args.key, ""))
+        elif args.command == "validate":
+            parse_uids(args.engineers)
+            print("Firebase engineer allowlist validated.")
         elif args.command == "merge":
             print(merge(args.live, args.trigger, args.uid))
         else:
