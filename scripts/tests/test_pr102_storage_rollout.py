@@ -97,7 +97,7 @@ class HostedStorageGuardTest(unittest.TestCase):
                 qualify.SENTINEL + "\n",
                 (Path(temp) / qualify.MARKER).read_text()
             )
-            self.assertEqual([root.name, qualify.MARKER],
+            self.assertEqual(sorted([root.name, qualify.MARKER]),
                              sorted(p.name for p in Path(temp).iterdir()))
 
     def test_qualification_rejects_unapproved_filesystems_and_symlinks(self):
