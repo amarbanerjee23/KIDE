@@ -45,13 +45,15 @@ def validate(service: str, ip: str, path: str, image: str,
 
 
 
-def verify_existing(service: dict, ip: str, path: str) -> None:
+def verify_existing(service: dict, ip: str, path: str, firebase_project: str) -> None:
     spec = service.get("spec", {}).get("template", {}).get("spec", {})
     containers = spec.get("containers") or service.get("template", {}).get("containers") or []
     if not containers:
         raise StagingRefusal("Existing staging backend lacks runtime configuration")
     env = {item.get("name"): item.get("value", "") for item in containers[0].get("env", [])
            if isinstance(item, dict) and item.get("name")}
+    if env.get("KIDE_FIREBASE_PROJECT_ID") != firebase_project:
+        raise StagingRefusal("Existing staging Firebase tenant differs; no silent identity migration")
     if env.get("KIDE_STORAGE_MODE") != "registry-posix" or (
         env.get("KIDE_HOSTED_PROJECTS_ROOT") != "/data/hosted-projects"
     ):
@@ -71,10 +73,11 @@ def verify_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Validate existing staging registry mount")
     parser.add_argument("--nfs-ip", required=True)
     parser.add_argument("--nfs-export", required=True)
+    parser.add_argument("--firebase-project", required=True)
     args = parser.parse_args(argv)
     try:
         import json
-        verify_existing(json.load(sys.stdin), args.nfs_ip, args.nfs_export)
+        verify_existing(json.load(sys.stdin), args.nfs_ip, args.nfs_export, args.firebase_project)
         print("Existing staging mode and NFS identity verified")
         return 0
     except (StagingRefusal, ValueError) as exc:
