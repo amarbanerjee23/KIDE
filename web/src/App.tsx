@@ -202,6 +202,12 @@ export default function App() {
   const lspAttemptRef = useRef(0);
   const collaborationAttemptRef = useRef(0);
   const projectOpenAttemptRef = useRef(0);
+  // Project scope advances before any asynchronous teardown starts. Even a
+  // delayed response for the same project ID may belong to an older opening.
+  const projectScopeRef = useRef(0);
+  const reviewRequestRef = useRef(0);
+  const workspaceSearchAttemptRef = useRef(0);
+  const outlineRequestRef = useRef(0);
   const lspSessionTokenRef = useRef("");
   const lspSessionOriginRef = useRef("");
   const lspController = useRef<MonacoLspController | undefined>(undefined);
@@ -590,18 +596,40 @@ export default function App() {
     await resetProjectWorkspace();
   }
 
+  function isProjectScopeCurrent(
+    projectId: string,
+    scope: number,
+    openAttempt: number,
+    authVersion: number
+  ): boolean {
+    return projectScopeRef.current === scope &&
+      projectOpenAttemptRef.current === openAttempt &&
+      firebaseAuth.sessionVersion === authVersion &&
+      projectRef.current?.id === projectId;
+  }
+
+  function captureProjectScope(projectId: string): () => boolean {
+    const scope = projectScopeRef.current;
+    const openAttempt = projectOpenAttemptRef.current;
+    const authVersion = firebaseAuth.sessionVersion;
+    return () => isProjectScopeCurrent(projectId, scope, openAttempt, authVersion);
+  }
+
   async function createHostedProject() {
     const name = newProjectName.trim();
     if (!name || creatingProject || !firebaseAuth.user || !runtimeVersion) return;
+    const version = firebaseAuth.sessionVersion;
     setCreatingProject(true);
     try {
       const created = await client.createProject(name);
+      if (firebaseAuth.sessionVersion !== version || !firebaseAuth.user) return;
       setProjects((current) => [...current, created].sort(
         (a, b) => a.displayName.localeCompare(b.displayName)
       ));
       setNewProjectName("");
       setNotice(`Hosted project "${created.displayName}" created. Open it to begin engineering.`);
     } catch (error) {
+      if (firebaseAuth.sessionVersion !== version) return;
       showError(error);
     } finally {
       setCreatingProject(false);
@@ -762,10 +790,12 @@ export default function App() {
   async function createStarterEngineeringModels() {
     const currentProject = projectRef.current;
     if (!currentProject) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     setNotice("");
     setConflict(undefined);
     try {
       const modelList = await clientRef.current.createStarterModels(currentProject.id);
+      if (!isCurrent()) return;
       updateEntries(() =>
         modelList.items.map((model) => remoteSummaryEntry(currentProject.id, model))
       );
@@ -776,20 +806,23 @@ export default function App() {
 
       const preferred = preferredModel(modelList.items);
       if (preferred) await loadSpecificModel(preferred.id);
+      if (!isCurrent()) return;
       setNotice(
         `Created ${modelList.items.length} canonical starter model(s) atomically.`
       );
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function refreshProjectModels() {
     const currentProject = projectRef.current;
     if (!currentProject) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     setNotice("");
     try {
       const modelList = await clientRef.current.listModels(currentProject.id);
+      if (!isCurrent()) return;
       updateEntries((current) =>
         mergeRemoteModelListing(currentProject.id, current, modelList.items)
       );
@@ -800,10 +833,11 @@ export default function App() {
       if (!selectedPathRef.current) {
         const preferred = preferredModel(modelList.items);
         if (preferred) await loadSpecificModel(preferred.id);
+      if (!isCurrent()) return;
       }
       setNotice(`Refreshed ${modelList.items.length} project file(s).`);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
@@ -952,26 +986,31 @@ export default function App() {
 
   async function refreshReviews(projectId = projectRef.current?.id) {
     if (!projectId) return;
+    const isCurrent = captureProjectScope(projectId);
     try {
       const list = await clientRef.current.listReviewChangeSets(projectId);
-      setReviews(list.items);
+      if (isCurrent()) setReviews(list.items);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
-  async function openReview(changeSetId: string) {
-    const currentProject = projectRef.current;
-    if (!currentProject) return;
+  async function openReview(
+    changeSetId: string, projectId = projectRef.current?.id
+  ) {
+    if (!projectId) return;
+    const isCurrent = captureProjectScope(projectId);
+    const request = ++reviewRequestRef.current;
     try {
       const bundle = await clientRef.current.getReviewChangeSet(
-        currentProject.id,
+        projectId,
         changeSetId
       );
+      if (!isCurrent() || reviewRequestRef.current !== request) return;
       setActiveReview(bundle);
       setReviewProposal(bundle.changeSet.proposedContent);
     } catch (error) {
-      showError(error);
+      if (isCurrent() && reviewRequestRef.current === request) showError(error);
     }
   }
 
@@ -993,12 +1032,16 @@ export default function App() {
       setNotice("Save the Activity model before running deterministic synthesis.");
       return;
     }
+    const isCurrent = captureProjectScope(currentProject.id);
+    const sourcePath = current.path;
+    const valid = () => isCurrent() && selectedPathRef.current === sourcePath;
     try {
       const result = await clientRef.current.synthesize(
         currentProject.id,
         current.path,
         current.etag
       );
+      if (!valid()) return;
       setSynthesisResult(result);
       setReconfigurationResult(undefined);
       setGenerationResult(undefined);
@@ -1012,6 +1055,7 @@ export default function App() {
         );
       }
     } catch (error) {
+      if (!valid()) return;
       if (error instanceof ApiClientError && error.code === "CONFLICT") {
         setConflict("The Activity model changed on the server before synthesis completed.");
         setNotice("Reload the current server revision before synthesizing again.");
@@ -1041,6 +1085,9 @@ export default function App() {
       setNotice("Save the Activity model before running reconfiguration.");
       return;
     }
+    const isCurrent = captureProjectScope(currentProject.id);
+    const sourcePath = current.path;
+    const valid = () => isCurrent() && selectedPathRef.current === sourcePath;
     try {
       const result = await clientRef.current.reconfigure(
         currentProject.id,
@@ -1052,6 +1099,7 @@ export default function App() {
           resourceId: selection.resourceId
         }))
       );
+      if (!valid()) return;
       setReconfigurationResult(result);
       setNotice(
         result.status === "NO_SOLUTION"
@@ -1059,6 +1107,7 @@ export default function App() {
           : `Reconfiguration completed with ${result.migrations.length} state migration instruction(s).`
       );
     } catch (error) {
+      if (!valid()) return;
       if (error instanceof ApiClientError && error.code === "CONFLICT") {
         setConflict("The Activity model changed on the server before reconfiguration completed.");
         setNotice("Reload the current server revision before replanning.");
@@ -1090,8 +1139,12 @@ export default function App() {
       setNotice("Save the Activity model before generating target artifacts.");
       return;
     }
+    const isCurrent = captureProjectScope(currentProject.id);
+    const sourcePath = current.path;
+    const valid = () => isCurrent() && selectedPathRef.current === sourcePath;
     try {
       const krl = await clientRef.current.getModel(currentProject.id, krlModelId);
+      if (!valid()) return;
       const result = await clientRef.current.generate(
         currentProject.id,
         current.path,
@@ -1100,11 +1153,13 @@ export default function App() {
         krl.etag,
         synthesisResult.fingerprint
       );
+      if (!valid()) return;
       setGenerationResult(result);
       setNotice(
         `Generated ${result.artifacts.length} deterministic artifact(s) with toolchain v${result.toolchainVersion}.`
       );
     } catch (error) {
+      if (!valid()) return;
       if (error instanceof ApiClientError && error.code === "CONFLICT") {
         setConflict("The Activity, KRL, knowledge, or synthesis evidence changed before generation completed.");
         setNotice("Reload current model revisions and synthesize again before generating.");
@@ -1116,17 +1171,19 @@ export default function App() {
 
   async function refreshKnowledgeTraces(projectId = projectRef.current?.id) {
     if (!projectId) return;
+    const isCurrent = captureProjectScope(projectId);
     try {
       const traces = await clientRef.current.listKnowledgeTraces(projectId);
-      if (projectRef.current?.id === projectId) setKnowledgeTraces(traces);
+      if (isCurrent()) setKnowledgeTraces(traces);
     } catch (error) {
-      if (projectRef.current?.id === projectId) showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function searchKnowledge() {
     const currentProject = projectRef.current;
     if (!currentProject) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const result = await clientRef.current.queryKnowledge(
         currentProject.id,
@@ -1134,6 +1191,7 @@ export default function App() {
         knowledgeType,
         100
       );
+      if (!isCurrent()) return;
       setKnowledgeItems(result.items);
       if (
         selectedKnowledge &&
@@ -1144,7 +1202,7 @@ export default function App() {
       }
       await refreshKnowledgeTraces(currentProject.id);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
@@ -1152,12 +1210,12 @@ export default function App() {
     const currentProject = projectRef.current;
     setSelectedKnowledge(item);
     if (!currentProject) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
-      setKnowledgeImpact(
-        await clientRef.current.queryKnowledgeImpact(currentProject.id, item.iri)
-      );
+      const impact = await clientRef.current.queryKnowledgeImpact(currentProject.id, item.iri);
+      if (isCurrent()) setKnowledgeImpact(impact);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
@@ -1171,10 +1229,12 @@ export default function App() {
     ) {
       return;
     }
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const currentTraces =
         knowledgeTraces ??
         (await clientRef.current.listKnowledgeTraces(currentProject.id));
+      if (!isCurrent()) return;
       const updated = await clientRef.current.createKnowledgeTrace(
         currentProject.id,
         selectedKnowledge.iri,
@@ -1183,15 +1243,16 @@ export default function App() {
         "REALIZES",
         currentTraces.etag
       );
+      if (!isCurrent()) return;
       setKnowledgeTraces(updated);
-      setKnowledgeImpact(
-        await clientRef.current.queryKnowledgeImpact(
-          currentProject.id,
-          selectedKnowledge.iri
-        )
+      const impact = await clientRef.current.queryKnowledgeImpact(
+        currentProject.id, selectedKnowledge.iri
       );
+      if (!isCurrent()) return;
+      setKnowledgeImpact(impact);
       setNotice(`Traced ${selectedKnowledge.label} to ${selected.path}.`);
     } catch (error) {
+      if (!isCurrent()) return;
       if (error instanceof ApiClientError && error.code === "CONFLICT") {
         await refreshKnowledgeTraces(currentProject.id);
         setNotice("Knowledge traces changed on the server. Refreshed without overwriting them.");
@@ -1204,10 +1265,11 @@ export default function App() {
   async function loadSpecificModel(id: string, announce = false): Promise<boolean> {
     const currentProject = projectRef.current;
     if (!currentProject || !id) return false;
+    const isCurrent = captureProjectScope(currentProject.id);
     setConflict(undefined);
     try {
       const model = await clientRef.current.getModel(currentProject.id, id);
-      if (projectRef.current?.id !== currentProject.id) return false;
+      if (!isCurrent()) return false;
       const entry = remoteEntry(currentProject.id, model);
       replaceRemoteEntry(entry);
       workspace.ensure(entry.path, model.content);
@@ -1222,7 +1284,7 @@ export default function App() {
       }
       return true;
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
       return false;
     }
   }
@@ -1240,7 +1302,9 @@ export default function App() {
 
     const currentProject = projectRef.current;
     if (!currentProject) return undefined;
+    const isCurrent = captureProjectScope(currentProject.id);
     const model = await clientRef.current.getModel(currentProject.id, path);
+    if (!isCurrent()) return undefined;
     const entry = remoteEntry(currentProject.id, model);
     replaceRemoteEntry(entry);
     return workspace.ensure(path, model.content);
@@ -1318,6 +1382,7 @@ export default function App() {
     baseEtag: string
   ) {
     if (!entry.projectId) return;
+    const isCurrent = captureProjectScope(entry.projectId);
     try {
       const set = await clientRef.current.createReviewChangeSet(
         entry.projectId,
@@ -1326,21 +1391,24 @@ export default function App() {
         localContent,
         entry.mediaType
       );
+      if (!isCurrent()) return;
       await refreshReviews(entry.projectId);
-      await openReview(set.id);
+      if (!isCurrent()) return;
+      await openReview(set.id, entry.projectId);
       if (entry.path === selectedPathRef.current) {
         setConflict(
           `Server revision changed. Local edits were captured as review change set ${set.id.slice(0, 8)}; no server content was overwritten.`
         );
       }
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function createReviewFromEditor() {
     const currentProject = projectRef.current;
     if (!currentProject || !selected || selected.source !== "remote" || !selected.etag) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     const proposed = workspace.text(selected.path) ?? editableText(selected);
     if (proposed === null || proposed === undefined) return;
     try {
@@ -1351,17 +1419,20 @@ export default function App() {
         proposed,
         selected.mediaType
       );
+      if (!isCurrent()) return;
       await refreshReviews(currentProject.id);
-      await openReview(set.id);
+      await openReview(set.id, currentProject.id);
+      if (!isCurrent()) return;
       setNotice(`Created review change set ${set.id.slice(0, 8)}.`);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function rebaseActiveReview() {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const updated = await clientRef.current.rebaseReviewChangeSet(
         currentProject.id,
@@ -1369,70 +1440,82 @@ export default function App() {
         activeReview.currentModel.etag,
         reviewProposal
       );
+      if (!isCurrent()) return;
       await refreshReviews(currentProject.id);
-      await openReview(updated.id);
+      await openReview(updated.id, currentProject.id);
+      if (!isCurrent()) return;
       setNotice("Review proposal rebased explicitly on the current server revision.");
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function markActiveReviewReady() {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const updated = await clientRef.current.markReviewReady(
         currentProject.id,
         activeReview.changeSet.id
       );
+      if (!isCurrent()) return;
       await refreshReviews(currentProject.id);
-      await openReview(updated.id);
+      await openReview(updated.id, currentProject.id);
+      if (!isCurrent()) return;
       setNotice("Change set is ready for independent review.");
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function approveActiveReview() {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const updated = await clientRef.current.approveReview(
         currentProject.id,
         activeReview.changeSet.id
       );
+      if (!isCurrent()) return;
       await refreshReviews(currentProject.id);
-      await openReview(updated.id);
+      await openReview(updated.id, currentProject.id);
+      if (!isCurrent()) return;
       setNotice("Change set approved.");
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function applyActiveReview() {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const applied = await clientRef.current.applyReview(
         currentProject.id,
         activeReview.changeSet.id
       );
+      if (!isCurrent()) return;
       const entry = remoteEntry(currentProject.id, applied.model);
       replaceRemoteEntry(entry);
       workspace.sync(entry.path, applied.model.content);
       await refreshReviews(currentProject.id);
-      await openReview(applied.changeSet.id);
+      await openReview(applied.changeSet.id, currentProject.id);
       setSaveState("clean");
       setConflict(undefined);
+      if (!isCurrent()) return;
       setNotice("Approved change set applied to the canonical model.");
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function addActiveReviewComment() {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview || !reviewComment.trim()) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       await clientRef.current.addReviewComment(
         currentProject.id,
@@ -1440,16 +1523,18 @@ export default function App() {
         reviewComment.trim(),
         activeReview.changeSet.modelId
       );
+      if (!isCurrent()) return;
       setReviewComment("");
-      await openReview(activeReview.changeSet.id);
+      await openReview(activeReview.changeSet.id, currentProject.id);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function setCommentResolved(commentId: string, resolved: boolean) {
     const currentProject = projectRef.current;
     if (!currentProject || !activeReview) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       await clientRef.current.updateReviewComment(
         currentProject.id,
@@ -1457,9 +1542,10 @@ export default function App() {
         commentId,
         resolved
       );
-      await openReview(activeReview.changeSet.id);
+      if (!isCurrent()) return;
+      await openReview(activeReview.changeSet.id, currentProject.id);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
@@ -1741,10 +1827,18 @@ export default function App() {
   }
 
   async function resetProjectWorkspace() {
-    await disposeLanguageServices();
-    await disposeCollaboration();
+    const scope = ++projectScopeRef.current;
+    ++reviewRequestRef.current;
+    ++workspaceSearchAttemptRef.current;
+    ++outlineRequestRef.current;
+    // Cancel editor callbacks *before* waiting for an old server presence
+    // DELETE. Delayed teardown must never clear a newer opened project.
     disposeAutosaves();
+    const lspCleanup = disposeLanguageServices();
+    const collaborationCleanup = disposeCollaboration();
     workspace.dispose();
+    await Promise.all([lspCleanup, collaborationCleanup]);
+    if (projectScopeRef.current !== scope) return;
     updateEntries(() => []);
     setSelectedPath(undefined);
     setRevealRange(undefined);
@@ -1891,7 +1985,10 @@ export default function App() {
   }
 
   async function refreshOutline(path = selectedPathRef.current) {
+    const request = ++outlineRequestRef.current;
     const controller = lspController.current;
+    const isCurrent = () => outlineRequestRef.current === request &&
+      lspController.current === controller && selectedPathRef.current === path;
     if (!controller || !path || !controller.client.hasCapability("documentSymbolProvider")) {
       setOutlineItems([]);
       return;
@@ -1903,9 +2000,9 @@ export default function App() {
     }
     try {
       const symbols = await controller.client.documentSymbols(model.uri.toString());
-      setOutlineItems(flattenDocumentSymbols(symbols ?? []));
+      if (isCurrent()) setOutlineItems(flattenDocumentSymbols(symbols ?? []));
     } catch {
-      setOutlineItems([]);
+      if (isCurrent()) setOutlineItems([]);
     }
   }
 
@@ -1922,6 +2019,16 @@ export default function App() {
   }
 
   async function runWorkspaceSearch() {
+    const request = ++workspaceSearchAttemptRef.current;
+    const scope = projectScopeRef.current;
+    const openAttempt = projectOpenAttemptRef.current;
+    const authVersion = firebaseAuth.sessionVersion;
+    const currentProject = projectRef.current;
+    const isCurrent = () => workspaceSearchAttemptRef.current === request &&
+      projectScopeRef.current === scope &&
+      projectOpenAttemptRef.current === openAttempt &&
+      firebaseAuth.sessionVersion === authVersion &&
+      projectRef.current?.id === currentProject?.id;
     const query = workspaceSearch.trim();
     if (!query) {
       setWorkspaceMatches([]);
@@ -1931,8 +2038,7 @@ export default function App() {
     const needle = query.toLocaleLowerCase();
     const matches: WorkspaceSearchMatch[] = [];
     const hydrated: WorkspaceEntry[] = [];
-    const currentProject = projectRef.current;
-
+ 
     try {
       for (const candidate of entriesRef.current) {
         let entry = candidate;
@@ -1946,6 +2052,7 @@ export default function App() {
             currentProject.id,
             entry.path
           );
+          if (!isCurrent()) return;
           entry = remoteEntry(currentProject.id, model);
           hydrated.push(entry);
         }
@@ -1973,6 +2080,7 @@ export default function App() {
         if (matches.length >= 500) break;
       }
 
+      if (!isCurrent()) return;
       if (hydrated.length) {
         updateEntries((current) => {
           let next = current;
@@ -1986,7 +2094,7 @@ export default function App() {
         setNotice("Search stopped after 500 matches. Refine the query for a smaller result set.");
       }
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 

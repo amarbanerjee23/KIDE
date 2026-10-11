@@ -77,4 +77,66 @@ describe("AutosaveCoordinator", () => {
     expect(states.at(-1)).toBe("conflict");
     coordinator.dispose();
   });
+  it("ignores a successful write that finishes after project disposal", async () => {
+    let complete!: (value: Model) => void;
+    const deferred = new Promise<Model>((resolve) => { complete = resolve; });
+    const save = vi.fn().mockReturnValue(deferred);
+    const onSaved = vi.fn();
+    const onState = vi.fn();
+    const coordinator = new AutosaveCoordinator("etag-1", save, {
+      onState, onSaved, onConflict: vi.fn(), onError: vi.fn()
+    }, 100);
+
+    coordinator.update("first change");
+    const pending = coordinator.flush();
+    coordinator.update("second change");
+    coordinator.dispose();
+    complete(model("first change", "etag-2", "2"));
+    await pending;
+
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(onState).toHaveBeenCalledWith("saving");
+    expect(onState).not.toHaveBeenCalledWith("saved");
+  });
+
+  it("ignores a late save conflict and does not revive old conflict UI", async () => {
+    let fail!: (error: Error) => void;
+    const deferred = new Promise<Model>((_, reject) => { fail = reject; });
+    const conflict = new ApiClientError("stale etag", 409, {
+      apiVersion: "v1",
+      requestId: "f64c927d-436d-483b-97b7-e5a992d7e00d",
+      code: "CONFLICT",
+      message: "Revision changed"
+    });
+    const onConflict = vi.fn();
+    const onState = vi.fn();
+    const coordinator = new AutosaveCoordinator("etag-1", () => deferred, {
+      onState, onSaved: vi.fn(), onConflict, onError: vi.fn()
+    });
+
+    coordinator.update("unsaved content");
+    const pending = coordinator.flush();
+    coordinator.dispose();
+    fail(conflict);
+    await pending;
+    expect(onConflict).not.toHaveBeenCalled();
+    expect(onState).not.toHaveBeenCalledWith("conflict");
+  });
+
+  it("ignores late transport failures from a disposed autosave", async () => {
+    let fail!: (error: Error) => void;
+    const deferred = new Promise<Model>((_, reject) => { fail = reject; });
+    const onError = vi.fn();
+    const coordinator = new AutosaveCoordinator("etag-1", () => deferred, {
+      onState: vi.fn(), onSaved: vi.fn(), onConflict: vi.fn(), onError
+    });
+    coordinator.update("data");
+    const pending = coordinator.flush();
+    coordinator.dispose();
+    fail(new Error("server unavailable"));
+    await pending;
+    expect(onError).not.toHaveBeenCalled();
+  });
+
 });

@@ -41,10 +41,14 @@ export class AutosaveCoordinator {
 
     try {
       const saved = await this.save(content, expectedEtag);
+      // A completed server write from a closed tab/project must not revive
+      // stale editor entries, save state, conflict dialogs or autosave loops.
+      if (this.disposed) return;
       this.etag = saved.etag;
       this.events.onSaved(saved);
       this.events.onState(this.pending === undefined ? "saved" : "pending");
     } catch (error) {
+      if (this.disposed) return;
       const normalized = error instanceof Error ? error : new Error("Autosave failed.");
       if (normalized instanceof ApiClientError && normalized.code === "CONFLICT") {
         this.pending = content;
@@ -64,16 +68,18 @@ export class AutosaveCoordinator {
   }
 
   updateRevision(etag: string): void {
-    this.etag = etag;
+    if (!this.disposed) this.etag = etag;
   }
 
   dispose(): void {
     this.disposed = true;
+    this.pending = undefined;
     if (this.timer) clearTimeout(this.timer);
     this.timer = undefined;
   }
 
   private schedule(delay: number): void {
+    if (this.disposed) return;
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => void this.flush(), delay);
   }
