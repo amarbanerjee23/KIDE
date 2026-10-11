@@ -14,6 +14,27 @@ function model(content: string, etag: string, revision: string): Model {
 }
 
 describe("AutosaveCoordinator", () => {
+  it("reports pending versus settled writes without treating an idle coordinator as busy", async () => {
+    let finish!: (model: Model) => void;
+    const pendingWrite = new Promise<Model>((resolve) => { finish = resolve; });
+    const coordinator = new AutosaveCoordinator(
+      "etag-1", () => pendingWrite, {
+        onState: () => undefined, onSaved: () => undefined,
+        onConflict: () => undefined, onError: () => undefined
+      }
+    );
+    expect(coordinator.hasUnsettledWork).toBe(false);
+    coordinator.update("local");
+    expect(coordinator.hasUnsettledWork).toBe(true);
+    const saving = coordinator.flush();
+    expect(coordinator.hasUnsettledWork).toBe(true);
+    finish(model("local", "etag-2", "2"));
+    await saving;
+    expect(coordinator.hasUnsettledWork).toBe(false);
+    coordinator.dispose();
+    expect(coordinator.hasUnsettledWork).toBe(false);
+  });
+
   it("carries the server etag forward and serializes newer edits", async () => {
     vi.useFakeTimers();
     const states: SaveState[] = [];
