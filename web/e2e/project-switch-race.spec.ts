@@ -159,9 +159,14 @@ test("switching projects cancels a stalled Xtext handshake without reviving the 
     .getByRole("button", { name: "Refresh", exact: true }).click();
   await requestStarted;
 
+  // Project selection belongs to Explorer, not the Collaboration sidebar.
+  await page.locator(".activity-bar")
+    .getByRole("button", { name: "Explorer", exact: true }).click();
   await projects.locator("li").filter({ hasText: "First Engineering Project" })
     .getByRole("button", { name: "Open" }).click();
   await expect(page.locator(".model-loader")).toContainText("First Engineering Project");
+  await page.locator(".activity-bar")
+    .getByRole("button", { name: "Collaboration", exact: true }).click();
   releaseReviews();
   await expect(page.locator(".collaboration-panel")).toContainText("No review change sets yet.");
   await expect(page.locator(".collaboration-panel")).not.toContainText("old-project-review.dml");
