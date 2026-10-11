@@ -31,7 +31,7 @@ def verify() -> list[str]:
         'storage_mode="${KIDE_STORAGE_MODE:-legacy-gcs}"',
         'KIDE_STORAGE_MODE',
         '"legacy-gcs"',
-        '"registry-posix"',
+        'registry-posix)',
         'registry_root',
         'KIDE-POSIX-REGISTRY-STAGING-v1',
         'KIDE_GATEWAY_ROLE_BINDINGS',
