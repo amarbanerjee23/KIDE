@@ -83,12 +83,25 @@ public final class EnterpriseApiApplication implements IApplication {
             }
             EnterpriseContext context = loaded.context().orElseThrow();
 
-            List<RoleBinding> bindings = parseBindings(
-                    required(env, "KIDE_API_ROLE_BINDINGS"), context);
             String registryRoot = env.get("KIDE_HOSTED_PROJECTS_ROOT");
-            FileHostedProjectRegistry registry =
-                    registryRoot == null || registryRoot.isBlank() ? null
-                            : new FileHostedProjectRegistry(Path.of(registryRoot.trim()));
+            boolean registryMode = registryRoot != null && !registryRoot.isBlank();
+            // Registry project ownership is persisted per tenant and rechecked
+            // by HostedRegistryAuthorizationPolicyStore on every request.
+            // The ephemeral compatibility context has no authority at all.
+            // A missing or non-empty legacy role allowlist must not silently
+            // grant access to other registered engineering projects.
+            List<RoleBinding> bindings;
+            if (registryMode) {
+                if (!env.getOrDefault("KIDE_API_ROLE_BINDINGS", "").isBlank()) {
+                    throw new IllegalArgumentException(
+                            "Legacy API role bindings are forbidden in hosted registry mode");
+                }
+                bindings = List.of();
+            } else {
+                bindings = parseBindings(required(env, "KIDE_API_ROLE_BINDINGS"), context);
+            }
+            FileHostedProjectRegistry registry = registryMode
+                    ? new FileHostedProjectRegistry(Path.of(registryRoot.trim())) : null;
             AuthorizationPolicyStore policies = registry == null
                     ? new InMemoryAuthorizationPolicyStore(bindings)
                     : new HostedRegistryAuthorizationPolicyStore(registry, bindings);
@@ -117,7 +130,7 @@ public final class EnterpriseApiApplication implements IApplication {
                             projectRoot, modelRepository, Clock.systemUTC());
             EmbeddedKnowledgeRepository knowledgeRepository =
                     new EmbeddedKnowledgeRepository(projectRoot);
-            if (bool(env, "KIDE_API_BOOTSTRAP_STARTER_KNOWLEDGE", false)
+            if (!registryMode && bool(env, "KIDE_API_BOOTSTRAP_STARTER_KNOWLEDGE", false)
                     && knowledgeRepository.snapshot().isEmpty()) {
                 knowledgeRepository.replace(
                         starterKnowledge(context),
