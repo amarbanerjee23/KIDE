@@ -49,7 +49,8 @@ if grep -Fxq "${STAGING_SERVICE}" <<< "${services}"; then
   gcloud run services describe "${STAGING_SERVICE}" \
     --project "${PROJECT_ID}" --region "${REGION}" --format=json |
     python3 scripts/staging_registry_policy.py verify-existing \
-      --nfs-ip "${NFS_IP}" --nfs-export "${NFS_EXPORT}"
+      --nfs-ip "${NFS_IP}" --nfs-export "${NFS_EXPORT}" \
+      --firebase-project "${STAGING_FIREBASE_PROJECT_ID}"
 fi
 
 # Cloud Run NFS mounts do NOT provide file locking. Max instance=1 does not
