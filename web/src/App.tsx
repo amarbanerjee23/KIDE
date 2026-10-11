@@ -534,6 +534,7 @@ export default function App() {
   }, []);
 
   async function prepareAuthenticationTransition(operation: number): Promise<boolean> {
+    authorizationRetryRef.current = false;
     if (!firebaseAuth.user && !projectRef.current) {
       return authOperationRef.current === operation;
     }
@@ -786,6 +787,7 @@ export default function App() {
 
     const compatibilityIssues = runtimeCompatibilityIssues(version);
     if (compatibilityIssues.length > 0) {
+      authorizationRetryRef.current = false;
       setProjects([]);
       if (projectRef.current) {
         ++projectOpenAttemptRef.current;
