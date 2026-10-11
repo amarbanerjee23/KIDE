@@ -51,14 +51,14 @@ class RealEditorParityGovernanceTest(unittest.TestCase):
         with patch.object(gate, "read", side_effect=modified):
             self.assertTrue(any("mock" in e for e in gate.verify()))
 
-    def test_hiding_an_existing_language_from_live_import_is_rejected(self):
+    def test_hiding_a_real_language_from_live_import_is_rejected(self):
         original = gate.read
 
         def modified(path):
             content = original(path)
             if path == "web/e2e/live-hosted.spec.ts":
-                return content.replace("expect(imported.importedCount).toBe(6)",
-                                       "expect(imported.importedCount).toBe(4)")
+                return content.replace("expect(imported.importedCount).toBe(7)",
+                                       "expect(imported.importedCount).toBe(6)")
             return content
 
         with patch.object(gate, "read", side_effect=modified):
