@@ -31,7 +31,9 @@ export class CollaborationCoordinator {
   ) {}
 
   get isActive(): boolean {
-    return !this.disposed && Boolean(this.sessionId);
+    // An in-flight join is owned by this coordinator, too. Callers must
+    // await it rather than replacing it with a second parallel join.
+    return !this.disposed && Boolean(this.sessionId || this.joinPending);
   }
 
   async connect(existingSessionId?: string, modelId?: string): Promise<PresenceSession> {
