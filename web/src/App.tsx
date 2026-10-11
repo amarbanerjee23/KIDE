@@ -202,6 +202,12 @@ export default function App() {
   const lspAttemptRef = useRef(0);
   const collaborationAttemptRef = useRef(0);
   const projectOpenAttemptRef = useRef(0);
+  // Project scope advances before any asynchronous teardown starts. Even a
+  // delayed response for the same project ID may belong to an older opening.
+  const projectScopeRef = useRef(0);
+  const reviewRequestRef = useRef(0);
+  const workspaceSearchAttemptRef = useRef(0);
+  const outlineRequestRef = useRef(0);
   const lspSessionTokenRef = useRef("");
   const lspSessionOriginRef = useRef("");
   const lspController = useRef<MonacoLspController | undefined>(undefined);
@@ -588,6 +594,25 @@ export default function App() {
     setAuthStatus("Not signed in");
     setNotice("Signed out.");
     await resetProjectWorkspace();
+  }
+
+  function isProjectScopeCurrent(
+    projectId: string,
+    scope: number,
+    openAttempt: number,
+    authVersion: number
+  ): boolean {
+    return projectScopeRef.current === scope &&
+      projectOpenAttemptRef.current === openAttempt &&
+      firebaseAuth.sessionVersion === authVersion &&
+      projectRef.current?.id === projectId;
+  }
+
+  function captureProjectScope(projectId: string): () => boolean {
+    const scope = projectScopeRef.current;
+    const openAttempt = projectOpenAttemptRef.current;
+    const authVersion = firebaseAuth.sessionVersion;
+    return () => isProjectScopeCurrent(projectId, scope, openAttempt, authVersion);
   }
 
   async function createHostedProject() {
@@ -1741,10 +1766,18 @@ export default function App() {
   }
 
   async function resetProjectWorkspace() {
-    await disposeLanguageServices();
-    await disposeCollaboration();
+    const scope = ++projectScopeRef.current;
+    ++reviewRequestRef.current;
+    ++workspaceSearchAttemptRef.current;
+    ++outlineRequestRef.current;
+    // Cancel editor callbacks *before* waiting for an old server presence
+    // DELETE. Delayed teardown must never clear a newer opened project.
     disposeAutosaves();
+    const lspCleanup = disposeLanguageServices();
+    const collaborationCleanup = disposeCollaboration();
     workspace.dispose();
+    await Promise.all([lspCleanup, collaborationCleanup]);
+    if (projectScopeRef.current !== scope) return;
     updateEntries(() => []);
     setSelectedPath(undefined);
     setRevealRange(undefined);
