@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
+import { clientCapabilities } from "../src/lspClient";
 
 /**
  * PR103: real deployed Xtext + GLSP semantic qualification.
@@ -72,11 +73,12 @@ export async function assertLiveXtextParity(
       ...probe, id: language.id, path, content, languageId: language.language_id
     };
   });
+  const productionClientCapabilities = clientCapabilities();
   const mandatoryCapabilities = matrix.features
     .filter(f => f.qualification === "required" && f.capability)
     .map(f => f.capability as string);
 
-  await page.evaluate(async ({ api, token, workspaceId, cases, mandatoryCapabilities }) => {
+  await page.evaluate(async ({ api, token, workspaceId, cases, mandatoryCapabilities, productionClientCapabilities }) => {
     const wsOrigin = new URL(api);
     wsOrigin.protocol = "wss:";
     wsOrigin.pathname = "/lsp";
@@ -178,13 +180,7 @@ export async function assertLiveXtextParity(
         processId: null,
         rootUri: "kide-workspace:/",
         workspaceFolders: [{ uri: "kide-workspace:/", name: "KIDE PR103" }],
-        capabilities: { textDocument: {
-          completion: { completionItem: { snippetSupport: true } },
-          documentSymbol: { hierarchicalDocumentSymbolSupport: true },
-          hover: { contentFormat: ["markdown", "plaintext"] },
-          semanticTokens: { requests: { full: true },
-            tokenTypes: [], tokenModifiers: [], formats: ["relative"] }
-        } }
+        capabilities: productionClientCapabilities
       }) as { capabilities?: Record<string, unknown> } | null;
       if (!init?.capabilities) throw new Error("Real Xtext initialize omitted capabilities");
       for (const name of mandatoryCapabilities) {
@@ -275,7 +271,7 @@ export async function assertLiveXtextParity(
       }
       socket.close();
     }
-  }, { api, token, workspaceId, cases, mandatoryCapabilities });
+  }, { api, token, workspaceId, cases, mandatoryCapabilities, productionClientCapabilities });
 }
 
 export async function assertLiveGlspModels(
