@@ -214,6 +214,11 @@ export class FirebaseAuthClient {
     }
     if (!current()) throw new FirebaseAuthError("Authentication request was superseded.");
     if (!response.ok) {
+      if (response.status === 429 || response.status >= 500) {
+        // Provider throttling/outage is not credential revocation. Keep the
+        // identity, but never return an expired ID token as successful auth.
+        throw new FirebaseAuthError("Firebase session refresh is temporarily unavailable.");
+      }
       this.signOut();
       throw new FirebaseAuthError(firebaseMessage(parsed, "Firebase session refresh failed."));
     }
