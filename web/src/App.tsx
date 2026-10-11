@@ -1285,7 +1285,7 @@ export default function App() {
         text: workspace.text(id),
         etag: live?.etag,
         dirty: live?.dirty ?? false,
-        autosaveActive: autosaves.current.has(id)
+        autosaveActive: autosaves.current.get(id)?.hasUnsettledWork ?? false
       }, allowDiscard);
       if (block) {
         setNotice(block === "changed-while-loading"
@@ -1914,11 +1914,12 @@ export default function App() {
   function updateEntries(
     update: (current: WorkspaceEntry[]) => WorkspaceEntry[]
   ) {
-    setEntries((current) => {
-      const next = update(current);
-      entriesRef.current = next;
-      return next;
-    });
+    // Request guards inspect entriesRef synchronously. React may defer a
+    // functional setState updater until *after* the following model GET starts;
+    // publish the canonical entry snapshot before scheduling its render.
+    const next = update(entriesRef.current);
+    entriesRef.current = next;
+    setEntries(next);
   }
 
   function setProjectState(next: Project | undefined) {
