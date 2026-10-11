@@ -37,3 +37,92 @@ jobs:
         run: |
           echo 'Hosted runtime read-only probe failed. Review service logs and status.' >> "$GITHUB_STEP_SUMMARY"
           echo 'No automated failover or rollback is performed by this workflow.' >> "$GITHUB_STEP_SUMMARY"
+
+  authenticated-services:
+    name: Authorized REST / Xtext / GLSP / collaboration staging check
+    # Explicitly opt in after provisioning a dedicated read-only synthetic
+    # engineering project and account. Skipped is NOT a passing connectivity
+    # result and must not be used for production readiness sign-off.
+    if: ${{ vars.KIDE_MONITOR_AUTH_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    environment: staging-monitor
+    env:
+      KIDE_MONITOR_API_ORIGIN: ${{ vars.KIDE_MONITOR_API_ORIGIN }}
+      KIDE_MONITOR_WEB_ORIGIN: ${{ vars.KIDE_MONITOR_WEB_ORIGIN }}
+      KIDE_MONITOR_APPROVED_API_HOST: ${{ vars.KIDE_MONITOR_APPROVED_API_HOST }}
+      KIDE_MONITOR_APPROVED_WEB_HOST: ${{ vars.KIDE_MONITOR_APPROVED_WEB_HOST }}
+      KIDE_MONITOR_EXPECTED_PROJECT_ID: ${{ vars.KIDE_MONITOR_EXPECTED_PROJECT_ID }}
+      KIDE_MONITOR_FIREBASE_API_KEY: ${{ secrets.KIDE_MONITOR_FIREBASE_API_KEY }}
+      KIDE_MONITOR_ENGINEER_EMAIL: ${{ secrets.KIDE_MONITOR_ENGINEER_EMAIL }}
+      KIDE_MONITOR_ENGINEER_PASSWORD: ${{ secrets.KIDE_MONITOR_ENGINEER_PASSWORD }}
+    steps:
+      - name: Fail if staging monitor configuration is incomplete
+        shell: bash
+        run: |
+          set -euo pipefail
+          for key in \
+            KIDE_MONITOR_API_ORIGIN KIDE_MONITOR_WEB_ORIGIN \
+            KIDE_MONITOR_APPROVED_API_HOST KIDE_MONITOR_APPROVED_WEB_HOST \
+            KIDE_MONITOR_EXPECTED_PROJECT_ID KIDE_MONITOR_FIREBASE_API_KEY \
+            KIDE_MONITOR_ENGINEER_EMAIL KIDE_MONITOR_ENGINEER_PASSWORD; do
+            if [[ -z "${!key:-}" ]]; then
+              echo "::error::Missing required authenticated staging monitor setting: $key"
+              exit 2
+            fi
+          done
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install exact Web dependencies
+        working-directory: web
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify real authenticated service readiness
+        working-directory: web
+        # Traces, screenshots and videos are disabled by the dedicated config.
+        run: npm run test:connectivity
+
+      - name: Record a failed readiness result
+        if: failure()
+        run: |
+          echo 'Authenticated staging service readiness failed.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Check Firebase grant, project registration, REST, LSP, GLSP, and collaboration.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Do not treat successful anonymous /health as full engineering availability.' >> "$GITHUB_STEP_SUMMARY"
+
+  monitoring-coverage:
+    name: Report active monitoring coverage
+    runs-on: ubuntu-latest
+    env:
+      API_ORIGIN: ${{ vars.KIDE_MONITOR_API_ORIGIN }}
+      WEB_ORIGIN: ${{ vars.KIDE_MONITOR_WEB_ORIGIN }}
+      AUTH_ENABLED: ${{ vars.KIDE_MONITOR_AUTH_ENABLED }}
+    steps:
+      - name: Publish truthful coverage status
+        shell: bash
+        run: |
+          {
+            echo "## Hosted monitoring coverage"
+            if [[ -n "$API_ORIGIN" && -n "$WEB_ORIGIN" ]]; then
+              echo "- Anonymous Web/API health: configured (result in public-health job)"
+            else
+              echo "- Anonymous Web/API health: NOT CONFIGURED"
+            fi
+            if [[ "$AUTH_ENABLED" == "true" ]]; then
+              echo "- Authenticated REST/Xtext/GLSP/collaboration: configured (result in authenticated-services job)"
+            else
+              echo "- Authenticated REST/Xtext/GLSP/collaboration: NOT CONFIGURED / NOT VERIFIED"
+            fi
+            echo "- Live production SLA, paging and operator grant: not established by this workflow"
+          } >> "$GITHUB_STEP_SUMMARY"
