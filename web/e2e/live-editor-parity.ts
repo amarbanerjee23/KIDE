@@ -48,7 +48,7 @@ const modelByExtension: Record<string, string> = {
   mncspec: "device.mncspec",
   cap: "observe.cap",
   activity: "workflow.activity",
-  krl: "bindings.krl"
+  krl: "golden.krl"
 };
 
 export async function assertLiveXtextParity(
