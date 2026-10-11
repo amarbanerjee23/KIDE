@@ -1032,12 +1032,16 @@ export default function App() {
       setNotice("Save the Activity model before running deterministic synthesis.");
       return;
     }
+    const isCurrent = captureProjectScope(currentProject.id);
+    const sourcePath = current.path;
+    const valid = () => isCurrent() && selectedPathRef.current === sourcePath;
     try {
       const result = await clientRef.current.synthesize(
         currentProject.id,
         current.path,
         current.etag
       );
+      if (!valid()) return;
       setSynthesisResult(result);
       setReconfigurationResult(undefined);
       setGenerationResult(undefined);
@@ -1051,6 +1055,7 @@ export default function App() {
         );
       }
     } catch (error) {
+      if (!valid()) return;
       if (error instanceof ApiClientError && error.code === "CONFLICT") {
         setConflict("The Activity model changed on the server before synthesis completed.");
         setNotice("Reload the current server revision before synthesizing again.");
@@ -1080,6 +1085,9 @@ export default function App() {
       setNotice("Save the Activity model before running reconfiguration.");
       return;
     }
+    const isCurrent = captureProjectScope(currentProject.id);
+    const sourcePath = current.path;
+    const valid = () => isCurrent() && selectedPathRef.current === sourcePath;
     try {
       const result = await clientRef.current.reconfigure(
         currentProject.id,
@@ -1091,6 +1099,7 @@ export default function App() {
           resourceId: selection.resourceId
         }))
       );
+      if (!valid()) return;
       setReconfigurationResult(result);
       setNotice(
         result.status === "NO_SOLUTION"
@@ -1098,6 +1107,7 @@ export default function App() {
           : `Reconfiguration completed with ${result.migrations.length} state migration instruction(s).`
       );
     } catch (error) {
+      if (!valid()) return;
       if (error instanceof ApiClientError && error.code === "CONFLICT") {
         setConflict("The Activity model changed on the server before reconfiguration completed.");
         setNotice("Reload the current server revision before replanning.");
@@ -1129,8 +1139,12 @@ export default function App() {
       setNotice("Save the Activity model before generating target artifacts.");
       return;
     }
+    const isCurrent = captureProjectScope(currentProject.id);
+    const sourcePath = current.path;
+    const valid = () => isCurrent() && selectedPathRef.current === sourcePath;
     try {
       const krl = await clientRef.current.getModel(currentProject.id, krlModelId);
+      if (!valid()) return;
       const result = await clientRef.current.generate(
         currentProject.id,
         current.path,
@@ -1139,11 +1153,13 @@ export default function App() {
         krl.etag,
         synthesisResult.fingerprint
       );
+      if (!valid()) return;
       setGenerationResult(result);
       setNotice(
         `Generated ${result.artifacts.length} deterministic artifact(s) with toolchain v${result.toolchainVersion}.`
       );
     } catch (error) {
+      if (!valid()) return;
       if (error instanceof ApiClientError && error.code === "CONFLICT") {
         setConflict("The Activity, KRL, knowledge, or synthesis evidence changed before generation completed.");
         setNotice("Reload current model revisions and synthesize again before generating.");
@@ -1155,17 +1171,19 @@ export default function App() {
 
   async function refreshKnowledgeTraces(projectId = projectRef.current?.id) {
     if (!projectId) return;
+    const isCurrent = captureProjectScope(projectId);
     try {
       const traces = await clientRef.current.listKnowledgeTraces(projectId);
-      if (projectRef.current?.id === projectId) setKnowledgeTraces(traces);
+      if (isCurrent()) setKnowledgeTraces(traces);
     } catch (error) {
-      if (projectRef.current?.id === projectId) showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
   async function searchKnowledge() {
     const currentProject = projectRef.current;
     if (!currentProject) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const result = await clientRef.current.queryKnowledge(
         currentProject.id,
@@ -1173,6 +1191,7 @@ export default function App() {
         knowledgeType,
         100
       );
+      if (!isCurrent()) return;
       setKnowledgeItems(result.items);
       if (
         selectedKnowledge &&
@@ -1183,7 +1202,7 @@ export default function App() {
       }
       await refreshKnowledgeTraces(currentProject.id);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
@@ -1191,12 +1210,12 @@ export default function App() {
     const currentProject = projectRef.current;
     setSelectedKnowledge(item);
     if (!currentProject) return;
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
-      setKnowledgeImpact(
-        await clientRef.current.queryKnowledgeImpact(currentProject.id, item.iri)
-      );
+      const impact = await clientRef.current.queryKnowledgeImpact(currentProject.id, item.iri);
+      if (isCurrent()) setKnowledgeImpact(impact);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
@@ -1210,10 +1229,12 @@ export default function App() {
     ) {
       return;
     }
+    const isCurrent = captureProjectScope(currentProject.id);
     try {
       const currentTraces =
         knowledgeTraces ??
         (await clientRef.current.listKnowledgeTraces(currentProject.id));
+      if (!isCurrent()) return;
       const updated = await clientRef.current.createKnowledgeTrace(
         currentProject.id,
         selectedKnowledge.iri,
@@ -1222,15 +1243,16 @@ export default function App() {
         "REALIZES",
         currentTraces.etag
       );
+      if (!isCurrent()) return;
       setKnowledgeTraces(updated);
-      setKnowledgeImpact(
-        await clientRef.current.queryKnowledgeImpact(
-          currentProject.id,
-          selectedKnowledge.iri
-        )
+      const impact = await clientRef.current.queryKnowledgeImpact(
+        currentProject.id, selectedKnowledge.iri
       );
+      if (!isCurrent()) return;
+      setKnowledgeImpact(impact);
       setNotice(`Traced ${selectedKnowledge.label} to ${selected.path}.`);
     } catch (error) {
+      if (!isCurrent()) return;
       if (error instanceof ApiClientError && error.code === "CONFLICT") {
         await refreshKnowledgeTraces(currentProject.id);
         setNotice("Knowledge traces changed on the server. Refreshed without overwriting them.");
@@ -1941,7 +1963,10 @@ export default function App() {
   }
 
   async function refreshOutline(path = selectedPathRef.current) {
+    const request = ++outlineRequestRef.current;
     const controller = lspController.current;
+    const isCurrent = () => outlineRequestRef.current === request &&
+      lspController.current === controller && selectedPathRef.current === path;
     if (!controller || !path || !controller.client.hasCapability("documentSymbolProvider")) {
       setOutlineItems([]);
       return;
@@ -1953,9 +1978,9 @@ export default function App() {
     }
     try {
       const symbols = await controller.client.documentSymbols(model.uri.toString());
-      setOutlineItems(flattenDocumentSymbols(symbols ?? []));
+      if (isCurrent()) setOutlineItems(flattenDocumentSymbols(symbols ?? []));
     } catch {
-      setOutlineItems([]);
+      if (isCurrent()) setOutlineItems([]);
     }
   }
 
@@ -1972,6 +1997,16 @@ export default function App() {
   }
 
   async function runWorkspaceSearch() {
+    const request = ++workspaceSearchAttemptRef.current;
+    const scope = projectScopeRef.current;
+    const openAttempt = projectOpenAttemptRef.current;
+    const authVersion = firebaseAuth.sessionVersion;
+    const currentProject = projectRef.current;
+    const isCurrent = () => workspaceSearchAttemptRef.current === request &&
+      projectScopeRef.current === scope &&
+      projectOpenAttemptRef.current === openAttempt &&
+      firebaseAuth.sessionVersion === authVersion &&
+      projectRef.current?.id === currentProject?.id;
     const query = workspaceSearch.trim();
     if (!query) {
       setWorkspaceMatches([]);
@@ -1981,8 +2016,7 @@ export default function App() {
     const needle = query.toLocaleLowerCase();
     const matches: WorkspaceSearchMatch[] = [];
     const hydrated: WorkspaceEntry[] = [];
-    const currentProject = projectRef.current;
-
+ 
     try {
       for (const candidate of entriesRef.current) {
         let entry = candidate;
@@ -1996,6 +2030,7 @@ export default function App() {
             currentProject.id,
             entry.path
           );
+          if (!isCurrent()) return;
           entry = remoteEntry(currentProject.id, model);
           hydrated.push(entry);
         }
@@ -2023,6 +2058,7 @@ export default function App() {
         if (matches.length >= 500) break;
       }
 
+      if (!isCurrent()) return;
       if (hydrated.length) {
         updateEntries((current) => {
           let next = current;
@@ -2036,7 +2072,7 @@ export default function App() {
         setNotice("Search stopped after 500 matches. Refine the query for a smaller result set.");
       }
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
