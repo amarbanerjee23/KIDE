@@ -69,6 +69,17 @@ for service_account in "${RUNTIME_SA}" "${WEB_RUNTIME_SA}"; do
   gcloud iam service-accounts add-iam-policy-binding "${service_account}" --project "${PROJECT_ID}" --member="serviceAccount:${BUILD_SERVICE_ACCOUNT_EMAIL}" --role="roles/iam.serviceAccountUser" >/dev/null
 done
 
+# An omitted engineer list on a manual release must not wipe runtime grants.
+if [[ ! -v KIDE_FIREBASE_ENGINEER_UIDS ]]; then
+  current_service="$(gcloud run services describe "${KIDE_SERVICE_NAME}" \\
+    --project "${PROJECT_ID}" --region "${REGION}" --format=json 2>/dev/null || true)"
+  if [[ -n "${current_service}" ]]; then
+    KIDE_FIREBASE_ENGINEER_UIDS="$(printf '%s' "${current_service}" | \\
+      python3 deploy/gcp/firebase-access.py extract-env --key KIDE_FIREBASE_ENGINEER_UIDS)"
+  fi
+fi
+python3 deploy/gcp/firebase-access.py validate --engineers "${KIDE_FIREBASE_ENGINEER_UIDS:-}"
+
 gcloud builds submit .   --config deploy/gcp/cloudbuild-release.yaml   --substitutions="COMMIT_SHA=${SOURCE_SHA},SHORT_SHA=${SOURCE_SHORT_SHA},_KIDE_RELEASE_ENABLED=true,_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_SERVICE_NAME=${KIDE_SERVICE_NAME},_KIDE_WEB_SERVICE_NAME=${KIDE_WEB_SERVICE_NAME},_KIDE_IMAGE=${BACKEND_IMAGE},_KIDE_WEB_IMAGE=${WEB_IMAGE},_KIDE_DATA_BUCKET=${DATA_BUCKET},_KIDE_RUNTIME_SA=${RUNTIME_SA},_KIDE_WEB_RUNTIME_SA=${WEB_RUNTIME_SA},_KIDE_FIREBASE_PROJECT_ID=${KIDE_FIREBASE_PROJECT_ID},_KIDE_FIREBASE_API_KEY=${KIDE_FIREBASE_API_KEY},_KIDE_FIREBASE_ADMIN_UID=${KIDE_FIREBASE_ADMIN_UID},_KIDE_FIREBASE_ENGINEER_UIDS=${KIDE_FIREBASE_ENGINEER_UIDS:-},_KIDE_GITHUB_REPOSITORY=${KIDE_GITHUB_REPOSITORY},_KIDE_GITHUB_TOKEN_SECRET=${KIDE_GITHUB_TOKEN_SECRET}"
 
 PROJECT_ID="${PROJECT_ID}" REGION="${REGION}" KIDE_SERVICE_NAME="${KIDE_SERVICE_NAME}" KIDE_WEB_SERVICE_NAME="${KIDE_WEB_SERVICE_NAME}"   bash deploy/gcp/deployment-status.sh
