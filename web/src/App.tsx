@@ -1790,13 +1790,20 @@ export default function App() {
   async function openSymbol(symbol: SymbolInformation) {
     const controller = lspController.current;
     if (!controller) return;
+    const currentProject = projectRef.current;
+    const isProjectCurrent = currentProject
+      ? captureProjectScope(currentProject.id)
+      : () => !projectRef.current;
+    const intent = ++modelOpenIntentRef.current;
+    const isCurrent = () => modelOpenIntentRef.current === intent &&
+      lspController.current === controller && isProjectCurrent();
     try {
       const target = await controller.revealLocation(symbol.location);
-      if (!target) return;
+      if (!target || !isCurrent()) return;
       setSelectedPath(target.path);
       setRevealRange(target.range);
     } catch (error) {
-      showError(error);
+      if (isCurrent()) showError(error);
     }
   }
 
@@ -1826,7 +1833,10 @@ export default function App() {
 
     pendingDiagramPath.current = path;
     if (entry.loaded === false) {
-      await loadSpecificModel(path);
+      const loaded = await loadSpecificModel(path);
+      if (!loaded && pendingDiagramPath.current === path) {
+        pendingDiagramPath.current = undefined;
+      }
     } else {
       selectEntry(entry);
     }
@@ -2136,7 +2146,7 @@ export default function App() {
     const entry = entriesRef.current.find((candidate) => candidate.path === match.path);
     if (!entry) return;
     if (entry.source === "remote" && entry.loaded === false) {
-      await loadSpecificModel(entry.path);
+      if (!await loadSpecificModel(entry.path)) return;
     } else {
       selectEntry(entry);
     }
@@ -2154,7 +2164,7 @@ export default function App() {
     const entry = entriesRef.current.find((candidate) => candidate.path === problem.path);
     if (!entry) return;
     if (entry.source === "remote" && entry.loaded === false) {
-      await loadSpecificModel(entry.path);
+      if (!await loadSpecificModel(entry.path)) return;
     } else {
       selectEntry(entry);
     }
