@@ -60,6 +60,14 @@ const WEB_BUILD_ID = import.meta.env.VITE_KIDE_WEB_BUILD_ID ?? "dev";
 const MAX_HOSTED_IMPORT_FILES = 256;
 const MAX_HOSTED_IMPORT_BYTES = 10 * 1024 * 1024;
 
+// Access browser storage inside the protected draft functions. Some privacy
+// contexts throw SecurityError even when retrieving window.sessionStorage.
+const recoveryStorage: Pick<Storage, "getItem" | "setItem" | "removeItem"> = {
+  getItem(key) { return window.sessionStorage.getItem(key); },
+  setItem(key, value) { window.sessionStorage.setItem(key, value); },
+  removeItem(key) { window.sessionStorage.removeItem(key); }
+};
+
 type SidebarView =
   | "explorer"
   | "search"
@@ -268,7 +276,7 @@ export default function App() {
       // can otherwise destroy edits not yet acknowledged by the server.
       const uid = firebaseAuth.user?.uid;
       if (uid && current.projectId && current.etag) {
-        const stored = saveRecoveryDraft(sessionStorage, {
+        const stored = saveRecoveryDraft(recoveryStorage, {
           uid, projectId: current.projectId, path, baseEtag: current.etag,
           text: value, savedAt: Date.now()
         });
@@ -635,7 +643,7 @@ export default function App() {
   function recoveryFor(entry: WorkspaceEntry): RecoveryDraft | undefined {
     const uid = firebaseAuth.user?.uid;
     if (!uid || entry.source !== "remote" || !entry.projectId) return undefined;
-    const draft = loadRecoveryDraft(sessionStorage, uid, entry.projectId, entry.path);
+    const draft = loadRecoveryDraft(recoveryStorage, uid, entry.projectId, entry.path);
     const current = workspace.text(entry.path) ?? editableText(entry);
     return draft && draft.text !== current ? draft : undefined;
   }
@@ -648,7 +656,7 @@ export default function App() {
           !entry.etag || !entry.dirty) continue;
       const text = workspace.text(entry.path) ?? editableText(entry);
       if (text === null || text === undefined) continue;
-      saveRecoveryDraft(sessionStorage, {
+      saveRecoveryDraft(recoveryStorage, {
         uid, projectId: entry.projectId, path: entry.path,
         baseEtag: entry.etag, text, savedAt: Date.now()
       });
@@ -657,7 +665,7 @@ export default function App() {
 
   function discardRecoveryDraft(): void {
     if (!recoveryDraft) return;
-    clearRecoveryDraft(sessionStorage, recoveryDraft.uid,
+    clearRecoveryDraft(recoveryStorage, recoveryDraft.uid,
       recoveryDraft.projectId, recoveryDraft.path);
     setRecoveryDraft(undefined);
     setNotice("Browser recovery draft discarded. The hosted model was not changed.");
@@ -1442,11 +1450,11 @@ export default function App() {
           if (uid && entry.projectId) {
             const currentText = workspace.text(entry.path);
             if (currentText === model.content) {
-              clearRecoveryDraft(sessionStorage, uid, entry.projectId, entry.path);
+              clearRecoveryDraft(recoveryStorage, uid, entry.projectId, entry.path);
             } else if (currentText !== undefined) {
               // The engineer typed again while the earlier revision saved.
               // Retain the newer draft against the newly acknowledged ETag.
-              saveRecoveryDraft(sessionStorage, {
+              saveRecoveryDraft(recoveryStorage, {
                 uid, projectId: entry.projectId, path: entry.path,
                 baseEtag: model.etag, text: currentText, savedAt: Date.now()
               });
@@ -1699,7 +1707,7 @@ export default function App() {
     const loaded = await loadSpecificModel(selected.path, false, true);
     if (!loaded) return;
     const uid = firebaseAuth.user?.uid;
-    if (uid) clearRecoveryDraft(sessionStorage, uid, currentProject.id, selected.path);
+    if (uid) clearRecoveryDraft(recoveryStorage, uid, currentProject.id, selected.path);
     setRecoveryDraft(undefined);
     setConflict(undefined);
     setNotice("Reloaded the server revision. The pre-reload local draft remains in this browser session.");
