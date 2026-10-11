@@ -20,6 +20,7 @@ import { MonacoEditor } from "./MonacoEditor";
 import { MonacoLspController } from "./monacoLsp";
 import { MonacoWorkspace } from "./monacoWorkspace";
 import { modelLoadBlockReason } from "./modelLoadPolicy";
+import { clearRecoveryDraft, loadRecoveryDraft, saveRecoveryDraft, type RecoveryDraft } from "./recoveryDraft";
 import { GraphicalEditor } from "./GraphicalEditor";
 import { EngineeringCockpit } from "./EngineeringCockpit";
 import { QuickPick, type QuickPickItem } from "./QuickPick";
@@ -58,6 +59,14 @@ const FIREBASE_PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID ?? "";
 const WEB_BUILD_ID = import.meta.env.VITE_KIDE_WEB_BUILD_ID ?? "dev";
 const MAX_HOSTED_IMPORT_FILES = 256;
 const MAX_HOSTED_IMPORT_BYTES = 10 * 1024 * 1024;
+
+// Access browser storage inside the protected draft functions. Some privacy
+// contexts throw SecurityError even when retrieving window.sessionStorage.
+const recoveryStorage: Pick<Storage, "getItem" | "setItem" | "removeItem"> = {
+  getItem(key) { return window.sessionStorage.getItem(key); },
+  setItem(key, value) { window.sessionStorage.setItem(key, value); },
+  removeItem(key) { window.sessionStorage.removeItem(key); }
+};
 
 type SidebarView =
   | "explorer"
@@ -135,6 +144,7 @@ export default function App() {
   const selectedPathRef = useRef<string | undefined>(undefined);
   selectedPathRef.current = selectedPath;
   const [saveState, setSaveState] = useState<SaveState>("clean");
+  const [recoveryDraft, setRecoveryDraft] = useState<RecoveryDraft>();
   const [notice, setNotice] = useState("");
   const [conflict, setConflict] = useState<string>();
   const [symbolQuery, setSymbolQuery] = useState("");
@@ -262,6 +272,16 @@ export default function App() {
     );
 
     if (current.source === "remote") {
+      // Persist *before* debounce; switching projects or closing the browser
+      // can otherwise destroy edits not yet acknowledged by the server.
+      const uid = firebaseAuth.user?.uid;
+      if (uid && current.projectId && current.etag) {
+        const stored = saveRecoveryDraft(recoveryStorage, {
+          uid, projectId: current.projectId, path, baseEtag: current.etag,
+          text: value, savedAt: Date.now()
+        });
+        if (!stored) setNotice("Unsaved edit was not backed up in browser session storage; keep the editor open until the server save succeeds.");
+      }
       ensureAutosave(current).update(value);
     } else {
       try {
@@ -501,6 +521,7 @@ export default function App() {
     // Switching Firebase accounts is a security boundary. Close the old
     // project's editor and transport before requesting the new identity.
     ++projectOpenAttemptRef.current;
+    snapshotPendingRemoteDrafts();
     firebaseAuth.signOut();
     setProjectState(undefined);
     setToken("");
@@ -587,6 +608,7 @@ export default function App() {
     ++authOperationRef.current;
     ++apiConnectAttemptRef.current;
     ++projectOpenAttemptRef.current;
+    snapshotPendingRemoteDrafts();
     firebaseAuth.signOut();
     setProjectState(undefined);
     setToken("");
@@ -616,6 +638,67 @@ export default function App() {
     const openAttempt = projectOpenAttemptRef.current;
     const authVersion = firebaseAuth.sessionVersion;
     return () => isProjectScopeCurrent(projectId, scope, openAttempt, authVersion);
+  }
+
+  function recoveryFor(entry: WorkspaceEntry): RecoveryDraft | undefined {
+    const uid = firebaseAuth.user?.uid;
+    if (!uid || entry.source !== "remote" || !entry.projectId) return undefined;
+    const draft = loadRecoveryDraft(recoveryStorage, uid, entry.projectId, entry.path);
+    const current = workspace.text(entry.path) ?? editableText(entry);
+    return draft && draft.text !== current ? draft : undefined;
+  }
+
+  function snapshotPendingRemoteDrafts(): void {
+    const uid = firebaseAuth.user?.uid;
+    if (!uid) return;
+    for (const entry of entriesRef.current) {
+      if (entry.source !== "remote" || !entry.projectId ||
+          !entry.etag || !entry.dirty) continue;
+      const text = workspace.text(entry.path) ?? editableText(entry);
+      if (text === null || text === undefined) continue;
+      saveRecoveryDraft(recoveryStorage, {
+        uid, projectId: entry.projectId, path: entry.path,
+        baseEtag: entry.etag, text, savedAt: Date.now()
+      });
+    }
+  }
+
+  function discardRecoveryDraft(): void {
+    if (!recoveryDraft) return;
+    clearRecoveryDraft(recoveryStorage, recoveryDraft.uid,
+      recoveryDraft.projectId, recoveryDraft.path);
+    setRecoveryDraft(undefined);
+    setNotice("Browser recovery draft discarded. The hosted model was not changed.");
+  }
+
+  function restoreRecoveryDraft(): void {
+    if (!recoveryDraft || !projectRef.current) return;
+    const entry = entriesRef.current.find((candidate) =>
+      candidate.source === "remote" && candidate.path === recoveryDraft.path &&
+      candidate.projectId === recoveryDraft.projectId
+    );
+    if (!entry || projectRef.current.id !== recoveryDraft.projectId ||
+        firebaseAuth.user?.uid !== recoveryDraft.uid ||
+        selectedPathRef.current !== recoveryDraft.path) return;
+    if (entry.etag !== recoveryDraft.baseEtag) {
+      setNotice("Server model revision changed. Review/copy the recovered text; it will not be automatically written over the newer server revision.");
+      return;
+    }
+    if (entry.dirty || autosaves.current.get(entry.path)?.hasUnsettledWork) {
+      setNotice("Finish resolving the current unsaved edit before recovering the earlier draft.");
+      return;
+    }
+    if (!workspace.get(entry.path)) {
+      setNotice("Open the canonical server model before restoring the recovered draft.");
+      return;
+    }
+    workspace.sync(entry.path, recoveryDraft.text);
+    // workspace.sync intentionally suppresses onChange; schedule a normal
+    // revision-checked autosave explicitly rather than bypassing the API ETag.
+    workspaceChange.current(entry.path, recoveryDraft.text);
+    setRecoveryDraft(undefined);
+    setSaveState("pending");
+    setNotice("Recovered local draft and queued a revision-checked server autosave.");
   }
 
   async function createHostedProject() {
@@ -1296,6 +1379,7 @@ export default function App() {
       const entry = remoteEntry(currentProject.id, model);
       replaceRemoteEntry(entry);
       workspace.ensure(entry.path, model.content);
+      setRecoveryDraft(recoveryFor(entry));
       setOpenPaths((current) =>
         current.includes(entry.path) ? current : [...current, entry.path]
       );
@@ -1362,6 +1446,20 @@ export default function App() {
           if (entry.path === selectedPathRef.current) setSaveState(state);
         },
         onSaved(model) {
+          const uid = firebaseAuth.user?.uid;
+          if (uid && entry.projectId) {
+            const currentText = workspace.text(entry.path);
+            if (currentText === model.content) {
+              clearRecoveryDraft(recoveryStorage, uid, entry.projectId, entry.path);
+            } else if (currentText !== undefined) {
+              // The engineer typed again while the earlier revision saved.
+              // Retain the newer draft against the newly acknowledged ETag.
+              saveRecoveryDraft(recoveryStorage, {
+                uid, projectId: entry.projectId, path: entry.path,
+                baseEtag: model.etag, text: currentText, savedAt: Date.now()
+              });
+            }
+          }
           updateEntries((current) =>
             current.map((candidate) => {
               if (candidate.path !== entry.path) return candidate;
@@ -1584,6 +1682,7 @@ export default function App() {
       current.includes(entry.path) ? current : [...current, entry.path]
     );
     setSelectedPath(entry.path);
+    setRecoveryDraft(recoveryFor(entry));
     setRevealRange(undefined);
     setSaveState(entry.dirty ? "pending" : "clean");
     setConflict(undefined);
@@ -1607,6 +1706,9 @@ export default function App() {
     // first; never silently replace a draft as a side effect of navigation.
     const loaded = await loadSpecificModel(selected.path, false, true);
     if (!loaded) return;
+    const uid = firebaseAuth.user?.uid;
+    if (uid) clearRecoveryDraft(recoveryStorage, uid, currentProject.id, selected.path);
+    setRecoveryDraft(undefined);
     setConflict(undefined);
     setNotice("Reloaded the server revision. The pre-reload local draft remains in this browser session.");
   }
@@ -1868,6 +1970,7 @@ export default function App() {
   }
 
   async function resetProjectWorkspace() {
+    snapshotPendingRemoteDrafts();
     ++modelOpenIntentRef.current;
     const scope = ++projectScopeRef.current;
     ++reviewRequestRef.current;
@@ -1899,6 +2002,7 @@ export default function App() {
     setReconfigurationResult(undefined);
     setEngineeringCockpitOpen(false);
     setSaveState("clean");
+    setRecoveryDraft(undefined);
     setOpenPaths([]);
     setWorkspaceMatches([]);
     setProblems([]);
@@ -2525,6 +2629,30 @@ export default function App() {
           <strong>Revision conflict</strong>
           <span>{conflict}</span>
           <button onClick={() => void reloadConflict()}>Reload server revision</button>
+        </div>
+      )}
+      {recoveryDraft && project?.id === recoveryDraft.projectId &&
+        firebaseAuth.user?.uid === recoveryDraft.uid &&
+        selectedPath === recoveryDraft.path && (
+        <div className="conflict" role="region" aria-label="Recovered unsaved draft">
+          <strong>Unsaved browser draft available</strong>
+          <span>
+            Recovered text for {recoveryDraft.path} from this browser session.
+            {selected?.etag === recoveryDraft.baseEtag
+              ? " The server revision matches; restoration requires your approval."
+              : " The server revision changed; automatic restoration is blocked."}
+          </span>
+          {selected?.etag === recoveryDraft.baseEtag && (
+            <button type="button" onClick={restoreRecoveryDraft}
+              disabled={Boolean(selected?.dirty || autosaves.current.get(recoveryDraft.path)?.hasUnsettledWork)}>
+              Restore draft
+            </button>
+          )}
+          <details>
+            <summary>Review recovered text</summary>
+            <textarea aria-label="Recovered draft text" readOnly rows={6} value={recoveryDraft.text} />
+          </details>
+          <button type="button" onClick={discardRecoveryDraft}>Discard draft</button>
         </div>
       )}
 
