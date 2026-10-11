@@ -25,7 +25,9 @@ REQUIRED_LSP_METHODS = (
     '"textDocument/documentHighlight"', '"textDocument/foldingRange"',
     '"textDocument/formatting"', '"textDocument/semanticTokens/full"',
     '"textDocument/didChange"', '"textDocument/completion"',
-    '"textDocument/didClose"',
+    '"textDocument/definition"', '"textDocument/rename"',
+    '"textDocument/rangeFormatting"', '"textDocument/codeAction"',
+    '"workspace/symbol"', '"textDocument/didClose"',
 )
 REQUIRED_GLSP_ACTIONS = (
     '"initializeClientSession"', '"requestModel"', '"setModel"',
@@ -91,6 +93,10 @@ def verify() -> list[str]:
         'item.document_highlights_min',
         'item.semantic_tokens_min',
         'item.completion.text',
+        'item.rename_targets',
+        'item.definition.target_extension',
+        'item.workspace_symbol',
+        'item.code_action',
         'sourceUri: "kide-workspace:/"',
         'root.children.length === 0',
         'hints.kind !== "setTypeHints"',
