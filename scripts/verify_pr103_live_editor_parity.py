@@ -122,6 +122,11 @@ def verify() -> list[str]:
         'Object.entries(fixture)',
         'model.content).toBe(sourceBytes)',
         'expect(validSha(model.etag)).toBe(true)',
+        'const projectFiles = page.getByRole("list", { name: "Project files" })',
+        'for (const modelId of Object.keys(fixture))',
+        'projectFiles.locator("button[title=',
+        'await expect(page.locator(".editor-tabs .active")).toContainText(modelId)',
+        'await expect(page.locator(".monaco-editor")).toBeVisible()',
         'assertGeneratedArtifacts(generated, source, krl, synthesis.fingerprint)',
         'other.token, "GET", projectPath, 403',
     ):
