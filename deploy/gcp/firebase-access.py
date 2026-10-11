@@ -40,9 +40,10 @@ def environment(service):
 def merge(live, trigger, uid):
     if not UID.fullmatch(uid):
         raise ValueError("Invalid Firebase UID")
-    return ":".join(dict.fromkeys([*parse_uids(live), *parse_uids(trigger), uid])) if (
-        len(set([*parse_uids(live), *parse_uids(trigger), uid])) <= 32
-    ) else (_ for _ in ()).throw(ValueError("Too many engineer grants"))
+    approved = list(dict.fromkeys([*parse_uids(live), *parse_uids(trigger), uid]))
+    if len(approved) > 32:
+        raise ValueError("Too many engineer grants")
+    return ":".join(approved)
 
 
 def check_preserved(live, desired):
