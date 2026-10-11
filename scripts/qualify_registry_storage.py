@@ -119,7 +119,7 @@ def qualify(root: Path, fs_type: str | None = None) -> dict:
     # The staging operator still must qualify application write/restart
     # behavior independently; atomic rename alone is not a DR guarantee.
     marker = parent / MARKER
-    if marker.exists() and (marker.is_symlink() or not marker.is_file()):
+    if marker.is_symlink() or (marker.exists() and not marker.is_file()):
         raise StorageRefusal("Qualification marker path has an unsafe type")
     fd, name = tempfile.mkstemp(prefix=".kide-marker-", dir=parent)
     try:
