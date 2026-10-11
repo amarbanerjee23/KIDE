@@ -78,26 +78,30 @@ test("switching projects cancels a stalled Xtext handshake without reviving the 
         mediaType: "text/x-kide-dml", content: "DataModel Engineering {}"
       })
     }));
-    await page.route(`**/api/v1/projects/${project.id}/collaboration/sessions*`, (route) => {
-      // A model-change pulse uses POST .../sessions/{id}/heartbeat, which
-      // is not a second join. Count only POST /collaboration/sessions.
-      const isJoin = route.request().method() === "POST" &&
-        new URL(route.request().url()).pathname.endsWith("/collaboration/sessions");
-      if (isJoin) {
+    const session = {
+      id: "11111111-1111-4111-8111-111111111111",
+      principalId: "approved-engineer", displayName: "Engineer",
+      modelId: filename, joinedAt: "2026-10-10T00:00:00Z",
+      lastSeenAt: "2026-10-10T00:00:00Z"
+    };
+    // The generated API uses POST/GET on the collection and PUT/DELETE on
+    // /sessions/{id}. Playwright '*' does not cross '/', so mock BOTH routes.
+    // An unmocked PUT would 404 and falsely trigger an expired-session rejoin.
+    await page.route(`**/api/v1/projects/${project.id}/collaboration/sessions`, (route) => {
+      if (route.request().method() === "POST") {
         if (project.id === first.id) oldPresenceJoins += 1;
         else newPresenceJoins += 1;
       }
-      const session = {
-        id: "11111111-1111-4111-8111-111111111111",
-        principalId: "approved-engineer", displayName: "Engineer",
-        modelId: filename, joinedAt: "2026-10-10T00:00:00Z",
-        lastSeenAt: "2026-10-10T00:00:00Z"
-      };
       return route.fulfill({
         status: 200, contentType: "application/json",
         body: JSON.stringify(route.request().method() === "GET" ? { items: [session] } : session)
       });
     });
+    await page.route(`**/api/v1/projects/${project.id}/collaboration/sessions/*`, (route) =>
+      route.fulfill({
+        status: 200, contentType: "application/json", body: JSON.stringify(session)
+      })
+    );
     await page.route(`**/api/v1/projects/${project.id}/reviews/changesets*`, (route) => route.fulfill({
       status: 200, contentType: "application/json", body: JSON.stringify({ items: [] })
     }));
@@ -126,9 +130,9 @@ test("switching projects cancels a stalled Xtext handshake without reviving the 
   await expect(page.getByLabel("Workbench status")).toContainText("Xtext Online");
   await expect(page.getByLabel("Workbench status")).toContainText("Collaboration Online");
   await expect.poll(() => newInitialize).toBe(1);
-  // Count genuine joins, not subsequent model-heartbeat PUTs. A redundant
-  // active-project join is not a cross-project authorization violation.
-  await expect.poll(() => newPresenceJoins).toBeGreaterThan(0);
+  // PR95: one authorized presence join for the active project.
+  // Heartbeat/recovery must not issue duplicate POST /sessions calls.
+  await expect.poll(() => newPresenceJoins).toBe(1);
   expect(oldPresenceJoins).toBe(0);
   await expect(page.locator(".editor-tabs")).not.toContainText("first.dml");
 });

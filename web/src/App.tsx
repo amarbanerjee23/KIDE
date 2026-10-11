@@ -321,7 +321,15 @@ export default function App() {
         try {
           if (needsLsp) await connectLanguageServices(opened);
           if (needsCollaboration && projectRef.current?.id === opened.id) {
-            await connectCollaboration(opened);
+            // A temporarily degraded presence list must NOT create a new
+            // server session. Heartbeat the active session and rejoin only
+            // when the server proves it expired (404).
+            const current = collaboration.current;
+            if (current?.projectId === opened.id && current.isActive) {
+              await current.recover();
+            } else {
+              await connectCollaboration(opened);
+            }
           }
         } finally {
           serviceRecoveryBusy.current = false;
@@ -805,6 +813,13 @@ export default function App() {
 
   async function connectCollaboration(opened = projectRef.current) {
     if (!opened) return;
+    const current = collaboration.current;
+    if (current?.projectId === opened.id && current.isActive) {
+      // Do not tear down an authorized live session just because a caller
+      // repeated connect while another async operation was completing.
+      await current.recover();
+      return;
+    }
     const attempt = ++collaborationAttemptRef.current;
     const uid = firebaseAuth.user?.uid;
     const old = collaboration.current;
