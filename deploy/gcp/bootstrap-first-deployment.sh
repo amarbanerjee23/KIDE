@@ -277,6 +277,12 @@ echo "Trigger region: ${TRIGGER_REGION}"
 ensure_github_release_token
 
 echo
+# Preserve the operator-supplied KIDE_FIREBASE_ENGINEER_UIDS only when explicitly
+# set. When absent, configure-auto-deploy inherits already approved grants.
+if [[ -v KIDE_FIREBASE_ENGINEER_UIDS ]]; then
+  export KIDE_FIREBASE_ENGINEER_UIDS
+fi
+
 echo "Provisioning GCP resources/IAM and switching the trigger to the unified release pipeline..."
 PROJECT_ID="${PROJECT_ID}" REGION="${REGION}" TRIGGER_NAME="${TRIGGER_NAME}" TRIGGER_REGION="${TRIGGER_REGION}" KIDE_FIREBASE_PROJECT_ID="${KIDE_FIREBASE_PROJECT_ID}" KIDE_FIREBASE_API_KEY="${KIDE_FIREBASE_API_KEY}" KIDE_FIREBASE_ADMIN_UID="${KIDE_FIREBASE_ADMIN_UID}" KIDE_GITHUB_REPOSITORY="${KIDE_GITHUB_REPOSITORY}" KIDE_GITHUB_TOKEN_SECRET="${KIDE_GITHUB_TOKEN_SECRET}" bash deploy/gcp/configure-auto-deploy.sh
 
