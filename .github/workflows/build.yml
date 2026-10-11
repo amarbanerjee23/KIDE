@@ -291,3 +291,7 @@ jobs:
       - name: Type-check discovery of real hosted acceptance suite (no live credentials)
         working-directory: web
         run: npx playwright test --config playwright.live.config.ts --list
+
+      - name: Verify authenticated read-only hosted monitor discovery (no live credentials)
+        working-directory: web
+        run: npx playwright test --config playwright.connectivity.config.ts --list
