@@ -456,6 +456,18 @@ test("PR89 live staging engineering: Firebase, tenant isolation, REST, LSP, GLSP
   await expect(page.getByLabel("Workbench status")).toContainText("API Online");
   await expect(page.getByLabel("Workbench status")).toContainText("Xtext Online");
 
+  // In addition to direct protocol checks, prove the deployed Monaco editor
+  // can open every imported DSL from the real project tree. No mocked GETs.
+  const projectFiles = page.getByRole("list", { name: "Project files" });
+  for (const modelId of Object.keys(fixture)) {
+    await projectFiles.locator("button[title='" + modelId + "']").click();
+    await expect(page.locator(".editor-tabs .active")).toContainText(modelId);
+    await expect(page.locator(".breadcrumbs")).toContainText(modelId);
+    await expect(page.locator(".monaco-editor")).toBeVisible();
+  }
+  await projectFiles.locator("button[title='workflow.activity']").click();
+  await expect(page.locator(".editor-tabs .active")).toContainText("workflow.activity");
+
   const workflow = page.getByLabel("Engineering workflow");
   await expect(workflow.getByRole("button", { name: "Synthesize", exact: true })).toBeEnabled();
   await workflow.getByRole("button", { name: "Synthesize", exact: true }).click();
