@@ -104,7 +104,7 @@ def verify() -> list[str]:
     for ext, model in (
         ("dml", "golden.dml"), ("op", "golden.op"),
         ("mncspec", "device.mncspec"), ("cap", "observe.cap"),
-        ("activity", "workflow.activity"), ("krl", "bindings.krl")
+        ("activity", "workflow.activity"), ("krl", "golden.krl")
     ):
         if f'{ext}: "{model}"' not in helper:
             errors.append("missing real editor model mapping for " + ext)
@@ -119,9 +119,11 @@ def verify() -> list[str]:
     for marker in (
         'assertLiveXtextParity(page, cfg.api, engineer.token, created.workspaceId, fixture)',
         'assertLiveGlspModels(page, cfg.api, engineer.token, created.workspaceId,',
-        'expect(imported.importedCount).toBe(6)',
+        'expect(imported.importedCount).toBe(7)',
         '"golden.dml": readFileSync(',
         '"golden.op": readFileSync(',
+        '"golden.krl": readFileSync(',
+        'await page.getByLabel("KRL model ID").fill("bindings.krl")',
         'Object.entries(fixture)',
         'model.content).toBe(sourceBytes)',
         'expect(validSha(model.etag)).toBe(true)',
