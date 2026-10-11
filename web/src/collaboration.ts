@@ -31,9 +31,20 @@ export class CollaborationCoordinator {
       existingSessionId,
       this.modelId || undefined
     );
+    if (this.disposed) {
+      // An in-flight join can finish after project change or sign-out.
+      // Do not resurrect presence or start a heartbeat for the old account.
+      try {
+        await this.client.leavePresence(this.projectId, joined.id);
+      } catch {
+        // The server also expires abandoned sessions.
+      }
+      throw new Error("Collaboration connection was superseded.");
+    }
     this.sessionId = joined.id;
     this.events.onSession(joined);
     await this.refresh();
+    if (this.disposed) throw new Error("Collaboration connection was superseded.");
     this.schedule();
     return joined;
   }
@@ -47,9 +58,9 @@ export class CollaborationCoordinator {
     if (this.disposed) return;
     try {
       const presence = await this.client.listPresence(this.projectId);
-      this.events.onPresence(presence.items);
+      if (!this.disposed) this.events.onPresence(presence.items);
     } catch (error) {
-      this.events.onError(normalize(error));
+      if (!this.disposed) this.events.onError(normalize(error));
     }
   }
 
@@ -81,9 +92,11 @@ export class CollaborationCoordinator {
         currentId,
         this.modelId || undefined
       );
+      if (this.disposed) return;
       this.events.onSession(session);
       await this.refresh();
     } catch (error) {
+      if (this.disposed) return;
       if (error instanceof ApiClientError && error.status === 404) {
         try {
           const rejoined = await this.client.joinPresence(
@@ -91,12 +104,20 @@ export class CollaborationCoordinator {
             currentId,
             this.modelId || undefined
           );
+          if (this.disposed) {
+            try {
+              await this.client.leavePresence(this.projectId, rejoined.id);
+            } catch {
+              // Stale presence expires server-side.
+            }
+            return;
+          }
           this.sessionId = rejoined.id;
           this.events.onSession(rejoined);
           await this.refresh();
           return;
         } catch (rejoinError) {
-          this.events.onError(normalize(rejoinError));
+          if (!this.disposed) this.events.onError(normalize(rejoinError));
           return;
         }
       }
