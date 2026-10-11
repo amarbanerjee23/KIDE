@@ -14,22 +14,6 @@ test("switching projects cancels a stalled Xtext handshake without reviving the 
     portfolioId: "PF04", workspaceId: "W04-SECOND", revision: "1"
   };
 
-  // Diagnostic capture stays within this regression: call-site stacks reveal
-  // whether duplicate POSTs originate from a second coordinator or 404 rejoin.
-  await page.addInitScript(() => {
-    const nativeFetch = window.fetch.bind(window);
-    const trace: Array<{ url: string; stack: string }> = [];
-    (window as typeof window & { __kideJoinTrace?: typeof trace }).__kideJoinTrace = trace;
-    window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = typeof input === "string" ? input : input instanceof URL
-        ? input.href : input.url;
-      if (init?.method === "POST" && /\/collaboration\/sessions$/.test(url)) {
-        trace.push({ url, stack: new Error("presence join call").stack ?? "" });
-      }
-      return nativeFetch(input, init);
-    };
-  });
-
   await page.routeWebSocket("**/lsp?*", (ws) => {
     const isFirst = ws.url().includes("W04-FIRST");
     ws.onMessage((message) => {
@@ -94,26 +78,30 @@ test("switching projects cancels a stalled Xtext handshake without reviving the 
         mediaType: "text/x-kide-dml", content: "DataModel Engineering {}"
       })
     }));
-    await page.route(`**/api/v1/projects/${project.id}/collaboration/sessions*`, (route) => {
-      // A model-change pulse uses POST .../sessions/{id}/heartbeat, which
-      // is not a second join. Count only POST /collaboration/sessions.
-      const isJoin = route.request().method() === "POST" &&
-        new URL(route.request().url()).pathname.endsWith("/collaboration/sessions");
-      if (isJoin) {
+    const session = {
+      id: "11111111-1111-4111-8111-111111111111",
+      principalId: "approved-engineer", displayName: "Engineer",
+      modelId: filename, joinedAt: "2026-10-10T00:00:00Z",
+      lastSeenAt: "2026-10-10T00:00:00Z"
+    };
+    // The generated API uses POST/GET on the collection and PUT/DELETE on
+    // /sessions/{id}. Playwright '*' does not cross '/', so mock BOTH routes.
+    // An unmocked PUT would 404 and falsely trigger an expired-session rejoin.
+    await page.route(`**/api/v1/projects/${project.id}/collaboration/sessions`, (route) => {
+      if (route.request().method() === "POST") {
         if (project.id === first.id) oldPresenceJoins += 1;
         else newPresenceJoins += 1;
       }
-      const session = {
-        id: "11111111-1111-4111-8111-111111111111",
-        principalId: "approved-engineer", displayName: "Engineer",
-        modelId: filename, joinedAt: "2026-10-10T00:00:00Z",
-        lastSeenAt: "2026-10-10T00:00:00Z"
-      };
       return route.fulfill({
         status: 200, contentType: "application/json",
         body: JSON.stringify(route.request().method() === "GET" ? { items: [session] } : session)
       });
     });
+    await page.route(`**/api/v1/projects/${project.id}/collaboration/sessions/*`, (route) =>
+      route.fulfill({
+        status: 200, contentType: "application/json", body: JSON.stringify(session)
+      })
+    );
     await page.route(`**/api/v1/projects/${project.id}/reviews/changesets*`, (route) => route.fulfill({
       status: 200, contentType: "application/json", body: JSON.stringify({ items: [] })
     }));
@@ -144,16 +132,7 @@ test("switching projects cancels a stalled Xtext handshake without reviving the 
   await expect.poll(() => newInitialize).toBe(1);
   // PR95: one authorized presence join for the active project.
   // Heartbeat/recovery must not issue duplicate POST /sessions calls.
-  try {
-    await expect.poll(() => newPresenceJoins).toBe(1);
-  } catch (error) {
-    const trace = await page.evaluate(() =>
-      (window as typeof window & { __kideJoinTrace?: unknown }).__kideJoinTrace
-    );
-    throw new Error(`Expected one active-project join; got ${newPresenceJoins}. Call sites: ${JSON.stringify(trace)}`, {
-      cause: error
-    });
-  }
+  await expect.poll(() => newPresenceJoins).toBe(1);
   expect(oldPresenceJoins).toBe(0);
   await expect(page.locator(".editor-tabs")).not.toContainText("first.dml");
 });
