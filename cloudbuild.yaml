@@ -194,6 +194,14 @@ steps:
       - |
         source /workspace/.kide-firebase.env
 
+        # Do not silently erase an approved Firebase ENGINEER grant during rollout.
+        python3 deploy/gcp/firebase-access.py protect-deploy \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --service "${_KIDE_SERVICE_NAME}" \
+          --firebase-project "${_KIDE_FIREBASE_PROJECT_ID}" \
+          --engineers "${_KIDE_FIREBASE_ENGINEER_UIDS}"
+
         gcloud run deploy "${_KIDE_SERVICE_NAME}" \
           --project "${PROJECT_ID}" \
           --region "${_REGION}" \
