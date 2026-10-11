@@ -12,7 +12,6 @@ import ctypes
 import json
 import os
 from pathlib import Path
-import shutil
 import stat
 import sys
 import tempfile
@@ -41,7 +40,7 @@ def mount_type(path: Path, mountinfo: str | None = None) -> str:
         right = parts[1].split()
         if len(columns) < 5 or not right:
             continue
-        point = Path(columns[4].replace("\\040", " "))
+        point = Path(columns[4].replace("\\\\040", " "))
         try:
             resolved.relative_to(point)
         except ValueError:
