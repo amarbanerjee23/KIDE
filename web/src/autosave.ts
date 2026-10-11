@@ -21,6 +21,10 @@ export class AutosaveCoordinator {
     private readonly delayMs = 800
   ) {}
 
+  get hasUnsettledWork(): boolean {
+    return !this.disposed && (this.saving || this.pending !== undefined);
+  }
+
   update(content: string): void {
     if (this.disposed) return;
     this.pending = content;
