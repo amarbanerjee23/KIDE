@@ -146,7 +146,7 @@ export async function assertLiveXtextParity(
         from = index + token.length;
       }
       const before = text.slice(0, index);
-      const lines = before.split("\\n");
+      const lines = before.split("\n");
       return { line: lines.length - 1, character: lines[lines.length - 1].length + 1 };
     };
     const symbolNames = (symbols: unknown): string[] => {
@@ -259,7 +259,7 @@ export async function assertLiveXtextParity(
           textDocument,
           range: {
             start: { line: 0, character: 0 },
-            end: { line: item.content.split("\\n").length - 1, character: 0 }
+            end: { line: item.content.split("\n").length - 1, character: 0 }
           },
           options: { tabSize: 2, insertSpaces: true }
         });
