@@ -354,12 +354,27 @@ test("PR89 live staging engineering: Firebase, tenant isolation, REST, LSP, GLSP
   expect(created.id).toMatch(/^kide:project:/);
   expect(created.workspaceId).toMatch(/^kide:workspace:/);
   const projectPath = "/projects/" + encodeURIComponent(created.id);
-  const isolatedList = await apiCall<{ items: Project[] }>(
+  const sharedMode = process.env.KIDE_LIVE_SHARED_FIREBASE_ENGINEERS ?? "false";
+  if (sharedMode !== "false" && sharedMode !== "true") {
+    throw new Error("KIDE_LIVE_SHARED_FIREBASE_ENGINEERS must be true or false");
+  }
+  const otherProjects = await apiCall<{ items: Project[] }>(
     request, cfg.api, other.token, "GET", "/projects", 200
   );
-  expect(isolatedList.items.some((item) => item.id === created.id)).toBe(false);
-  await apiCall(request, cfg.api, other.token, "GET", projectPath, 403);
-  await apiCall(request, cfg.api, other.token, "GET", projectPath + "/models", 403);
+  if (sharedMode === "true") {
+    // PR105: two distinct real Firebase identities, one shared KIDE project,
+    // no manually installed UID grant for the second principal.
+    expect(otherProjects.items.some((item) => item.id === created.id)).toBe(true);
+    const shared = await apiCall<Project>(
+      request, cfg.api, other.token, "GET", projectPath, 200
+    );
+    expect(shared.id).toBe(created.id);
+    await apiCall(request, cfg.api, other.token, "GET", projectPath + "/models", 200);
+  } else {
+    expect(otherProjects.items.some((item) => item.id === created.id)).toBe(false);
+    await apiCall(request, cfg.api, other.token, "GET", projectPath, 403);
+    await apiCall(request, cfg.api, other.token, "GET", projectPath + "/models", 403);
+  }
 
   // Use the exact engineering corpus qualified by the packaged Java API
   // self-check; unlike the mocked golden journey these are real source bytes.
@@ -404,6 +419,15 @@ test("PR89 live staging engineering: Firebase, tenant isolation, REST, LSP, GLSP
   await page.goto(cfg.web + "/");
   await assertGateway(page, cfg.api, engineer.token, created.workspaceId, "lsp");
   await assertGateway(page, cfg.api, engineer.token, created.workspaceId, "glsp");
+  if (sharedMode === "true") {
+    await assertGateway(page, cfg.api, other.token, created.workspaceId, "lsp");
+    await assertGateway(page, cfg.api, other.token, created.workspaceId, "glsp");
+    const secondEngineerModel = await apiCall<Model>(
+      request, cfg.api, other.token, "GET",
+      projectPath + "/models/workflow.activity", 200
+    );
+    expect(secondEngineerModel.content).toBe(fixture["workflow.activity"]);
+  }
   // These are unmocked semantic requests against the same deployed Xtext/EMF
   // services consumed by Eclipse, rather than mere WebSocket reachability.
   await assertLiveXtextParity(page, cfg.api, engineer.token, created.workspaceId, fixture);
