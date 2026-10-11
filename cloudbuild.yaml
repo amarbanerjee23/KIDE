@@ -194,6 +194,13 @@ steps:
       - |
         source /workspace/.kide-firebase.env
 
+        # A normal legacy release must not silently overwrite a POSIX registry
+        # backend or its multi-project data/permissions.
+        python3 scripts/guard_hosted_storage.py \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --service "${_KIDE_SERVICE_NAME}"
+
         # Do not silently erase an approved Firebase ENGINEER grant during rollout.
         python3 deploy/gcp/firebase-access.py protect-deploy \
           --project "${PROJECT_ID}" \
