@@ -603,7 +603,7 @@ function base64Url(value: string): string {
     .replace(/=+$/g, "");
 }
 
-function clientCapabilities(): Record<string, unknown> {
+export function clientCapabilities(): Record<string, unknown> {
   return {
     workspace: {
       applyEdit: true,
