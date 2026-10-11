@@ -11,7 +11,8 @@
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:live": "playwright test --config playwright.live.config.ts"
+    "test:live": "playwright test --config playwright.live.config.ts",
+    "test:connectivity": "playwright test --config playwright.connectivity.config.ts"
   },
   "dependencies": {
     "@eclipse-glsp/protocol": "2.8.0",
