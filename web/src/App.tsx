@@ -485,12 +485,31 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, []);
 
+  async function prepareAuthenticationTransition(operation: number): Promise<boolean> {
+    if (!firebaseAuth.user && !projectRef.current) {
+      return authOperationRef.current === operation;
+    }
+    // Switching Firebase accounts is a security boundary. Close the old
+    // project's editor and transport before requesting the new identity.
+    ++projectOpenAttemptRef.current;
+    firebaseAuth.signOut();
+    setProjectState(undefined);
+    setToken("");
+    setProjects([]);
+    setRuntimeVersion(undefined);
+    setCanCreateProjects(false);
+    setServiceStatus("Not connected");
+    await resetProjectWorkspace();
+    return authOperationRef.current === operation;
+  }
+
   async function signInFirebase() {
     const operation = ++authOperationRef.current;
     ++apiConnectAttemptRef.current;
     setNotice("");
     setAuthBusy(true);
     try {
+      if (!await prepareAuthenticationTransition(operation)) return;
       const user = await firebaseAuth.signInWithEmailPassword(
         firebaseEmail, firebasePassword
       );
@@ -529,6 +548,7 @@ export default function App() {
     }
     setAuthBusy(true);
     try {
+      if (!await prepareAuthenticationTransition(operation)) return;
       const user = await firebaseAuth.registerWithEmailPassword(
         firebaseEmail, firebasePassword
       );
