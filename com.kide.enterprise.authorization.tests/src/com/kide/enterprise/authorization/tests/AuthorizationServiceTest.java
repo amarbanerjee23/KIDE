@@ -26,6 +26,7 @@ import com.kide.enterprise.authorization.Permission;
 import com.kide.enterprise.authorization.Role;
 import com.kide.enterprise.authorization.RoleBinding;
 import com.kide.enterprise.authorization.ServerAuthorizationGate;
+import com.kide.enterprise.authorization.SharedFirebaseEngineeringPolicy;
 import com.kide.enterprise.context.EnterpriseContext;
 import com.kide.enterprise.context.EnterpriseContextResult;
 import com.kide.enterprise.context.EnterpriseContextStore;
@@ -210,6 +211,90 @@ public class AuthorizationServiceTest {
         } finally {
             fixture.close();
         }
+    }
+
+    @Test
+    public void sharedFirebaseModeAutomaticallyAuthorizesEveryProjectForTrustedEngineers() throws Exception {
+        Fixture first = Fixture.create("firebase-shared-one");
+        Fixture second = Fixture.create("firebase-shared-two");
+        try {
+            var policy = SharedFirebaseEngineeringPolicy.fromEnvironment(
+                    Map.of("KIDE_SHARED_FIREBASE_ENGINEERS", "true",
+                            "KIDE_FIREBASE_PROJECT_ID", "kide-eclipse"));
+            PrincipalIdentity alice = firebase("kide-eclipse", "alice");
+            PrincipalIdentity bob = firebase("kide-eclipse", "bob");
+            ServerAuthorizationGate gate = new ServerAuthorizationGate(
+                    new AuthorizationEnforcer(new AuthorizationService(
+                            new InMemoryAuthorizationPolicyStore(List.of()), policy)));
+            for (EnterpriseContext context : List.of(first.context, second.context)) {
+                try (AuthenticatedSession session = session(alice);
+                     AuthenticatedSession otherSession = session(bob)) {
+                    gate.requireApiProjectAccess(session, context);
+                    gate.requireWebSocketWorkspaceAccess(session, context);
+                    gate.requireLspWorkspaceAccess(session, context);
+                    gate.requireModelWrite(session, context);
+                    gate.requireCollaborationRead(session, context);
+                    gate.requireCollaborationWrite(otherSession, context);
+                    assertFalse(new AuthorizationService(
+                            new InMemoryAuthorizationPolicyStore(List.of()), policy)
+                            .decide(alice, context, EnterpriseScope.PROJECT,
+                                    Permission.AUTHORIZATION_MANAGE).allowed());
+                }
+            }
+        } finally {
+            first.close();
+            second.close();
+        }
+    }
+
+    @Test
+    public void sharedFirebaseModeRequiresSignedTrustedIssuerAndNeverOverrulesDeny() throws Exception {
+        Fixture fixture = Fixture.create("firebase-shared-deny");
+        try {
+            var policy = SharedFirebaseEngineeringPolicy.fromEnvironment(
+                    Map.of("KIDE_SHARED_FIREBASE_ENGINEERS", "true",
+                            "KIDE_FIREBASE_PROJECT_ID", "kide-eclipse"));
+            PrincipalIdentity alice = firebase("kide-eclipse", "alice");
+            PrincipalIdentity outsider = firebase("outsider-project", "alice");
+            PrincipalIdentity forged = new PrincipalIdentity(
+                    "firebase:kide-eclipse#alice", "alice", PrincipalKind.HUMAN,
+                    AuthenticationMethod.OIDC_PKCE, "https://securetoken.google.com/kide-eclipse",
+                    "alice", Map.of());
+            var denied = new AuthorizationService(
+                    new InMemoryAuthorizationPolicyStore(List.of(
+                            RoleBinding.deny(alice.id(), Role.ENGINEER,
+                                    fixture.context.project().id()))), policy);
+            assertFalse(denied.decide(alice, fixture.context, EnterpriseScope.PROJECT,
+                    Permission.MODEL_READ).allowed());
+            assertFalse(denied.decide(outsider, fixture.context, EnterpriseScope.PROJECT,
+                    Permission.MODEL_READ).allowed());
+            assertFalse(denied.decide(forged, fixture.context, EnterpriseScope.PROJECT,
+                    Permission.MODEL_READ).allowed());
+            assertFalse(denied.decide(principal("local"), fixture.context, EnterpriseScope.PROJECT,
+                    Permission.MODEL_READ).allowed());
+
+            var privateMode = new AuthorizationService(
+                    new InMemoryAuthorizationPolicyStore(List.of()),
+                    SharedFirebaseEngineeringPolicy.fromEnvironment(Map.of(
+                            "KIDE_FIREBASE_PROJECT_ID", "kide-eclipse")));
+            assertFalse(privateMode.decide(alice, fixture.context, EnterpriseScope.PROJECT,
+                    Permission.API_ACCESS).allowed());
+            assertThrows(IllegalArgumentException.class,
+                    () -> SharedFirebaseEngineeringPolicy.fromEnvironment(Map.of(
+                            "KIDE_SHARED_FIREBASE_ENGINEERS", "yes",
+                            "KIDE_FIREBASE_PROJECT_ID", "kide-eclipse")));
+            assertThrows(IllegalArgumentException.class,
+                    () -> SharedFirebaseEngineeringPolicy.fromEnvironment(Map.of(
+                            "KIDE_SHARED_FIREBASE_ENGINEERS", "true")));
+        } finally {
+            fixture.close();
+        }
+    }
+
+    private static PrincipalIdentity firebase(String projectId, String uid) {
+        return new PrincipalIdentity("firebase:" + projectId + "#" + uid, uid,
+                PrincipalKind.HUMAN, AuthenticationMethod.FIREBASE_ID_TOKEN,
+                "https://securetoken.google.com/" + projectId, uid, Map.of());
     }
 
     private static PrincipalIdentity principal(String id) {
