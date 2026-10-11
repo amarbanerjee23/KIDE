@@ -89,6 +89,9 @@ jobs:
       - name: Verify authenticated read-only hosted service monitoring boundary
         run: python3 scripts/verify_authenticated_monitor.py
 
+      - name: Verify fail-closed hosted registry storage rollout boundary
+        run: python3 scripts/verify_registry_storage_rollout.py
+
       - name: Verify LSP feature parity matrix
         run: python3 scripts/verify_lsp_parity_matrix.py
 
