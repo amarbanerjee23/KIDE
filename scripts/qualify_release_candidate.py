@@ -21,6 +21,10 @@ except ModuleNotFoundError:  # direct execution as scripts/qualify_release_candi
 STAGING_WORKFLOW = "Live Staging Engineering Acceptance"
 STAGING_JOB = "Real Firebase / REST / Xtext / GLSP / generation staging acceptance"
 OPERATIONS_WORKFLOW = "KIDE Release Candidate Operational Qualification"
+WORKFLOW_PATHS = {
+    STAGING_WORKFLOW: ".github/workflows/live-staging-acceptance.yml",
+    OPERATIONS_WORKFLOW: ".github/workflows/release-candidate-qualification.yml",
+}
 OPERATIONS_JOB = "Verify reviewed recovery, rollback and desktop acceptance"
 DIGEST = re.compile(r"^[0-9a-f]{64}$")
 EVIDENCE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{7,159}$")
@@ -34,6 +38,7 @@ def latest_qualified_run(runs: list[dict], name: str, source_sha: str) -> dict:
         raise RetentionError("A full source SHA is required")
     candidates = [run for run in runs if isinstance(run, dict)
                   and run.get("name") == name
+                  and str(run.get("path", "")).split("@", 1)[0] == WORKFLOW_PATHS[name]
                   and run.get("head_sha") == source_sha
                   and run.get("head_branch") == "main"
                   and run.get("event") == "workflow_dispatch"]
@@ -63,6 +68,7 @@ def validate_operations(
     if not COMMIT.fullmatch(source_sha):
         raise RetentionError("Operations signoff requires a full release SHA")
     if (staging_run.get("name") != STAGING_WORKFLOW
+            or str(staging_run.get("path", "")).split("@", 1)[0] != WORKFLOW_PATHS[STAGING_WORKFLOW]
             or staging_run.get("head_sha") != source_sha
             or staging_run.get("head_branch") != "main"
             or staging_run.get("event") != "workflow_dispatch"
