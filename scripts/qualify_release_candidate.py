@@ -13,7 +13,10 @@ import os
 import re
 import sys
 
-from retain_latest_stable_release import COMMIT, GitHubAPI, RetentionError
+try:
+    from scripts.retain_latest_stable_release import COMMIT, GitHubAPI, RetentionError
+except ModuleNotFoundError:  # direct execution as scripts/qualify_release_candidate.py
+    from retain_latest_stable_release import COMMIT, GitHubAPI, RetentionError
 
 STAGING_WORKFLOW = "Live Staging Engineering Acceptance"
 STAGING_JOB = "Real Firebase / REST / Xtext / GLSP / generation staging acceptance"
