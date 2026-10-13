@@ -98,6 +98,9 @@ jobs:
       - name: Verify PR106 first-run engineering UX and keyboard accessibility
         run: python3 scripts/verify_pr106_first_run.py
 
+      - name: Verify PR107 real staging, operational signoff and stable-only release qualification
+        run: python3 scripts/verify_pr107_release_gate.py
+
       - name: Verify authenticated read-only hosted service monitoring boundary
         run: python3 scripts/verify_authenticated_monitor.py
 
