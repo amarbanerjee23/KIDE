@@ -28,7 +28,7 @@ export function firstRunSteps(state: FirstRunState): FirstRunStep[] {
       id: "sign-in", label: "Sign in",
       detail: "Authenticate with the Firebase identity configured for this KIDE deployment.",
       completed: state.signedIn,
-      action: "sign-in", actionLabel: "Go to sign in"
+      action: "sign-in", actionLabel: "Open sign-in page"
     },
     {
       id: "api", label: "Connect the engineering API",
