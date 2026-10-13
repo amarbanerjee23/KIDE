@@ -244,7 +244,8 @@ export default function App() {
   const firstRunState: FirstRunState = {
     signedIn: Boolean(firebaseAuth.user),
     apiCompatible: Boolean(runtimeVersion) &&
-      serviceStatus.includes("compatible") &&
+      serviceStatus.startsWith("Connected · API") &&
+      serviceStatus.includes("· compatible ·") &&
       !serviceStatus.includes("authorization required"),
     projectCount: projects.length,
     projectOpen: Boolean(project),
