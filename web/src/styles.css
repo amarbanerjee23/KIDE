@@ -1026,6 +1026,78 @@ body {
   width: 100%;
 }
 
+/* Keyboard users can bypass the workbench chrome and reach the editor. */
+.skip-editor-link {
+  position: fixed;
+  z-index: 10000;
+  top: 4px;
+  left: 12px;
+  transform: translateY(-200%);
+  border: 2px solid var(--ide-accent);
+  border-radius: 6px;
+  padding: 9px 15px;
+  color: var(--ide-text);
+  background: var(--ide-bg);
+}
+.skip-editor-link:focus-visible {
+  transform: none;
+  outline: 3px solid var(--ide-accent);
+}
+#kide-workbench-editor:focus { outline: 2px solid var(--ide-accent); outline-offset: -2px; }
+
+.first-run-guide {
+  width: min(680px, 100%);
+  border: 1px solid var(--ide-border);
+  border-radius: 12px;
+  background: var(--ide-surface);
+  padding: 20px;
+  color: var(--ide-text);
+}
+.first-run-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.first-run-heading h2 { margin: 4px 0 12px; font-size: 17px; }
+.first-run-progress {
+  margin: 0;
+  color: var(--ide-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.first-run-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.first-run-steps li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 12px;
+  padding: 11px 4px;
+  border-top: 1px solid var(--ide-border);
+}
+.first-run-mark {
+  border: 1px solid var(--ide-border);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.first-run-done .first-run-mark { color: var(--ide-accent); border-color: var(--ide-accent); }
+.first-run-steps strong { font-size: 13px; }
+.first-run-steps p { margin: 5px 0; color: var(--ide-muted); line-height: 1.5; font-size: 12px; }
+.first-run-step-status { display: block; color: var(--ide-muted); font-size: 11px; }
+.first-run-action { margin-top: 10px; font-size: 12px; }
+@media (max-width: 650px) {
+  .first-run-heading { align-items: flex-start; flex-direction: column; gap: 0; }
+  .first-run-guide { padding: 14px; }
+}
+@media (forced-colors: active) {
+  .skip-editor-link, .first-run-guide, .first-run-mark { border: 1px solid CanvasText; }
+}
+
 .welcome-workbench {
   min-height: 0;
   overflow: auto;
