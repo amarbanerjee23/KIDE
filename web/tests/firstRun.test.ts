@@ -47,7 +47,7 @@ describe("PR106 first-run engineering journey", () => {
     expect(firstRunProgress(project)).toBe(3);
     expect(steps[3].completed).toBe(false);
     expect(steps[3].action).toBe("starter");
-    expect(steps[3].actionLabel).toBe("Create starter engineering models");
+    expect(steps[3].actionLabel).toBe("Initialize guided starter models");
 
     const withDsl = firstRunSteps({ ...project, hasProductionDsl: true });
     expect(withDsl[3].completed).toBe(true);
