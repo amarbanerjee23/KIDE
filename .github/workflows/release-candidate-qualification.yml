@@ -1,0 +1,102 @@
+name: KIDE Release Candidate Operational Qualification
+
+# Independent manual signoff. This is NOT a build or a shortcut around live
+# staging acceptance; approvers must review real desktop and recovery evidence.
+on:
+  workflow_dispatch:
+    inputs:
+      staging_run_id:
+        description: "Successful Live Staging Engineering Acceptance run ID for this main SHA"
+        required: true
+        type: string
+      restored_snapshot_sha256:
+        description: "SHA-256 of the restored staging snapshot; never a password or URL token"
+        required: true
+        type: string
+      restore_evidence_id:
+        description: "Internal approved restore/recovery drill record ID"
+        required: true
+        type: string
+      rollback_evidence_id:
+        description: "Internal hosted migration/rollback rehearsal record ID"
+        required: true
+        type: string
+      windows_x86_64:
+        description: "Windows x64 signed-launcher/open-model validation: enter verified"
+        required: true
+        type: string
+      linux_x86_64:
+        description: "Linux x64 packaged-launcher/open-model validation: enter verified"
+        required: true
+        type: string
+      macos_x86_64:
+        description: "macOS Intel signed/notarized app human validation: enter verified"
+        required: true
+        type: string
+      macos_aarch64:
+        description: "macOS Apple silicon signed/notarized app human validation: enter verified"
+        required: true
+        type: string
+      production_approval:
+        description: "Enter I_APPROVE_THIS_SHA_FOR_PRODUCTION_RELEASE after reviewing evidence"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kide-release-candidate-operations
+  cancel-in-progress: false
+
+jobs:
+  operational-qualification:
+    name: Verify reviewed recovery, rollback and desktop acceptance
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release-qualification
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify same-commit staging acceptance and recorded operator evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KIDE_APPROVED_STAGING_RUN: ${{ inputs.staging_run_id }}
+          KIDE_RESTORED_SNAPSHOT_SHA256: ${{ inputs.restored_snapshot_sha256 }}
+          KIDE_RESTORE_RECORD: ${{ inputs.restore_evidence_id }}
+          KIDE_ROLLBACK_RECORD: ${{ inputs.rollback_evidence_id }}
+          KIDE_WINDOWS_QUALIFIED: ${{ inputs.windows_x86_64 }}
+          KIDE_LINUX_QUALIFIED: ${{ inputs.linux_x86_64 }}
+          KIDE_MACOS_INTEL_QUALIFIED: ${{ inputs.macos_x86_64 }}
+          KIDE_MACOS_ARM_QUALIFIED: ${{ inputs.macos_aarch64 }}
+          KIDE_PRODUCTION_APPROVAL: ${{ inputs.production_approval }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/qualify_release_candidate.py operations \
+            --staging-run-id "$KIDE_APPROVED_STAGING_RUN" \
+            --restore-sha256 "$KIDE_RESTORED_SNAPSHOT_SHA256" \
+            --restore-record "$KIDE_RESTORE_RECORD" \
+            --rollback-record "$KIDE_ROLLBACK_RECORD" \
+            --windows-x86_64 "$KIDE_WINDOWS_QUALIFIED" \
+            --linux-x86_64 "$KIDE_LINUX_QUALIFIED" \
+            --macos-x86_64 "$KIDE_MACOS_INTEL_QUALIFIED" \
+            --macos-aarch64 "$KIDE_MACOS_ARM_QUALIFIED" \
+            --acknowledgement "$KIDE_PRODUCTION_APPROVAL"
+
+      - name: Write non-secret acceptance summary
+        shell: bash
+        run: |
+          {
+            echo 'Release candidate operational qualification completed for exact main commit.'
+            echo 'Real live staging: verified against workflow API and same commit.'
+            echo 'Restored backup and rollback: operator-reviewed evidence IDs on dispatch.'
+            echo 'Windows, Linux, macOS Intel, macOS ARM: operator reviewed and verified.'
+            echo 'This workflow does not deploy or create a GitHub Release.'
+          } >> "$GITHUB_STEP_SUMMARY"
