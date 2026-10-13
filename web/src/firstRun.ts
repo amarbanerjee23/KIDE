@@ -34,7 +34,7 @@ export function firstRunSteps(state: FirstRunState): FirstRunStep[] {
       id: "api", label: "Connect the engineering API",
       detail: "Verify backend compatibility; an API health check alone does not grant project access.",
       completed: state.apiCompatible,
-      action: "reconnect", actionLabel: "Reconnect API"
+      action: "reconnect", actionLabel: "Retry engineering API connection"
     },
     {
       id: "project", label: "Open an authorized project",
