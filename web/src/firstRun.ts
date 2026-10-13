@@ -56,7 +56,7 @@ export function firstRunSteps(state: FirstRunState): FirstRunStep[] {
       completed: state.projectOpen && state.hasProductionDsl,
       action: state.projectOpen && !state.hasProductionDsl ? "starter" : "quick-open",
       actionLabel: state.projectOpen && !state.hasProductionDsl
-        ? "Create starter engineering models" : "Quick Open model"
+        ? "Initialize guided starter models" : "Quick Open model"
     },
     {
       id: "services", label: "Connect language and collaboration services",
