@@ -56,7 +56,9 @@ def verify() -> list[str]:
         errors.append("build-release cannot read its own yet-unavailable version output")
     if release.index("verify-live-qualification:") > release.index("validate-release:"):
         errors.append("staging approval runs too late, after signing or production credentials")
-    if release.index("gh release create") > release.index("retain_latest_stable_release.py"):
+    publisher = release.find("gh release create")
+    retention = release.find("retain_latest_stable_release.py")
+    if publisher >= 0 and retention >= 0 and publisher > retention:
         errors.append("older releases could be deleted before a new stable publication")
 
     ops = read(paths[1])
