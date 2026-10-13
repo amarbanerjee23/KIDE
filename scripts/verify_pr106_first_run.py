@@ -57,7 +57,7 @@ def verify() -> list[str]:
     for token in (
         '<FirstRunGuide state={firstRunState} onAction={handleFirstRunAction} />',
         'source === "remote" && isProductionDslPath(entry.path)',
-        "serviceStatus.includes(\"compatible\")",
+        "serviceStatus.includes(\"· compatible ·\")",
         'connectionSummary(lspStatus) === "Online"',
         'connectionSummary(collaborationStatus) === "Online"',
         'href="#kide-workbench-editor"',
