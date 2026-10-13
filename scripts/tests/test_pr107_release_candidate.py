@@ -18,7 +18,11 @@ def run(name: str, run_id: int, *, sha: str = SHA, created: str | None = None,
         conclusion: str = "success", event: str = "workflow_dispatch",
         branch: str = "main", status: str = "completed") -> dict:
     return {
-        "id": run_id, "name": name, "head_sha": sha,
+        "id": run_id, "name": name,
+        "path": (".github/workflows/live-staging-acceptance.yml"
+                 if name == STAGING_WORKFLOW else
+                 ".github/workflows/release-candidate-qualification.yml"),
+        "head_sha": sha,
         "head_branch": branch, "event": event, "status": status,
         "conclusion": conclusion,
         "created_at": created or f"2026-10-13T12:00:{run_id % 60:02d}Z",
@@ -71,6 +75,17 @@ class CandidateQualificationTest(unittest.TestCase):
         ], [run(STAGING_WORKFLOW, 101, sha=OTHER_SHA), self.ops]):
             with self.subTest(runs=runs), self.assertRaises(RetentionError):
                 qualify_publication(FakeAPI(runs), SHA)
+
+    def test_workflow_with_spoofed_name_from_another_path_is_rejected(self):
+        impersonation = {**self.stage, "path": ".github/workflows/unapproved-staging.yml"}
+        with self.assertRaises(RetentionError):
+            qualify_publication(FakeAPI([impersonation, self.ops]), SHA)
+        with self.assertRaises(RetentionError):
+            validate_operations(
+                SHA, impersonation, [job(STAGING_JOB)], "f" * 64,
+                "ops/restore/2026-10-13", "ops/rollback/2026-10-13",
+                verified_desktops(), ACKNOWLEDGEMENT,
+            )
 
     def test_failed_latest_attempt_overrides_earlier_success(self):
         attempts = [self.stage, self.ops,
