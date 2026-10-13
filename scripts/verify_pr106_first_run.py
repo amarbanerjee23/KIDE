@@ -36,7 +36,7 @@ def verify() -> list[str]:
         "state.projectOpen && state.hasProductionDsl",
         "state.projectOpen && state.xtextConnected && state.collaborationConnected",
         "No authorized projects are listed.",
-        'action: "starter"',
+        'state.projectOpen && !state.hasProductionDsl ? "starter"',
         'action: "services"',
     ):
         if token not in state:
