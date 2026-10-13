@@ -21,6 +21,19 @@ test("keeps sign-in on the landing page and engineering actions in the workspace
   await expect(page.locator(".status-bar")).toBeVisible();
   await expect(page.getByLabel("Firebase email")).toHaveCount(0);
 
+  // PR106: first run never fabricates authorization or editor connectivity.
+  const guide = page.getByRole("region", { name: "Your engineering setup" });
+  await expect(guide).toBeVisible();
+  await expect(guide.getByText("0 of 5 ready")).toBeVisible();
+  await expect(guide.getByText("Open an authorized project")).toBeVisible();
+  await expect(guide.getByRole("button", { name: "Open sign-in page" })).toBeVisible();
+  const skip = page.getByRole("link", { name: "Skip to editor" });
+  await page.keyboard.press("Tab");
+  await expect(skip).toBeFocused();
+  await skip.click();
+  await expect(page).toHaveURL(/#kide-workbench-editor$/);
+  await expect(page.locator("#kide-workbench-editor")).toBeFocused();
+
   await page
     .locator(".activity-bar")
     .getByRole("button", { name: "Settings", exact: true })

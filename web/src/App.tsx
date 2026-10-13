@@ -23,6 +23,8 @@ import { modelLoadBlockReason } from "./modelLoadPolicy";
 import { clearRecoveryDraft, loadRecoveryDraft, saveRecoveryDraft, type RecoveryDraft } from "./recoveryDraft";
 import { GraphicalEditor } from "./GraphicalEditor";
 import { EngineeringCockpit } from "./EngineeringCockpit";
+import { FirstRunGuide } from "./FirstRunGuide";
+import type { FirstRunAction, FirstRunState } from "./firstRun";
 import { QuickPick, type QuickPickItem } from "./QuickPick";
 import { LandingPage } from "./LandingPage";
 import { RegisterPage } from "./RegisterPage";
@@ -237,6 +239,23 @@ export default function App() {
 
   const selected = entries.find((entry) => entry.path === selectedPathRef.current);
   const editorText = selected ? editableText(selected) : null;
+  // Live readiness drives the first-run checklist. Never infer a role grant
+  // from Firebase sign-in or an anonymous API health response.
+  const firstRunState: FirstRunState = {
+    signedIn: Boolean(firebaseAuth.user),
+    apiCompatible: Boolean(runtimeVersion) &&
+      serviceStatus.startsWith("Connected · API") &&
+      serviceStatus.includes("· compatible ·") &&
+      !serviceStatus.includes("authorization required"),
+    projectCount: projects.length,
+    projectOpen: Boolean(project),
+    canCreateProject: canCreateProjects,
+    hasProductionDsl: Boolean(project) && entries.some((entry) =>
+      entry.source === "remote" && isProductionDslPath(entry.path)
+    ),
+    xtextConnected: connectionSummary(lspStatus) === "Online",
+    collaborationConnected: connectionSummary(collaborationStatus) === "Online"
+  };
   const selectedDiagramType = selected ? diagramTypeFor(selected.path) : undefined;
   const diagramAvailable = Boolean(
     selected?.source === "remote" &&
@@ -2548,6 +2567,38 @@ export default function App() {
     workbenchCommands.find((command) => command.id === item.id)?.run();
   }
 
+  function handleFirstRunAction(action: FirstRunAction): void {
+    switch (action) {
+      case "sign-in":
+        navigate("home");
+        return;
+      case "reconnect":
+        void connect();
+        return;
+      case "explorer":
+        setActiveSidebar("explorer");
+        setSidebarVisible(true);
+        return;
+      case "starter":
+        void createStarterEngineeringModels();
+        return;
+      case "quick-open":
+        setQuickPickMode("files");
+        return;
+      case "services": {
+        const current = projectRef.current;
+        if (!current) return;
+        void (async () => {
+          await connectLanguageServices(current);
+          if (projectRef.current?.id === current.id) {
+            await connectCollaboration(current);
+          }
+        })();
+        return;
+      }
+    }
+  }
+
   if (route === "register") {
     return (
       <RegisterPage
@@ -2589,6 +2640,7 @@ export default function App() {
 
   return (
     <main className="app-shell" data-theme={theme}>
+      <a className="skip-editor-link" href="#kide-workbench-editor">Skip to editor</a>
       <header className="ide-titlebar">
         <button
           className="ide-brand"
@@ -3372,7 +3424,7 @@ export default function App() {
         </aside>
         )}
 
-        <section className="editor-panel">
+        <section id="kide-workbench-editor" tabIndex={-1} className="editor-panel">
           <div className="editor-tabs" role="tablist" aria-label="Open editors">
             {openPaths.length ? (
               openPaths.map((path) => {
@@ -3575,6 +3627,8 @@ export default function App() {
                   synthesize supervisory designs, and generate deterministic artifacts.
                 </p>
               </div>
+
+              <FirstRunGuide state={firstRunState} onAction={handleFirstRunAction} />
 
               {!firebaseAuth.user ? (
                 <div className="welcome-actions">
