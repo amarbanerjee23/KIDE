@@ -90,7 +90,7 @@ def main():
     try:
         if args.command == "extract-env":
             if args.key not in ("KIDE_FIREBASE_PROJECT_ID", "KIDE_FIREBASE_ENGINEER_UIDS",
-                                "KIDE_HOSTED_PROJECTS_ROOT"):
+                                "KIDE_HOSTED_PROJECTS_ROOT", "KIDE_SHARED_FIREBASE_ENGINEERS"):
                 raise ValueError("Unsupported environment key")
             print(environment(json.load(sys.stdin)).get(args.key, ""))
         elif args.command == "validate":

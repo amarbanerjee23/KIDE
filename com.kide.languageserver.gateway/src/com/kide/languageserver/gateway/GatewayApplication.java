@@ -14,6 +14,7 @@ import org.eclipse.equinox.app.IApplicationContext;
 
 import com.kide.enterprise.authorization.AuthorizationEnforcer;
 import com.kide.enterprise.authorization.AuthorizationService;
+import com.kide.enterprise.authorization.SharedFirebaseEngineeringPolicy;
 import com.kide.enterprise.authorization.InMemoryAuthorizationPolicyStore;
 import com.kide.enterprise.authorization.AuthorizationPolicyStore;
 import com.kide.enterprise.authorization.HostedRegistryAuthorizationPolicyStore;
@@ -74,7 +75,8 @@ public final class GatewayApplication implements IApplication {
             ServerAuthorizationGate authorization = new ServerAuthorizationGate(
                     new AuthorizationEnforcer(
                             new AuthorizationService(
-                                    authorizationPolicy(env, bindings))));
+                                    authorizationPolicy(env, bindings),
+                                    SharedFirebaseEngineeringPolicy.fromEnvironment(env))));
 
             firebaseConfig = new FirebaseIdTokenConfig(
                     required(env, "KIDE_FIREBASE_PROJECT_ID"),

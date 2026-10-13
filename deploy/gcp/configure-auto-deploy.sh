@@ -93,7 +93,26 @@ if [[ ! -v KIDE_FIREBASE_ENGINEER_UIDS ]]; then
 fi
 python3 deploy/gcp/firebase-access.py validate --engineers "${KIDE_FIREBASE_ENGINEER_UIDS}"
 
-substitutions="_KIDE_RELEASE_ENABLED=true,_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_SERVICE_NAME=${KIDE_SERVICE_NAME},_KIDE_WEB_SERVICE_NAME=${KIDE_WEB_SERVICE_NAME},_KIDE_DATA_BUCKET=${DATA_BUCKET},_KIDE_RUNTIME_SA=${RUNTIME_SA},_KIDE_WEB_RUNTIME_SA=${WEB_RUNTIME_SA},_KIDE_FIREBASE_PROJECT_ID=${KIDE_FIREBASE_PROJECT_ID},_KIDE_FIREBASE_API_KEY=${KIDE_FIREBASE_API_KEY},_KIDE_FIREBASE_ADMIN_UID=${KIDE_FIREBASE_ADMIN_UID},_KIDE_FIREBASE_ENGINEER_UIDS=${KIDE_FIREBASE_ENGINEER_UIDS:-},_KIDE_GITHUB_REPOSITORY=${KIDE_GITHUB_REPOSITORY},_KIDE_GITHUB_TOKEN_SECRET=${KIDE_GITHUB_TOKEN_SECRET}"
+# Keep already-approved shared Firebase mode across future deployments.
+# Enabling it for the first time is a cross-project data-sharing decision.
+if [[ ! -v KIDE_SHARED_FIREBASE_ENGINEERS ]]; then
+  KIDE_SHARED_FIREBASE_ENGINEERS="$(gcloud builds triggers describe "${TRIGGER_NAME}" \
+    --project "${PROJECT_ID}" --region "${TRIGGER_REGION}" \
+    --format='value(substitutions._KIDE_SHARED_FIREBASE_ENGINEERS)')"
+  KIDE_SHARED_FIREBASE_ENGINEERS="${KIDE_SHARED_FIREBASE_ENGINEERS:-false}"
+fi
+if [[ "${KIDE_SHARED_FIREBASE_ENGINEERS}" != true &&
+      "${KIDE_SHARED_FIREBASE_ENGINEERS}" != false ]]; then
+  echo "KIDE_SHARED_FIREBASE_ENGINEERS must be true or false" >&2
+  exit 2
+fi
+if [[ "${KIDE_SHARED_FIREBASE_ENGINEERS}" == true &&
+      "${KIDE_SHARED_ACCESS_ACK:-}" != I_UNDERSTAND_ALL_FIREBASE_USERS_CAN_EDIT_ALL_PROJECTS ]]; then
+  echo "Shared access requires KIDE_SHARED_ACCESS_ACK=I_UNDERSTAND_ALL_FIREBASE_USERS_CAN_EDIT_ALL_PROJECTS" >&2
+  exit 2
+fi
+
+substitutions="_KIDE_RELEASE_ENABLED=true,_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_SERVICE_NAME=${KIDE_SERVICE_NAME},_KIDE_WEB_SERVICE_NAME=${KIDE_WEB_SERVICE_NAME},_KIDE_DATA_BUCKET=${DATA_BUCKET},_KIDE_RUNTIME_SA=${RUNTIME_SA},_KIDE_WEB_RUNTIME_SA=${WEB_RUNTIME_SA},_KIDE_FIREBASE_PROJECT_ID=${KIDE_FIREBASE_PROJECT_ID},_KIDE_FIREBASE_API_KEY=${KIDE_FIREBASE_API_KEY},_KIDE_FIREBASE_ADMIN_UID=${KIDE_FIREBASE_ADMIN_UID},_KIDE_FIREBASE_ENGINEER_UIDS=${KIDE_FIREBASE_ENGINEER_UIDS:-},_KIDE_SHARED_FIREBASE_ENGINEERS=${KIDE_SHARED_FIREBASE_ENGINEERS},_KIDE_GITHUB_REPOSITORY=${KIDE_GITHUB_REPOSITORY},_KIDE_GITHUB_TOKEN_SECRET=${KIDE_GITHUB_TOKEN_SECRET}"
 
 common=(
   "${TRIGGER_NAME}"
@@ -129,11 +148,13 @@ configured_firebase_project_id="$(read_trigger_substitution _KIDE_FIREBASE_PROJE
 configured_firebase_api_key="$(read_trigger_substitution _KIDE_FIREBASE_API_KEY)"
 configured_firebase_admin_uid="$(read_trigger_substitution _KIDE_FIREBASE_ADMIN_UID)"
 configured_firebase_engineer_uids="$(read_trigger_substitution _KIDE_FIREBASE_ENGINEER_UIDS)"
+configured_shared_firebase_engineers="$(read_trigger_substitution _KIDE_SHARED_FIREBASE_ENGINEERS)"
 
 if [[ "${configured_firebase_project_id}" != "${KIDE_FIREBASE_PROJECT_ID}" \
    || "${configured_firebase_api_key}" != "${KIDE_FIREBASE_API_KEY}" \
    || "${configured_firebase_admin_uid}" != "${KIDE_FIREBASE_ADMIN_UID}" \
-   || "${configured_firebase_engineer_uids}" != "${KIDE_FIREBASE_ENGINEER_UIDS:-}" ]]; then
+   || "${configured_firebase_engineer_uids}" != "${KIDE_FIREBASE_ENGINEER_UIDS:-}" \
+   || "${configured_shared_firebase_engineers}" != "${KIDE_SHARED_FIREBASE_ENGINEERS}" ]]; then
   echo "Cloud Build trigger Firebase configuration verification failed." >&2
   echo "Trigger: ${TRIGGER_NAME} (region: ${TRIGGER_REGION})" >&2
   echo "The deployment build will not be started with incomplete Firebase substitutions." >&2
