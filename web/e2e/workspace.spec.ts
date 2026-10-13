@@ -26,7 +26,7 @@ test("keeps sign-in on the landing page and engineering actions in the workspace
   await expect(guide).toBeVisible();
   await expect(guide.getByText("0 of 5 ready")).toBeVisible();
   await expect(guide.getByText("Open an authorized project")).toBeVisible();
-  await expect(guide.getByRole("button", { name: "Go to sign in" })).toBeVisible();
+  await expect(guide.getByRole("button", { name: "Open sign-in page" })).toBeVisible();
   const skip = page.getByRole("link", { name: "Skip to editor" });
   await page.keyboard.press("Tab");
   await expect(skip).toBeFocused();
