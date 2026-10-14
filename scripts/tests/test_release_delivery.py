@@ -78,6 +78,20 @@ class ReleaseDeliveryContractTest(unittest.TestCase):
         self.assertIn("actions/attest-build-provenance@", stable)
         self.assertIn("group: kide-single-stable-release", stable)
 
+    def test_desktop_artifact_and_signed_release_refresh_maven_dependency_ranges(self):
+        # Both workflows have independent runners/caches. Cached incomplete
+        # Maven metadata must not make Eclipse/EMF/Xtext plugin ranges appear
+        # empty, and PR validation must never silently skip these builds.
+        artifact = self.read(".github/workflows/publish-build-artifacts.yml")
+        stable = self.read(".github/workflows/release.yml")
+        self.assertIn("Build Eclipse desktop products", artifact)
+        self.assertIn("run: bash scripts/run_maven.sh -B -ntp -U clean verify", artifact)
+        self.assertIn("Build and cryptographically sign Eclipse bundles", stable)
+        self.assertIn("run: bash scripts/run_maven.sh -B -ntp -U clean verify -Psign", stable)
+        self.assertNotIn("|| true", stable.split(
+            "- name: Build and cryptographically sign Eclipse bundles", 1
+        )[1].split("- name:", 1)[0])
+
     def test_gcp_backend_image_does_not_embed_browser_bundle(self):
         dockerfile = self.read("deploy/gcp/Dockerfile")
         nginx = self.read("deploy/gcp/nginx.conf.template")
