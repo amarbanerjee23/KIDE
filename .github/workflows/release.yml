@@ -72,9 +72,26 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/verify_stable_build.py
 
+  verify-live-qualification:
+    name: Require real staging and reviewed operational release qualification
+    needs: verify-quality-gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Qualify independent live and operator approvals for exact source SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/qualify_release_candidate.py publication
+
   validate-release:
     name: Validate trusted-release credentials
-    needs: verify-quality-gates
+    needs: verify-live-qualification
     environment: trusted-release
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -156,7 +173,7 @@ jobs:
       - name: Refuse downgrade or re-publish of stable version
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.build-release.outputs.tag }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
         run: python3 scripts/check_stable_release_version.py --tag "$RELEASE_TAG"
 
       - name: Materialize Java signing keystore
@@ -168,7 +185,7 @@ jobs:
       - name: Build and cryptographically sign Eclipse bundles
         env:
           KIDE_KEYSTORE: ${{ runner.temp }}/kide-release-keystore
-        run: bash scripts/run_maven.sh -B -ntp clean verify -Psign
+        run: bash scripts/run_maven.sh -B -ntp -U clean verify -Psign
 
       - name: Qualify and stage standalone desktop products
         run: |

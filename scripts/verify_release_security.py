@@ -101,7 +101,19 @@ def verify() -> list[str]:
     ):
         if marker not in gate:
             failures.append("stable release must depend on green exact-main CI: " + marker)
-    if "needs: verify-quality-gates" not in job(release, "validate-release"):
+    # PR107 introduces an independent live-staging/operations gate in the
+    # dependency chain between successful main CI and the signing environment.
+    # The older direct-edge condition is insufficient: validate the entire
+    # chain, so deleting either edge still fails closed.
+    validator = job(release, "validate-release")
+    staging = job(release, "verify-live-qualification")
+    direct_ci = "needs: verify-quality-gates" in validator
+    gated_ci = (
+        "needs: verify-live-qualification" in validator
+        and "needs: verify-quality-gates" in staging
+        and "python3 scripts/qualify_release_candidate.py publication" in staging
+    )
+    if not (direct_ci or gated_ci):
         failures.append("release secrets can be accessed before quality verification")
     if "git rev-parse origin/main" not in source:
         failures.append("release source must be the current main HEAD")
