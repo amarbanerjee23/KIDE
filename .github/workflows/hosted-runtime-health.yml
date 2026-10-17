@@ -124,3 +124,9 @@ jobs:
             fi
             echo "- Live production SLA, paging and operator grant: not established by this workflow"
           } >> "$GITHUB_STEP_SUMMARY"
+          # A green reporting-only run must NEVER be interpreted as proof
+          # that the deployed engineering platform has passed a health test.
+          if [[ -z "$API_ORIGIN" || -z "$WEB_ORIGIN" ]]; then
+            echo "::error::Hosted runtime health not verified: configure KIDE_MONITOR_API_ORIGIN and KIDE_MONITOR_WEB_ORIGIN."
+            exit 2
+          fi
