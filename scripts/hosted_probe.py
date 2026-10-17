@@ -82,6 +82,8 @@ def check(api_url: str, web_url: str, timeout: float = 10.0,
     # The Web /health body is nginx-owned; a successful 200 response is enough.
     if frontend.get("component") != "web":
         raise ProbeFailure("Web deployment identity is missing")
+    if version.get("apiVersion") != "v1":
+        raise ProbeFailure("backend is not API v1 compatible")
     if not isinstance(version.get("buildId"), str) or not version["buildId"]:
         raise ProbeFailure("backend build identity is missing")
     if frontend.get("buildId") != version["buildId"]:
