@@ -100,6 +100,17 @@ def verify() -> list[str]:
         if token not in workflow:
             errors.append("hosted staging monitor workflow lost safety/coverage: " + token)
 
+    # PR109: the Web project has no committed package-lock. A monitored
+    # workflow using npm ci or setup-node npm caching would fail before it
+    # could reach a deployed Firebase or Xtext service.
+    for invalid in ("web/package-lock.json", "npm ci --", "cache: npm"):
+        if invalid in workflow:
+            errors.append("authenticated monitor has impossible npm prerequisite: " + invalid)
+    if "npm install --no-audit --no-fund" not in workflow:
+        errors.append("authenticated monitor must install actual Web dependencies")
+    if 'if [[ -z "$API_ORIGIN" || -z "$WEB_ORIGIN" ]]' not in workflow or "exit 2" not in workflow:
+        errors.append("unconfigured public Web/API monitor must not report success")
+
     build = read(files[5])
     for token in (
         "python3 scripts/verify_authenticated_monitor.py",
