@@ -78,12 +78,10 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "20"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
 
-      - name: Install exact Web dependencies
+      - name: Install Web dependencies from pinned package versions
         working-directory: web
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
 
       - name: Install Chromium
         working-directory: web
@@ -126,3 +124,9 @@ jobs:
             fi
             echo "- Live production SLA, paging and operator grant: not established by this workflow"
           } >> "$GITHUB_STEP_SUMMARY"
+          # A green reporting-only run must NEVER be interpreted as proof
+          # that the deployed engineering platform has passed a health test.
+          if [[ -z "$API_ORIGIN" || -z "$WEB_ORIGIN" ]]; then
+            echo "::error::Hosted runtime health not verified: configure KIDE_MONITOR_API_ORIGIN and KIDE_MONITOR_WEB_ORIGIN."
+            exit 2
+          fi

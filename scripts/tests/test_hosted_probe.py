@@ -13,7 +13,7 @@ class HostedProbeTest(unittest.TestCase):
     def test_coherent_healthy_deployment(self):
         with (patch.object(probe, "get_json", side_effect=[
             ({"status": "UP"}, 31),
-            ({"buildId": "staging-sha"}, 24),
+            ({"apiVersion": "v1", "buildId": "staging-sha"}, 24),
             ({"component": "web", "buildId": "staging-sha"}, 18),
         ]), patch.object(probe, "check_web_health", return_value=22)):
             result = probe.check("https://api-staging.example.test",
@@ -24,7 +24,7 @@ class HostedProbeTest(unittest.TestCase):
     def test_incoherent_deployment_fails_closed(self):
         with (patch.object(probe, "get_json", side_effect=[
             ({"status": "UP"}, 11),
-            ({"buildId": "api-build"}, 12),
+            ({"apiVersion": "v1", "buildId": "api-build"}, 12),
             ({"component": "web", "buildId": "stale-web"}, 12),
         ]), patch.object(probe, "check_web_health", return_value=10)):
             with self.assertRaisesRegex(probe.ProbeFailure, "disagree"):
@@ -33,11 +33,22 @@ class HostedProbeTest(unittest.TestCase):
     def test_probe_reports_failed_latency(self):
         with (patch.object(probe, "get_json", side_effect=[
             ({"status": "UP"}, 11),
-            ({"buildId": "same"}, 6001),
+            ({"apiVersion": "v1", "buildId": "same"}, 6001),
             ({"component": "web", "buildId": "same"}, 11),
         ]), patch.object(probe, "check_web_health", return_value=10)):
             with self.assertRaisesRegex(probe.ProbeFailure, "latency"):
                 probe.check("https://api-staging.example", "https://web-staging.example")
+
+    def test_rejects_incompatible_or_missing_api_version_even_if_builds_match(self):
+        for api_version in (None, "v2", "", "legacy"):
+            with self.subTest(api_version=api_version):
+                with (patch.object(probe, "get_json", side_effect=[
+                    ({"status": "UP"}, 11),
+                    ({"apiVersion": api_version, "buildId": "matched"}, 12),
+                    ({"component": "web", "buildId": "matched"}, 11),
+                ]), patch.object(probe, "check_web_health", return_value=10)):
+                    with self.assertRaisesRegex(probe.ProbeFailure, "not API v1 compatible"):
+                        probe.check("https://api-staging.example", "https://web-staging.example")
 
     def test_never_allow_credentials_or_insecure_remote_origins(self):
         invalid = [
@@ -53,7 +64,7 @@ class HostedProbeTest(unittest.TestCase):
     def test_empty_or_wrong_health_never_presents_success(self):
         with (patch.object(probe, "get_json", side_effect=[
             ({"status": "DOWN"}, 11),
-            ({"buildId": "same"}, 12),
+            ({"apiVersion": "v1", "buildId": "same"}, 12),
             ({"component": "web", "buildId": "same"}, 11),
         ]), patch.object(probe, "check_web_health", return_value=10)):
             with self.assertRaisesRegex(probe.ProbeFailure, "unhealthy"):

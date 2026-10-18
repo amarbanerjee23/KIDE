@@ -16,6 +16,28 @@ class AuthenticatedMonitorGovernanceTest(unittest.TestCase):
     def test_full_stack_monitor_contract_is_qualifiable(self):
         self.assertEqual([], monitor.verify())
 
+    def test_authenticated_monitor_rejects_missing_lockfile_install(self):
+        original = monitor.read
+        with patch.object(
+            monitor, "read",
+            side_effect=lambda name: original(name).replace(
+                "npm install --no-audit --no-fund",
+                "npm ci --no-audit --no-fund",
+            ) if name == ".github/workflows/hosted-runtime-health.yml" else original(name),
+        ):
+            self.assertTrue(any("impossible npm prerequisite" in e for e in monitor.verify()))
+
+    def test_unconfigured_public_monitor_cannot_appear_green(self):
+        original = monitor.read
+        with patch.object(
+            monitor, "read",
+            side_effect=lambda name: original(name).replace(
+                'if [[ -z "$API_ORIGIN" || -z "$WEB_ORIGIN" ]]',
+                'if [[ -n "$API_ORIGIN" && -n "$WEB_ORIGIN" ]]',
+            ) if name == ".github/workflows/hosted-runtime-health.yml" else original(name),
+        ):
+            self.assertTrue(any("must not report success" in e for e in monitor.verify()))
+
     def test_deleting_real_xtext_probe_fails_governance(self):
         original = monitor.read
         with patch.object(
