@@ -798,6 +798,7 @@ export default function App() {
     try {
       const health = await clientRef.current.health();
       if (!current()) return;
+      if (health.status !== "UP") throw new Error("Hosted API is not healthy");
       const version = await clientRef.current.version();
       if (!current()) return;
       const issues = runtimeCompatibilityIssues(version);
@@ -835,14 +836,15 @@ export default function App() {
     try {
       health = await client.health();
       if (!isCurrent()) return;
+      if (health.status !== "UP") throw new Error("Hosted API is not healthy");
       setCanCreateProjects(health.projectCreationEnabled === true);
       setServiceStatus(`Connected · ${health.status} · API ${health.version}`);
     } catch (error) {
       if (!isCurrent()) return;
       setRuntimeVersion(undefined);
       setCanCreateProjects(false);
-      setServiceStatus("Not connected");
-      showError(error);
+      setServiceStatus("API temporarily unreachable · reconnecting automatically");
+      if (!silent) showError(error);
       return;
     }
 
@@ -921,7 +923,7 @@ export default function App() {
         return;
       }
       setServiceStatus(`Connected · API ${version.apiVersion} · project listing failed`);
-      showError(error);
+      if (!silent) showError(error);
     }
   }
 
