@@ -674,7 +674,7 @@ test("keeps API reachability distinct from denied project authorization", async 
 
   // The optional check is a diagnostic shortcut, not a prerequisite for
   // starting or maintaining API connectivity.
-  await page.getByRole("button", { name: "Check project access now", exact: true }).click();
+  await page.locator(".settings-view").getByRole("button", { name: "Check project access now", exact: true }).click();
   await expect.poll(() => healthCalls).toBeGreaterThanOrEqual(4);
   await expect.poll(() => projectCalls).toBe(4);
   await expect(page.locator(".connection-summary")).toContainText("compatible");
