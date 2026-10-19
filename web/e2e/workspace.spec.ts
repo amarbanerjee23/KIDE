@@ -26,8 +26,8 @@ test("keeps the public API connected automatically without Firebase sign-in or a
 
   await page.clock.install();
   await page.goto("/workspace");
-  await expect(page.getByLabel("Workbench status"))
-    .toContainText("reconnecting automatically");
+  await expect(page.locator(".status-left > button").first())
+    .toHaveAttribute("title", /reconnecting automatically/);
   expect(healthChecks).toBeGreaterThanOrEqual(1);
 
   // The browser can recover as soon as the network returns, without an
@@ -44,8 +44,8 @@ test("keeps the public API connected automatically without Firebase sign-in or a
 
   healthy = false;
   await page.clock.fastForward(31_000);
-  await expect(page.getByLabel("Workbench status"))
-    .toContainText("reconnecting automatically");
+  await expect(page.locator(".status-left > button").first())
+    .toHaveAttribute("title", /reconnecting automatically/);
   healthy = true;
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
   await expect(page.getByLabel("Workbench status")).toContainText("API Online");
