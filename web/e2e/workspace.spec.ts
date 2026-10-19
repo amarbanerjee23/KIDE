@@ -1,3 +1,57 @@
+test("keeps the public API connected automatically without Firebase sign-in or a reconnect button", async ({ page }) => {
+  let healthy = false;
+  let healthChecks = 0;
+  let projectRequests = 0;
+  await page.route("**/api/v1/health", (route) => {
+    healthChecks++;
+    return route.fulfill({
+      status: healthy ? 200 : 503,
+      contentType: "application/json",
+      body: JSON.stringify({ status: healthy ? "UP" : "DOWN", version: "v1",
+        projectCreationEnabled: false, dependencies: {} })
+    });
+  });
+  await page.route("**/api/v1/version", (route) => route.fulfill({
+    status: 200, contentType: "application/json",
+    body: JSON.stringify({
+      apiVersion: "v1", engineeringCompatibilityLevel: 1,
+      projectSchemaVersion: 1, sharedKernelSchemaVersion: 1,
+      productLine: "1.0", productVersion: "1.0.0.test", buildId: "heartbeat-test"
+    })
+  }));
+  await page.route("**/api/v1/projects", (route) => {
+    projectRequests++;
+    return route.fulfill({ status: 401, body: "{}" });
+  });
+
+  await page.clock.install();
+  await page.goto("/workspace");
+  await expect(page.getByLabel("Workbench status"))
+    .toContainText("reconnecting automatically");
+  expect(healthChecks).toBeGreaterThanOrEqual(1);
+
+  // The browser can recover as soon as the network returns, without an
+  // authenticated request, a granted role or a manual Reconnect API click.
+  healthy = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(page.getByLabel("Workbench status")).toContainText("API Online");
+  await expect(page.getByLabel("Workbench status")).not.toContainText("Project access required");
+  expect(projectRequests).toBe(0);
+  const previous = healthChecks;
+  await page.clock.fastForward(31_000);
+  await expect.poll(() => healthChecks).toBeGreaterThan(previous);
+  await expect(page.getByLabel("Workbench status")).toContainText("API Online");
+
+  healthy = false;
+  await page.clock.fastForward(31_000);
+  await expect(page.getByLabel("Workbench status"))
+    .toContainText("reconnecting automatically");
+  healthy = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(page.getByLabel("Workbench status")).toContainText("API Online");
+  expect(projectRequests).toBe(0);
+});
+
 import { expect, test } from "@playwright/test";
 import { strToU8, zipSync } from "fflate";
 
