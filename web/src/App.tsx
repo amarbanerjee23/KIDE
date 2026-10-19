@@ -210,6 +210,7 @@ export default function App() {
   const collaboration = useRef<CollaborationCoordinator | undefined>(undefined);
   const lspClient = useRef<KideLspClient | undefined>(undefined);
   const serviceRecoveryBusy = useRef(false);
+  const apiProbeBusyRef = useRef(false);
   const authOperationRef = useRef(0);
   const apiConnectAttemptRef = useRef(0);
   // A denied UID remains denied until an operator approves it. Retry discovery
@@ -217,6 +218,7 @@ export default function App() {
   const authorizationRetryRef = useRef(false);
   const authorizationRetryBusyRef = useRef(false);
   const connectRef = useRef<(silent?: boolean) => Promise<void>>(async () => {});
+  const probeRef = useRef<() => Promise<void>>(async () => {});
   const lspAttemptRef = useRef(0);
   const collaborationAttemptRef = useRef(0);
   const projectOpenAttemptRef = useRef(0);
@@ -286,6 +288,7 @@ export default function App() {
     !project && entries.some((entry) => entry.source === "archive");
 
   connectRef.current = connect;
+  probeRef.current = probePublicApi;
 
   workspaceChange.current = (path, value) => {
     const current = entriesRef.current.find((entry) => entry.path === path);
@@ -377,16 +380,35 @@ export default function App() {
       void connectLanguageServices(opened);
     }
   }, [token, gatewayOrigin]);
+  // Keep the public API handshake alive for the lifetime of the workbench.
+  // No button or Firebase role is required for read-only health/version checks.
+  // After sign-in, retry denied/transient project discovery automatically.
+  // An authorized open project is never reopened by an API heartbeat.
   useEffect(() => {
-    const timer = globalThis.setInterval(() => {
-      if (!authorizationRetryRef.current || authorizationRetryBusyRef.current ||
-          !firebaseAuth.user || projectRef.current) return;
+    const check = () => {
+      if (!firebaseAuth.user || projectRef.current) {
+        void probeRef.current();
+        return;
+      }
+      if (authorizationRetryBusyRef.current) return;
       authorizationRetryBusyRef.current = true;
       void connectRef.current(true).finally(() => {
         authorizationRetryBusyRef.current = false;
       });
-    }, 30_000);
-    return () => globalThis.clearInterval(timer);
+    };
+    check();
+    const timer = globalThis.setInterval(check, 30_000);
+    const onOnline = () => check();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") check();
+    };
+    window.addEventListener("online", onOnline);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      globalThis.clearInterval(timer);
+      window.removeEventListener("online", onOnline);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [firebaseAuth]);
 
   // Gateway WebSockets can be closed by Cloud Run or idle proxies. Re-establish
@@ -763,6 +785,42 @@ export default function App() {
     }
   }
 
+  // The Cloud Run HTTP API is an always-on service endpoint, not a browser
+  // socket. Read-only health/version checks keep its status current even when
+  // no Firebase account is signed in, without requesting project access.
+  async function probePublicApi(): Promise<void> {
+    if (apiProbeBusyRef.current) return;
+    apiProbeBusyRef.current = true;
+    const attempt = apiConnectAttemptRef.current;
+    const authVersion = firebaseAuth.sessionVersion;
+    const current = () => apiConnectAttemptRef.current === attempt &&
+      firebaseAuth.sessionVersion === authVersion;
+    try {
+      const health = await clientRef.current.health();
+      if (!current()) return;
+      const version = await clientRef.current.version();
+      if (!current()) return;
+      const issues = runtimeCompatibilityIssues(version);
+      if (issues.length > 0) {
+        if (!firebaseAuth.user || projectRef.current) {
+          setServiceStatus(`Incompatible · backend ${version.buildId}`);
+        }
+        return;
+      }
+      setRuntimeVersion(version);
+      setCanCreateProjects(health.projectCreationEnabled === true);
+      if (!firebaseAuth.user || projectRef.current) {
+        setServiceStatus(`Connected · API ${version.apiVersion} · compatible · build ${version.buildId}`);
+      }
+    } catch {
+      if (current() && (!firebaseAuth.user || projectRef.current)) {
+        setServiceStatus("API temporarily unreachable · reconnecting automatically");
+      }
+    } finally {
+      apiProbeBusyRef.current = false;
+    }
+  }
+
   async function connect(silent = false) {
     const attempt = ++apiConnectAttemptRef.current;
     const versionAtStart = firebaseAuth.sessionVersion;
@@ -834,9 +892,9 @@ export default function App() {
       if (list.items.length === 0) {
         setLspStatus("Awaiting authorized project");
         setCollaborationStatus("Awaiting authorized project");
-        setNotice(health.projectCreationEnabled
+        if (!silent) setNotice(health.projectCreationEnabled
           ? "API connected. Create a hosted engineering project to enable Xtext, GLSP and collaboration."
-          : "API connected, but your Firebase account has no authorized project. Ask the operator to grant an ENGINEER role to your exact Firebase UID.");
+          : "API connected; you do not yet have an authorized project. An administrator must approve project access. This is checked automatically.");
       } else if (!projectRef.current && list.items.length === 1 &&
                  !entriesRef.current.some((entry) => entry.source === "archive")) {
         // A lone authorized project is unambiguous. Opening it also activates
@@ -856,9 +914,9 @@ export default function App() {
           ? `firebase:${FIREBASE_PROJECT_ID}#${firebaseAuth.user.uid}`
           : "the signed-in Firebase principal";
         const suffix = error.requestId ? ` Request ${error.requestId}.` : "";
-        setNotice(
-          `API is reachable and compatible, but ${principal} has no KIDE project access. ` +
-          `Ask the deployment operator to add your UID to KIDE_FIREBASE_ENGINEER_UIDS for the legacy project, or grant a project-scoped ENGINEER role in registry mode. KIDE will recheck authorization automatically; Reconnect API checks immediately.${suffix}`
+        if (!silent) setNotice(
+          `API is online and compatible. ${principal} is signed in but has no KIDE project permission. ` +
+          `An administrator must approve an ENGINEER role for this project; access is checked automatically every 30 seconds and when connectivity returns.${suffix}`
         );
         return;
       }
@@ -2821,7 +2879,7 @@ export default function App() {
                     </div>
                     <div className="settings-actions">
                       <button type="button" onClick={() => void connect()}>
-                        Reconnect API
+                        Check project access now
                       </button>
                       <button type="button" onClick={() => void signOutAndGoHome()}>
                         Sign out
@@ -3906,6 +3964,9 @@ export default function App() {
           >
             <span className="status-dot" /> API {connectionSummary(serviceStatus)}
           </button>
+          {serviceStatus.includes("authorization required") && (
+            <span className="status-item status-error" role="status">Project access required</span>
+          )}
           <button
             type="button"
             className={`status-item ${connectionTone(lspStatus)}`}
@@ -4153,8 +4214,7 @@ function problemSeverityGlyph(severity: monaco.MarkerSeverity): string {
 function connectionTone(status: string): string {
   const normalized = status.toLowerCase();
   if (normalized.includes("incompatible")) return "status-error";
-  if (normalized.includes("authorization required") ||
-      normalized.includes("listing failed")) return "status-error";
+  if (normalized.includes("listing failed")) return "status-error";
   if (
     normalized.includes("connected") ||
     normalized.startsWith("up") ||
@@ -4173,7 +4233,7 @@ function connectionTone(status: string): string {
 function connectionSummary(status: string): string {
   const normalized = status.toLowerCase();
   if (normalized.includes("incompatible")) return "Incompatible";
-  if (normalized.includes("authorization required")) return "Unauthorized";
+  if (normalized.includes("authorization required")) return "Online";
   if (normalized.includes("listing failed")) return "Degraded";
   if (normalized.includes("awaiting")) return "Waiting";
   if (normalized.includes("not connected")) return "Offline";
