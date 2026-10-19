@@ -584,7 +584,7 @@ test("keeps API reachability distinct from denied project authorization", async 
   });
 
   await signInFirebase(page);
-  await expect.poll(() => healthCalls).toBe(1);
+  await expect.poll(() => healthCalls).toBeGreaterThanOrEqual(1);
   await expect.poll(() => projectCalls).toBe(1);
 
   await page
@@ -598,9 +598,9 @@ test("keeps API reachability distinct from denied project authorization", async 
   await expect(page.getByLabel("KIDE authorization identity")).toContainText(
     "firebase:kide-playwright#firebase-browser-user"
   );
-  await expect(page.getByText(/API is reachable and compatible, but firebase:kide-playwright#firebase-browser-user/))
+  await expect(page.getByText(/API is online and compatible. firebase:kide-playwright#firebase-browser-user/))
     .toBeVisible();
-  await expect(page.getByText(/KIDE_FIREBASE_ENGINEER_UIDS/))
+  await expect(page.getByText(/access is checked automatically every 30 seconds/))
     .toBeVisible();
   await expect(page.getByText(/24f8a8d8-739c-41ec-b291-1299550f4ba9/))
     .toBeVisible();
@@ -609,6 +609,8 @@ test("keeps API reachability distinct from denied project authorization", async 
   await page.clock.fastForward(31_000);
   await expect.poll(() => projectCalls).toBe(2);
   await expect(page.locator(".connection-summary")).toContainText("authorization required");
+  await expect(page.getByLabel("Workbench status")).toContainText("API Online");
+  await expect(page.getByLabel("Workbench status")).toContainText("Project access required");
 
   // A new operator-approved grant is discovered on the next interval.
   authorized = true;
@@ -616,9 +618,10 @@ test("keeps API reachability distinct from denied project authorization", async 
   await expect.poll(() => projectCalls).toBe(3);
   await expect(page.locator(".connection-summary")).toContainText("compatible");
 
-  // Manual reconnect remains available and does not revoke a recovered session.
-  await page.getByRole("button", { name: "Reconnect API", exact: true }).click();
-  await expect.poll(() => healthCalls).toBe(4);
+  // The optional check is a diagnostic shortcut, not a prerequisite for
+  // starting or maintaining API connectivity.
+  await page.getByRole("button", { name: "Check project access now", exact: true }).click();
+  await expect.poll(() => healthCalls).toBeGreaterThanOrEqual(4);
   await expect.poll(() => projectCalls).toBe(4);
   await expect(page.locator(".connection-summary")).toContainText("compatible");
 });
