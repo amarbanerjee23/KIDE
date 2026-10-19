@@ -31,10 +31,10 @@ export function firstRunSteps(state: FirstRunState): FirstRunStep[] {
       action: "sign-in", actionLabel: "Open sign-in page"
     },
     {
-      id: "api", label: "Connect the engineering API",
-      detail: "Verify backend compatibility; an API health check alone does not grant project access.",
+      id: "api", label: "Verify engineering API and project access",
+      detail: "KIDE checks API connectivity and authorization automatically. A healthy API never grants project access by itself.",
       completed: state.apiCompatible,
-      action: "reconnect", actionLabel: "Retry engineering API connection"
+      action: "reconnect", actionLabel: "Check project access now"
     },
     {
       id: "project", label: "Open an authorized project",

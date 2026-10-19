@@ -104,7 +104,8 @@ test("recovers from missing role binding and starts real UI service sessions", a
   await expect(page.getByText("engineer@example.test", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Open Engineering Workspace" }).click();
 
-  await expect(page.getByLabel("Workbench status")).toContainText("API Unauthorized");
+  await expect(page.getByLabel("Workbench status")).toContainText("API Online");
+  await expect(page.getByLabel("Workbench status")).toContainText("Project access required");
   await expect(page.getByLabel("Workbench status")).toContainText("Xtext Waiting");
   expect(lspInitialize).toBe(0);
   expect(collaborationJoins).toBe(0);
@@ -112,7 +113,7 @@ test("recovers from missing role binding and starts real UI service sessions", a
   // Represents a real operator-controlled grant. Never grant on sign-in.
   engineerGranted = true;
   await page.locator(".activity-bar").getByRole("button", { name: "Settings", exact: true }).click();
-  await page.getByRole("button", { name: "Reconnect API" }).click();
+  await page.locator(".settings-view").getByRole("button", { name: "Check project access now" }).click();
 
   await expect(page.getByLabel("Workbench status")).toContainText("API Online");
   await expect(page.getByLabel("Workbench status")).toContainText("Xtext Online");

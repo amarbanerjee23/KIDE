@@ -1,3 +1,57 @@
+test("keeps the public API connected automatically without Firebase sign-in or a reconnect button", async ({ page }) => {
+  let healthy = false;
+  let healthChecks = 0;
+  let projectRequests = 0;
+  await page.route("**/api/v1/health", (route) => {
+    healthChecks++;
+    return route.fulfill({
+      status: healthy ? 200 : 503,
+      contentType: "application/json",
+      body: JSON.stringify({ status: healthy ? "UP" : "DOWN", version: "v1",
+        projectCreationEnabled: false, dependencies: {} })
+    });
+  });
+  await page.route("**/api/v1/version", (route) => route.fulfill({
+    status: 200, contentType: "application/json",
+    body: JSON.stringify({
+      apiVersion: "v1", engineeringCompatibilityLevel: 1,
+      projectSchemaVersion: 1, sharedKernelSchemaVersion: 1,
+      productLine: "1.0", productVersion: "1.0.0.test", buildId: "heartbeat-test"
+    })
+  }));
+  await page.route("**/api/v1/projects", (route) => {
+    projectRequests++;
+    return route.fulfill({ status: 401, body: "{}" });
+  });
+
+  await page.clock.install();
+  await page.goto("/workspace");
+  await expect(page.locator(".status-left > button").first())
+    .toHaveAttribute("title", /reconnecting automatically/);
+  expect(healthChecks).toBeGreaterThanOrEqual(1);
+
+  // The browser can recover as soon as the network returns, without an
+  // authenticated request, a granted role or a manual Reconnect API click.
+  healthy = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(page.getByLabel("Workbench status")).toContainText("API Online");
+  await expect(page.getByLabel("Workbench status")).not.toContainText("Project access required");
+  expect(projectRequests).toBe(0);
+  const previous = healthChecks;
+  await page.clock.fastForward(31_000);
+  await expect.poll(() => healthChecks).toBeGreaterThan(previous);
+  await expect(page.getByLabel("Workbench status")).toContainText("API Online");
+
+  healthy = false;
+  await page.clock.fastForward(31_000);
+  await expect(page.locator(".status-left > button").first())
+    .toHaveAttribute("title", /reconnecting automatically/);
+  healthy = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(page.getByLabel("Workbench status")).toContainText("API Online");
+  expect(projectRequests).toBe(0);
+});
+
 import { expect, test } from "@playwright/test";
 import { strToU8, zipSync } from "fflate";
 
@@ -584,7 +638,7 @@ test("keeps API reachability distinct from denied project authorization", async 
   });
 
   await signInFirebase(page);
-  await expect.poll(() => healthCalls).toBe(1);
+  await expect.poll(() => healthCalls).toBeGreaterThanOrEqual(1);
   await expect.poll(() => projectCalls).toBe(1);
 
   await page
@@ -598,9 +652,9 @@ test("keeps API reachability distinct from denied project authorization", async 
   await expect(page.getByLabel("KIDE authorization identity")).toContainText(
     "firebase:kide-playwright#firebase-browser-user"
   );
-  await expect(page.getByText(/API is reachable and compatible, but firebase:kide-playwright#firebase-browser-user/))
+  await expect(page.getByText(/API is online and compatible. firebase:kide-playwright#firebase-browser-user/))
     .toBeVisible();
-  await expect(page.getByText(/KIDE_FIREBASE_ENGINEER_UIDS/))
+  await expect(page.getByText(/access is checked automatically every 30 seconds/))
     .toBeVisible();
   await expect(page.getByText(/24f8a8d8-739c-41ec-b291-1299550f4ba9/))
     .toBeVisible();
@@ -609,6 +663,8 @@ test("keeps API reachability distinct from denied project authorization", async 
   await page.clock.fastForward(31_000);
   await expect.poll(() => projectCalls).toBe(2);
   await expect(page.locator(".connection-summary")).toContainText("authorization required");
+  await expect(page.getByLabel("Workbench status")).toContainText("API Online");
+  await expect(page.getByLabel("Workbench status")).toContainText("Project access required");
 
   // A new operator-approved grant is discovered on the next interval.
   authorized = true;
@@ -616,9 +672,10 @@ test("keeps API reachability distinct from denied project authorization", async 
   await expect.poll(() => projectCalls).toBe(3);
   await expect(page.locator(".connection-summary")).toContainText("compatible");
 
-  // Manual reconnect remains available and does not revoke a recovered session.
-  await page.getByRole("button", { name: "Reconnect API", exact: true }).click();
-  await expect.poll(() => healthCalls).toBe(4);
+  // The optional check is a diagnostic shortcut, not a prerequisite for
+  // starting or maintaining API connectivity.
+  await page.locator(".settings-view").getByRole("button", { name: "Check project access now", exact: true }).click();
+  await expect.poll(() => healthCalls).toBeGreaterThanOrEqual(4);
   await expect.poll(() => projectCalls).toBe(4);
   await expect(page.locator(".connection-summary")).toContainText("compatible");
 });
