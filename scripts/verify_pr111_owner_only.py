@@ -68,6 +68,17 @@ def verify() -> list[str]:
             'KIDE_SHARED_FIREBASE_ENGINEERS=false',
             '--no-traffic',
         ),
+        "deploy/gcp/cloudbuild-owner-registry-staging.yaml": (
+            "_STAGING_APPROVAL: disabled",
+            "_STORAGE_PREFLIGHT_APPROVAL: disabled",
+            'isolated-staging-only',
+            'staging-only-offline',
+            'COMMIT_SHA',
+            'image_summary.digest',
+            'sha256:[0-9a-f]{64}',
+            'bash deploy/gcp/deploy-registry-staging.sh',
+            'Deploy isolated no-traffic owner-only staging revision',
+        ),
         "deploy/gcp/configure-auto-deploy.sh": (
             '_KIDE_FIREBASE_OWNER_ONLY_ENGINEERS',
             'KIDE_FIREBASE_OWNER_ONLY_ENGINEERS',
@@ -139,6 +150,19 @@ def verify() -> list[str]:
         deploy = 'gcloud run deploy "${_KIDE_SERVICE_NAME}"'
         if guard not in data or deploy not in data or data.index(guard) >= data.index(deploy):
             failures.append(f"legacy backend rollout happens before owner-only refusal: {path}")
+
+    # Git-push staging must never target the legacy production service, nor
+    # run a Cloud Run deployment before explicit operator approvals.
+    staging = read("deploy/gcp/cloudbuild-owner-registry-staging.yaml")
+    for absent in ('--no-traffic', '_STAGING_SERVICE:'):
+        # The reviewed shell deployment owns the no-traffic flag; its invoking
+        # Cloud Build manifest must at least declare the staging service.
+        if absent == '_STAGING_SERVICE:' and absent not in staging:
+            failures.append("staging Git-push trigger cannot select a dedicated service")
+    if not (staging.index('id: Validate private-registry staging approval') <
+            staging.index('id: Build source-pinned registry backend') <
+            staging.index('id: Deploy isolated no-traffic owner-only staging revision')):
+        failures.append("staging Git-push must check approvals before any build/deploy")
 
     return failures
 
