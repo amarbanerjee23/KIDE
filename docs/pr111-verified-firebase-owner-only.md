@@ -68,11 +68,20 @@ legacy deploy script from silently enabling the unsafe option. An old
    expired token, fabricated token, and explicitly denied project grant.
    Review creation quota, simultaneous writes, ETag conflicts, GLSP edits
    and collaboration; check authorizations after restart/redeploy.
-5. Test restored snapshots, no old-writer overlap, bounded concurrency,
+5. For an approved **Git-push staging trigger**, select the new
+   `deploy/gcp/cloudbuild-owner-registry-staging.yaml` manifest. Its
+   substitutions default to `disabled`/empty. Configure the dedicated
+   staging service ending `-registry-staging`, isolated Firebase project,
+   private VPC/NFS, approved web origin, dedicated runtime service identity,
+   and **both** reviewed approvals. The trigger refuses incomplete inputs,
+   builds a source-SHA-tagged image, resolves an immutable Artifact Registry
+   SHA-256 digest and invokes the same no-traffic registry staging script.
+6. Test restored snapshots, no old-writer overlap, bounded concurrency,
    rejected writes and rollback with the real NFS backend. Only after
-   signoff select and review a **registry-specific Git-push Cloud Build
-   configuration** for production, without silently overwriting the existing
-   legacy `kide` service.
+   signoff configure a **separate production registry rollout** with
+   traffic migration, explicit rollback approval and observed authorization
+   for both test accounts. Never overwrite the existing legacy `kide`
+   service via its single-project Git-push trigger.
 
 The deployment trigger name/ID was **not provided**. Accordingly, this PR
 does not edit the live trigger, IAM grants, Firebase users or production
