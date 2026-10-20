@@ -110,9 +110,9 @@ public final class EnterpriseApiApplication implements IApplication {
                     new AuthorizationEnforcer(new AuthorizationService(policies,
                             SharedFirebaseEngineeringPolicy.fromEnvironment(env))));
 
-            firebaseConfig = new FirebaseIdTokenConfig(
+            firebaseConfig = FirebaseIdTokenConfig.fromEnvironment(
                     required(env, "KIDE_FIREBASE_PROJECT_ID"),
-                    Duration.ofSeconds(integer(env, "KIDE_FIREBASE_KEYS_TIMEOUT_SECONDS", 10)));
+                    Duration.ofSeconds(integer(env, "KIDE_FIREBASE_KEYS_TIMEOUT_SECONDS", 10)), env);
             HttpClient firebaseHttpClient = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(
                             integer(env, "KIDE_FIREBASE_CONNECT_TIMEOUT_SECONDS", 10)))
