@@ -135,8 +135,9 @@ def verify() -> list[str]:
         ):
             if token not in data:
                 failures.append(f"legacy Git-push deployment may broaden access or overwrite owner-only registry: {path}: {token}")
-        if not (data.index('if [[ "${_KIDE_FIREBASE_OWNER_ONLY_ENGINEERS}" == true ]]') <
-                data.index('gcloud run deploy "${_KIDE_SERVICE_NAME}"')):
+        guard = 'if [[ "${_KIDE_FIREBASE_OWNER_ONLY_ENGINEERS}" == true ]]'
+        deploy = 'gcloud run deploy "${_KIDE_SERVICE_NAME}"'
+        if guard not in data or deploy not in data or data.index(guard) >= data.index(deploy):
             failures.append(f"legacy backend rollout happens before owner-only refusal: {path}")
 
     return failures
