@@ -23,6 +23,22 @@ property_value() {
 # Legacy Cloud Storage FUSE deployments remain the default.
 storage_mode="${KIDE_STORAGE_MODE:-legacy-gcs}"
 registry_root="${KIDE_HOSTED_PROJECTS_ROOT:-}"
+# This mode can auto-onboard verified Firebase engineers only to privately
+# owned projects in a qualified atomic POSIX registry. Never expose the
+# existing legacy GCS singleton project or enable broad shared grants.
+owner_only="${KIDE_FIREBASE_OWNER_ONLY_ENGINEERS:-false}"
+if [[ "${owner_only}" != true && "${owner_only}" != false ]]; then
+  echo "KIDE owner-only Firebase mode must be true or false" >&2
+  exit 2
+fi
+if [[ "${owner_only}" == true ]]; then
+  if [[ "${storage_mode}" != registry-posix ||
+        "${registry_root}" != /data/hosted-projects ||
+        "${KIDE_SHARED_FIREBASE_ENGINEERS:-false}" != false ]]; then
+    echo "KIDE owner-only Firebase access requires private qualified registry-posix storage and no shared grants" >&2
+    exit 2
+  fi
+fi
 case "${storage_mode}" in
   legacy-gcs)
     if [[ -n "${registry_root}" ]]; then
