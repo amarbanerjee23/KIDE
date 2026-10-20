@@ -654,7 +654,18 @@ export default function App() {
       setFirebasePassword("");
       setFirebaseConfirmPassword("");
       setAuthStatus(`Account created · ${user.email}`);
-      setNotice("Account created and signed in. Engineering access is granted through KIDE role bindings.");
+      // Never silently grant a new account an ENGINEER role. The owner-only
+      // backend checks email_verified in the newly minted signed token.
+      try {
+        await firebaseAuth.sendEmailVerification();
+        if (authOperationRef.current !== operation ||
+            firebaseAuth.sessionVersion !== version) return;
+        setNotice("Account created. Check your email for a Firebase verification link. Engineering project access becomes available after verification.");
+      } catch {
+        if (authOperationRef.current !== operation ||
+            firebaseAuth.sessionVersion !== version) return;
+        setNotice("Account created. Send a verification email from the sign-in page before using owner-only engineering projects.");
+      }
       navigate("home");
     } catch (error) {
       if (authOperationRef.current !== operation) return;
@@ -663,6 +674,46 @@ export default function App() {
       setNotice(error instanceof Error ? error.message : "Firebase registration failed.");
     } finally {
       if (authOperationRef.current === operation) setAuthBusy(false);
+    }
+  }
+
+  async function sendFirebaseVerification() {
+    const identity = firebaseAuth.user?.uid;
+    if (!identity || authBusy) return;
+    setAuthBusy(true);
+    try {
+      await firebaseAuth.sendEmailVerification();
+      if (firebaseAuth.user?.uid === identity) {
+        setNotice("Verification email sent. Open the link in your inbox, then select 'I've verified my email — check access'.");
+      }
+    } catch (error) {
+      if (firebaseAuth.user?.uid === identity) {
+        setNotice(error instanceof Error ? error.message : "Could not send Firebase verification email.");
+      }
+    } finally {
+      if (firebaseAuth.user?.uid === identity) setAuthBusy(false);
+    }
+  }
+
+  async function refreshFirebaseVerification() {
+    const identity = firebaseAuth.user?.uid;
+    const sessionVersion = firebaseAuth.sessionVersion;
+    if (!identity || authBusy) return;
+    setAuthBusy(true);
+    try {
+      const refreshed = await firebaseAuth.idToken(true);
+      if (firebaseAuth.sessionVersion !== sessionVersion ||
+          firebaseAuth.user?.uid !== identity) return;
+      setToken(refreshed);
+      await connect();
+    } catch (error) {
+      if (firebaseAuth.sessionVersion === sessionVersion &&
+          firebaseAuth.user?.uid === identity) {
+        setNotice(error instanceof Error ? error.message : "Firebase verification status could not be refreshed.");
+      }
+    } finally {
+      if (firebaseAuth.sessionVersion === sessionVersion &&
+          firebaseAuth.user?.uid === identity) setAuthBusy(false);
     }
   }
 
@@ -2692,6 +2743,8 @@ export default function App() {
         onPassword={setFirebasePassword}
         onSignIn={() => void signInFirebase()}
         onSignOut={() => void signOutFirebase()}
+        onSendVerification={() => void sendFirebaseVerification()}
+        onRefreshVerification={() => void refreshFirebaseVerification()}
         onOpenRegister={() => navigate("register")}
         onOpenWorkspace={() => navigate("workspace")}
       />
