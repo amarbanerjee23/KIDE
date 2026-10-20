@@ -125,9 +125,72 @@ public class FirebaseIdTokenAuthenticationTest {
                 () -> authenticator().authenticateAuthorizationHeader("Bearer " + token));
     }
 
+    @Test
+    public void verifiedEmailRequiredOnlyInOwnerOnlyMode() throws Exception {
+        String verified = token(PROJECT_ID,
+                "https://securetoken.google.com/" + PROJECT_ID, "owner-1",
+                NOW.plusSeconds(3600).getEpochSecond(), NOW.getEpochSecond(),
+                NOW.getEpochSecond(), keyPair);
+        try (AuthenticatedSession session = authenticator(true)
+                .authenticateAuthorizationHeader("Bearer " + verified)) {
+            assertEquals("firebase:" + PROJECT_ID + "#owner-1", session.principal().id());
+        }
+        for (Boolean state : new Boolean[] {false, null}) {
+            String unverified = token(PROJECT_ID,
+                    "https://securetoken.google.com/" + PROJECT_ID, "owner-1",
+                    NOW.plusSeconds(3600).getEpochSecond(), NOW.getEpochSecond(),
+                    NOW.getEpochSecond(), keyPair, "owner@example.test", state);
+            assertThrows(AuthenticationException.class,
+                    () -> authenticator(true).authenticateAuthorizationHeader(
+                            "Bearer " + unverified));
+            // Safe default retains backwards compatible private projects.
+            try (AuthenticatedSession legacy = authenticator(false)
+                    .authenticateAuthorizationHeader("Bearer " + unverified)) {
+                assertEquals("owner-1", legacy.principal().subject());
+            }
+        }
+        String phoneOnly = token(PROJECT_ID,
+                "https://securetoken.google.com/" + PROJECT_ID, "owner-1",
+                NOW.plusSeconds(3600).getEpochSecond(), NOW.getEpochSecond(),
+                NOW.getEpochSecond(), keyPair, null, true);
+        assertThrows(AuthenticationException.class,
+                () -> authenticator(true).authenticateAuthorizationHeader(
+                        "Bearer " + phoneOnly));
+    }
+
+    @Test
+    public void ownerOnlyModeFailsClosedOnSharedOrUnqualifiedStorage() {
+        java.time.Duration timeout = java.time.Duration.ofSeconds(5);
+        java.util.Map<String, String> correct = java.util.Map.of(
+                "KIDE_FIREBASE_OWNER_ONLY_ENGINEERS", "true",
+                "KIDE_STORAGE_MODE", "registry-posix",
+                "KIDE_HOSTED_PROJECTS_ROOT", "/data/hosted-projects",
+                "KIDE_SHARED_FIREBASE_ENGINEERS", "false");
+        org.junit.Assert.assertTrue(FirebaseIdTokenConfig.fromEnvironment(
+                PROJECT_ID, timeout, correct).requireVerifiedEmail());
+        for (java.util.Map<String, String> wrong : java.util.List.of(
+                java.util.Map.of("KIDE_FIREBASE_OWNER_ONLY_ENGINEERS", "true"),
+                java.util.Map.of("KIDE_FIREBASE_OWNER_ONLY_ENGINEERS", "true",
+                        "KIDE_STORAGE_MODE", "legacy-gcs",
+                        "KIDE_HOSTED_PROJECTS_ROOT", "/data/hosted-projects"),
+                java.util.Map.of("KIDE_FIREBASE_OWNER_ONLY_ENGINEERS", "true",
+                        "KIDE_STORAGE_MODE", "registry-posix",
+                        "KIDE_HOSTED_PROJECTS_ROOT", "/data/hosted-projects",
+                        "KIDE_SHARED_FIREBASE_ENGINEERS", "true"),
+                java.util.Map.of("KIDE_FIREBASE_OWNER_ONLY_ENGINEERS", "INVALID"))) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> FirebaseIdTokenConfig.fromEnvironment(PROJECT_ID, timeout, wrong));
+        }
+    }
+
     private static FirebaseIdTokenAuthenticator authenticator() {
+        return authenticator(false);
+    }
+
+    private static FirebaseIdTokenAuthenticator authenticator(boolean verifiedRequired) {
         FirebaseIdTokenConfig config =
-                new FirebaseIdTokenConfig(PROJECT_ID, java.time.Duration.ofSeconds(5));
+                new FirebaseIdTokenConfig(PROJECT_ID, java.time.Duration.ofSeconds(5),
+                        verifiedRequired);
         return new FirebaseIdTokenAuthenticator(
                 config,
                 keyId -> {
@@ -141,13 +204,22 @@ public class FirebaseIdTokenAuthenticationTest {
     }
 
     private static String token(
+            String audience, String issuer, String subject, long expiration,
+            long issuedAt, long authTime, KeyPair signingKey) throws Exception {
+        return token(audience, issuer, subject, expiration, issuedAt, authTime,
+                signingKey, "user@example.test", true);
+    }
+
+    private static String token(
             String audience,
             String issuer,
             String subject,
             long expiration,
             long issuedAt,
             long authTime,
-            KeyPair signingKey) throws Exception {
+            KeyPair signingKey,
+            String email,
+            Boolean emailVerified) throws Exception {
         String header = "{\"alg\":\"RS256\",\"kid\":\"" + KID
                 + "\",\"typ\":\"JWT\"}";
         String payload = "{"
@@ -157,8 +229,8 @@ public class FirebaseIdTokenAuthenticationTest {
                 + "\"exp\":" + expiration + ","
                 + "\"iat\":" + issuedAt + ","
                 + "\"auth_time\":" + authTime + ","
-                + "\"email\":\"user@example.test\","
-                + "\"email_verified\":true,"
+                + (email == null ? "" : "\"email\":\"" + email + "\",")
+                + (emailVerified == null ? "" : "\"email_verified\":" + emailVerified + ",")
                 + "\"firebase\":{\"sign_in_provider\":\"password\"}"
                 + "}";
 

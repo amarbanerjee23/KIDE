@@ -22,12 +22,14 @@ import com.kide.enterprise.authorization.AuthorizationEnforcer;
 import com.kide.enterprise.authorization.AuthorizationPolicySnapshot;
 import com.kide.enterprise.authorization.AuthorizationService;
 import com.kide.enterprise.authorization.InMemoryAuthorizationPolicyStore;
+import com.kide.enterprise.authorization.HostedRegistryAuthorizationPolicyStore;
 import com.kide.enterprise.authorization.Permission;
 import com.kide.enterprise.authorization.Role;
 import com.kide.enterprise.authorization.RoleBinding;
 import com.kide.enterprise.authorization.ServerAuthorizationGate;
 import com.kide.enterprise.authorization.SharedFirebaseEngineeringPolicy;
 import com.kide.enterprise.context.EnterpriseContext;
+import com.kide.enterprise.context.FileHostedProjectRegistry;
 import com.kide.enterprise.context.EnterpriseContextResult;
 import com.kide.enterprise.context.EnterpriseContextStore;
 import com.kide.enterprise.context.EnterpriseScope;
@@ -288,6 +290,59 @@ public class AuthorizationServiceTest {
                             "KIDE_SHARED_FIREBASE_ENGINEERS", "true")));
         } finally {
             fixture.close();
+        }
+    }
+
+    @Test
+    public void ownerOnlyRegistryGrantsJustTheCreatorAndPreservesExplicitDeny() throws Exception {
+        Path root = Files.createTempDirectory("kide-pr111-owner-isolation-");
+        try {
+            FileHostedProjectRegistry registry = new FileHostedProjectRegistry(
+                    Files.createDirectory(root.resolve("registry")));
+            PrincipalIdentity alice = firebase("kide-eclipse", "owner-alice");
+            PrincipalIdentity bob = firebase("kide-eclipse", "owner-bob");
+            var aliceProject = registry.createProject("Alice controls", alice.id());
+            var bobProject = registry.createProject("Bob controls", bob.id());
+            AuthorizationService privatePolicy = new AuthorizationService(
+                    new HostedRegistryAuthorizationPolicyStore(registry, List.of()));
+            ServerAuthorizationGate gate = new ServerAuthorizationGate(
+                    new AuthorizationEnforcer(privatePolicy));
+            try (AuthenticatedSession a = session(alice);
+                 AuthenticatedSession b = session(bob)) {
+                for (var own : List.of(aliceProject.context())) {
+                    gate.requireApiProjectAccess(a, own);
+                    gate.requireWebSocketWorkspaceAccess(a, own);
+                    gate.requireLspWorkspaceAccess(a, own);
+                    gate.requireModelWrite(a, own);
+                    gate.requireCollaborationWrite(a, own);
+                    assertThrows(AccessDeniedException.class,
+                            () -> gate.requireApiProjectAccess(b, own));
+                    assertThrows(AccessDeniedException.class,
+                            () -> gate.requireLspWorkspaceAccess(b, own));
+                }
+                gate.requireApiProjectAccess(b, bobProject.context());
+                gate.requireLspWorkspaceAccess(b, bobProject.context());
+                assertThrows(AccessDeniedException.class,
+                        () -> gate.requireModelWrite(a, bobProject.context()));
+                assertThrows(AccessDeniedException.class,
+                        () -> gate.requireCollaborationWrite(a, bobProject.context()));
+            }
+            // A project-scoped DENY must beat the creator's persisted allow.
+            var denied = new AuthorizationService(
+                    new HostedRegistryAuthorizationPolicyStore(registry, List.of(
+                            RoleBinding.deny(alice.id(), Role.ENGINEER,
+                                    aliceProject.context().project().id()))));
+            assertFalse(denied.decide(alice, aliceProject.context(),
+                    EnterpriseScope.PROJECT, Permission.MODEL_READ).allowed());
+            assertFalse(denied.decide(alice, aliceProject.context(),
+                    EnterpriseScope.WORKSPACE, Permission.LSP_CONNECT).allowed());
+        } finally {
+            try (var files = Files.walk(root)) {
+                files.sorted(Comparator.reverseOrder()).forEach(item -> {
+                    try { Files.deleteIfExists(item); }
+                    catch (IOException ignored) { /* temporary test data */ }
+                });
+            }
         }
     }
 

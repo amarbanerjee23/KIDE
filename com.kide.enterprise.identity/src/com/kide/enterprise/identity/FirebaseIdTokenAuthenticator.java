@@ -88,6 +88,20 @@ public final class FirebaseIdTokenAuthenticator {
                 throw new AuthenticationException("Firebase ID token time claims are invalid");
             }
 
+            if (config.requireVerifiedEmail()) {
+                JsonElement email = claims.get("email");
+                JsonElement verified = claims.get("email_verified");
+                if (email == null || !email.isJsonPrimitive()
+                        || !email.getAsJsonPrimitive().isString()
+                        || email.getAsString().isBlank()
+                        || verified == null || !verified.isJsonPrimitive()
+                        || !verified.getAsJsonPrimitive().isBoolean()
+                        || !verified.getAsBoolean()) {
+                    throw new AuthenticationException(
+                            "A verified Firebase email address is required for KIDE engineering access");
+                }
+            }
+
             Map<String, String> safeClaims = new LinkedHashMap<>();
             copySafeString(claims, safeClaims, "email");
             copySafeBoolean(claims, safeClaims, "email_verified");

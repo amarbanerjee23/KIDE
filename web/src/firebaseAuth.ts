@@ -95,14 +95,14 @@ export class FirebaseAuthClient {
       "Firebase sign-in failed.", "Firebase sign-in returned an incomplete session.");
   }
 
-  async idToken(): Promise<string> {
+  async idToken(forceRefresh = false): Promise<string> {
     if (!this.apiKey.trim()) {
       throw new FirebaseAuthError("Firebase Web API key is not configured.");
     }
     if (!this.userValue || !this.refreshTokenValue) {
       throw new FirebaseAuthError("Sign in to Firebase first.");
     }
-    if (this.idTokenValue && Date.now() < this.expiresAt - 60_000) {
+    if (!forceRefresh && this.idTokenValue && Date.now() < this.expiresAt - 60_000) {
       return this.idTokenValue;
     }
 
@@ -118,6 +118,33 @@ export class FirebaseAuthClient {
       return await pending;
     } finally {
       if (this.refreshPending === pending) this.refreshPending = undefined;
+    }
+  }
+
+  /**
+   * Firebase's built-in email verification flow. The ID token is never
+   * exported to application state or URL query parameters.
+   */
+  async sendEmailVerification(): Promise<void> {
+    const uid = this.userValue?.uid;
+    const epoch = this.epoch;
+    const idToken = await this.idToken();
+    if (!uid || epoch !== this.epoch || this.userValue?.uid !== uid) {
+      throw new FirebaseAuthError("Authentication request was superseded.");
+    }
+    const response = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${encodeURIComponent(this.apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestType: "VERIFY_EMAIL", idToken })
+      }
+    );
+    if (epoch !== this.epoch || this.userValue?.uid !== uid) {
+      throw new FirebaseAuthError("Authentication request was superseded.");
+    }
+    if (!response.ok) {
+      throw new FirebaseAuthError("Firebase email verification request failed. Retry later.");
     }
   }
 

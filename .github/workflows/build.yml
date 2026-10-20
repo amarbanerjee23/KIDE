@@ -95,6 +95,9 @@ jobs:
       - name: Verify shared Firebase all-project authentication and transport authorization
         run: python3 scripts/verify_shared_firebase_access.py
 
+      - name: Verify PR111 owner-only Firebase login and deployment safety
+        run: python3 scripts/verify_pr111_owner_only.py
+
       - name: Verify PR106 first-run engineering UX and keyboard accessibility
         run: python3 scripts/verify_pr106_first_run.py
 

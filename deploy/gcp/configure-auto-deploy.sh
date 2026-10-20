@@ -112,7 +112,26 @@ if [[ "${KIDE_SHARED_FIREBASE_ENGINEERS}" == true &&
   exit 2
 fi
 
-substitutions="_KIDE_RELEASE_ENABLED=true,_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_SERVICE_NAME=${KIDE_SERVICE_NAME},_KIDE_WEB_SERVICE_NAME=${KIDE_WEB_SERVICE_NAME},_KIDE_DATA_BUCKET=${DATA_BUCKET},_KIDE_RUNTIME_SA=${RUNTIME_SA},_KIDE_WEB_RUNTIME_SA=${WEB_RUNTIME_SA},_KIDE_FIREBASE_PROJECT_ID=${KIDE_FIREBASE_PROJECT_ID},_KIDE_FIREBASE_API_KEY=${KIDE_FIREBASE_API_KEY},_KIDE_FIREBASE_ADMIN_UID=${KIDE_FIREBASE_ADMIN_UID},_KIDE_FIREBASE_ENGINEER_UIDS=${KIDE_FIREBASE_ENGINEER_UIDS:-},_KIDE_SHARED_FIREBASE_ENGINEERS=${KIDE_SHARED_FIREBASE_ENGINEERS},_KIDE_GITHUB_REPOSITORY=${KIDE_GITHUB_REPOSITORY},_KIDE_GITHUB_TOKEN_SECRET=${KIDE_GITHUB_TOKEN_SECRET}"
+# Retain the requested owner-only switch, but never configure an unattended
+# legacy GCS trigger to deploy multi-tenant private projects. Operator must
+# first qualify a POSIX registry and use its separate staged rollout.
+if [[ ! -v KIDE_FIREBASE_OWNER_ONLY_ENGINEERS ]]; then
+  KIDE_FIREBASE_OWNER_ONLY_ENGINEERS="$(gcloud builds triggers describe "${TRIGGER_NAME}" \
+    --project "${PROJECT_ID}" --region "${TRIGGER_REGION}" \
+    --format='value(substitutions._KIDE_FIREBASE_OWNER_ONLY_ENGINEERS)')"
+  KIDE_FIREBASE_OWNER_ONLY_ENGINEERS="${KIDE_FIREBASE_OWNER_ONLY_ENGINEERS:-false}"
+fi
+if [[ "${KIDE_FIREBASE_OWNER_ONLY_ENGINEERS}" != true &&
+      "${KIDE_FIREBASE_OWNER_ONLY_ENGINEERS}" != false ]]; then
+  echo "KIDE_FIREBASE_OWNER_ONLY_ENGINEERS must be true or false" >&2
+  exit 2
+fi
+if [[ "${KIDE_FIREBASE_OWNER_ONLY_ENGINEERS}" == true ]]; then
+  echo "Owner-only Firebase requires qualified registry-posix storage; the normal Git-push trigger deploys legacy GCS FUSE. Use reviewed registry-staging rollout instead." >&2
+  exit 2
+fi
+
+substitutions="_KIDE_RELEASE_ENABLED=true,_REGION=${REGION},_AR_REPOSITORY=${AR_REPOSITORY},_KIDE_SERVICE_NAME=${KIDE_SERVICE_NAME},_KIDE_WEB_SERVICE_NAME=${KIDE_WEB_SERVICE_NAME},_KIDE_DATA_BUCKET=${DATA_BUCKET},_KIDE_RUNTIME_SA=${RUNTIME_SA},_KIDE_WEB_RUNTIME_SA=${WEB_RUNTIME_SA},_KIDE_FIREBASE_PROJECT_ID=${KIDE_FIREBASE_PROJECT_ID},_KIDE_FIREBASE_API_KEY=${KIDE_FIREBASE_API_KEY},_KIDE_FIREBASE_ADMIN_UID=${KIDE_FIREBASE_ADMIN_UID},_KIDE_FIREBASE_ENGINEER_UIDS=${KIDE_FIREBASE_ENGINEER_UIDS:-},_KIDE_SHARED_FIREBASE_ENGINEERS=${KIDE_SHARED_FIREBASE_ENGINEERS},_KIDE_FIREBASE_OWNER_ONLY_ENGINEERS=${KIDE_FIREBASE_OWNER_ONLY_ENGINEERS},_KIDE_GITHUB_REPOSITORY=${KIDE_GITHUB_REPOSITORY},_KIDE_GITHUB_TOKEN_SECRET=${KIDE_GITHUB_TOKEN_SECRET}"
 
 common=(
   "${TRIGGER_NAME}"
@@ -149,12 +168,14 @@ configured_firebase_api_key="$(read_trigger_substitution _KIDE_FIREBASE_API_KEY)
 configured_firebase_admin_uid="$(read_trigger_substitution _KIDE_FIREBASE_ADMIN_UID)"
 configured_firebase_engineer_uids="$(read_trigger_substitution _KIDE_FIREBASE_ENGINEER_UIDS)"
 configured_shared_firebase_engineers="$(read_trigger_substitution _KIDE_SHARED_FIREBASE_ENGINEERS)"
+configured_owner_only_firebase="$(read_trigger_substitution _KIDE_FIREBASE_OWNER_ONLY_ENGINEERS)"
 
 if [[ "${configured_firebase_project_id}" != "${KIDE_FIREBASE_PROJECT_ID}" \
    || "${configured_firebase_api_key}" != "${KIDE_FIREBASE_API_KEY}" \
    || "${configured_firebase_admin_uid}" != "${KIDE_FIREBASE_ADMIN_UID}" \
    || "${configured_firebase_engineer_uids}" != "${KIDE_FIREBASE_ENGINEER_UIDS:-}" \
-   || "${configured_shared_firebase_engineers}" != "${KIDE_SHARED_FIREBASE_ENGINEERS}" ]]; then
+   || "${configured_shared_firebase_engineers}" != "${KIDE_SHARED_FIREBASE_ENGINEERS}" \
+   || "${configured_owner_only_firebase}" != "${KIDE_FIREBASE_OWNER_ONLY_ENGINEERS}" ]]; then
   echo "Cloud Build trigger Firebase configuration verification failed." >&2
   echo "Trigger: ${TRIGGER_NAME} (region: ${TRIGGER_REGION})" >&2
   echo "The deployment build will not be started with incomplete Firebase substitutions." >&2

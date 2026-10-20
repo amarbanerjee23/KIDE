@@ -12,6 +12,8 @@ interface Props {
   onPassword(value: string): void;
   onSignIn(): void;
   onSignOut(): void;
+  onSendVerification(): void;
+  onRefreshVerification(): void;
   onOpenRegister(): void;
   onOpenWorkspace(): void;
 }
@@ -28,6 +30,8 @@ export function LandingPage({
   onPassword,
   onSignIn,
   onSignOut,
+  onSendVerification,
+  onRefreshVerification,
   onOpenRegister,
   onOpenWorkspace
 }: Props) {
@@ -124,6 +128,18 @@ export function LandingPage({
                 onClick={onOpenWorkspace}
               >
                 Open Engineering Workspace
+              </button>
+              <p className="signin-status">
+                Owner-only engineering requires a verified Firebase email. Verify the
+                address in your inbox, then refresh your authorization.
+              </p>
+              <button type="button" className="signin-secondary"
+                onClick={onSendVerification} disabled={busy}>
+                Send verification email
+              </button>
+              <button type="button" className="signin-secondary"
+                onClick={onRefreshVerification} disabled={busy}>
+                I've verified my email — check access
               </button>
               <button
                 type="button"

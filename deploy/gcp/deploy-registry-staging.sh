@@ -69,7 +69,7 @@ gcloud run deploy "${STAGING_SERVICE}" \
   --min 0 --max 1 \
   --startup-probe "httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=10,timeoutSeconds=5,periodSeconds=10,failureThreshold=60" \
   --add-volume "mount-path=/data,type=nfs,location=${NFS_IP}:${NFS_EXPORT},readonly=false" \
-  --set-env-vars "^|^KIDE_STORAGE_MODE=registry-posix|KIDE_HOSTED_PROJECTS_ROOT=/data/hosted-projects|KIDE_FIREBASE_PROJECT_ID=${STAGING_FIREBASE_PROJECT_ID}|KIDE_ALLOWED_ORIGINS=${STAGING_WEB_ORIGIN}" \
+  --set-env-vars "^|^KIDE_STORAGE_MODE=registry-posix|KIDE_HOSTED_PROJECTS_ROOT=/data/hosted-projects|KIDE_FIREBASE_PROJECT_ID=${STAGING_FIREBASE_PROJECT_ID}|KIDE_ALLOWED_ORIGINS=${STAGING_WEB_ORIGIN}|KIDE_FIREBASE_OWNER_ONLY_ENGINEERS=true|KIDE_SHARED_FIREBASE_ENGINEERS=false" \
   --tag registry-candidate --no-traffic \
   --labels "kide-component=registry-staging,kide-storage=posix" \
   --quiet

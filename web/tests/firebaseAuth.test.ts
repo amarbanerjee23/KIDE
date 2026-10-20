@@ -115,6 +115,47 @@ describe("FirebaseAuthClient", () => {
     );
   });
 
+  it("sends Firebase's built-in email verification only for the signed-in user", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        localId: "new-engineer", email: "new@example.test",
+        idToken: "login-id", refreshToken: "refresh-id", expiresIn: "3600"
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const auth = new FirebaseAuthClient("api-key");
+    await expect(auth.sendEmailVerification()).rejects.toThrow("Sign in");
+    await auth.signInWithEmailPassword("new@example.test", "password");
+    await auth.sendEmailVerification();
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
+      "identitytoolkit.googleapis.com/v1/accounts:sendOobCode"
+    );
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({
+      requestType: "VERIFY_EMAIL", idToken: "login-id"
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("forces a fresh Firebase JWT after email verification without changing identity", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        localId: "uid-owner", email: "owner@example.test",
+        idToken: "before-verification", refreshToken: "refresh-1", expiresIn: "3600"
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        user_id: "uid-owner", id_token: "verified-jwt",
+        refresh_token: "refresh-2", expires_in: "3600"
+      }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const auth = new FirebaseAuthClient("api-key");
+    await auth.signInWithEmailPassword("owner@example.test", "password");
+    expect(await auth.idToken()).toBe("before-verification");
+    expect(await auth.idToken(true)).toBe("verified-jwt");
+    expect(auth.user?.uid).toBe("uid-owner");
+    expect(await auth.idToken()).toBe("verified-jwt");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("does not expose Firebase provider diagnostics for bad credentials", async () => {
     vi.stubGlobal(
       "fetch",
